@@ -19,9 +19,10 @@ body{background:radial-gradient(900px 500px at 80% -10%,rgba(72,207,192,.10),tra
 header{padding:28px 0 14px;text-align:center}
 .brand{margin-bottom:10px;line-height:1.5;display:flex;align-items:center;
   justify-content:center;gap:10px;flex-wrap:wrap}
-.brand-logo{height:30px;width:auto;display:none}
+.brand-logo{height:36px;width:auto;max-width:100%;display:none}
+.brand.has-logo .brand-text{display:none}
 .brand.hero{flex-direction:column;gap:6px}
-.brand.hero .brand-logo{height:76px}
+.brand.hero .brand-logo{height:clamp(110px,28vw,170px)}
 .brand-text{display:inline-flex;align-items:baseline;gap:9px}
 .brand.hero .brand-text{flex-direction:column;align-items:center;gap:4px}
 .brand-name{font-family:'Almarai';font-weight:800;font-size:1.05rem;color:var(--cyan);letter-spacing:.01em}
@@ -180,7 +181,8 @@ h2.sec{font-family:'Almarai';font-weight:800;font-size:1.02rem;margin:24px 0 13p
   <header>
     <div class="brand" id="brand">
       <img class="brand-logo" id="logo" src="logo.svg" alt="بيان"
-           onload="this.style.display='block'" onerror="this.remove()">
+           onload="this.style.display='block';this.parentNode.classList.add('has-logo')"
+           onerror="this.remove()">
       <span class="brand-text"><span class="brand-name">بيان</span><span class="brand-slogan">تعلم صح</span></span>
     </div>
     <h1 id="head"></h1>
