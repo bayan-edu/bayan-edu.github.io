@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
+<title>بيان — تعلم صح</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700;800&family=Readex+Pro:wght@300;400;600&display=swap" rel="stylesheet">
@@ -15,7 +17,18 @@ body{background:radial-gradient(900px 500px at 80% -10%,rgba(72,207,192,.10),tra
  font-weight:300;line-height:1.85;padding:0 0 90px}
 .wrap{max-width:760px;margin:0 auto;padding:0 18px}
 header{padding:28px 0 14px;text-align:center}
-.eyebrow{font-family:'Almarai';font-size:.72rem;font-weight:700;letter-spacing:.16em;color:var(--cyan);margin-bottom:9px}
+.brand{margin-bottom:10px;line-height:1.5;display:flex;align-items:center;
+  justify-content:center;gap:10px;flex-wrap:wrap}
+.brand-logo{height:30px;width:auto;display:none}
+.brand.hero{flex-direction:column;gap:6px}
+.brand.hero .brand-logo{height:76px}
+.brand-text{display:inline-flex;align-items:baseline;gap:9px}
+.brand.hero .brand-text{flex-direction:column;align-items:center;gap:4px}
+.brand-name{font-family:'Almarai';font-weight:800;font-size:1.05rem;color:var(--cyan);letter-spacing:.01em}
+.brand-slogan{font-size:.75rem;color:var(--mist);margin-right:9px}
+.brand.hero{margin-bottom:6px}
+.brand.hero .brand-name{display:block;font-size:clamp(2.4rem,11vw,3.4rem);line-height:1.1;margin-bottom:6px}
+.brand.hero .brand-slogan{display:block;font-size:.95rem;margin-right:0;color:var(--foam);opacity:.72}
 h1{font-family:'Almarai';font-weight:800;font-size:clamp(1.4rem,5vw,2rem);line-height:1.35}
 .sub{color:var(--mist);font-size:.88rem;margin-top:6px}
 .card{background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--line);
@@ -132,6 +145,27 @@ h2.sec{font-family:'Almarai';font-weight:800;font-size:1.02rem;margin:24px 0 13p
 .essaybox{background:rgba(157,184,201,.05);border:1px solid var(--line);border-radius:11px;
  padding:14px;font-size:.86rem;line-height:1.95;white-space:pre-wrap;margin-bottom:14px}
 .hint{color:var(--mist);font-size:.79rem;margin-top:10px;text-align:center}
+.teachlink{margin-top:18px;padding-top:16px;border-top:1px solid var(--line);text-align:center}
+.teachlink a{color:var(--cyan);font-family:'Almarai';font-weight:700;font-size:.83rem;
+  cursor:pointer;text-decoration:none;border-bottom:1px dashed rgba(72,207,192,.5);padding-bottom:2px}
+.teachlink a:hover{border-bottom-style:solid}
+.pend-hero{text-align:center;padding:34px 22px;border-radius:var(--r);
+  background:linear-gradient(180deg,rgba(229,189,99,.13),rgba(16,47,76,.6));
+  border:1px solid rgba(229,189,99,.35);margin-bottom:16px}
+.pend-ic{font-size:2.6rem;margin-bottom:12px}
+.pend-t{font-family:'Almarai';font-weight:800;font-size:1.15rem;color:var(--sand);margin-bottom:8px}
+.pend-s{color:var(--mist);font-size:.88rem;line-height:1.9}
+.req{background:rgba(157,184,201,.05);border:1px solid var(--line);border-radius:12px;
+  padding:16px;margin-bottom:11px}
+.req-h{font-family:'Almarai';font-weight:700;font-size:.95rem}
+.req-m{font-size:.77rem;color:var(--mist);margin-top:4px;line-height:1.8}
+.req-note{margin-top:10px;background:rgba(157,184,201,.06);border-radius:9px;
+  padding:11px;font-size:.83rem;line-height:1.85}
+.rowbtn{display:flex;gap:9px;margin-top:12px}
+.rowbtn button{flex:1;border:none;border-radius:10px;padding:10px;cursor:pointer;
+  font-family:'Almarai';font-weight:800;font-size:.83rem}
+.ok-b{background:var(--cyan);color:#06202e}
+.no-b{background:rgba(242,119,107,.18);color:var(--coral);border:1px solid rgba(242,119,107,.4)!important}
 .toast{position:fixed;bottom:22px;right:50%;transform:translateX(50%) translateY(90px);
  background:var(--cyan);color:#06202e;padding:11px 22px;border-radius:999px;
  font-family:'Almarai';font-weight:800;font-size:.85rem;transition:transform .35s;z-index:60}
@@ -144,8 +178,12 @@ h2.sec{font-family:'Almarai';font-weight:800;font-size:1.02rem;margin:24px 0 13p
 <div id="bar"></div>
 <div class="wrap">
   <header>
-    <div class="eyebrow">منصة الاختبارات التشخيصية</div>
-    <h1 id="head">جارٍ التحميل…</h1>
+    <div class="brand" id="brand">
+      <img class="brand-logo" id="logo" src="logo.svg" alt="بيان"
+           onload="this.style.display='block'" onerror="this.remove()">
+      <span class="brand-text"><span class="brand-name">بيان</span><span class="brand-slogan">تعلم صح</span></span>
+    </div>
+    <h1 id="head"></h1>
     <p class="sub" id="subhead"></p>
   </header>
   <div id="app"><div class="status">جارٍ الاتصال…</div></div>
@@ -170,8 +208,13 @@ const AR = n => String(n).replace(/[0-9]/g, d => "٠١٢٣٤٥٦٧٨٩"[+d]);
 const app = document.getElementById("app"), bar = document.getElementById("bar");
 const esc = s => String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;");
 const mmss = s => { const m=Math.floor(s/60),x=s%60; return m+":"+(x<10?"0":"")+x; };
-function head(t,s){ document.getElementById("head").textContent=t;
-  document.getElementById("subhead").textContent=s||""; }
+function head(t,s,hero){
+  const b=document.getElementById("brand"), h=document.getElementById("head");
+  b.classList.toggle("hero", !!hero);
+  h.textContent = t||"";
+  h.style.display = t ? "" : "none";
+  document.getElementById("subhead").textContent = s||"";
+}
 function toast(m){ const t=document.getElementById("toast"); t.textContent=m;
   t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),2800); }
 const SAFE = /^https:\/\/(drive\.google\.com|lh3\.googleusercontent\.com|www\.youtube\.com|youtu\.be|i\.imgur\.com)\//;
@@ -182,7 +225,7 @@ function media(q){
   return h;
 }
 
-let S = { user:null, prof:null, quizzes:[], quiz:null, i:0, ans:[], t0:0, left:0,
+let S = { user:null, prof:null, roleInfo:null, quizzes:[], quiz:null, i:0, ans:[], t0:0, left:0,
           tick:null, result:null, view:"gate" };
 
 /* ═══════════ ① المصادقة ═══════════ */
@@ -190,8 +233,8 @@ let GATE = "login";
 
 function renderGate(msg){
   bar.innerHTML="";
-  head("منصة الاختبارات التشخيصية",
-       GATE==="login" ? "سجّل الدخول لمتابعة تقدّمك" : "أنشئ حسابك في نصف دقيقة");
+  head("", GATE==="login" ? "سجّل الدخول لمتابعة تقدّمك"
+                          : "أنشئ حسابك في نصف دقيقة", true);
   const reg = GATE==="register";
   app.innerHTML=`
     <div class="tabs">
@@ -211,7 +254,8 @@ function renderGate(msg){
       <input type="text" id="kl" placeholder="مثال: أولى ثانوي — مدرسة النيل">`:''}
     </div>
     <div class="nav"><button class="btn primary" id="go">${reg?'إنشاء الحساب':'دخول'}</button></div>
-    ${reg?'':'<p class="hint" id="fp" style="cursor:pointer;text-decoration:underline">نسيت كلمة المرور؟</p>'}`;
+    ${reg?'':'<p class="hint" id="fp" style="cursor:pointer;text-decoration:underline">نسيت كلمة المرور؟</p>'}
+    <div class="teachlink"><a id="tlink">انضم كمعلم ←</a></div>`;
 
   app.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{ GATE=t.dataset.g; renderGate(); });
   document.getElementById("go").onclick=submitGate;
@@ -226,6 +270,8 @@ function renderGate(msg){
     const { error } = await db.auth.resetPasswordForEmail(em);
     toast(error ? "تعذّر الإرسال" : "أُرسل رابط الاستعادة لبريدك");
   };
+  const tl=document.getElementById("tlink");
+  if(tl) tl.onclick=()=>{ GATE="teacher"; renderTeacherSignup(); };
   document.getElementById("em").focus();
 }
 
@@ -268,7 +314,15 @@ async function boot(){
   S.user = user;
   const { data:p } = await db.from('profiles').select('*').eq('id', user.id).single();
   S.prof = p || { full_name:'طالب', role:'student' };
-  if(S.prof.role === 'teacher') loadTeacher(); else loadList();
+
+  const { data:ri } = await db.rpc('my_role');
+  S.roleInfo = ri || { role: S.prof.role };
+  const role = S.roleInfo.role;
+
+  if(role === 'pending_teacher') return renderPending();
+  if(role === 'admin')           return loadAdmin();
+  if(role === 'teacher')         return loadTeacher();
+  loadList();
 }
 
 async function signOut(){ await db.auth.signOut(); S.user=null; GATE="login"; renderGate(); }
@@ -552,7 +606,11 @@ async function loadTeacher(){
   app.querySelectorAll(".pend").forEach(el=>el.onclick=()=>openGrade(+el.dataset.a));
   document.getElementById("t2").onclick=loadInbox;
   document.getElementById("rf").onclick=loadTeacher;
-  document.getElementById("out").onclick=signOut;
+  document.getElementById("out").onclick=()=>{
+    if(S.roleInfo?.role==='admin') loadAdmin(); else signOut();
+  };
+  if(S.roleInfo?.role==='admin')
+    document.getElementById("out").textContent='لوحة المدير';
 }
 
 async function openGrade(id){
@@ -663,6 +721,156 @@ async function openThread(sid){
   await db.from('messages').update({read_by_teacher:true})
     .eq('student_id',sid).eq('sender_role','student').eq('read_by_teacher',false);
   window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'});
+}
+
+/* ═══════════ ⑧ تسجيل المعلم ═══════════ */
+function renderTeacherSignup(msg){
+  bar.innerHTML="";
+  head("الانضمام كمعلم","يُفعَّل الحساب بعد مراجعة إدارية");
+  app.innerHTML=`
+    ${msg?`<div class="err"><b>تنبيه</b>${esc(msg)}</div>`:''}
+    <div class="card">
+      <label class="fl">البريد الإلكتروني</label>
+      <input type="email" id="em" placeholder="name@school.com" autocomplete="email">
+      <label class="fl" style="margin-top:16px">كلمة المرور</label>
+      <input type="password" id="pw" placeholder="٦ أحرف على الأقل" autocomplete="new-password">
+      <label class="fl" style="margin-top:16px">الاسم الكامل</label>
+      <input type="text" id="nm" placeholder="الاسم الثلاثي">
+      <label class="fl" style="margin-top:16px">المدرسة أو الجهة</label>
+      <input type="text" id="sc" placeholder="مثال: مدرسة النيل الثانوية">
+      <label class="fl" style="margin-top:16px">المواد التي تدرّسها</label>
+      <input type="text" id="sb" placeholder="مثال: الأحياء والكيمياء">
+      <label class="fl" style="margin-top:16px">سنوات الخبرة</label>
+      <input type="text" id="yr" inputmode="numeric" placeholder="مثال: 8">
+      <label class="fl" style="margin-top:16px">تعريف موجز بك</label>
+      <textarea id="nt" placeholder="اذكر ما يساعد المدير على مراجعة طلبك…"></textarea>
+      <p class="small">تُراجَع الطلبات يدوياً. ستصلك النتيجة عند دخولك التالي.</p>
+    </div>
+    <div class="nav">
+      <button class="btn primary" id="go">إرسال الطلب</button>
+      <button class="btn ghost" id="bk">رجوع</button>
+    </div>`;
+
+  document.getElementById("bk").onclick=()=>{ GATE="login"; renderGate(); };
+  document.getElementById("go").onclick=submitTeacher;
+  document.getElementById("em").focus();
+}
+
+async function submitTeacher(){
+  const v = id => (document.getElementById(id)?.value||"").trim();
+  const em=v("em"), pw=v("pw"), nm=v("nm"), sc=v("sc"), sb=v("sb"), yr=v("yr"), nt=v("nt");
+
+  if(!em||!pw){ toast("أكمل البريد وكلمة المرور"); return; }
+  if(pw.length<6){ toast("كلمة المرور ٦ أحرف على الأقل"); return; }
+  if(!nm){ toast("اكتب اسمك الكامل"); return; }
+  if(!sc){ toast("اكتب المدرسة أو الجهة"); return; }
+
+  app.innerHTML=`<div class="status">جارٍ إنشاء الحساب…</div>`;
+
+  let r = await db.auth.signUp({ email:em, password:pw,
+            options:{ data:{ full_name:nm, klass:sc } } });
+
+  if(r.error && /already registered/i.test(r.error.message)){
+    r = await db.auth.signInWithPassword({ email:em, password:pw });
+    if(r.error){ renderTeacherSignup("هذا البريد مسجّل — كلمة المرور غير صحيحة"); return; }
+  } else if(r.error){
+    renderTeacherSignup(translate(r.error.message)); return;
+  }
+
+  if(!r.data.session){
+    renderTeacherSignup("أنشئ الحساب ✅ فعّل بريدك ثم عد وسجّل الدخول لإكمال الطلب.");
+    GATE="login"; return;
+  }
+
+  const { data:res, error } = await db.rpc('request_teacher_access', {
+    p_school:sc, p_subject:sb, p_years: yr?Number(yr):null, p_note:nt });
+
+  if(error){ renderTeacherSignup(error.message); return; }
+  if(!res.ok){ renderTeacherSignup(res.error); return; }
+  await boot();
+}
+
+/* ═══════════ ⑨ شاشة الانتظار ═══════════ */
+function renderPending(){
+  bar.innerHTML="";
+  const rq = S.roleInfo?.request || {};
+  head("طلبك قيد المراجعة", S.prof.full_name);
+  app.innerHTML=`
+    <div class="pend-hero">
+      <div class="pend-ic">⏳</div>
+      <div class="pend-t">طلب الانضمام كمعلم قيد المراجعة</div>
+      <div class="pend-s">
+        قُدّم الطلب ${rq.created_at?new Date(rq.created_at).toLocaleDateString('ar-EG'):''}<br>
+        ستُفتح لوحة المعلم تلقائياً فور الموافقة.
+      </div>
+    </div>
+    <div class="card">
+      <div class="rev-q">في انتظار المراجعة، يمكنك:</div>
+      <div class="line">• تصفّح الاختبارات المتاحة كطالب</div>
+      <div class="line">• الاطلاع على أسلوب الأسئلة وتشخيص الفخاخ</div>
+      <div class="line">• تجهيز أسئلتك استعداداً لإضافتها</div>
+    </div>
+    <div class="nav">
+      <button class="btn primary" id="brw">تصفّح كطالب</button>
+      <button class="btn ghost" id="rf">تحديث الحالة</button>
+    </div>
+    <div class="nav"><button class="btn ghost" id="out">خروج</button></div>`;
+
+  document.getElementById("brw").onclick=loadList;
+  document.getElementById("rf").onclick=boot;
+  document.getElementById("out").onclick=signOut;
+}
+
+/* ═══════════ ⑩ لوحة المدير ═══════════ */
+async function loadAdmin(status){
+  const st = status || 'pending';
+  bar.innerHTML="";
+  head("لوحة المدير", S.prof.full_name);
+  app.innerHTML=`<div class="status">جارٍ التحميل…</div>`;
+
+  const { data, error } = await db.rpc('admin_requests', { p_status: st });
+  if(error){ app.innerHTML=`<div class="err"><b>تعذّر التحميل</b>${esc(error.message)}</div>`; return; }
+
+  const list = data||[];
+  app.innerHTML=`
+    <div class="subtabs">
+      <div class="tab ${st==='pending'?'on':''}"  data-s="pending">قيد المراجعة</div>
+      <div class="tab ${st==='approved'?'on':''}" data-s="approved">مقبولة</div>
+      <div class="tab ${st==='rejected'?'on':''}" data-s="rejected">مرفوضة</div>
+    </div>
+    ${list.length?list.map(r=>`
+      <div class="req" data-id="${r.id}">
+        <div class="req-h">${esc(r.full_name)}</div>
+        <div class="req-m">
+          ${esc(r.email)}<br>
+          ${esc(r.school||'—')} · ${esc(r.subject_area||'—')}
+          ${r.years_exp?` · ${AR(r.years_exp)} سنوات خبرة`:''}<br>
+          ${new Date(r.created_at).toLocaleString('ar-EG')}
+        </div>
+        ${r.note?`<div class="req-note">${esc(r.note).replace(/\n/g,"<br>")}</div>`:''}
+        ${r.decision_note?`<div class="req-note">📝 ${esc(r.decision_note)}</div>`:''}
+        ${st==='pending'?`<div class="rowbtn">
+          <button class="ok-b" data-a="ok"  data-id="${r.id}">✅ قبول</button>
+          <button class="no-b" data-a="no" data-id="${r.id}">✕ رفض</button>
+        </div>`:''}
+      </div>`).join(""):'<div class="status">لا توجد طلبات في هذه الحالة</div>'}
+    <div class="nav" style="margin-top:16px">
+      <button class="btn ghost" id="tp">لوحة المعلم</button>
+      <button class="btn ghost" id="out">خروج</button>
+    </div>`;
+
+  app.querySelectorAll(".tab").forEach(t=>t.onclick=()=>loadAdmin(t.dataset.s));
+  app.querySelectorAll("[data-a]").forEach(b=>b.onclick=async()=>{
+    const ok = b.dataset.a==='ok';
+    const note = prompt(ok?"ملاحظة ترحيب (اختياري):":"سبب الرفض:", ok?"":"");
+    if(!ok && note===null) return;
+    const { data:res, error } = await db.rpc('admin_decide',
+      { p_request: Number(b.dataset.id), p_approve: ok, p_note: note||null });
+    if(error){ toast(error.message); return; }
+    toast(res.result||"تم"); loadAdmin(st);
+  });
+  document.getElementById("tp").onclick=loadTeacher;
+  document.getElementById("out").onclick=signOut;
 }
 
 /* ═══════════ التشغيل ═══════════ */
