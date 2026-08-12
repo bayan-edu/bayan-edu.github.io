@@ -155,6 +155,8 @@ h2.sec{font-family:'Almarai';font-weight:800;font-size:1.02rem;margin:24px 0 13p
   background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--line);
   border-radius:13px;padding:16px;margin-bottom:10px;cursor:pointer;transition:border-color .18s}
 .subj:hover{border-color:var(--cyan)}
+.subj.soon{opacity:.5;cursor:default;border-style:dashed}
+.subj.soon:hover{border-color:var(--line)}
 .subj-t{font-family:'Almarai';font-weight:700;font-size:.97rem}
 .subj-m{font-size:.76rem;color:var(--mist);margin-top:4px}
 .pbar{height:5px;background:rgba(157,184,201,.14);border-radius:99px;overflow:hidden;margin-top:9px}
@@ -495,19 +497,23 @@ async function loadList(){
   const skills = S.subjects.filter(x=>x.group_key!=='1_grade');
 
   const card = x => {
+    const empty = !x.needs_placement && !x.lessons_total;
     const pct = x.lessons_total ? Math.round(x.lessons_done/x.lessons_total*100) : 0;
-    return `<div class="subj" data-i="${x.id}">
+    return `<div class="subj ${empty?'soon':''}" data-i="${x.id}">
       <div style="flex:1">
         <div class="subj-t">${esc(x.icon||'')} ${esc(x.name)}
-          ${x.my_level?`<span class="lvl-tag">${esc(x.my_level)}</span>`:''}</div>
-        <div class="subj-m">${x.needs_placement
-            ? 'ابدأ باختبار «اعرف مستواك»'
-            : `${AR(x.lessons_done)} من ${AR(x.lessons_total)} درساً`}${
+          ${x.my_level?`<span class="lvl-tag">${esc(x.my_level)}</span>`:''}
+          ${empty?'<span class="badge lock">قريباً</span>':''}</div>
+        <div class="subj-m">${
+            empty ? 'دروس هذه المادة قيد الإعداد'
+          : x.needs_placement ? 'ابدأ باختبار «اعرف مستواك»'
+          : `${AR(x.lessons_done)} من ${AR(x.lessons_total)} درساً`}${
+            empty ? '' :
             x.mentor_name ? ' · مع أ. ' + esc(x.mentor_name)
             : (x.mentor_chosen ? ' · متابعة ذاتية' : '')}</div>
-        ${x.needs_placement?'':`<div class="pbar"><div class="pfill" style="width:${pct}%"></div></div>`}
+        ${(x.needs_placement||empty)?'':`<div class="pbar"><div class="pfill" style="width:${pct}%"></div></div>`}
       </div>
-      <div class="qz-go">${x.needs_placement?'حدّد مستواك ←':'ادخل ←'}</div>
+      <div class="qz-go">${empty?'⏳':(x.needs_placement?'حدّد مستواك ←':'ادخل ←')}</div>
     </div>`;
   };
 
@@ -528,6 +534,8 @@ async function loadList(){
 
   app.querySelectorAll(".subj").forEach(el=>el.onclick=()=>{
     const x=S.subjects.find(v=>String(v.id)===el.dataset.i);
+    if(!x.needs_placement && !x.lessons_total){
+      toast("دروس هذه المادة قيد الإعداد — ستصلك عند جهوزها"); return; }
     if(x.needs_placement){ toast("اختبار تحديد المستوى قيد الإعداد"); return; }
     if(!x.mentor_chosen) return loadMentors(x);
     loadLessons(x);
