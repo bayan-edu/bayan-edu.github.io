@@ -249,7 +249,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
    انسخ القيمتين من: Supabase → Project Settings → API
    ═══════════════════════════════════════════════════ */
 const SUPABASE_URL  = "https://tjzrfevymfpktfuormhs.supabase.co";
-const SUPABASE_ANON = "ضع_مفتاح_publishable_هنا";   // sb_publishable_... — كشفه آمن مع RLS
+const SUPABASE_ANON = "sb_publishable_8kuaa_38VYwyiMnwOik5cg_BvylvgYL";   // مفتاح عام — كشفه آمن مع RLS
 
 const db = createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -303,9 +303,11 @@ function renderGate(msg){
       <input type="text" id="nm" placeholder="الاسم الثلاثي">
       <label class="fl" style="margin-top:16px">المنهج الدراسي</label>
       <select id="cur"><option value="">— اختر المنهج —</option></select>
-      <label class="fl" style="margin-top:14px">صفّك</label>
-      <select id="gr" disabled><option value="">— اختر المنهج أولاً —</option></select>
-      <p class="small">يحدّدان المواد التي تظهر لك · يمكنك تغييرهما لاحقاً</p>
+      <div id="grwrap">
+        <label class="fl" style="margin-top:14px">صفّك</label>
+        <select id="gr" disabled><option value="">— اختر المنهج أولاً —</option></select>
+      </div>
+      <p class="small" id="grnote">يحدّدان المواد التي تظهر لك · يمكنك تغييرهما لاحقاً</p>
       <label class="fl" style="margin-top:16px">مدرستك <span style="opacity:.6">(اختياري)</span></label>
       <input type="text" id="kl" placeholder="مثال: مدرسة النيل الثانوية">`:''}
     </div>
@@ -369,10 +371,22 @@ async function fillGrades(){
 
   function fillLevels(){
     const sc=S.scales.find(x=>String(x.id)===cs.value);
+    const wrap=document.getElementById("grwrap"), note=document.getElementById("grnote");
     gs.innerHTML='<option value="">— اختر صفّك —</option>';
     gs.disabled=!sc;
+
+    const lv=(sc&&sc.levels)||[];
+    // مناهج بلا صفوف (جامعي · أخرى) → مسار المهارات مباشرة
+    if(sc && !lv.length){
+      wrap.style.display='none';
+      note.textContent='ستظهر لك موادّ المهارات — بلا ارتباط بصف دراسي';
+      gs.value = sc.id + '|';
+      return;
+    }
+    wrap.style.display='';
+    note.textContent='يحدّدان المواد التي تظهر لك · يمكنك تغييرهما لاحقاً';
     if(!sc) return;
-    (sc.levels||[]).sort((a,b)=>a.rank-b.rank).forEach(l=>{
+    lv.sort((a,b)=>a.rank-b.rank).forEach(l=>{
       const o=document.createElement('option');
       o.value=`${sc.id}|${l.id}`; o.textContent=l.name;
       gs.appendChild(o);
@@ -403,8 +417,10 @@ async function submitGate(){
   if(reg && r.data.session){
     const g=(document.getElementById("gr")||{}).value||"";
     if(g){ const [sc,lv]=g.split('|');
-      await db.from('profiles').update({ scale_id:Number(sc), level_id:Number(lv) })
-              .eq('id', r.data.user.id); }
+      await db.from('profiles').update({
+        scale_id: Number(sc),
+        level_id: lv ? Number(lv) : null
+      }).eq('id', r.data.user.id); }
   }
   if(reg && !r.data.session){
     renderGate("تم إنشاء حسابك ✅ افتح بريدك واضغط رابط التفعيل ثم سجّل الدخول.");
@@ -481,7 +497,11 @@ async function loadList(){
   app.innerHTML=`
     ${grade.length?`<div class="grp">📚 موادّ صفّي</div>${grade.map(card).join("")}`:''}
     ${skills.length?`<div class="grp">🚀 طوّر مهاراتك</div>${skills.map(card).join("")}`:''}
-    ${!S.subjects.length?'<div class="status">لا توجد مواد متاحة لصفّك بعد</div>':''}
+    ${!S.subjects.length?`<div class="card" style="text-align:center;padding:28px">
+        <div style="font-size:2rem;margin-bottom:10px">📚</div>
+        <div class="rev-q">لا توجد مواد متاحة بعد</div>
+        <div class="line">موادّ صفّك وتدريبات المهارات قيد الإعداد — ستظهر هنا فور جهوزها.</div>
+      </div>`:''}
     ${count?`<div class="fbnote" id="fbgo">📩 لديك ${AR(count)} ملاحظة جديدة من معلمك</div>`:''}
     <div class="nav" style="margin-top:18px">
       <button class="btn ghost" id="fball">ملاحظات معلمي</button>
