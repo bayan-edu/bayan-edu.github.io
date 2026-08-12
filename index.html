@@ -193,6 +193,21 @@ h2.sec{font-family:'Almarai';font-weight:800;font-size:1.02rem;margin:24px 0 13p
 .remedy{margin-top:10px;background:rgba(72,207,192,.09);border:1px solid rgba(72,207,192,.28);
   border-radius:10px;padding:11px 13px;font-size:.83rem;line-height:1.9}
 .remedy strong{font-family:'Almarai';font-weight:800;color:var(--cyan);display:block;margin-bottom:4px}
+.mentor{background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--line);
+  border-radius:13px;padding:16px;margin-bottom:10px;cursor:pointer;transition:border-color .18s}
+.mentor:hover{border-color:var(--cyan)}
+.mentor.full{opacity:.45;cursor:not-allowed}
+.mentor.full:hover{border-color:var(--line)}
+.mentor.self{background:rgba(157,184,201,.05);border-style:dashed}
+.mentor.cur{border-color:var(--cyan);background:rgba(72,207,192,.09)}
+.m-n{font-family:'Almarai';font-weight:700;font-size:.97rem}
+.m-m{font-size:.76rem;color:var(--mist);margin-top:4px}
+.m-b{font-size:.83rem;line-height:1.85;margin-top:9px;color:var(--foam);opacity:.85}
+.m-cap{display:inline-block;background:rgba(157,184,201,.12);border-radius:8px;
+  padding:2px 9px;font-size:.7rem;color:var(--mist);margin-top:8px}
+.warnbox{background:rgba(229,189,99,.09);border:1px solid rgba(229,189,99,.3);
+  border-radius:11px;padding:12px 14px;font-size:.81rem;color:#f0dcae;
+  line-height:1.85;margin-bottom:14px}
 .crumb{font-size:.78rem;color:var(--mist);margin-bottom:12px;cursor:pointer}
 .crumb:hover{color:var(--cyan)}
 .teachlink{margin-top:18px;padding-top:16px;border-top:1px solid var(--line);text-align:center}
@@ -487,7 +502,9 @@ async function loadList(){
           ${x.my_level?`<span class="lvl-tag">${esc(x.my_level)}</span>`:''}</div>
         <div class="subj-m">${x.needs_placement
             ? 'ابدأ باختبار «اعرف مستواك»'
-            : `${AR(x.lessons_done)} من ${AR(x.lessons_total)} درساً`}</div>
+            : `${AR(x.lessons_done)} من ${AR(x.lessons_total)} درساً`}${
+            x.mentor_name ? ' · مع أ. ' + esc(x.mentor_name)
+            : (x.mentor_chosen ? ' · متابعة ذاتية' : '')}</div>
         ${x.needs_placement?'':`<div class="pbar"><div class="pfill" style="width:${pct}%"></div></div>`}
       </div>
       <div class="qz-go">${x.needs_placement?'حدّد مستواك ←':'ادخل ←'}</div>
@@ -512,12 +529,91 @@ async function loadList(){
   app.querySelectorAll(".subj").forEach(el=>el.onclick=()=>{
     const x=S.subjects.find(v=>String(v.id)===el.dataset.i);
     if(x.needs_placement){ toast("اختبار تحديد المستوى قيد الإعداد"); return; }
+    if(!x.mentor_chosen) return loadMentors(x);
     loadLessons(x);
   });
   document.getElementById("fball").onclick=loadFeedback;
   document.getElementById("msgs").onclick=loadChat;
   document.getElementById("out").onclick=signOut;
   const fg=document.getElementById("fbgo"); if(fg) fg.onclick=loadFeedback;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ═══════════ اختيار المعلم ═══════════ */
+async function loadMentors(subj, switching){
+  S.subj = subj;
+  bar.innerHTML="";
+  head(switching?"الانضمام إلى معلم آخر":"اختر معلمك", subj.name);
+  app.innerHTML=`<div class="status">جارٍ التحميل…</div>`;
+
+  const [{ data:list }, { data:st }] = await Promise.all([
+    db.rpc('list_mentors', { p_subject: subj.id }),
+    db.rpc('my_mentor',    { p_subject: subj.id })
+  ]);
+  const mentors = list||[], state = st||{};
+
+  if(switching && !state.can_switch){
+    app.innerHTML=`
+      <div class="crumb" id="bk">← رجوع</div>
+      <div class="warnbox" style="font-size:.85rem">
+        <b style="font-family:'Almarai';font-weight:800;display:block;margin-bottom:6px">
+          فرص الانتقال في هذه المادة استُوفيت</b>
+        الاستمرار مع معلم واحد يمنحه صورة أوضح عن تقدّمك، ويجعل متابعته لك أدق.
+        اعرض ما يشكل عليك على معلمك الحالي — فهو الأقدر على مساعدتك.</div>
+      <div class="nav"><button class="btn primary" id="go">متابعة الدروس</button></div>`;
+    document.getElementById("bk").onclick=loadList;
+    document.getElementById("go").onclick=()=>loadLessons(subj);
+    return;
+  }
+
+  const card = m => `
+    <div class="mentor ${m.full?'full':''} ${state.teacher_id===m.id?'cur':''}" data-t="${m.id}">
+      <div class="m-n">أ. ${esc(m.name)}
+        ${state.teacher_id===m.id?'<span class="badge ok">معلمك الحالي</span>':''}</div>
+      <div class="m-m">${esc(m.school||'—')}${m.years?` · ${AR(m.years)} سنوات خبرة`:''}</div>
+      ${m.bio?`<div class="m-b">${esc(m.bio)}</div>`:''}
+      <span class="m-cap">${m.full?'اكتمل النصاب':`يتابع ${AR(m.students)} من ${AR(m.capacity)} طالباً`}</span>
+    </div>`;
+
+  app.innerHTML=`
+    <div class="crumb" id="bk">← رجوع للمواد</div>
+    <div class="warnbox">
+      المعلم الذي تنضم إليه سيتابع تقدّمك في هذه المادة، ويصحّح إجاباتك المقالية،
+      ويجيب عن أسئلتك.
+    </div>
+    ${mentors.length?mentors.map(card).join(""):''}
+    <div class="mentor self" data-t="">
+      <div class="m-n">📖 المتابعة الذاتية</div>
+      <div class="m-m">${mentors.length
+        ? 'تدرس بنفسك، ويمكنك الانضمام إلى معلم متى شئت'
+        : 'لم ينضم معلمون لهذه المادة بعد — ابدأ بنفسك وسنُعلمك عند توفّرهم'}</div>
+    </div>`;
+
+  document.getElementById("bk").onclick=loadList;
+  app.querySelectorAll(".mentor").forEach(el=>el.onclick=async()=>{
+    if(el.classList.contains('full')) { toast("اكتمل نصاب هذا المعلم — اختر معلماً آخر"); return; }
+    const tid = el.dataset.t || null;
+    if(tid && tid !== state.teacher_id){
+      const name = (mentors.find(x=>x.id===tid)||{}).name || 'هذا المعلم';
+      const tried = state.teachers_tried || 0;
+      const leftAfter = 2 - tried;          // ٣ معلمين كحد أقصى
+
+      let msg = `هل ترغب في الانضمام إلى أ. ${name} في مادة «${subj.name}»؟`;
+      if(tried === 1) msg += "\n\nبعد هذا الانضمام تبقى لك فرصة واحدة للانضمام إلى معلم آخر.";
+      else if(tried >= 2) msg += "\n\nهذه آخر فرصة — لن تتمكن بعدها من الانضمام إلى معلم آخر في هذه المادة.";
+
+      if(!confirm(msg)) return;
+    }
+
+    const { data:r, error } = await db.rpc('choose_mentor',
+      { p_subject: subj.id, p_teacher: tid });
+    if(error){ toast(error.message); return; }
+    if(!r.ok){ toast(r.error); return; }
+
+    toast(r.self_study ? "ستتابع دروسك بنفسك" : "انضممتَ إلى أ. "+r.teacher);
+    subj.mentor_chosen = true; subj.mentor_name = r.teacher||null;
+    loadLessons(subj);
+  });
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -550,12 +646,20 @@ async function loadLessons(subj){
 
   app.innerHTML=`
     <div class="crumb" id="bk">← رجوع للمواد</div>
+    <div class="nav" style="margin-bottom:14px">
+      <button class="btn ghost" id="mnt" style="font-size:.8rem;padding:9px">
+        ${subj.mentor_name
+            ? '👤 معلمك: أ. '+esc(subj.mentor_name)+' · الانضمام إلى معلم آخر'
+            : '👤 الانضمام إلى معلم'}
+      </button>
+    </div>
     ${Object.keys(groups).map(g=>`
       ${Object.keys(groups).length>1?`<div class="grp">${esc(g)}</div>`:''}
       ${groups[g].map(lcard).join("")}`).join("")}
     ${!S.lessons.length?'<div class="status">لا توجد دروس في هذه المادة بعد</div>':''}`;
 
   document.getElementById("bk").onclick=loadList;
+  document.getElementById("mnt").onclick=()=>loadMentors(subj, true);
   app.querySelectorAll(".lsn").forEach(el=>el.onclick=()=>{
     const l=S.lessons.find(v=>String(v.id)===el.dataset.i);
     if(l.locked){ toast(l.reason||"هذا الدرس غير متاح بعد"); return; }
@@ -859,8 +963,9 @@ async function loadTeacher(){
 
   app.innerHTML=`
     <div class="subtabs">
-      <div class="tab on" id="t1">تصحيح المقالي</div>
+      <div class="tab on" id="t1">التصحيح</div>
       <div class="tab" id="t2">الرسائل</div>
+      <div class="tab" id="t3">موادّي</div>
     </div>
     <h2 class="sec">بانتظار التصحيح (${AR(wait.length)})</h2>
     ${wait.length?wait.map(a=>card(a,false)).join(""):'<div class="status">لا توجد محاولات معلّقة 🎉</div>'}
@@ -872,6 +977,7 @@ async function loadTeacher(){
 
   app.querySelectorAll(".pend").forEach(el=>el.onclick=()=>openGrade(+el.dataset.a));
   document.getElementById("t2").onclick=loadInbox;
+  document.getElementById("t3").onclick=loadMySubjects;
   document.getElementById("rf").onclick=loadTeacher;
   document.getElementById("out").onclick=()=>{
     if(S.roleInfo?.role==='admin') loadAdmin(); else signOut();
@@ -941,8 +1047,9 @@ async function loadInbox(){
 
   app.innerHTML=`
     <div class="subtabs">
-      <div class="tab" id="t1">تصحيح المقالي</div>
+      <div class="tab" id="t1">التصحيح</div>
       <div class="tab on" id="t2">الرسائل</div>
+      <div class="tab" id="t3">موادّي</div>
     </div>
     ${thr.length?thr.map(t=>`
       <div class="thr" data-i="${t.id}">
@@ -956,6 +1063,7 @@ async function loadInbox(){
     </div>`;
 
   document.getElementById("t1").onclick=loadTeacher;
+  document.getElementById("t3").onclick=loadMySubjects;
   document.getElementById("rf").onclick=loadInbox;
   document.getElementById("out").onclick=signOut;
   app.querySelectorAll(".thr").forEach(el=>el.onclick=()=>openThread(el.dataset.i));
@@ -1138,6 +1246,60 @@ async function loadAdmin(status){
   });
   document.getElementById("tp").onclick=loadTeacher;
   document.getElementById("out").onclick=signOut;
+}
+
+/* ═══════════ موادّ المعلم ═══════════ */
+async function loadMySubjects(){
+  bar.innerHTML="";
+  head("موادّي", "اختر المواد التي تتابع فيها الطلاب");
+  app.innerHTML=`<div class="status">جارٍ التحميل…</div>`;
+
+  const { data, error } = await db.rpc('list_teachable_subjects');
+  if(error){ app.innerHTML=`<div class="err"><b>تعذّر التحميل</b>${esc(error.message)}</div>`; return; }
+  const subs = data||[];
+  const picked = new Set(subs.filter(x=>x.chosen).map(x=>x.id));
+
+  app.innerHTML=`
+    <div class="subtabs">
+      <div class="tab" id="t1">التصحيح</div>
+      <div class="tab" id="t2">الرسائل</div>
+      <div class="tab on" id="t3">موادّي</div>
+    </div>
+    <div class="warnbox">
+      تختار حتى ٣ مواد. والمادة الواحدة عبر صفوف مختلفة تُحسب مادة واحدة.
+      ستظهر للطلاب في قائمة معلمي المواد التي تختارها.
+    </div>
+    ${subs.map(x=>`
+      <div class="mentor ${picked.has(x.id)?'cur':''}" data-i="${x.id}">
+        <div class="m-n">${esc(x.name)} ${picked.has(x.id)?'<span class="badge ok">مختارة</span>':''}</div>
+        <div class="m-m">${x.family?esc(x.family)+' · ':''}${AR(x.students)} طالباً · السعة ${AR(x.capacity)}</div>
+      </div>`).join("")}
+    ${!subs.length?'<div class="status">لا توجد مواد بعد</div>':''}
+    <div class="nav" style="margin-top:16px">
+      <button class="btn primary" id="save">حفظ</button>
+      <button class="btn ghost" id="bk">رجوع</button>
+    </div>`;
+
+  document.getElementById("t1").onclick=loadTeacher;
+  document.getElementById("t2").onclick=loadInbox;
+  document.getElementById("bk").onclick=loadTeacher;
+
+  app.querySelectorAll(".mentor").forEach(el=>el.onclick=()=>{
+    const id=Number(el.dataset.i);
+    if(picked.has(id)) picked.delete(id); else picked.add(id);
+    el.classList.toggle('cur');
+    const b=el.querySelector('.badge');
+    if(picked.has(id) && !b) el.querySelector('.m-n').insertAdjacentHTML('beforeend',' <span class="badge ok">مختارة</span>');
+    if(!picked.has(id) && b) b.remove();
+  });
+
+  document.getElementById("save").onclick=async()=>{
+    const { data:r, error } = await db.rpc('set_my_subjects', { p_ids: [...picked] });
+    if(error){ toast(error.message); return; }
+    if(!r.ok){ toast(r.error); return; }
+    toast("حُفظت موادّك"); loadMySubjects();
+  };
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 
 /* ═══════════ التشغيل ═══════════ */
