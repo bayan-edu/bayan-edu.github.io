@@ -158,7 +158,8 @@ h2.sec{font-family:'Almarai';font-weight:800;font-size:1.02rem;margin:24px 0 13p
 .subj.soon{opacity:.5;cursor:default;border-style:dashed}
 .subj.soon:hover{border-color:var(--line)}
 .subj-t{font-family:'Almarai';font-weight:700;font-size:.97rem}
-.subj-m{font-size:.76rem;color:var(--mist);margin-top:4px}
+.subj-m{font-size:.76rem;color:var(--mist);margin-top:6px}
+.subj-d{font-size:.78rem;color:var(--foam);opacity:.62;margin-top:5px;line-height:1.75}
 .pbar{height:5px;background:rgba(157,184,201,.14);border-radius:99px;overflow:hidden;margin-top:9px}
 .pfill{height:100%;background:linear-gradient(90deg,var(--cyan),#2a8fb8);border-radius:99px}
 .lvl-tag{display:inline-block;background:rgba(72,207,192,.14);color:var(--cyan);
@@ -501,9 +502,10 @@ async function loadList(){
     const pct = x.lessons_total ? Math.round(x.lessons_done/x.lessons_total*100) : 0;
     return `<div class="subj ${empty?'soon':''}" data-i="${x.id}">
       <div style="flex:1">
-        <div class="subj-t">${esc(x.icon||'')} ${esc(x.name)}
+        <div class="subj-t">${esc(x.icon||'')} <bdi>${esc(x.name)}</bdi>
           ${x.my_level?`<span class="lvl-tag">${esc(x.my_level)}</span>`:''}
           ${empty?'<span class="badge lock">قريباً</span>':''}</div>
+        ${x.description?`<div class="subj-d">${esc(x.description)}</div>`:''}
         <div class="subj-m">${
             empty ? 'دروس هذه المادة قيد الإعداد'
           : x.needs_placement ? 'ابدأ باختبار «اعرف مستواك»'
