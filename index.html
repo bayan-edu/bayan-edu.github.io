@@ -301,9 +301,11 @@ function renderGate(msg){
       ${reg?`
       <label class="fl" style="margin-top:16px">اسمك كما يظهر في التقارير</label>
       <input type="text" id="nm" placeholder="الاسم الثلاثي">
-      <label class="fl" style="margin-top:16px">صفّك الدراسي</label>
-      <select id="gr"><option value="">— اختر صفّك —</option></select>
-      <p class="small">يحدّد المواد التي تظهر لك · يمكنك تغييره لاحقاً</p>
+      <label class="fl" style="margin-top:16px">المنهج الدراسي</label>
+      <select id="cur"><option value="">— اختر المنهج —</option></select>
+      <label class="fl" style="margin-top:14px">صفّك</label>
+      <select id="gr" disabled><option value="">— اختر المنهج أولاً —</option></select>
+      <p class="small">يحدّدان المواد التي تظهر لك · يمكنك تغييرهما لاحقاً</p>
       <label class="fl" style="margin-top:16px">مدرستك <span style="opacity:.6">(اختياري)</span></label>
       <input type="text" id="kl" placeholder="مثال: مدرسة النيل الثانوية">`:''}
     </div>
@@ -330,21 +332,52 @@ function renderGate(msg){
   document.getElementById("em").focus();
 }
 
-/* قائمة الصفوف الأكاديمية */
+/* قوائم المناهج والصفوف */
 async function fillGrades(){
-  const sel=document.getElementById("gr"); if(!sel) return;
+  const cs=document.getElementById("cur"), gs=document.getElementById("gr");
+  if(!cs||!gs) return;
+
   if(!S.scales.length){
-    const { data } = await db.from('levels')
-      .select('id,name,rank,scales!inner(id,name,kind)')
-      .eq('scales.kind','academic').order('rank');
+    const { data, error } = await db.from('scales')
+      .select('id,name,country,sort_order,levels(id,name,rank)')
+      .eq('kind','academic').order('sort_order');
+    if(error){ toast("تعذّر تحميل المناهج"); return; }
     S.scales = data||[];
   }
-  S.scales.forEach(l=>{
-    const o=document.createElement('option');
-    o.value=`${l.scales.id}|${l.id}`;
-    o.textContent=l.name;
-    sel.appendChild(o);
+  if(!S.scales.length){ toast("لا توجد مناهج مُعدّة بعد"); return; }
+
+  // تجميع حسب البلد حين تتعدد
+  const byCountry = {};
+  S.scales.forEach(sc => (byCountry[sc.country||'مناهج'] ||= []).push(sc));
+  const many = Object.keys(byCountry).length > 1;
+
+  Object.keys(byCountry).forEach(c=>{
+    const target = many ? document.createElement('optgroup') : cs;
+    if(many) target.label = c;
+    byCountry[c].forEach(sc=>{
+      const o=document.createElement('option');
+      o.value=sc.id; o.textContent=sc.name;
+      target.appendChild(o);
+    });
+    if(many) cs.appendChild(target);
   });
+
+  // منهج واحد فقط؟ اختره تلقائياً
+  if(S.scales.length===1){ cs.value=S.scales[0].id; fillLevels(); }
+
+  cs.onchange=fillLevels;
+
+  function fillLevels(){
+    const sc=S.scales.find(x=>String(x.id)===cs.value);
+    gs.innerHTML='<option value="">— اختر صفّك —</option>';
+    gs.disabled=!sc;
+    if(!sc) return;
+    (sc.levels||[]).sort((a,b)=>a.rank-b.rank).forEach(l=>{
+      const o=document.createElement('option');
+      o.value=`${sc.id}|${l.id}`; o.textContent=l.name;
+      gs.appendChild(o);
+    });
+  }
 }
 
 async function submitGate(){
