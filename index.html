@@ -49,10 +49,12 @@ h1{font-family:'Almarai';font-weight:800;font-size:clamp(1.4rem,5vw,2rem);line-h
 .key{flex:0 0 26px;height:26px;border-radius:8px;background:rgba(157,184,201,.13);color:var(--mist);
  font-family:'Almarai';font-weight:800;font-size:.8rem;display:flex;align-items:center;justify-content:center}
 .opt.sel .key{background:var(--cyan);color:#06202e}
-input,textarea{width:100%;background:rgba(157,184,201,.05);border:1px solid var(--line);
+input,textarea,select{width:100%;background:rgba(157,184,201,.05);border:1px solid var(--line);
  border-radius:11px;padding:13px;color:var(--foam);font-family:inherit;font-size:.93rem;line-height:1.9}
 textarea{min-height:125px;resize:vertical}
-input:focus,textarea:focus{outline:none;border-color:var(--cyan)}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--cyan)}
+select{cursor:pointer}
+select option{background:#0c243b;color:var(--foam)}
 label.fl{display:block;font-family:'Almarai';font-weight:700;font-size:.85rem;margin-bottom:8px}
 .small{font-size:.78rem;color:var(--mist);margin-top:7px;text-align:right;line-height:1.7}
 .nav{display:flex;gap:10px;margin-top:6px}
@@ -146,6 +148,53 @@ h2.sec{font-family:'Almarai';font-weight:800;font-size:1.02rem;margin:24px 0 13p
 .essaybox{background:rgba(157,184,201,.05);border:1px solid var(--line);border-radius:11px;
  padding:14px;font-size:.86rem;line-height:1.95;white-space:pre-wrap;margin-bottom:14px}
 .hint{color:var(--mist);font-size:.79rem;margin-top:10px;text-align:center}
+.grp{font-family:'Almarai';font-weight:800;font-size:.95rem;margin:22px 0 12px;
+  display:flex;align-items:center;gap:9px}
+.grp:first-child{margin-top:4px}
+.subj{display:flex;justify-content:space-between;align-items:center;gap:12px;
+  background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--line);
+  border-radius:13px;padding:16px;margin-bottom:10px;cursor:pointer;transition:border-color .18s}
+.subj:hover{border-color:var(--cyan)}
+.subj-t{font-family:'Almarai';font-weight:700;font-size:.97rem}
+.subj-m{font-size:.76rem;color:var(--mist);margin-top:4px}
+.pbar{height:5px;background:rgba(157,184,201,.14);border-radius:99px;overflow:hidden;margin-top:9px}
+.pfill{height:100%;background:linear-gradient(90deg,var(--cyan),#2a8fb8);border-radius:99px}
+.lvl-tag{display:inline-block;background:rgba(72,207,192,.14);color:var(--cyan);
+  font-family:'Almarai';font-weight:800;font-size:.67rem;padding:2px 9px;border-radius:999px}
+.lsn{background:rgba(157,184,201,.05);border:1px solid var(--line);border-radius:12px;
+  padding:15px;margin-bottom:10px;cursor:pointer;transition:border-color .18s}
+.lsn:hover{border-color:var(--cyan)}
+.lsn.locked{opacity:.5;cursor:not-allowed;border-style:dashed}
+.lsn.locked:hover{border-color:var(--line)}
+.lsn.done{border-color:rgba(72,207,192,.34)}
+.lsn-t{font-family:'Almarai';font-weight:700;font-size:.94rem}
+.lsn-m{font-size:.75rem;color:var(--mist);margin-top:4px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+.chip{background:rgba(157,184,201,.1);border:1px solid var(--line);border-radius:8px;
+  padding:3px 9px;font-size:.7rem;color:var(--mist)}
+.chip.g{background:rgba(72,207,192,.13);border-color:rgba(72,207,192,.3);color:var(--cyan)}
+.itm{display:flex;align-items:center;gap:13px;background:rgba(157,184,201,.05);
+  border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:9px;
+  cursor:pointer;transition:border-color .18s}
+.itm:hover{border-color:var(--cyan)}
+.itm.quiz{background:rgba(72,207,192,.08);border-color:rgba(72,207,192,.3)}
+.itm-ic{flex:0 0 40px;height:40px;border-radius:11px;background:rgba(157,184,201,.11);
+  display:flex;align-items:center;justify-content:center;font-size:1.25rem}
+.itm.quiz .itm-ic{background:rgba(72,207,192,.16)}
+.itm-t{font-family:'Almarai';font-weight:700;font-size:.9rem}
+.itm-m{font-size:.73rem;color:var(--mist);margin-top:3px}
+.itm-s{margin-right:auto;font-size:1rem;opacity:.8}
+.psg{background:rgba(157,184,201,.06);border:1px solid var(--line);border-right:3px solid var(--cyan);
+  border-radius:0 12px 12px 0;padding:16px;margin-bottom:15px;font-size:.9rem;line-height:2.05;
+  max-height:44vh;overflow:auto;white-space:pre-wrap}
+.psg[dir="ltr"]{border-right:1px solid var(--line);border-left:3px solid var(--cyan);
+  border-radius:12px 0 0 12px;text-align:left}
+.psg-t{font-family:'Almarai';font-weight:800;font-size:.82rem;color:var(--cyan);margin-bottom:8px}
+.remedy{margin-top:10px;background:rgba(72,207,192,.09);border:1px solid rgba(72,207,192,.28);
+  border-radius:10px;padding:11px 13px;font-size:.83rem;line-height:1.9}
+.remedy strong{font-family:'Almarai';font-weight:800;color:var(--cyan);display:block;margin-bottom:4px}
+.crumb{font-size:.78rem;color:var(--mist);margin-bottom:12px;cursor:pointer}
+.crumb:hover{color:var(--cyan)}
 .teachlink{margin-top:18px;padding-top:16px;border-top:1px solid var(--line);text-align:center}
 .teachlink a{color:var(--cyan);font-family:'Almarai';font-weight:700;font-size:.83rem;
   cursor:pointer;text-decoration:none;border-bottom:1px dashed rgba(72,207,192,.5);padding-bottom:2px}
@@ -200,7 +249,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
    انسخ القيمتين من: Supabase → Project Settings → API
    ═══════════════════════════════════════════════════ */
 const SUPABASE_URL  = "https://tjzrfevymfpktfuormhs.supabase.co";
-const SUPABASE_ANON = "sb_publishable_8kuaa_38VYwyiMnwOik5cg_BvylvgYL";   // sb_publishable_... — كشفه آمن مع RLS
+const SUPABASE_ANON = "ضع_مفتاح_publishable_هنا";   // sb_publishable_... — كشفه آمن مع RLS
 
 const db = createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -227,7 +276,7 @@ function media(q){
   return h;
 }
 
-let S = { user:null, prof:null, roleInfo:null, quizzes:[], quiz:null, i:0, ans:[], t0:0, left:0,
+let S = { user:null, prof:null, roleInfo:null, subjects:[], subj:null, lessons:[], lesson:null, scales:[], quizzes:[], quiz:null, i:0, ans:[], t0:0, left:0,
           tick:null, result:null, view:"gate" };
 
 /* ═══════════ ① المصادقة ═══════════ */
@@ -252,8 +301,11 @@ function renderGate(msg){
       ${reg?`
       <label class="fl" style="margin-top:16px">اسمك كما يظهر في التقارير</label>
       <input type="text" id="nm" placeholder="الاسم الثلاثي">
-      <label class="fl" style="margin-top:16px">الصف / المدرسة <span style="opacity:.6">(اختياري)</span></label>
-      <input type="text" id="kl" placeholder="مثال: أولى ثانوي — مدرسة النيل">`:''}
+      <label class="fl" style="margin-top:16px">صفّك الدراسي</label>
+      <select id="gr"><option value="">— اختر صفّك —</option></select>
+      <p class="small">يحدّد المواد التي تظهر لك · يمكنك تغييره لاحقاً</p>
+      <label class="fl" style="margin-top:16px">مدرستك <span style="opacity:.6">(اختياري)</span></label>
+      <input type="text" id="kl" placeholder="مثال: مدرسة النيل الثانوية">`:''}
     </div>
     <div class="nav"><button class="btn primary" id="go">${reg?'إنشاء الحساب':'دخول'}</button></div>
     ${reg?'':'<p class="hint" id="fp" style="cursor:pointer;text-decoration:underline">نسيت كلمة المرور؟</p>'}
@@ -274,7 +326,25 @@ function renderGate(msg){
   };
   const tl=document.getElementById("tlink");
   if(tl) tl.onclick=()=>{ GATE="teacher"; renderTeacherSignup(); };
+  if(reg) fillGrades();
   document.getElementById("em").focus();
+}
+
+/* قائمة الصفوف الأكاديمية */
+async function fillGrades(){
+  const sel=document.getElementById("gr"); if(!sel) return;
+  if(!S.scales.length){
+    const { data } = await db.from('levels')
+      .select('id,name,rank,scales!inner(id,name,kind)')
+      .eq('scales.kind','academic').order('rank');
+    S.scales = data||[];
+  }
+  S.scales.forEach(l=>{
+    const o=document.createElement('option');
+    o.value=`${l.scales.id}|${l.id}`;
+    o.textContent=l.name;
+    sel.appendChild(o);
+  });
 }
 
 async function submitGate(){
@@ -287,6 +357,7 @@ async function submitGate(){
   const nm=(document.getElementById("nm")||{}).value||"";
   const kl=(document.getElementById("kl")||{}).value||"";
   if(reg && !nm.trim()){ toast("اكتب اسمك كما يظهر في التقارير"); return; }
+  if(reg && !(document.getElementById("gr")||{}).value){ toast("اختر صفّك الدراسي"); return; }
 
   app.innerHTML=`<div class="status">جارٍ التحقق…</div>`;
   const r = reg
@@ -295,6 +366,13 @@ async function submitGate(){
     : await db.auth.signInWithPassword({ email:em, password:pw });
 
   if(r.error){ renderGate(translate(r.error.message)); return; }
+
+  if(reg && r.data.session){
+    const g=(document.getElementById("gr")||{}).value||"";
+    if(g){ const [sc,lv]=g.split('|');
+      await db.from('profiles').update({ scale_id:Number(sc), level_id:Number(lv) })
+              .eq('id', r.data.user.id); }
+  }
   if(reg && !r.data.session){
     renderGate("تم إنشاء حسابك ✅ افتح بريدك واضغط رابط التفعيل ثم سجّل الدخول.");
     GATE="login"; return;
@@ -330,55 +408,170 @@ async function boot(){
 async function signOut(){ await db.auth.signOut(); S.user=null; GATE="login"; renderGate(); }
 
 /* ═══════════ ③ قائمة الاختبارات ═══════════ */
+/* ═══════════ ③ المواد ═══════════ */
+const ICONS = { pdf:'📄', video:'🎬', audio:'🎧', image:'🗺️', link:'🔗',
+                text:'📃', quiz:'📝', recording:'🎤' };
+const KINDS = { pdf:'ملف للقراءة', video:'شرح مرئي', audio:'مقطع صوتي',
+                image:'صورة', link:'مرجع خارجي', text:'نص', quiz:'اختبار تشخيصي',
+                recording:'تسجيل صوتي' };
+
 async function loadList(){
   bar.innerHTML="";
-  head("أهلاً "+S.prof.full_name, (S.prof.klass? S.prof.klass+" · ":"")+"أكمل كل اختبار لتفتح الذي يليه");
-  app.innerHTML=`<div class="status">جارٍ تحميل الاختبارات…</div>`;
+  head("أهلًا "+S.prof.full_name, "اختر المادة التي تريد التعلّم فيها");
+  app.innerHTML=`<div class="status">جارٍ التحميل…</div>`;
 
-  const { data, error } = await db.rpc('list_quizzes');
+  const { data, error } = await db.rpc('list_subjects');
   if(error){ app.innerHTML=`<div class="err"><b>تعذّر التحميل</b>${esc(error.message)}</div>`; return; }
-  S.quizzes = data||[];
+  S.subjects = data||[];
 
   const { count } = await db.from('attempts').select('id',{count:'exact',head:true})
     .eq('user_id',S.user.id).not('teacher_comment','is',null).eq('read_by_student',false);
 
+  const grade  = S.subjects.filter(x=>x.group_key==='1_grade');
+  const skills = S.subjects.filter(x=>x.group_key!=='1_grade');
+
+  const card = x => {
+    const pct = x.lessons_total ? Math.round(x.lessons_done/x.lessons_total*100) : 0;
+    return `<div class="subj" data-i="${x.id}">
+      <div style="flex:1">
+        <div class="subj-t">${esc(x.icon||'')} ${esc(x.name)}
+          ${x.my_level?`<span class="lvl-tag">${esc(x.my_level)}</span>`:''}</div>
+        <div class="subj-m">${x.needs_placement
+            ? 'ابدأ باختبار «اعرف مستواك»'
+            : `${AR(x.lessons_done)} من ${AR(x.lessons_total)} درساً`}</div>
+        ${x.needs_placement?'':`<div class="pbar"><div class="pfill" style="width:${pct}%"></div></div>`}
+      </div>
+      <div class="qz-go">${x.needs_placement?'حدّد مستواك ←':'ادخل ←'}</div>
+    </div>`;
+  };
+
   app.innerHTML=`
-    ${S.quizzes.map((q,k)=>`
-      <div class="qz ${q.locked?'locked':''}" data-k="${k}">
-        <div>
-          <div class="qz-t">${esc(q.title)}
-            ${q.best!==null?`<span class="badge ok">أُنجز ${AR(q.best)}٪</span>`:''}
-            ${q.locked?'<span class="badge lock">مُقفل</span>':''}</div>
-          <div class="qz-m">${AR(q.mcq_count)} اختيار من متعدد · ${AR(q.essay_count)} مقالي · ${AR(q.minutes)} دقيقة</div>
-          ${q.locked?`<div class="lockmsg">${esc(q.reason)}</div>`:''}
-        </div>
-        <div class="qz-go">${q.locked?'🔒':(q.best!==null?'أعد ←':'ابدأ ←')}</div>
-      </div>`).join("")}
+    ${grade.length?`<div class="grp">📚 موادّ صفّي</div>${grade.map(card).join("")}`:''}
+    ${skills.length?`<div class="grp">🚀 طوّر مهاراتك</div>${skills.map(card).join("")}`:''}
+    ${!S.subjects.length?'<div class="status">لا توجد مواد متاحة لصفّك بعد</div>':''}
     ${count?`<div class="fbnote" id="fbgo">📩 لديك ${AR(count)} ملاحظة جديدة من معلمك</div>`:''}
-    <div class="nav" style="margin-top:16px">
+    <div class="nav" style="margin-top:18px">
       <button class="btn ghost" id="fball">ملاحظات معلمي</button>
       <button class="btn ghost" id="msgs">مراسلة المعلم</button>
     </div>
     <div class="nav"><button class="btn ghost" id="out">خروج</button></div>`;
 
-  app.querySelectorAll(".qz").forEach(el=>el.onclick=()=>{
-    const q=S.quizzes[+el.dataset.k];
-    if(q.locked){ toast(q.reason); return; }
-    startQuiz(q);
+  app.querySelectorAll(".subj").forEach(el=>el.onclick=()=>{
+    const x=S.subjects.find(v=>String(v.id)===el.dataset.i);
+    if(x.needs_placement){ toast("اختبار تحديد المستوى قيد الإعداد"); return; }
+    loadLessons(x);
   });
   document.getElementById("fball").onclick=loadFeedback;
   document.getElementById("msgs").onclick=loadChat;
   document.getElementById("out").onclick=signOut;
   const fg=document.getElementById("fbgo"); if(fg) fg.onclick=loadFeedback;
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 
-/* ═══════════ ④ الاختبار ═══════════ */
+/* ═══════════ ④ دروس المادة ═══════════ */
+async function loadLessons(subj){
+  S.subj = subj;
+  bar.innerHTML="";
+  head(subj.name, subj.my_level ? "مستواك: "+subj.my_level : "");
+  app.innerHTML=`<div class="status">جارٍ تحميل الدروس…</div>`;
+
+  const { data, error } = await db.rpc('list_lessons', { p_subject: subj.id });
+  if(error){ app.innerHTML=`<div class="err"><b>تعذّر التحميل</b>${esc(error.message)}</div>`; return; }
+  S.lessons = data||[];
+
+  // تجميع حسب المستوى
+  const groups = {};
+  S.lessons.forEach(l=>{ (groups[l.level||'—'] ||= []).push(l); });
+
+  const lcard = l => `
+    <div class="lsn ${l.locked?'locked':''} ${l.done?'done':''}" data-i="${l.id}">
+      <div class="lsn-t">${esc(l.title)}
+        ${l.done?'<span class="badge ok">أُنجز'+(l.best!=null?' '+AR(l.best)+'٪':'')+'</span>':''}
+        ${l.locked?'<span class="badge lock">🔒</span>':''}</div>
+      ${l.summary?`<div class="lsn-m">${esc(l.summary)}</div>`:''}
+      <div class="chips">
+        ${(l.items||[]).map(i=>`<span class="chip ${i.is_graded?'g':''}">${ICONS[i.kind]||'•'} ${esc(i.title)}</span>`).join("")}
+      </div>
+      ${l.locked?`<div class="lockmsg">${esc(l.reason||'')}</div>`:''}
+    </div>`;
+
+  app.innerHTML=`
+    <div class="crumb" id="bk">← رجوع للمواد</div>
+    ${Object.keys(groups).map(g=>`
+      ${Object.keys(groups).length>1?`<div class="grp">${esc(g)}</div>`:''}
+      ${groups[g].map(lcard).join("")}`).join("")}
+    ${!S.lessons.length?'<div class="status">لا توجد دروس في هذه المادة بعد</div>':''}`;
+
+  document.getElementById("bk").onclick=loadList;
+  app.querySelectorAll(".lsn").forEach(el=>el.onclick=()=>{
+    const l=S.lessons.find(v=>String(v.id)===el.dataset.i);
+    if(l.locked){ toast(l.reason||"هذا الدرس غير متاح بعد"); return; }
+    openLesson(l);
+  });
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ═══════════ ⑤ الدرس ومصادره ═══════════ */
+function openLesson(l){
+  S.lesson = l;
+  bar.innerHTML="";
+  head(l.title, l.unit||S.subj.name);
+
+  const items = (l.items||[]);
+  const done = items.filter(i=>i.status==='completed').length;
+
+  app.innerHTML=`
+    <div class="crumb" id="bk">← ${esc(S.subj.name)}</div>
+    ${l.summary?`<div class="card"><div class="line" style="color:var(--foam)">${esc(l.summary)}</div></div>`:''}
+    <div class="grp">📦 مصادر الدرس <span class="chip">${AR(done)} / ${AR(items.length)}</span></div>
+    ${items.map(i=>`
+      <div class="itm ${i.kind==='quiz'?'quiz':''}" data-i="${i.id}">
+        <div class="itm-ic">${ICONS[i.kind]||'•'}</div>
+        <div style="flex:1">
+          <div class="itm-t">${esc(i.title)}</div>
+          <div class="itm-m">${KINDS[i.kind]||i.kind}
+            ${i.duration?` · ${AR(i.duration)} دقيقة`:''}
+            ${i.is_graded?' · يُحتسب في النتيجة':''}
+            ${i.required&&!i.is_graded?' · إلزامي':''}</div>
+        </div>
+        <div class="itm-s">${i.status==='completed'?'✅':(i.kind==='quiz'?'←':'↗')}</div>
+      </div>`).join("")}
+    ${!items.length?'<div class="status">لم تُضف مصادر لهذا الدرس بعد</div>':''}
+    <p class="hint">تحتاج ${AR(l.pass_mark)}٪ في الاختبار لإتمام الدرس</p>`;
+
+  document.getElementById("bk").onclick=()=>loadLessons(S.subj);
+  app.querySelectorAll(".itm").forEach(el=>el.onclick=()=>{
+    const i=items.find(v=>String(v.id)===el.dataset.i);
+    openItem(i);
+  });
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+async function openItem(i){
+  if(i.kind==='quiz' && i.quiz_id){
+    db.rpc('track_item',{ p_item:i.id, p_status:'opened' });
+    return startQuiz({ id:i.quiz_id, item_id:i.id });
+  }
+  if(i.url){
+    window.open(i.url,'_blank','noopener');
+    await db.rpc('track_item',{ p_item:i.id, p_status:'completed' });
+    i.status='completed';
+    toast("سُجّل اطّلاعك على المصدر");
+    openLesson(S.lesson);
+    return;
+  }
+  toast("هذا المصدر غير متاح بعد");
+}
+
 async function startQuiz(meta){
   app.innerHTML=`<div class="status">جارٍ تحميل الأسئلة…</div>`;
   const { data, error } = await db.rpc('get_quiz', { p_quiz: meta.id });
   if(error){ toast(error.message); loadList(); return; }
 
   S.quiz = data;
+  S.passages = {};
+  (data.passages||[]).forEach(pg => S.passages[pg.id] = pg);
+  S.itemId = meta.item_id || null;
   S.i = 0;
   S.ans = data.questions.map(q=>({ q:q.id, kind:q.kind, o:null, essay:"", sec:0, chg:0 }));
   S.left = data.minutes*60; S.t0 = Date.now(); S.qenter = Date.now();
@@ -411,15 +604,26 @@ function renderQ(){
 
   const body = q.kind==='mcq'
     ? `<div class="opts">${q.options.map((o,j)=>`
-         <button class="opt ${a.o===o.id?'sel':''}" data-o="${o.id}">
+         <button class="opt ${a.o===o.id?'sel':''}" data-o="${o.id}"
+                 dir="${q.lang==='ar'?'rtl':'ltr'}" style="text-align:${q.lang==='ar'?'right':'left'}">
            <span class="key">${esc(o.label||L[j])}</span><span>${esc(o.body)}</span></button>`).join("")}</div>`
     : `<textarea id="ta" placeholder="اكتب السلسلة السببية كاملة…">${esc(a.essay)}</textarea>`;
 
+  const pg = q.passage_id ? S.passages[q.passage_id] : null;
+  const pgHtml = pg ? `
+    <div class="card" style="padding:16px">
+      ${pg.title?`<div class="psg-t">${esc(pg.title)}</div>`:''}
+      ${pg.media?`<audio controls src="${esc(pg.media)}" style="width:100%;margin-bottom:12px"></audio>`:''}
+      ${pg.body?`<div class="psg" dir="${pg.lang==='ar'?'rtl':'ltr'}">${esc(pg.body)}</div>`:''}
+    </div>` : '';
+
   app.innerHTML=`
+    ${pgHtml}
     <div class="card">
       <div class="qnum">سؤال ${AR(S.i+1)} · ${q.kind==='mcq'?'اختيار من متعدد':'مقالي قصير'}</div>
       ${media(q)}
-      <div class="qtext">${esc(q.body)}</div>
+      ${q.audio?`<audio controls src="${esc(q.audio)}" style="width:100%;margin-bottom:12px"></audio>`:''}
+      <div class="qtext" dir="${q.lang==='ar'?'rtl':'ltr'}">${esc(q.body)}</div>
       ${body}
     </div>
     <div class="nav">
@@ -481,7 +685,12 @@ function renderResult(){
       <div class="rev-q">${AR(i+1)}. ${esc(x.body)}</div>
       <div class="line">إجابتك: <b>${c?esc(c.label+') '+c.body):'— لم تُجب —'}</b></div>
       ${x.is_correct?'':`<div class="line">الصحيحة: <b>${k?esc(k.label+') '+k.body):'—'}</b></div>
-        <div class="trap"><strong>تشخيص الخطأ:</strong> ${esc(x.explanation||'').replace(/\n/g,"<br>")}</div>`}
+        <div class="trap"><strong>تشخيص الخطأ${x.dx_name?' — '+esc(x.dx_name):''}:</strong>
+          ${esc(x.explanation||'').replace(/\n/g,"<br>")}
+          ${x.remedy?`<div style="margin-top:8px;opacity:.9">🎯 ${esc(x.remedy)}</div>`:''}</div>
+        ${x.remedial?`<div class="remedy"><strong>راجع قبل الإعادة</strong>
+          <a href="${esc(x.remedial.url||'#')}" target="_blank" rel="noopener"
+             style="color:var(--cyan)">${ICONS[x.remedial.kind]||'📎'} ${esc(x.remedial.title)}</a></div>`:''}`}
     </div>`;
   }).join("");
   const ess = r.review.filter(x=>x.kind==='essay').map((x,i)=>`
@@ -497,17 +706,20 @@ function renderResult(){
       <div class="score-num">${AR(r.score)} / ${AR(r.total)}</div>
       <div class="score-of">أسئلة الاختيار من متعدد · زمن الحل ${mmss(r.secs)}</div>
       <div class="verdict">${verdict(r.pct)}</div>
+      ${r.lesson_done?'<div class="unlocked">🎉 أتممتَ هذا الدرس بنجاح</div>':''}
       ${(r.unlocked||[]).length?`<div class="unlocked">🔓 فُتح لك الآن: ${esc(r.unlocked.join(' · '))}</div>`:''}
     </div>
     <div class="nav">
       <button class="btn primary" id="again">إعادة الاختبار</button>
-      <button class="btn ghost" id="back">قائمة الاختبارات</button>
+      <button class="btn ghost" id="back">${S.lesson?'رجوع للدرس':'قائمة المواد'}</button>
     </div>
     <h2 class="sec">المراجعة التشخيصية</h2>${mcq}
     <h2 class="sec">الأسئلة المقالية — بانتظار تصحيح معلمك</h2>${ess}`;
 
-  document.getElementById("again").onclick=()=>startQuiz({id:S.quiz.id});
-  document.getElementById("back").onclick=loadList;
+  document.getElementById("again").onclick=()=>startQuiz({id:S.quiz.id,item_id:S.itemId});
+  document.getElementById("back").onclick=()=>{
+    if(S.subj) loadLessons(S.subj); else loadList();
+  };
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
