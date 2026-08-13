@@ -99,11 +99,11 @@ export const markFeedbackRead = ids =>
 // المعلم لا يرى إلا طلابه — العزل في RLS عبر teaches()، لا في هذا الاستعلام
 export const attemptsToGrade = () =>
   db.from('attempts')
-    .select('id,submitted_at,score,total,pct,essay_score,teacher_comment,profiles(full_name,klass),quizzes(title)')
+    .select('id,submitted_at,score,total,pct,essay_score,teacher_comment,profiles!attempts_user_id_fkey(full_name,klass),quizzes(title)')
     .order('submitted_at', { ascending:false }).limit(200);
 
 export const attempt = id =>
-  db.from('attempts').select('*,profiles(full_name),quizzes(title)').eq('id', id).single();
+  db.from('attempts').select('*,profiles!attempts_user_id_fkey(full_name),quizzes(title)').eq('id', id).single();
 
 export const attemptAnswers = id =>
   db.from('answers').select('essay_text,questions(body,kind,position)').eq('attempt_id', id);
@@ -120,7 +120,9 @@ export const saveGrade = (id, essayScore, comment, graderId) =>
 
 /* ═══════════ ⑦ الرسائل ═══════════ */
 /* 🔴 أسماء المفاتيح الأجنبية أدناه هشّة: تغييرها في SQL يكسر الرسائل
-      بلا خطأ ظاهر. جمعها في موضع واحد هو أهمّ ما تشتريه هذه الطبقة. */
+      بلا خطأ ظاهر. جمعها في موضع واحد هو أهمّ ما تشتريه هذه الطبقة.
+      نفس القاعدة تنطبق على attempts أعلاه: لها مفتاحان إلى profiles
+      (user_id · graded_by) فيلزم التلميح الصريح في كل تضمين. */
 
 export const studentThread = sid =>
   db.from('messages')
