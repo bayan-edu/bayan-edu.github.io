@@ -135,22 +135,25 @@ async function submitGate(){
 
   const nm = (document.getElementById("nm")||{}).value || "";
   const kl = (document.getElementById("kl")||{}).value || "";
+  const g  = (document.getElementById("gr")||{}).value || "";
   if(reg && !nm.trim()){ toast("اكتب اسمك كما يظهر في التقارير"); return; }
-  if(reg && !(document.getElementById("gr")||{}).value){ toast("اختر صفّك الدراسي"); return; }
+  if(reg && !g){ toast("اختر صفّك الدراسي"); return; }
+
+  const [gsc, glv] = g ? g.split('|') : [null, null];
+  const scaleId = gsc ? Number(gsc) : null;
+  const levelId = glv ? Number(glv) : null;
 
   app.innerHTML = `<div class="status">جارٍ التحقق…</div>`;
   const r = reg
-    ? await api.signUp(em, pw, nm.trim(), kl.trim())
+    ? await api.signUp(em, pw, nm.trim(), kl.trim(), scaleId, levelId)
     : await api.signIn(em, pw);
 
   if(r.error){ renderGate(translate(r.error.message)); return; }
 
-  if(reg && r.data.session){
-    const g = (document.getElementById("gr")||{}).value || "";
-    if(g){
-      const [sc, lv] = g.split('|');
-      await api.setMyGrade(r.data.user.id, Number(sc), lv ? Number(lv) : null);
-    }
+  // جلسة فورية (تأكيد البريد معطّل) → احفظ الصف الآن
+  if(reg && r.data.session && scaleId){
+    const { data:g1, error:e1 } = await api.setMyGrade(scaleId, levelId);
+    if(e1 || !g1?.ok) toast(e1?.message || g1?.error || "تعذّر حفظ الصف");
   }
   if(reg && !r.data.session){
     S.gate = "login";
@@ -189,7 +192,60 @@ export async function boot(){
   if(role === 'pending_teacher') return renderPending();
   if(role === 'admin')           return loadAdmin();
   if(role === 'teacher')         return loadTeacher();
+
+  // طالب بلا منهج: طبّق ما اختاره عند التسجيل، وإلا اسأله.
+  if(!S.prof.scale_id){
+    const meta = user.user_metadata || {};
+    if(meta.scale_id){
+      const { data:g } = await api.setMyGrade(
+        Number(meta.scale_id), meta.level_id ? Number(meta.level_id) : null);
+      if(g?.ok){
+        S.prof.scale_id = Number(meta.scale_id);
+        S.prof.level_id = meta.level_id ? Number(meta.level_id) : null;
+      }
+    }
+    if(!S.prof.scale_id) return renderGradePicker();
+  }
+
   loadList();
+}
+
+/* ═══════════ شاشة «حدّد صفّك» ═══════════
+   شبكة الأمان: تصلح الحسابات القائمة والقادمة معاً — بموافقة
+   الطالب لا بإسناد صفٍّ عنه. */
+
+export function renderGradePicker(msg){
+  bar.innerHTML = "";
+  head("حدّد صفّك الدراسي", S.prof.full_name);
+  app.innerHTML = `
+    ${msg?`<div class="err"><b>تنبيه</b>${esc(msg)}</div>`:''}
+    <div class="card">
+      <div class="line" style="color:var(--foam);margin-bottom:15px">
+        لم يُحفظ منهجك بعد — اختره الآن لتظهر لك موادّ صفّك.
+      </div>
+      <label class="fl">المنهج الدراسي</label>
+      <select id="cur"><option value="">— اختر المنهج —</option></select>
+      <div id="grwrap">
+        <label class="fl" style="margin-top:14px">صفّك</label>
+        <select id="gr" disabled><option value="">— اختر المنهج أولاً —</option></select>
+      </div>
+      <p class="small" id="grnote">يمكنك تغييرهما لاحقاً</p>
+    </div>
+    <div class="nav"><button class="btn primary" id="go">حفظ ومتابعة</button></div>
+    <div class="nav"><button class="btn ghost" id="out">خروج</button></div>`;
+
+  fillGrades();
+  document.getElementById("out").onclick = signOut;
+  document.getElementById("go").onclick  = async ()=>{
+    const g = (document.getElementById("gr")||{}).value || "";
+    if(!g){ toast("اختر صفّك الدراسي"); return; }
+    const [sc, lv] = g.split('|');
+    const { data:r, error } = await api.setMyGrade(Number(sc), lv ? Number(lv) : null);
+    if(error){ renderGradePicker(error.message); return; }
+    if(!r.ok){ renderGradePicker(r.error); return; }
+    toast("حُفظ صفّك: " + (r.level || r.scale));
+    boot();
+  };
 }
 
 export async function signOut(){
