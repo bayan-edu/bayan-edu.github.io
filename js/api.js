@@ -41,9 +41,12 @@ export const signOutSession = ()                => db.auth.signOut();
 export const sendResetLink  = email             => db.auth.resetPasswordForEmail(email);
 export const onAuthChange   = cb                => db.auth.onAuthStateChange(cb);
 
-export const signUp = (email, password, fullName, klass) =>
+// scale/level يُحملان في البيانات الوصفية لا في profiles:
+// بين التسجيل وتأكيد البريد لا توجد جلسة، والبيانات الوصفية تعبر الفجوة.
+export const signUp = (email, password, fullName, klass, scaleId, levelId) =>
   db.auth.signUp({ email, password,
-    options:{ data:{ full_name: fullName, klass } } });
+    options:{ data:{ full_name: fullName, klass,
+                     scale_id: scaleId, level_id: levelId } } });
 
 
 /* ═══════════ ② الملف الشخصي والمناهج ═══════════ */
@@ -51,8 +54,9 @@ export const signUp = (email, password, fullName, klass) =>
 export const myProfile = uid => db.from('profiles').select('*').eq('id', uid).single();
 export const myRole    = ()  => db.rpc('my_role');
 
-export const setMyGrade = (uid, scaleId, levelId) =>
-  db.from('profiles').update({ scale_id: scaleId, level_id: levelId }).eq('id', uid);
+// دالة لا UPDATE: تتحقّق أن الصف ينتمي للمنهج، وتُعيد {ok,error}
+export const setMyGrade = (scaleId, levelId) =>
+  db.rpc('set_my_grade', { p_scale: scaleId, p_level: levelId });
 
 export const academicScales = () =>
   db.from('scales')
