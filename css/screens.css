@@ -29,6 +29,16 @@
 .qz-m{font-size:.76rem;color:var(--mist);margin-top:3px}
 .qz-go{font-family:'Almarai';font-weight:800;font-size:.8rem;color:var(--cyan);white-space:nowrap}
 
+.subj.mini{padding:11px 14px;opacity:.6}
+.subj.mini:hover{opacity:1}
+.subj.mini .subj-t{font-size:.87rem}
+.fold-lbl{font-size:.72rem;color:var(--mist);margin:14px 0 8px;
+  padding-right:3px;letter-spacing:.03em}
+.grp.fold{cursor:pointer;user-select:none}
+.grp.fold .caret{margin-right:auto;font-size:.75rem;color:var(--mist);
+  transition:transform .22s}
+.grp.fold.open .caret{transform:rotate(180deg)}
+
 /* ═══ الدروس ═══ */
 .lsn{background:rgba(157,184,201,.05);border:1px solid var(--line);border-radius:12px;
   padding:15px;margin-bottom:10px;cursor:pointer;transition:border-color .18s}
