@@ -24,35 +24,66 @@ export async function loadList(){
 
   const { count, error:eCount } = await api.unreadFeedbackCount(S.user.id);
 
-  const grade  = S.subjects.filter(x=>x.group_key==='1_grade');
-  const skills = S.subjects.filter(x=>x.group_key!=='1_grade');
+  /* ثلاث مجموعات: صفّي · صفوف سابقة · مهارات */
+  const grade  = S.subjects.filter(x => x.group_key === '1_grade');
+  const past   = S.subjects.filter(x => x.group_key === '2_past');
+  const skills = S.subjects.filter(x => !['1_grade','2_past'].includes(x.group_key));
 
-  const card = x => {
-    const empty = !x.needs_placement && !x.lessons_total;
-    const pct = x.lessons_total ? Math.round(x.lessons_done/x.lessons_total*100) : 0;
+  /* مادة صفّ سابق دروسها في lessons_review لا lessons_total —
+     فلا يصحّ قياس «الفراغ» على lessons_total وحده. */
+  const bulk = x => (x.lessons_total || 0) + (x.lessons_review || 0);
+
+  /* ⚠️ lessons_total > 0 شرط لازم: بدونه تُطوى المواد الفارغة
+     بوسم «أتممتها» — إذ 0 === 0 صحيح. */
+  const isDone = x => x.lessons_total > 0 && x.lessons_done >= x.lessons_total;
+
+  const card = (x, isPast) => {
+    const empty = !x.needs_placement && bulk(x) === 0;
+    const pct   = x.lessons_total ? Math.round(x.lessons_done / x.lessons_total * 100) : 0;
+    const meta  =
+        empty            ? 'دروس هذه المادة قيد الإعداد'
+      : x.needs_placement ? 'ابدأ باختبار «اعرف مستواك»'
+      : isPast           ? `${AR(x.lessons_review)} درساً للمراجعة`
+      : `${AR(x.lessons_done)} من ${AR(x.lessons_total)} درساً`;
     return `<div class="subj ${empty?'soon':''}" data-i="${x.id}">
       <div style="flex:1">
         <div class="subj-t">${esc(x.icon||'')} <bdi>${esc(x.name)}</bdi>
-          ${x.my_level?`<span class="lvl-tag">${esc(x.my_level)}</span>`:''}
+          ${x.my_level && !isPast?`<span class="lvl-tag">${esc(x.my_level)}</span>`:''}
+          ${x.elective?'<span class="badge lock">اختيارية</span>':''}
           ${empty?'<span class="badge lock">قريباً</span>':''}</div>
         ${x.description?`<div class="subj-d">${esc(x.description)}</div>`:''}
-        <div class="subj-m">${
-            empty ? 'دروس هذه المادة قيد الإعداد'
-          : x.needs_placement ? 'ابدأ باختبار «اعرف مستواك»'
-          : `${AR(x.lessons_done)} من ${AR(x.lessons_total)} درساً`}${
+        <div class="subj-m">${meta}${
             empty ? '' :
             x.mentor_name ? ' · مع أ. ' + esc(x.mentor_name)
             : (x.mentor_chosen ? ' · متابعة ذاتية' : '')}</div>
-        ${(x.needs_placement||empty)?'':`<div class="pbar"><div class="pfill" style="width:${pct}%"></div></div>`}
+        ${(x.needs_placement || empty || isPast)?'':
+          `<div class="pbar"><div class="pfill" style="width:${pct}%"></div></div>`}
       </div>
       <div class="qz-go">${empty?'⏳':(x.needs_placement?'حدّد مستواك ←':'ادخل ←')}</div>
     </div>`;
   };
 
+  /* المكتملة تنكمش إلى سطر يحمل نتيجتها — لا تختفي */
+  const mini = x => `<div class="subj mini" data-i="${x.id}">
+      <div style="flex:1"><div class="subj-t">✅ ${esc(x.icon||'')} <bdi>${esc(x.name)}</bdi></div></div>
+      <div class="qz-go">${AR(x.lessons_done)} / ${AR(x.lessons_total)}</div>
+    </div>`;
+
+  const live = grade.filter(x => !isDone(x));
+  const done = grade.filter(isDone);
+
   app.innerHTML = `
     ${errBox(eCount,'عدّاد الملاحظات')}
-    ${grade.length?`<div class="grp">📚 موادّ صفّي</div>${grade.map(card).join("")}`:''}
-    ${skills.length?`<div class="grp">🚀 طوّر مهاراتك</div>${skills.map(card).join("")}`:''}
+    ${grade.length?`<div class="grp">📚 موادّ صفّي</div>
+      ${live.map(x => card(x,false)).join("")}
+      ${done.length?`<div class="fold-lbl">أتممتها · ${AR(done.length)}</div>${done.map(mini).join("")}`:''}`:''}
+
+    ${past.length?`<div class="grp fold" id="pastHdr">🔄 موادّ صفوف سابقة
+        <span class="chip">${AR(past.length)}</span><span class="caret">▾</span></div>
+      <div id="pastBox" hidden>${past.map(x => card(x,true)).join("")}</div>`:''}
+
+    ${skills.length?`<div class="grp">🚀 طوّر مهاراتك</div>${skills.map(x => card(x,false)).join("")}`:''}
+
     ${!S.subjects.length?`<div class="card" style="text-align:center;padding:28px">
         <div style="font-size:2rem;margin-bottom:10px">📚</div>
         <div class="rev-q">لا توجد مواد متاحة بعد</div>
@@ -62,12 +93,20 @@ export async function loadList(){
 
   app.querySelectorAll(".subj").forEach(el=>el.onclick=()=>{
     const x = S.subjects.find(v=>String(v.id)===el.dataset.i);
-    if(!x.needs_placement && !x.lessons_total){
+    if(!x.needs_placement && bulk(x) === 0){
       toast("دروس هذه المادة قيد الإعداد — ستصلك عند جهوزها"); return; }
     if(x.needs_placement){ toast("اختبار تحديد المستوى قيد الإعداد"); return; }
     if(!x.mentor_chosen) return loadMentors(x);
     loadLessons(x);
   });
+
+  const ph = document.getElementById("pastHdr");
+  if(ph) ph.onclick = ()=>{
+    const box = document.getElementById("pastBox");
+    box.hidden = !box.hidden;
+    ph.classList.toggle('open', !box.hidden);
+  };
+
   const fg = document.getElementById("fbgo"); if(fg) fg.onclick = loadFeedback;
   scrollTop();
 }
