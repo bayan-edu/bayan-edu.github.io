@@ -14,7 +14,7 @@
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
 import { S } from './state.js';
-import { app, head, toast, esc, AR, errBox, nav, setWide, scrollTop, L } from './ui.js';
+import { app, head, toast, esc, fmt, AR, errBox, nav, setWide, scrollTop, L } from './ui.js';
 import { openCourse } from './editor.js';
 
 let Z    = null;   // الاختبار المحمَّل
@@ -97,17 +97,6 @@ function render(){
           <button class="btn ghost eq-add" id="adde">＋ سؤال مقالي</button>
         </div>
 
-        <div class="eq-h" style="margin-top:20px">📖 النصوص المشتركة</div>
-        ${(Z.passages||[]).map(p => `
-          <div class="eq-pg">
-            <div style="flex:1;min-width:0">
-              <div class="eq-pt">${esc(p.title || (p.body||'').slice(0,26) || 'نصّ')}</div>
-              <div class="eq-pu">${AR(p.used||0)} سؤالاً</div>
-            </div>
-            <button class="it-b" data-pe="${p.id}">✏️</button>
-            ${p.used ? '' : `<button class="it-b" data-px="${p.id}">🗑</button>`}
-          </div>`).join("")}
-        <button class="btn ghost eq-add" id="addp">＋ نصّ مشترك</button>
       </aside>
 
       <section class="eq-main" id="main">${q ? qCard(q) : emptyCard()}</section>
@@ -119,10 +108,7 @@ function render(){
   app.querySelectorAll(".eq-item").forEach(el => el.onclick = () => go(+el.dataset.i));
   document.getElementById("addm").onclick = () => addQuestion('mcq');
   document.getElementById("adde").onclick = () => addQuestion('essay');
-  document.getElementById("addp").onclick = () => passageForm(null);
-  app.querySelectorAll("[data-pe]").forEach(el => el.onclick = () =>
-    passageForm((Z.passages||[]).find(p => String(p.id) === el.dataset.pe)));
-  app.querySelectorAll("[data-px]").forEach(el => el.onclick = () => delPassage(+el.dataset.px));
+
   if(q) wire(q);
   readiness();
   scrollTop();
@@ -178,29 +164,14 @@ function qCard(q){
     ${locked ? `<div class="warnbox">أُجيب عن هذا السؤال ${AR(q.answered)} مرة —
       التعديل يكسر ربط المحاولات. لتغييره: انسخ الاختبار بكود جديد.</div>` : ''}
 
+    ${sectionBar(q, locked)}
+    ${passageBar(q, locked)}
+
     <div class="card">
       <div class="qnum">سؤال ${AR(cur+1)} · ${q.kind==='mcq'?'اختيار من متعدد':'مقالي قصير'}
         ${locked ? '<span class="badge lock">مقفل</span>' : ''}</div>
 
-      <div class="eq-meta">
-        <div>
-          <label class="fl">القسم <span style="opacity:.6">(اختياري)</span></label>
-          <input id="qs" list="secs" value="${esc(q.section||'')}"
-                 placeholder="Vocabulary · Grammar…" ${locked?'disabled':''}>
-          <datalist id="secs">${(Z.sections||[]).map(x =>
-            `<option value="${esc(x)}">`).join("")}</datalist>
-        </div>
-        <div>
-          <label class="fl">النصّ المشترك <span style="opacity:.6">(اختياري)</span></label>
-          <select id="qp" ${locked?'disabled':''}>
-            <option value="">— بلا نصّ —</option>
-            ${(Z.passages||[]).map(p => `<option value="${p.id}"
-              ${String(q.passage_id)===String(p.id)?'selected':''}>${
-                esc(p.title || (p.body||'').slice(0,34))}</option>`).join("")}
-          </select>
-        </div>
-      </div>
-      ${pgPreview(q)}
+      ${mediaRow(q, locked)}
 
       <textarea id="qb" class="eq-qt" placeholder="نصّ السؤال…"
         ${locked?'disabled':''}>${esc(q.body||'')}</textarea>
@@ -227,13 +198,80 @@ function qCard(q){
 }
 
 
-/* معاينة النصّ المشترك — بفئة .psg نفسها التي يراها الطالب */
-function pgPreview(q){
+/* ═══════════ الحاويات: القسم والنصّ المشترك ═══════════
+   كلاهما يعلو **مجموعة** أسئلة لا سؤالاً واحداً. فالتحرير يقع
+   على مدى: هذا السؤال وما بعده حتى تتغيّر القيمة. */
+
+function range(i, key){
+  const v = Z.questions[i]?.[key] ?? null;
+  const ids = [], idx = [];
+  for(let j = i; j < Z.questions.length; j++){
+    if((Z.questions[j][key] ?? null) !== v) break;
+    idx.push(j + 1);
+    if(Z.questions[j].id) ids.push(Z.questions[j].id);
+  }
+  return { ids, from: idx[0], to: idx[idx.length - 1], n: idx.length };
+}
+
+const span = r => r.n > 1 ? `يشمل الأسئلة ${AR(r.from)}–${AR(r.to)}`
+                          : `يشمل السؤال ${AR(r.from)}`;
+
+function sectionBar(q, locked){
+  const r = range(cur, 'section');
+  if(!q.section) return locked ? '' :
+    `<button class="eq-bar add" id="addsec">＋ عنوان قسم يشمل هذا السؤال وما بعده</button>`;
+  return `<div class="eq-bar sec">
+    <span class="eq-bt">${esc(q.section)}</span>
+    <span class="eq-bs">${span(r)}</span>
+    ${locked ? '' : `<button class="it-b" id="edsec">✏️</button>
+                     <button class="it-b" id="rmsec">✕</button>`}</div>`;
+}
+
+function passageBar(q, locked){
   const p = (Z.passages||[]).find(x => String(x.id) === String(q.passage_id));
-  if(!p) return '';
-  return `<div class="psg" dir="${p.lang==='ar'?'rtl':'ltr'}" style="max-height:150px">
-    ${p.title?`<div class="psg-t">${esc(p.title)}</div>`:''}
-    ${esc((p.body||'').slice(0,600))}${(p.body||'').length>600?'…':''}</div>`;
+  const r = range(cur, 'passage_id');
+  if(!p) return locked ? '' :
+    `<button class="eq-bar add" id="addpg">＋ نصّ مشترك يشمل هذا السؤال وما بعده</button>`;
+  return `<div class="eq-bar pg">
+    <div class="eq-brow">
+      <span class="eq-bt">📖 ${esc(p.title || 'نصّ مشترك')}</span>
+      <span class="eq-bs">${span(r)}</span>
+      ${locked ? '' : `<button class="it-b" id="edpg">✏️ تحرير</button>
+                       <button class="it-b" id="rmpg">✕ فصل</button>`}
+    </div>
+    ${p.media ? `<audio controls src="${esc(p.media)}" style="width:100%;margin-top:9px"></audio>` : ''}
+    ${p.body ? `<div class="psg" dir="${p.lang==='ar'?'rtl':'ltr'}" style="max-height:160px;margin-top:9px">
+      ${fmt((p.body||'').slice(0,700))}${(p.body||'').length>700?'…':''}</div>` : ''}
+  </div>`;
+}
+
+/* وسائط السؤال — الأعمدة موجودة في القاعدة ولم يكن لها منفذ */
+function mediaRow(q, locked){
+  if(locked) return '';
+  const f = (id, val, ph) => val !== null
+    ? `<input class="eq-md" id="${id}" dir="ltr" value="${esc(val)}" placeholder="${ph}">` : '';
+  return `<div class="eq-tools">
+      <button class="eq-tb ${q.image?'on':''}" data-m="image">🖼️ صورة</button>
+      <button class="eq-tb ${q.audio?'on':''}" data-m="audio">🎧 صوت</button>
+      <button class="eq-tb ${q.video?'on':''}" data-m="video">🎬 فيديو</button>
+      <span class="eq-sep"></span>
+      <button class="eq-tb" data-w="**" title="غامق"><b>B</b></button>
+      <button class="eq-tb" data-w="_"  title="مائل"><i>I</i></button>
+      <button class="eq-tb" data-w="__" title="مسطَّر"><u>U</u></button>
+    </div>
+    ${f('qi', q.image ?? null, 'رابط الصورة')}
+    ${f('qa', q.audio ?? null, 'رابط المقطع الصوتي')}
+    ${f('qv', q.video ?? null, 'رابط الفيديو')}`;
+}
+
+/* إحاطة ما حُدِّد بعلامات التنسيق */
+function wrapSel(id, mark){
+  const el = document.getElementById(id); if(!el) return;
+  const a = el.selectionStart ?? el.value.length, b = el.selectionEnd ?? a;
+  const sel = el.value.slice(a, b) || 'نصّ';
+  el.value = el.value.slice(0, a) + mark + sel + mark + el.value.slice(b);
+  el.focus();
+  if(el.setSelectionRange) el.setSelectionRange(a + mark.length, a + mark.length + sel.length);
 }
 
 
@@ -246,11 +284,28 @@ function wire(q){
   ["qb","qe","qm","qs"].forEach(id => {
     const el = document.getElementById(id); if(el) el.oninput = mark;
   });
-  const qp = document.getElementById("qp");
-  if(qp) qp.onchange = e => {
-    q.passage_id = e.target.value ? Number(e.target.value) : null;
+  ["qi","qa","qv"].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.oninput = e => {
+      q[{qi:'image',qa:'audio',qv:'video'}[id]] = e.target.value || null; mark();
+    };
+  });
+  main.querySelectorAll("[data-m]").forEach(el => el.onclick = () => {
+    const k = el.dataset.m;
+    q[k] = (q[k] === null || q[k] === undefined) ? '' : null;   // إظهار/إخفاء الحقل
     mark(); repaint(q);
-  };
+  });
+  main.querySelectorAll("[data-w]").forEach(el => el.onclick = () => {
+    wrapSel("qb", el.dataset.w); mark();
+  });
+
+  const bind = (id, fn) => { const e = document.getElementById(id); if(e) e.onclick = fn; };
+  bind("addsec", () => editSection(''));
+  bind("edsec",  () => editSection(q.section || ''));
+  bind("rmsec",  () => applySection(null));
+  bind("addpg",  () => passageForm(null));
+  bind("edpg",   () => passageForm((Z.passages||[]).find(x => String(x.id) === String(q.passage_id))));
+  bind("rmpg",   () => applyPassage(null));
 
   main.querySelectorAll(".eq-ob").forEach(el => el.oninput = e => {
     q.options[+el.dataset.o].body = e.target.value; mark();
@@ -293,7 +348,9 @@ function collect(q){
   if(v("qb") !== null) q.body = v("qb");
   if(v("qe") !== null) q.explanation = v("qe");
   if(v("qm") !== null) q.model = v("qm");
-  if(v("qs") !== null) q.section = v("qs") || null;
+  if(v("qi") !== null) q.image = v("qi") || null;
+  if(v("qa") !== null) q.audio = v("qa") || null;
+  if(v("qv") !== null) q.video = v("qv") || null;
   document.querySelectorAll(".eq-ob").forEach(el =>
     q.options[+el.dataset.o].body = el.value);
 }
@@ -364,43 +421,90 @@ async function reload(focusId){
 }
 
 
+/* ═══════════ تطبيق الحاويات على المدى ═══════════ */
+
+async function applySection(sec){
+  const r = range(cur, 'section');
+  if(!r.ids.length){                       // سؤال لم يُحفظ بعد
+    Z.questions[cur].section = sec; dirty = true; render(); return;
+  }
+  const { data, error } = await api.setSection(sec, r.ids);
+  if(error){ toast(error.message); return; }
+  if(!data.ok){ toast(data.error); return; }
+  toast(sec ? `طُبّق على ${AR(data.count)} سؤالاً` : "أُزيل العنوان");
+  reload();
+}
+
+async function applyPassage(pid){
+  const r = range(cur, 'passage_id');
+  if(!r.ids.length){
+    Z.questions[cur].passage_id = pid; dirty = true; render(); return;
+  }
+  const { data, error } = await api.attachPassage(pid, r.ids);
+  if(error){ toast(error.message); return; }
+  if(!data.ok){ toast(data.error); return; }
+  toast(pid ? `رُبط بـ${AR(data.count)} سؤالاً` : "فُصل النصّ");
+  reload();
+}
+
+function editSection(cur_val){
+  const v = prompt("عنوان القسم — يشمل هذا السؤال وما بعده حتى يتغيّر:\n" +
+    ((Z.sections||[]).length ? "المستعملة: " + Z.sections.join(' · ') : ""), cur_val || '');
+  if(v === null) return;
+  applySection(v.trim() || null);
+}
+
+
 /* ═══════════ النصّ المشترك ═══════════ */
 
+/* صندوق يتمدّد في مكانه — لا صفحة تنفصل عن الأسئلة */
 function passageForm(p){
   const isNew = !p;
-  head(isNew ? "نصّ مشترك جديد" : "تحرير النصّ المشترك", Z.title);
-  app.innerHTML = `
-    <div class="crumb" id="bk">← الأسئلة</div>
-    <div class="ed-form">
-      <div class="ed-side">
-        <div class="ed-hint">النصّ المشترك يظهر <b>أعلى كل سؤال</b> يرتبط به —
-          فقرة قراءة أو مقطع صوتي تعلو عدة أسئلة.</div>
-        <div class="ed-hint" style="opacity:.75">اربطه بالأسئلة من حقل
-          «النصّ المشترك» في كل سؤال.</div>
+  const r = range(cur, 'passage_id');
+  document.getElementById("main").innerHTML = `
+    <div class="card eq-pgbox">
+      <div class="qnum">${isNew ? 'نصّ مشترك جديد' : 'تحرير النصّ المشترك'}
+        · ${isNew ? span(r) : ''}</div>
+
+      <label class="fl">العنوان <span style="opacity:.6">(اختياري)</span></label>
+      <input id="pt" value="${esc(p?.title || '')}" placeholder="Reading Passage 1">
+
+      <div class="eq-tools" style="margin-top:14px">
+        <button class="eq-tb" data-pw="**" title="غامق"><b>B</b></button>
+        <button class="eq-tb" data-pw="_"  title="مائل"><i>I</i></button>
+        <button class="eq-tb" data-pw="__" title="مسطَّر"><u>U</u></button>
+        <span class="eq-sep"></span>
+        <button class="eq-tb" id="pmed">🎧 مقطع صوتي</button>
+        <span class="eq-hint">اتجاه النصّ يتبع اللغة</span>
       </div>
-      <div class="card" style="flex:1">
-        <label class="fl">العنوان <span style="opacity:.6">(اختياري)</span></label>
-        <input id="pt" value="${esc(p?.title || '')}" placeholder="Reading Passage 1">
+      <textarea id="pb" style="min-height:240px"
+        placeholder="ألصق الفقرة كاملة…">${esc(p?.body || '')}</textarea>
 
-        <label class="fl" style="margin-top:16px">النصّ</label>
-        <textarea id="pb" style="min-height:230px"
-          placeholder="ألصق الفقرة كاملة…">${esc(p?.body || '')}</textarea>
+      <input id="pm" dir="ltr" class="eq-md" value="${esc(p?.media || '')}"
+             placeholder="رابط المقطع الصوتي" ${p?.media ? '' : 'hidden'}>
 
-        <label class="fl" style="margin-top:16px">مقطع صوتي <span style="opacity:.6">(اختياري)</span></label>
-        <input id="pm" dir="ltr" value="${esc(p?.media || '')}" placeholder="https://…">
+      <label class="fl" style="margin-top:16px">اللغة</label>
+      <select id="pl">
+        <option value="ar" ${p?.lang!=='en'?'selected':''}>العربية</option>
+        <option value="en" ${p?.lang==='en'?'selected':''}>English</option>
+      </select>
 
-        <label class="fl" style="margin-top:16px">اللغة</label>
-        <select id="pl">
-          <option value="ar" ${p?.lang!=='en'?'selected':''}>العربية</option>
-          <option value="en" ${p?.lang==='en'?'selected':''}>English</option>
-        </select>
+      <div class="nav" style="margin-top:16px">
+        <button class="btn primary" id="ps">${isNew ? 'إضافة وربط' : 'حفظ'}</button>
+        <button class="btn ghost" id="pc">إلغاء</button>
+        ${!isNew && !p.used ? '<button class="btn ghost eq-del" id="pd">🗑 حذف</button>' : ''}
       </div>
-    </div>
-    <div class="nav" style="margin-top:16px">
-      <button class="btn primary" id="ps">${isNew ? 'إضافة' : 'حفظ'}</button>
     </div>`;
 
-  document.getElementById("bk").onclick = () => render();
+  document.querySelectorAll("[data-pw]").forEach(el =>
+    el.onclick = () => wrapSel("pb", el.dataset.pw));
+  document.getElementById("pmed").onclick = () => {
+    const m = document.getElementById("pm"); m.hidden = !m.hidden; if(!m.hidden) m.focus();
+  };
+  document.getElementById("pc").onclick = () => render();
+  const pd = document.getElementById("pd");
+  if(pd) pd.onclick = () => delPassage(p.id);
+
   document.getElementById("ps").onclick = async () => {
     const v = id => (document.getElementById(id)?.value || '').trim();
     if(!v("pb") && !v("pm")){ toast("النصّ يحتاج نصاً أو مقطعاً صوتياً"); return; }
@@ -410,10 +514,9 @@ function passageForm(p){
       position: p?.position ?? ((Z.passages||[]).length + 1) });
     if(error){ toast(error.message); return; }
     if(!data.ok){ toast(data.error); return; }
-    toast(isNew ? "أُضيف النصّ" : "حُفظ النصّ");
-    reload();
+    if(isNew){ await applyPassage(data.id); toast("أُضيف النصّ ورُبط"); return; }
+    toast("حُفظ النصّ"); reload();
   };
-  scrollTop();
 }
 
 async function delPassage(id){
