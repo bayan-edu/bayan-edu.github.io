@@ -7,7 +7,7 @@
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
 import { S } from './state.js';
-import { app, bar, head, toast, esc, AR, mmss, media, L, ICONS, nav, scrollTop } from './ui.js';
+import { app, bar, head, toast, esc, fmt, AR, mmss, media, L, ICONS, nav, scrollTop } from './ui.js';
 import { loadList, loadLessons } from './student.js';
 
 /* ═══════════ ① بدء الاختبار ═══════════ */
@@ -70,7 +70,7 @@ function renderQ(){
     <div class="card" style="padding:16px">
       ${pg.title?`<div class="psg-t">${esc(pg.title)}</div>`:''}
       ${pg.media?`<audio controls src="${esc(pg.media)}" style="width:100%;margin-bottom:12px"></audio>`:''}
-      ${pg.body?`<div class="psg" dir="${pg.lang==='ar'?'rtl':'ltr'}">${esc(pg.body)}</div>`:''}
+      ${pg.body?`<div class="psg" dir="${pg.lang==='ar'?'rtl':'ltr'}">${fmt(pg.body)}</div>`:''}
     </div>` : '';
 
   app.innerHTML = `
@@ -80,7 +80,7 @@ function renderQ(){
       <div class="qnum">سؤال ${AR(S.i+1)} · ${q.kind==='mcq'?'اختيار من متعدد':'مقالي قصير'}</div>
       ${media(q)}
       ${q.audio?`<audio controls src="${esc(q.audio)}" style="width:100%;margin-bottom:12px"></audio>`:''}
-      <div class="qtext" dir="${q.lang==='ar'?'rtl':'ltr'}">${esc(q.body)}</div>
+      <div class="qtext" dir="${q.lang==='ar'?'rtl':'ltr'}">${fmt(q.body)}</div>
       ${body}
     </div>
     <div class="nav">
