@@ -227,6 +227,12 @@ export const savePassage = o => db.rpc('save_passage', {
 
 export const deletePassage = id => db.rpc('delete_passage', { p_id: id });
 
+// النصّ والقسم حاويتان تعلوان مجموعة — تُربطان بمدى لا بسؤال
+export const attachPassage = (pid, ids) =>
+  db.rpc('attach_passage', { p_passage: pid, p_ids: ids });
+export const setSection = (sec, ids) =>
+  db.rpc('set_section', { p_section: sec, p_ids: ids });
+
 // مصادر الدرس — دالة قراءة خاصة بالتأليف (p_items_read تحجب المدير)
 export const lessonItems  = lid => db.rpc('lesson_items',  { p_lesson: lid });
 export const deleteItem   = id  => db.rpc('delete_item',   { p_id: id });
