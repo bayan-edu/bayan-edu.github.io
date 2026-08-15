@@ -14,7 +14,8 @@
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
 import { S } from './state.js';
-import { app, head, toast, esc, fmt, AR, errBox, nav, setWide, scrollTop, L } from './ui.js';
+import { app, head, toast, esc, fmt, AR, errBox, nav, setWide, scrollTop, L,
+         pgMedia, SAFE_HOSTS } from './ui.js';
 import { openCourse } from './editor.js';
 
 let Z    = null;   // الاختبار المحمَّل
@@ -239,7 +240,7 @@ function passageBar(q, locked){
       ${locked ? '' : `<button class="it-b" id="edpg">✏️ تحرير</button>
                        <button class="it-b" id="rmpg">✕ فصل</button>`}
     </div>
-    ${p.media ? `<audio controls src="${esc(p.media)}" style="width:100%;margin-top:9px"></audio>` : ''}
+    ${p.media ? `<div style="margin-top:9px">${pgMedia(p)}</div>` : ''}
     ${p.body ? `<div class="psg" dir="${p.lang==='ar'?'rtl':'ltr'}" style="max-height:160px;margin-top:9px">
       ${fmt((p.body||'').slice(0,700))}${(p.body||'').length>700?'…':''}</div>` : ''}
   </div>`;
@@ -461,6 +462,7 @@ function editSection(cur_val){
 function passageForm(p){
   const isNew = !p;
   const r = range(cur, 'passage_id');
+  let pk = p?.kind && p.kind !== 'text' ? p.kind : null;   // نوع الوسيط المختار
   document.getElementById("main").innerHTML = `
     <div class="card eq-pgbox">
       <div class="qnum">${isNew ? 'نصّ مشترك جديد' : 'تحرير النصّ المشترك'}
@@ -474,14 +476,17 @@ function passageForm(p){
         <button class="eq-tb" data-pw="_"  title="مائل"><i>I</i></button>
         <button class="eq-tb" data-pw="__" title="مسطَّر"><u>U</u></button>
         <span class="eq-sep"></span>
-        <button class="eq-tb" id="pmed">🎧 مقطع صوتي</button>
-        <span class="eq-hint">اتجاه النصّ يتبع اللغة</span>
+        <button class="eq-tb ${pk==='image'?'on':''}" data-pk="image">🖼️ صورة</button>
+        <button class="eq-tb ${pk==='audio'?'on':''}" data-pk="audio">🎧 صوت</button>
+        <button class="eq-tb ${pk==='video'?'on':''}" data-pk="video">🎬 فيديو</button>
+        <span class="eq-hint">${SAFE_HOSTS}</span>
       </div>
       <textarea id="pb" style="min-height:240px"
         placeholder="ألصق الفقرة كاملة…">${esc(p?.body || '')}</textarea>
 
       <input id="pm" dir="ltr" class="eq-md" value="${esc(p?.media || '')}"
-             placeholder="رابط المقطع الصوتي" ${p?.media ? '' : 'hidden'}>
+             placeholder="${pk==='image'?'رابط الصورة':pk==='video'?'رابط الفيديو':'رابط المقطع الصوتي'}"
+             ${pk ? '' : 'hidden'}>
 
       <label class="fl" style="margin-top:16px">اللغة</label>
       <select id="pl">
@@ -498,9 +503,16 @@ function passageForm(p){
 
   document.querySelectorAll("[data-pw]").forEach(el =>
     el.onclick = () => wrapSel("pb", el.dataset.pw));
-  document.getElementById("pmed").onclick = () => {
-    const m = document.getElementById("pm"); m.hidden = !m.hidden; if(!m.hidden) m.focus();
-  };
+  document.querySelectorAll("[data-pk]").forEach(el => el.onclick = () => {
+    const keep = { title: document.getElementById("pt").value,
+                   body:  document.getElementById("pb").value,
+                   media: document.getElementById("pm").value,
+                   lang:  document.getElementById("pl").value };
+    const k = el.dataset.pk;
+    passageForm({ ...(p || {}), ...keep, id: p?.id ?? null,
+                  used: p?.used, position: p?.position,
+                  kind: pk === k ? 'text' : k });
+  });
   document.getElementById("pc").onclick = () => render();
   const pd = document.getElementById("pd");
   if(pd) pd.onclick = () => delPassage(p.id);
@@ -510,7 +522,9 @@ function passageForm(p){
     if(!v("pb") && !v("pm")){ toast("النصّ يحتاج نصاً أو مقطعاً صوتياً"); return; }
     const { data, error } = await api.savePassage({
       id: p?.id ?? null, quiz: Z.id, title: v("pt") || null,
-      body: v("pb") || null, media: v("pm") || null, lang: v("pl") || 'ar',
+      body: v("pb") || null, media: v("pm") || null,
+      kind: v("pm") ? (pk || 'audio') : 'text',
+      lang: v("pl") || 'ar',
       position: p?.position ?? ((Z.passages||[]).length + 1) });
     if(error){ toast(error.message); return; }
     if(!data.ok){ toast(data.error); return; }
