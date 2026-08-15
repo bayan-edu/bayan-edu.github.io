@@ -487,23 +487,93 @@ function parseImport(txt){
   return out;
 }
 
+/* الملف يُقرأ في المتصفح — لا رفع إلى خادم ولا Storage.
+   ثم يمرّ بـ parseImport كما يمرّ اللصق: لا باب خلفي. */
+const MAX_KB = 2048;
+
+function readFile(file){
+  if(!file) return;
+  if(file.size > MAX_KB * 1024){
+    toast(`الملف أكبر من ${AR(MAX_KB/1024)} ميجابايت`); return;
+  }
+  const r = new FileReader();
+  r.onload = () => {
+    document.getElementById("ij").value = r.result;
+    toast(`قُرئ ${esc(file.name)}`);
+    document.getElementById("ian").onclick();      // تحليل فوري
+  };
+  r.onerror = () => toast("تعذّرت قراءة الملف");
+  r.readAsText(file, 'utf-8');
+}
+
+/* التصدير: نسخة احتياطية · ونقل بين المقرَّرات · ودورة تحرير خارجية */
+function exportQuiz(){
+  const pgs = (Z.passages || []);
+  const refOf = id => { const i = pgs.findIndex(p => String(p.id) === String(id));
+                        return i < 0 ? null : 'p' + (i + 1); };
+  const doc = {
+    quiz: { title: Z.title, minutes: Z.minutes },
+    passages: pgs.map((p, i) => ({ ref: 'p' + (i + 1), title: p.title || null,
+      body: p.body || null, media: p.media || null,
+      kind: p.kind || 'text', lang: p.lang || 'ar' })),
+    questions: (Z.questions || []).map(q => {
+      const o = { section: q.section || null, kind: q.kind, body: q.body };
+      const r = refOf(q.passage_id); if(r) o.passage = r;
+      if(q.kind === 'essay'){ o.model = q.model || null; return o; }
+      o.explanation = q.explanation || null;
+      if(q.difficulty) o.difficulty = q.difficulty;
+      o.options = (q.options || []).map(x => x.correct
+        ? { body: x.body, correct: true } : { body: x.body, dx: x.dx || null });
+      return o;
+    })
+  };
+  const name = (Z.code || 'quiz') + '.json';
+  const blob = new Blob([JSON.stringify(doc, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name;
+  a.click(); URL.revokeObjectURL(a.href);
+  toast(`صُدِّر ${AR((Z.questions||[]).length)} سؤالاً`);
+}
+
 function importBox(){
   document.getElementById("main").innerHTML = `
     <div class="card">
       <div class="qnum">⇪ استيراد اختبار · يُضاف إلى ${AR((Z.questions||[]).length)} سؤالاً قائماً</div>
       <div class="line" style="margin-bottom:12px">ألصق JSON — أسئلةً ونصوصاً مشتركة وأقساماً.
         كل سؤال يمرّ بنفس التحقّق: كود تشخيص لكل مشتّت، وشرحٌ للخطأ.</div>
-      <textarea id="ij" dir="ltr" style="min-height:250px;font-family:monospace;font-size:.78rem"
+      <div class="drop" id="idz">
+        <div class="drop-i">⇪</div>
+        <div>اسحب ملف JSON هنا · أو <span class="drop-a" id="ipick">اختر ملفاً</span>
+          · أو الصق أدناه</div>
+        <div class="drop-s">الملف يُقرأ في متصفحك — لا يُرفع إلى أي خادم · حتى ٢ ميجابايت</div>
+        <input type="file" id="ifile" accept=".json,.txt,application/json" hidden>
+      </div>
+      <textarea id="ij" dir="ltr" style="min-height:220px;font-family:monospace;font-size:.78rem"
         placeholder='{ "questions": [ … ] }'></textarea>
       <div class="nav" style="margin-top:12px">
         <button class="btn primary" id="ian">تحليل</button>
         <button class="btn ghost" id="ism">قالب مثال</button>
+        <button class="btn ghost" id="iex">⇩ تصدير الحالي</button>
         <button class="btn ghost" id="ic">إلغاء</button>
       </div>
       <div id="ipv"></div>
     </div>`;
   document.getElementById("ic").onclick  = () => render();
   document.getElementById("ism").onclick = () => { document.getElementById("ij").value = SAMPLE; };
+  document.getElementById("iex").onclick = exportQuiz;
+
+  const pick = document.getElementById("ifile");
+  document.getElementById("ipick").onclick = () => pick.click();
+  pick.onchange = e => readFile(e.target.files?.[0]);
+
+  const dz = document.getElementById("idz");
+  ['dragenter','dragover'].forEach(ev => dz.addEventListener(ev, e => {
+    e.preventDefault(); dz.classList.add('on');
+  }));
+  ['dragleave','drop'].forEach(ev => dz.addEventListener(ev, e => {
+    e.preventDefault(); dz.classList.remove('on');
+  }));
+  dz.addEventListener('drop', e => readFile(e.dataTransfer?.files?.[0]));
   document.getElementById("ian").onclick = () => {
     const p = parseImport(document.getElementById("ij").value || '');
     const box = document.getElementById("ipv");
@@ -526,38 +596,61 @@ function importBox(){
 
 async function runImport(p){
   const box = document.getElementById("ipv");
-  const say = t => { if(box) box.innerHTML = `<div class="status">${t}</div>`; };
+  const say = t => { if(box) box.innerHTML = `<div class="status">${esc(t)}</div>`; };
+
+  /* الفشل يُعرض ولا يُخفى: رسالة باقية + زرّ عودة.
+     كان التوقّف يترك الشاشة عالقة على «جارٍ…» ورسالةً عابرة. */
+  const stop = (where, msg, done) => {
+    if(box) box.innerHTML = `
+      <div class="err" style="margin-top:14px">
+        <b>توقّف الاستيراد عند ${esc(where)}</b>${esc(msg || 'خطأ غير معروف')}
+        ${done ? `<div class="line" style="margin-top:7px">استُورد ${AR(done)} قبل التوقّف —
+          صحّح الملف واستورد الباقي وحده.</div>` : ''}
+      </div>
+      <div class="nav" style="margin-top:12px">
+        <button class="btn ghost" id="iback">رجوع إلى الأسئلة</button>
+      </div>`;
+    const b = document.getElementById("iback");
+    if(b) b.onclick = () => reload();
+  };
+
   const refMap = {};
-
-  for(const pg of p.passages){
-    say('جارٍ إضافة النصوص المشتركة…');
-    const { data, error } = await api.savePassage({
-      quiz: Z.id, title: pg.title || null, body: pg.body || null,
-      media: pg.media || null, kind: pg.media ? (pg.kind || 'audio') : 'text',
-      lang: pg.lang || 'ar', position: (Z.passages||[]).length + 1 });
-    if(error || !data.ok){ toast(error?.message || data.error); return; }
-    if(pg.ref) refMap[pg.ref] = data.id;
-  }
-
-  const base = (Z.questions || []).length;
   let done = 0;
-  for(const [i, q] of p.questions.entries()){
-    say(`جارٍ الاستيراد… ${AR(i+1)} من ${AR(p.questions.length)}`);
-    const { data, error } = await api.saveQuestion({
-      quiz: Z.id, kind: q.kind || 'mcq', body: q.body,
-      position: base + i + 1,
-      section: q.section || null,
-      passage: q.passage ? refMap[q.passage] : null,
-      explanation: q.explanation || null, model: q.model || null,
-      difficulty: q.difficulty || null, lang: q.lang || 'ar',
-      options: (q.options || []).map(o => ({
-        label: o.label, body: o.body, correct: !!o.correct, dx: o.dx })) });
-    if(error || !data.ok){
-      toast(`توقّف عند س${AR(i+1)}: ` + (error?.message || data.error));
-      break;
+  try {
+    for(const [k, pg] of p.passages.entries()){
+      say(`جارٍ إضافة النصوص المشتركة… ${AR(k+1)} من ${AR(p.passages.length)}`);
+      const { data, error } = await api.savePassage({
+        quiz: Z.id, title: pg.title || null, body: pg.body || null,
+        media: pg.media || null,
+        kind: pg.media ? (pg.kind && pg.kind !== 'text' ? pg.kind : 'audio') : 'text',
+        lang: pg.lang || 'ar', position: (Z.passages||[]).length + k + 1 });
+      if(error || !data?.ok){
+        stop(`النصّ المشترك ${AR(k+1)}`, error?.message || data?.error); return;
+      }
+      if(pg.ref) refMap[pg.ref] = data.id;
     }
-    done++;
+
+    const base = (Z.questions || []).length;
+    for(const [i, q] of p.questions.entries()){
+      say(`جارٍ الاستيراد… ${AR(i+1)} من ${AR(p.questions.length)}`);
+      const { data, error } = await api.saveQuestion({
+        quiz: Z.id, kind: q.kind || 'mcq', body: q.body,
+        position: base + i + 1,
+        section: q.section || null,
+        passage: q.passage ? (refMap[q.passage] ?? null) : null,
+        explanation: q.explanation || null, model: q.model || null,
+        difficulty: q.difficulty || null, lang: q.lang || 'ar',
+        options: (q.options || []).map(o => ({
+          label: o.label, body: o.body, correct: !!o.correct, dx: o.dx })) });
+      if(error || !data?.ok){
+        stop(`السؤال ${AR(i+1)}`, error?.message || data?.error, done); return;
+      }
+      done++;
+    }
+  } catch(e){
+    stop('الاتصال', e?.message, done); return;
   }
+
   toast(`استُورد ${AR(done)} سؤالاً`);
   reload();
 }
