@@ -7,7 +7,7 @@
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
 import { S } from './state.js';
-import { app, bar, head, toast, esc, fmt, AR, mmss, media, L, ICONS, nav, scrollTop } from './ui.js';
+import { app, bar, head, toast, esc, fmt, AR, mmss, media, pgMedia, L, ICONS, nav, scrollTop } from './ui.js';
 import { loadList, loadLessons } from './student.js';
 
 /* ═══════════ ① بدء الاختبار ═══════════ */
@@ -69,7 +69,7 @@ function renderQ(){
   const pgHtml = pg ? `
     <div class="card" style="padding:16px">
       ${pg.title?`<div class="psg-t">${esc(pg.title)}</div>`:''}
-      ${pg.media?`<audio controls src="${esc(pg.media)}" style="width:100%;margin-bottom:12px"></audio>`:''}
+      ${pgMedia(pg)}
       ${pg.body?`<div class="psg" dir="${pg.lang==='ar'?'rtl':'ltr'}">${fmt(pg.body)}</div>`:''}
     </div>` : '';
 
