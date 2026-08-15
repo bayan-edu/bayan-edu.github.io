@@ -6,7 +6,7 @@
 import { S } from './state.js';
 
 /* ── بصمة النسخة — لمعرفة أي شيفرة يشغّلها المتصفح فعلاً ── */
-export const BUILD = "b11";
+export const BUILD = "b12";
 
 /* ── مراسي الصفحة ── */
 export const app = document.getElementById("app");
@@ -57,6 +57,21 @@ export function fmt(s){
 
 /* ── الوسائط: مصادر موثوقة فقط ── */
 const SAFE = /^https:\/\/(drive\.google\.com|lh3\.googleusercontent\.com|www\.youtube\.com|youtu\.be|i\.imgur\.com)\//;
+
+// المصادر المسموحة — تُعرض للمؤلّف حتى لا يضع رابطاً يُحجب صامتاً
+export const SAFE_HOSTS = 'Google Drive · YouTube · imgur';
+
+/* وسيط الفقرة: واحد ونوعه في kind */
+export function pgMedia(p){
+  if(!p?.media) return '';
+  if(!SAFE.test(p.media))
+    return `<div class="err" style="margin:9px 0">مصدر غير مسموح — المسموح: ${SAFE_HOSTS}</div>`;
+  if(p.kind === 'video')
+    return `<iframe class="media-v" src="${esc(p.media)}" allowfullscreen></iframe>`;
+  if(p.kind === 'image')
+    return `<img class="media" src="${esc(p.media)}" alt="" loading="lazy">`;
+  return `<audio controls src="${esc(p.media)}" style="width:100%;margin-bottom:12px"></audio>`;
+}
 
 export function media(q){
   let h = "";
