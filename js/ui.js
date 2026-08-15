@@ -6,7 +6,7 @@
 import { S } from './state.js';
 
 /* ── بصمة النسخة — لمعرفة أي شيفرة يشغّلها المتصفح فعلاً ── */
-export const BUILD = "b10";
+export const BUILD = "b11";
 
 /* ── مراسي الصفحة ── */
 export const app = document.getElementById("app");
@@ -42,6 +42,17 @@ export function toast(m){
   t.textContent = m;
   t.classList.add("show");
   setTimeout(()=>t.classList.remove("show"), 2800);
+}
+
+/* ── تنسيق خفيف: **غامق** _مائل_ __مسطَّر__ ──
+   يُهرَّب النصّ أولاً ثم تُستبدل العلامات — فلا يدخل HTML من
+   المؤلّف إطلاقاً. تغطية ما يحتاجه التعليم بلا سطح هجوم. */
+export function fmt(s){
+  return esc(s)
+    .replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>')
+    .replace(/__([^_\n]+)__/g,        '<u>$1</u>')
+    .replace(/_([^_\n]+)_/g,          '<i>$1</i>')
+    .replace(/\n/g, '<br>');
 }
 
 /* ── الوسائط: مصادر موثوقة فقط ── */
