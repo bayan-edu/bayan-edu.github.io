@@ -223,6 +223,7 @@ export const saveQuestion = o => db.rpc('save_question', {
 export const savePassage = o => db.rpc('save_passage', {
   p_id: o.id ?? null, p_quiz: o.quiz, p_title: o.title ?? null,
   p_body: o.body ?? null, p_media: o.media ?? null,
+  p_kind: o.kind ?? 'text',
   p_lang: o.lang ?? 'ar', p_position: o.position ?? 0 });
 
 export const deletePassage = id => db.rpc('delete_passage', { p_id: id });
