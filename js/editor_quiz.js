@@ -96,6 +96,7 @@ function render(){
         <div class="nav" style="margin-top:12px;flex-direction:column;gap:7px">
           <button class="btn ghost eq-add" id="addm">＋ اختيار من متعدد</button>
           <button class="btn ghost eq-add" id="adde">＋ سؤال مقالي</button>
+          <button class="btn ghost eq-add" id="imp">⇪ استيراد</button>
         </div>
 
       </aside>
@@ -109,6 +110,9 @@ function render(){
   app.querySelectorAll(".eq-item").forEach(el => el.onclick = () => go(+el.dataset.i));
   document.getElementById("addm").onclick = () => addQuestion('mcq');
   document.getElementById("adde").onclick = () => addQuestion('essay');
+  ["imp","imp0"].forEach(id => {
+    const el = document.getElementById(id); if(el) el.onclick = importBox;
+  });
 
   if(q) wire(q);
   readiness();
@@ -119,6 +123,10 @@ const emptyCard = () => `<div class="card" style="text-align:center;padding:34px
   <div style="font-size:2rem;margin-bottom:10px">◉</div>
   <div class="rev-q">لا أسئلة بعد</div>
   <div class="line">ابدأ بستّة أسئلة اختيار من متعدد — وهو الحدّ الذي تبقى معه عتبة ٦٥٪ ذات معنى.</div>
+  <div class="nav" style="justify-content:center;margin-top:16px">
+    <button class="btn primary" id="imp0">⇪ استيراد اختبار</button>
+  </div>
+  <p class="hint">أو أضِف الأسئلة واحداً واحداً من الجانب</p>
 </div>`;
 
 function go(i){
@@ -419,6 +427,139 @@ async function reload(focusId){
     cur = Math.min(cur, Math.max(0, Z.questions.length - 1));
   }
   dirty = false; render();
+}
+
+
+/* ═══════════ الاستيراد ═══════════
+   يُضيف ولا يستبدل · ويعاين قبل الإدراج · وكل سؤال يمرّ بـ
+   save_question — فالحراسة نفسها: كود تشخيص لكل مشتّت وشرحٌ
+   للخطأ. الاستيراد باب أوسع لا باب خلفي. */
+
+const SAMPLE = JSON.stringify({
+  passages: [{ ref: "p1", title: "Reading Passage", body: "Egypt is a land…", lang: "en" }],
+  questions: [
+    { section: "A. Vocabulary", body: "\"Crossroads\" here means a ……",
+      explanation: "Crossroads = ملتقى طرق، وأقربها junction.",
+      options: [ { body: "barrier",  dx: "SEM" },
+                 { body: "junction", correct: true },
+                 { body: "pathway",  dx: "SEM" },
+                 { body: "boundary", dx: "SEM" } ] },
+    { section: "B. Reading", passage: "p1", body: "The best title is ……",
+      explanation: "العنوان يجمع الماضي والحاضر.",
+      options: [ { body: "Trade Routes", dx: "DTL" },
+                 { body: "A Nation Proud of Its Past", correct: true } ] }
+  ]
+}, null, 2);
+
+function parseImport(txt){
+  const dxCodes = new Set(((S.tree?.dx) || []).map(d => d.code));
+  const out = { passages: [], questions: [], issues: [] };
+  let j;
+  try { j = JSON.parse(txt); }
+  catch(e){ out.issues.push('JSON غير صالح: ' + e.message); return out; }
+
+  if(Array.isArray(j)) j = { questions: j };
+  out.passages  = Array.isArray(j.passages)  ? j.passages  : [];
+  out.questions = Array.isArray(j.questions) ? j.questions : [];
+  if(!out.questions.length){ out.issues.push('لا أسئلة في الملف'); return out; }
+
+  const refs = new Set(out.passages.map(p => p.ref).filter(Boolean));
+  out.questions.forEach((q, i) => {
+    const n = i + 1, kind = q.kind || 'mcq';
+    if(!String(q.body || '').trim()) out.issues.push(`س${n}: بلا نصّ`);
+    if(q.passage && !refs.has(q.passage)) out.issues.push(`س${n}: النصّ "${q.passage}" غير معرَّف`);
+
+    if(kind === 'essay'){
+      if(!String(q.model || '').trim()) out.issues.push(`س${n}: مقالي بلا إجابة نموذجية`);
+      return;
+    }
+    const opts = Array.isArray(q.options) ? q.options : [];
+    if(opts.length < 2) out.issues.push(`س${n}: يحتاج خيارين على الأقل`);
+    if(opts.filter(o => o.correct).length !== 1) out.issues.push(`س${n}: يلزم خيار صحيح واحد بالضبط`);
+    if(!String(q.explanation || '').trim()) out.issues.push(`س${n}: بلا شرح للخطأ`);
+    opts.forEach((o, k) => {
+      if(!String(o.body || '').trim()) out.issues.push(`س${n}: خيار ${k+1} بلا نصّ`);
+      if(o.correct) return;
+      if(!o.dx) out.issues.push(`س${n}: الخيار "${String(o.body||'').slice(0,18)}" بلا كود تشخيص`);
+      else if(!dxCodes.has(o.dx)) out.issues.push(`س${n}: كود غير معروف "${o.dx}"`);
+    });
+  });
+  return out;
+}
+
+function importBox(){
+  document.getElementById("main").innerHTML = `
+    <div class="card">
+      <div class="qnum">⇪ استيراد اختبار · يُضاف إلى ${AR((Z.questions||[]).length)} سؤالاً قائماً</div>
+      <div class="line" style="margin-bottom:12px">ألصق JSON — أسئلةً ونصوصاً مشتركة وأقساماً.
+        كل سؤال يمرّ بنفس التحقّق: كود تشخيص لكل مشتّت، وشرحٌ للخطأ.</div>
+      <textarea id="ij" dir="ltr" style="min-height:250px;font-family:monospace;font-size:.78rem"
+        placeholder='{ "questions": [ … ] }'></textarea>
+      <div class="nav" style="margin-top:12px">
+        <button class="btn primary" id="ian">تحليل</button>
+        <button class="btn ghost" id="ism">قالب مثال</button>
+        <button class="btn ghost" id="ic">إلغاء</button>
+      </div>
+      <div id="ipv"></div>
+    </div>`;
+  document.getElementById("ic").onclick  = () => render();
+  document.getElementById("ism").onclick = () => { document.getElementById("ij").value = SAMPLE; };
+  document.getElementById("ian").onclick = () => {
+    const p = parseImport(document.getElementById("ij").value || '');
+    const box = document.getElementById("ipv");
+    const okAll = !p.issues.length;
+    box.innerHTML = `
+      <div class="eq-ready ${okAll?'ok':''}" style="margin-top:14px">
+        <div class="line"><b>${AR(p.questions.length)}</b> سؤالاً ·
+          <b>${AR(p.passages.length)}</b> نصاً مشتركاً ·
+          <b>${AR(new Set(p.questions.map(q=>q.section).filter(Boolean)).size)}</b> قسماً</div>
+        ${okAll ? '<div class="eq-ok">✅ جاهز للاستيراد</div>'
+                : p.issues.slice(0,14).map(x => `<div class="eq-iss">⚠️ ${esc(x)}</div>`).join("")
+                  + (p.issues.length > 14 ? `<div class="eq-iss">… و${AR(p.issues.length-14)} غيرها</div>` : '')}
+      </div>
+      ${okAll ? `<div class="nav" style="margin-top:12px">
+        <button class="btn primary" id="igo">استيراد ${AR(p.questions.length)} سؤالاً</button></div>` : ''}`;
+    const go = document.getElementById("igo");
+    if(go) go.onclick = () => runImport(p);
+  };
+}
+
+async function runImport(p){
+  const box = document.getElementById("ipv");
+  const say = t => { if(box) box.innerHTML = `<div class="status">${t}</div>`; };
+  const refMap = {};
+
+  for(const pg of p.passages){
+    say('جارٍ إضافة النصوص المشتركة…');
+    const { data, error } = await api.savePassage({
+      quiz: Z.id, title: pg.title || null, body: pg.body || null,
+      media: pg.media || null, kind: pg.media ? (pg.kind || 'audio') : 'text',
+      lang: pg.lang || 'ar', position: (Z.passages||[]).length + 1 });
+    if(error || !data.ok){ toast(error?.message || data.error); return; }
+    if(pg.ref) refMap[pg.ref] = data.id;
+  }
+
+  const base = (Z.questions || []).length;
+  let done = 0;
+  for(const [i, q] of p.questions.entries()){
+    say(`جارٍ الاستيراد… ${AR(i+1)} من ${AR(p.questions.length)}`);
+    const { data, error } = await api.saveQuestion({
+      quiz: Z.id, kind: q.kind || 'mcq', body: q.body,
+      position: base + i + 1,
+      section: q.section || null,
+      passage: q.passage ? refMap[q.passage] : null,
+      explanation: q.explanation || null, model: q.model || null,
+      difficulty: q.difficulty || null, lang: q.lang || 'ar',
+      options: (q.options || []).map(o => ({
+        label: o.label, body: o.body, correct: !!o.correct, dx: o.dx })) });
+    if(error || !data.ok){
+      toast(`توقّف عند س${AR(i+1)}: ` + (error?.message || data.error));
+      break;
+    }
+    done++;
+  }
+  toast(`استُورد ${AR(done)} سؤالاً`);
+  reload();
 }
 
 
