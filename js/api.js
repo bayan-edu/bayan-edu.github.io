@@ -194,6 +194,8 @@ export const deleteQuestion    = id => db.rpc('delete_question',    { p_id: id }
 export const quizReadiness     = id => db.rpc('quiz_readiness',     { p_quiz: id });
 export const publishQuiz = (id, on = true) =>
   db.rpc('publish_quiz', { p_quiz: id, p_publish: on });
+export const publishLesson = (id, on = true) =>
+  db.rpc('publish_lesson', { p_lesson: id, p_publish: on });
 
 export const saveQuiz = o => db.rpc('save_quiz', {
   p_id: o.id ?? null, p_course: o.course ?? null, p_title: o.title,
