@@ -6,14 +6,36 @@
 import { S } from './state.js';
 
 /* ── بصمة النسخة — لمعرفة أي شيفرة يشغّلها المتصفح فعلاً ── */
-export const BUILD = "b17";
+export const BUILD = "b18";
 
 /* ── مراسي الصفحة ── */
 export const app = document.getElementById("app");
 export const bar = document.getElementById("bar");
 
 /* ── ثوابت العرض ── */
-export const L = ["أ","ب","ج","د"];
+/* ── حروف الخيارات: تتبع لغة الخيار نفسه ──
+   طالبٌ يقرأ سؤالاً إنجليزياً في ورقته يرى a) b) c) — فلا يصحّ
+   أن تعرض الشاشة أ ب ج. والفجوة بين التدريب والامتحان في مادة
+   لغة مسألة تعليمية لا شكلية. */
+export const L    = ["أ","ب","ج","د","هـ","و"];
+export const L_EN = ["A","B","C","D","E","F"];
+
+const AR_RX  = /[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]/;
+const STRONG = /[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]|[A-Za-z\u00C0-\u024F]/;
+
+/* أول محرف قويّ — نفس ما يفعله dir="auto" في المتصفح.
+   نحسبه بأنفسنا حين نحتاج القرار في JS لا في العرض وحده:
+   صندوق الخيار يبدأ بحرف المفتاح، فلو تُرك لـauto لحسم الاتجاه
+   بالحرف نفسه — دورٌ مغلق. */
+export function dirOf(t){
+  const m = String(t || '').match(STRONG);
+  return m ? (AR_RX.test(m[0]) ? 'rtl' : 'ltr') : 'rtl';
+}
+
+/* حرف الخيار: المخزَّن إن وُجد (i · ii · iii) وإلا يُشتقّ من اتجاهه */
+export const optLabel = (o, i) =>
+  (o?.label && String(o.label).trim())
+  || (dirOf(o?.body) === 'rtl' ? (L[i] || '') : (L_EN[i] || ''));
 
 export const ICONS = { pdf:'📄', video:'🎬', audio:'🎧', image:'🗺️', link:'🔗',
                        text:'📃', quiz:'📝', recording:'🎤' };
