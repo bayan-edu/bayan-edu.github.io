@@ -81,7 +81,7 @@
 .media-v{width:100%;aspect-ratio:16/9;border:0;border-radius:11px;margin-bottom:15px}
 
 .opts{display:flex;flex-direction:column;gap:9px}
-.opt{display:flex;align-items:flex-start;gap:12px;width:100%;text-align:right;
+.opt{display:flex;align-items:flex-start;gap:12px;width:100%;text-align:start;
  background:rgba(157,184,201,.05);border:1px solid var(--line);border-radius:11px;padding:13px 15px;
  cursor:pointer;color:var(--foam);font-family:inherit;font-size:.92rem;line-height:1.75;
  transition:border-color .18s,background .18s}
@@ -92,11 +92,11 @@
  font-family:'Almarai';font-weight:800;font-size:.8rem;display:flex;align-items:center;justify-content:center}
 .opt.sel .key{background:var(--cyan);color:#06202e}
 
-.psg{background:rgba(157,184,201,.06);border:1px solid var(--line);border-right:3px solid var(--cyan);
+/* الحدّ الملوّن يتبع اتجاه النصّ تلقائياً مع border-inline-start */
+.psg{background:rgba(157,184,201,.06);border:1px solid var(--line);border-inline-start:3px solid var(--cyan);
   border-radius:0 12px 12px 0;padding:16px;margin-bottom:15px;font-size:.9rem;line-height:2.05;
   max-height:44vh;overflow:auto;white-space:pre-wrap}
-.psg[dir="ltr"]{border-right:1px solid var(--line);border-left:3px solid var(--cyan);
-  border-radius:12px 0 0 12px;text-align:left}
+.psg{border-start-start-radius:0;border-end-start-radius:0}
 .psg-t{font-family:'Almarai';font-weight:800;font-size:.82rem;color:var(--cyan);margin-bottom:8px}
 
 /* ═══ النتيجة والتشخيص ═══ */
