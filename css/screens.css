@@ -109,10 +109,13 @@
 .unlocked{margin-top:14px;background:rgba(72,207,192,.1);border:1px solid rgba(72,207,192,.3);
  border-radius:11px;padding:12px;font-family:'Almarai';font-weight:700;font-size:.86rem;color:var(--cyan)}
 
-.rev{border-right:3px solid var(--line);padding:15px;margin-bottom:11px;
- background:rgba(157,184,201,.04);border-radius:0 11px 11px 0}
-.rev.ok{border-right-color:var(--cyan)}
-.rev.no{border-right-color:var(--coral)}
+/* الحدّ الملوّن يتبع اتجاه المحتوى — سؤال إنجليزي يأخذه يساراً */
+.rev{border-inline-start:3px solid var(--line);padding:15px;margin-bottom:11px;
+ background:rgba(157,184,201,.04);
+ border-start-end-radius:11px;border-end-end-radius:11px}
+.rev.ok{border-inline-start-color:var(--cyan)}
+.rev.no{border-inline-start-color:var(--coral)}
+.rev.new{border-inline-start-color:var(--sand)}
 .tag{display:inline-block;font-family:'Almarai';font-weight:800;font-size:.68rem;
  padding:3px 10px;border-radius:999px;margin-bottom:8px}
 .tag.ok{background:rgba(72,207,192,.16);color:var(--cyan)}
@@ -309,8 +312,8 @@
 
 /* ═══ الأقسام والنصوص المشتركة ═══ */
 .q-sec{font-family:'Almarai';font-weight:800;font-size:.78rem;color:var(--sand);
-  letter-spacing:.06em;margin-bottom:11px;padding-right:11px;
-  border-right:3px solid rgba(229,189,99,.5)}
+  letter-spacing:.06em;margin-bottom:11px;padding-inline-start:11px;
+  border-inline-start:3px solid rgba(229,189,99,.5)}
 .eq-meta{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
 .eq-meta .fl{font-size:.76rem;margin-bottom:6px}
 .eq-meta input,.eq-meta select{padding:9px 11px;font-size:.83rem}
@@ -323,7 +326,7 @@
 
 /* ═══ حاويات المحرّر: القسم والنصّ المشترك ═══ */
 .eq-bar{width:100%;display:block;border-radius:11px;padding:11px 14px;margin-bottom:9px;
-  border:1px solid var(--line);background:rgba(157,184,201,.05);text-align:right}
+  border:1px solid var(--line);background:rgba(157,184,201,.05);text-align:start}
 .eq-bar.add{cursor:pointer;border-style:dashed;color:var(--mist);
   font-family:'Almarai';font-weight:700;font-size:.78rem;transition:color .16s,border-color .16s}
 .eq-bar.add:hover{color:var(--cyan);border-color:rgba(72,207,192,.45)}
