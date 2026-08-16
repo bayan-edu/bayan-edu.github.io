@@ -7,7 +7,8 @@
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
 import { S } from './state.js';
-import { app, bar, head, toast, esc, fmt, AR, mmss, media, pgMedia, L, ICONS, nav, scrollTop } from './ui.js';
+import { app, bar, head, toast, esc, fmt, AR, mmss, media, pgMedia,
+         optLabel, dirOf, ICONS, nav, scrollTop } from './ui.js';
 import { loadList, loadLessons } from './student.js';
 
 /* ═══════════ ① بدء الاختبار ═══════════ */
@@ -61,20 +62,20 @@ function renderQ(){
   const body = q.kind==='mcq'
     ? `<div class="opts">${q.options.map((o,j)=>`
          <button class="opt ${a.o===o.id?'sel':''}" data-o="${o.id}"
-                 dir="auto" style="text-align:start">
-           <span class="key">${esc(o.label||L[j])}</span><span>${esc(o.body)}</span></button>`).join("")}</div>`
+                 dir="${dirOf(o.body)}" style="text-align:start">
+           <span class="key">${esc(optLabel(o,j))}</span><span>${esc(o.body)}</span></button>`).join("")}</div>`
     : `<textarea id="ta" placeholder="اكتب السلسلة السببية كاملة…">${esc(a.essay)}</textarea>`;
 
   const pg = q.passage_id ? S.passages[q.passage_id] : null;
   const pgHtml = pg ? `
     <div class="card" style="padding:16px">
-      ${pg.title?`<div class="psg-t">${esc(pg.title)}</div>`:''}
+      ${pg.title?`<div class="psg-t" dir="auto">${esc(pg.title)}</div>`:''}
       ${pgMedia(pg)}
       ${pg.body?`<div class="psg" dir="auto">${fmt(pg.body)}</div>`:''}
     </div>` : '';
 
   app.innerHTML = `
-    ${q.section?`<div class="q-sec">${esc(q.section)}</div>`:''}
+    ${q.section?`<div class="q-sec" dir="auto">${esc(q.section)}</div>`:''}
     ${pgHtml}
     <div class="card">
       <div class="qnum">سؤال ${AR(S.i+1)} · ${q.kind==='mcq'?'اختيار من متعدد':'مقالي قصير'}</div>
@@ -135,8 +136,13 @@ function renderResult(){
   nav('subjects');
   head("نتيجتك", S.quiz.title);
 
+  /* الحرف يُشتقّ هنا أيضاً — فما يقرؤه الطالب في المراجعة
+     هو ما رآه في السؤال بالضبط */
   const opt = id => {
-    for(const q of S.quiz.questions) for(const o of (q.options||[])) if(o.id===id) return o;
+    for(const q of S.quiz.questions){
+      const j = (q.options||[]).findIndex(o => o.id === id);
+      if(j >= 0) return { ...q.options[j], _l: optLabel(q.options[j], j) };
+    }
     return null;
   };
 
@@ -145,8 +151,8 @@ function renderResult(){
     return `<div class="rev ${x.is_correct?'ok':'no'}">
       <span class="tag ${x.is_correct?'ok':'no'}">${x.is_correct?'صحيحة':'خاطئة'}</span>
       <div class="rev-q" dir="auto">${AR(i+1)}. ${esc(x.body)}</div>
-      <div class="line" dir="auto">إجابتك: <b>${c?esc(c.label+') '+c.body):'— لم تُجب —'}</b></div>
-      ${x.is_correct?'':`<div class="line" dir="auto">الصحيحة: <b>${k?esc(k.label+') '+k.body):'—'}</b></div>
+      <div class="line" dir="auto">إجابتك: <b>${c?esc(c._l+') '+c.body):'— لم تُجب —'}</b></div>
+      ${x.is_correct?'':`<div class="line" dir="auto">الصحيحة: <b>${k?esc(k._l+') '+k.body):'—'}</b></div>
         <div class="trap"><strong>تشخيص الخطأ${x.dx_name?' — '+esc(x.dx_name):''}:</strong>
           ${esc(x.explanation||'').replace(/\n/g,"<br>")}
           ${x.remedy?`<div style="margin-top:8px;opacity:.9">🎯 ${esc(x.remedy)}</div>`:''}</div>
