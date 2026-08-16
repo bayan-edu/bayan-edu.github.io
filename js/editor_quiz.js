@@ -249,7 +249,7 @@ function passageBar(q, locked){
                        <button class="it-b" id="rmpg">✕ فصل</button>`}
     </div>
     ${p.media ? `<div style="margin-top:9px">${pgMedia(p)}</div>` : ''}
-    ${p.body ? `<div class="psg" dir="${p.lang==='ar'?'rtl':'ltr'}" style="max-height:160px;margin-top:9px">
+    ${p.body ? `<div class="psg" dir="auto" style="max-height:160px;margin-top:9px">
       ${fmt((p.body||'').slice(0,700))}${(p.body||'').length>700?'…':''}</div>` : ''}
   </div>`;
 }
@@ -459,7 +459,7 @@ function preview(){
     ${p ? `<div class="card" style="padding:16px">
         ${p.title?`<div class="psg-t">${esc(p.title)}</div>`:''}
         ${pgMedia(p)}
-        ${p.body?`<div class="psg" dir="${p.lang==='ar'?'rtl':'ltr'}">${fmt(p.body)}</div>`:''}
+        ${p.body?`<div class="psg" dir="auto">${fmt(p.body)}</div>`:''}
       </div>` : ''}
 
     <div class="card">
@@ -467,11 +467,11 @@ function preview(){
       ${q.image?`<img class="media" src="${esc(q.image)}" alt="">`:''}
       ${q.audio?`<audio controls src="${esc(q.audio)}" style="width:100%;margin-bottom:12px"></audio>`:''}
       ${q.video?`<iframe class="media-v" src="${esc(q.video)}" allowfullscreen></iframe>`:''}
-      <div class="qtext" dir="${q.lang==='ar'?'rtl':'ltr'}">${fmt(q.body)}</div>
+      <div class="qtext" dir="auto">${fmt(q.body)}</div>
       ${q.kind === 'mcq'
         ? `<div class="opts">${(q.options||[]).map((o,j) => `
-            <button class="opt" data-pvo="${j}" dir="${q.lang==='ar'?'rtl':'ltr'}"
-                    style="text-align:${q.lang==='ar'?'right':'left'}">
+            <button class="opt" data-pvo="${j}" dir="auto"
+                    style="text-align:start">
               <span class="key">${esc(o.label || L[j] || '')}</span>
               <span>${esc(o.body)}</span></button>`).join("")}</div>`
         : `<textarea placeholder="اكتب السلسلة السببية كاملة…"></textarea>`}
@@ -860,7 +860,9 @@ function readiness(){
       <div class="line"><b>${AR(r.essay||0)}</b> مقالي</div>
       ${(r.issues||[]).length
         ? (r.issues||[]).map(i => `<div class="eq-iss">⚠️ ${esc(i)}</div>`).join("")
-        : '<div class="eq-ok">✅ جاهز للنشر</div>'}
+        : `<div class="eq-ok">${Z.published
+             ? (ctx.lesson?.published ? '✅ منشور ويصل الطلاب' : '✅ منشور — بانتظار نشر الدرس')
+             : '✅ جاهز للنشر'}</div>`}
     </div>
     <div class="nav" style="gap:8px;margin-top:12px">
       <button class="btn ${Z.published?'ghost':'primary'}" id="pb" ${r.ok?'':'disabled'}>
@@ -878,7 +880,9 @@ function readiness(){
 
   document.getElementById("pv").onclick = preview;
   const pl = document.getElementById("pl");
-  if(pl) pl.onclick = pubLesson;
+  // ⚠️ pl.onclick = pubLesson كان يمرّر **حدث النقر** إلى quiet،
+  //    فيصير صادقاً ⇒ لا إعادة تحميل ⇒ الزرّ يبقى بعد النشر.
+  if(pl) pl.onclick = () => pubLesson(false);
 
   document.getElementById("pb").onclick = async () => {
     const { data, error } = await api.publishQuiz(Z.id, !Z.published);
