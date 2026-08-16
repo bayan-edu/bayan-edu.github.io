@@ -15,7 +15,7 @@
 import * as api from './api.js';
 import { S } from './state.js';
 import { app, head, toast, esc, fmt, AR, errBox, nav, setWide, scrollTop, L,
-         pgMedia, SAFE_HOSTS } from './ui.js';
+         pgMedia, SAFE_HOSTS, optLabel, dirOf } from './ui.js';
 import { openCourse } from './editor.js';
 
 let Z    = null;   // الاختبار المحمَّل
@@ -90,7 +90,7 @@ function render(){
         ${qs.map((x,i) => `
           <div class="eq-item ${i===cur?'on':''}" data-i="${i}">
             <span class="eq-n">${AR(i+1)}</span>
-            <span class="eq-b">${esc((x.body||'').slice(0,40) || '—')}</span>
+            <span class="eq-b" dir="auto">${esc((x.body||'').slice(0,40) || '—')}</span>
             <span class="eq-k">${x.kind==='essay'?'✍️':'◉'}</span>
           </div>`).join("")}
         <div class="nav" style="margin-top:12px;flex-direction:column;gap:7px">
@@ -157,9 +157,9 @@ function qCard(q){
     </select>`;
 
   const opt = (o, i) => `
-    <div class="eq-opt ${o.correct?'ok':''}">
-      <span class="key">${esc(o.label || L[i] || '?')}</span>
-      <input class="eq-ob" data-o="${i}" value="${esc(o.body||'')}"
+    <div class="eq-opt ${o.correct?'ok':''}" dir="${dirOf(o.body)}">
+      <span class="key">${esc(optLabel(o,i))}</span>
+      <input class="eq-ob" data-o="${i}" dir="auto" value="${esc(o.body||'')}"
              placeholder="نصّ الخيار" ${locked?'disabled':''}>
       <label class="eq-c" title="الإجابة الصحيحة">
         <input type="radio" name="corr" data-o="${i}" ${o.correct?'checked':''} ${locked?'disabled':''}>
@@ -182,7 +182,7 @@ function qCard(q){
 
       ${mediaRow(q, locked)}
 
-      <textarea id="qb" class="eq-qt" placeholder="نصّ السؤال…"
+      <textarea id="qb" class="eq-qt" dir="auto" placeholder="نصّ السؤال…"
         ${locked?'disabled':''}>${esc(q.body||'')}</textarea>
 
       ${q.kind === 'mcq' ? `
@@ -230,7 +230,7 @@ function sectionBar(q, locked){
   if(!q.section) return locked ? '' :
     `<button class="eq-bar add" id="addsec">＋ عنوان قسم يشمل هذا السؤال وما بعده</button>`;
   return `<div class="eq-bar sec">
-    <span class="eq-bt">${esc(q.section)}</span>
+    <span class="eq-bt" dir="auto">${esc(q.section)}</span>
     <span class="eq-bs">${span(r)}</span>
     ${locked ? '' : `<button class="it-b" id="edsec">✏️</button>
                      <button class="it-b" id="rmsec">✕</button>`}</div>`;
@@ -243,7 +243,7 @@ function passageBar(q, locked){
     `<button class="eq-bar add" id="addpg">＋ نصّ مشترك يشمل هذا السؤال وما بعده</button>`;
   return `<div class="eq-bar pg">
     <div class="eq-brow">
-      <span class="eq-bt">📖 ${esc(p.title || 'نصّ مشترك')}</span>
+      <span class="eq-bt" dir="auto">📖 ${esc(p.title || 'نصّ مشترك')}</span>
       <span class="eq-bs">${span(r)}</span>
       ${locked ? '' : `<button class="it-b" id="edpg">✏️ تحرير</button>
                        <button class="it-b" id="rmpg">✕ فصل</button>`}
@@ -335,7 +335,7 @@ function wire(q){
   const ao = document.getElementById("addo");
   if(ao) ao.onclick = () => {
     if(q.options.length >= 6){ toast("ستة خيارات حدّ كافٍ"); return; }
-    q.options.push({ label: L[q.options.length] || '', body: '', correct: false, dx: null });
+    q.options.push({ label: null, body: '', correct: false, dx: null });
     mark(); repaint(q);
   };
 
@@ -390,7 +390,7 @@ async function addQuestion(kind){
   if(dirty && !confirm("تغييرات غير محفوظة — أتتركها؟")) return;
   Z.questions.push(kind === 'mcq'
     ? { id:null, kind:'mcq', body:'', answered:0, explanation:'',
-        options: L.slice(0,4).map((l,i) => ({ label:l, body:'', correct:i===0, dx:null })) }
+        options: [0,1,2,3].map(i => ({ label:null, body:'', correct:i===0, dx:null })) }
     : { id:null, kind:'essay', body:'', answered:0, model:'', options:[] });
   cur = Z.questions.length - 1; dirty = true; render();
 }
@@ -455,9 +455,9 @@ function preview(){
       <span class="qcount">${AR(pv+1)} / ${AR(qs.length)}</span>
     </div>
 
-    ${q.section ? `<div class="q-sec">${esc(q.section)}</div>` : ''}
+    ${q.section ? `<div class="q-sec" dir="auto">${esc(q.section)}</div>` : ''}
     ${p ? `<div class="card" style="padding:16px">
-        ${p.title?`<div class="psg-t">${esc(p.title)}</div>`:''}
+        ${p.title?`<div class="psg-t" dir="auto">${esc(p.title)}</div>`:''}
         ${pgMedia(p)}
         ${p.body?`<div class="psg" dir="auto">${fmt(p.body)}</div>`:''}
       </div>` : ''}
@@ -470,9 +470,9 @@ function preview(){
       <div class="qtext" dir="auto">${fmt(q.body)}</div>
       ${q.kind === 'mcq'
         ? `<div class="opts">${(q.options||[]).map((o,j) => `
-            <button class="opt" data-pvo="${j}" dir="auto"
+            <button class="opt" data-pvo="${j}" dir="${dirOf(o.body)}"
                     style="text-align:start">
-              <span class="key">${esc(o.label || L[j] || '')}</span>
+              <span class="key">${esc(optLabel(o,j))}</span>
               <span>${esc(o.body)}</span></button>`).join("")}</div>`
         : `<textarea placeholder="اكتب السلسلة السببية كاملة…"></textarea>`}
     </div>
