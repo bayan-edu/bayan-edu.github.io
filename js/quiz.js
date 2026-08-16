@@ -61,7 +61,7 @@ function renderQ(){
   const body = q.kind==='mcq'
     ? `<div class="opts">${q.options.map((o,j)=>`
          <button class="opt ${a.o===o.id?'sel':''}" data-o="${o.id}"
-                 dir="${q.lang==='ar'?'rtl':'ltr'}" style="text-align:${q.lang==='ar'?'right':'left'}">
+                 dir="auto" style="text-align:start">
            <span class="key">${esc(o.label||L[j])}</span><span>${esc(o.body)}</span></button>`).join("")}</div>`
     : `<textarea id="ta" placeholder="اكتب السلسلة السببية كاملة…">${esc(a.essay)}</textarea>`;
 
@@ -70,7 +70,7 @@ function renderQ(){
     <div class="card" style="padding:16px">
       ${pg.title?`<div class="psg-t">${esc(pg.title)}</div>`:''}
       ${pgMedia(pg)}
-      ${pg.body?`<div class="psg" dir="${pg.lang==='ar'?'rtl':'ltr'}">${fmt(pg.body)}</div>`:''}
+      ${pg.body?`<div class="psg" dir="auto">${fmt(pg.body)}</div>`:''}
     </div>` : '';
 
   app.innerHTML = `
@@ -80,7 +80,7 @@ function renderQ(){
       <div class="qnum">سؤال ${AR(S.i+1)} · ${q.kind==='mcq'?'اختيار من متعدد':'مقالي قصير'}</div>
       ${media(q)}
       ${q.audio?`<audio controls src="${esc(q.audio)}" style="width:100%;margin-bottom:12px"></audio>`:''}
-      <div class="qtext" dir="${q.lang==='ar'?'rtl':'ltr'}">${fmt(q.body)}</div>
+      <div class="qtext" dir="auto">${fmt(q.body)}</div>
       ${body}
     </div>
     <div class="nav">
@@ -144,9 +144,9 @@ function renderResult(){
     const c = opt(x.chosen), k = opt(x.correct);
     return `<div class="rev ${x.is_correct?'ok':'no'}">
       <span class="tag ${x.is_correct?'ok':'no'}">${x.is_correct?'صحيحة':'خاطئة'}</span>
-      <div class="rev-q">${AR(i+1)}. ${esc(x.body)}</div>
-      <div class="line">إجابتك: <b>${c?esc(c.label+') '+c.body):'— لم تُجب —'}</b></div>
-      ${x.is_correct?'':`<div class="line">الصحيحة: <b>${k?esc(k.label+') '+k.body):'—'}</b></div>
+      <div class="rev-q" dir="auto">${AR(i+1)}. ${esc(x.body)}</div>
+      <div class="line" dir="auto">إجابتك: <b>${c?esc(c.label+') '+c.body):'— لم تُجب —'}</b></div>
+      ${x.is_correct?'':`<div class="line" dir="auto">الصحيحة: <b>${k?esc(k.label+') '+k.body):'—'}</b></div>
         <div class="trap"><strong>تشخيص الخطأ${x.dx_name?' — '+esc(x.dx_name):''}:</strong>
           ${esc(x.explanation||'').replace(/\n/g,"<br>")}
           ${x.remedy?`<div style="margin-top:8px;opacity:.9">🎯 ${esc(x.remedy)}</div>`:''}</div>
@@ -158,8 +158,8 @@ function renderResult(){
 
   const ess = r.review.filter(x=>x.kind==='essay').map(x=>`
     <div class="rev">
-      <div class="rev-q">${esc(x.body)}</div>
-      <div class="line">إجابتك: <b>${x.essay?esc(x.essay).replace(/\n/g,"<br>"):'— لم تُكتب —'}</b></div>
+      <div class="rev-q" dir="auto">${esc(x.body)}</div>
+      <div class="line" dir="auto">إجابتك: <b>${x.essay?esc(x.essay).replace(/\n/g,"<br>"):'— لم تُكتب —'}</b></div>
       <div class="model"><strong>الإجابة النموذجية — قارن بنفسك</strong>${esc(x.model||'').replace(/\n/g,"<br>")}</div>
     </div>`).join("");
 
