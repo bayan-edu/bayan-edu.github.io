@@ -47,7 +47,7 @@ export async function loadList(){
       : `${AR(x.lessons_done)} من ${AR(x.lessons_total)} درساً`;
     return `<div class="subj ${empty?'soon':''}" data-i="${x.id}">
       <div style="flex:1">
-        <div class="subj-t">${esc(x.icon||'')} <bdi>${esc(x.name)}</bdi>
+        <div class="subj-t" dir="auto">${esc(x.icon||'')} <bdi>${esc(x.name)}</bdi>
           ${x.my_level && !isPast?`<span class="lvl-tag">${esc(x.my_level)}</span>`:''}
           ${x.elective?'<span class="badge lock">اختيارية</span>':''}
           ${empty?'<span class="badge lock">قريباً</span>':''}</div>
@@ -208,7 +208,7 @@ export async function loadLessons(subj){
 
   const lcard = l => `
     <div class="lsn ${l.locked?'locked':''} ${l.done?'done':''}" data-i="${l.id}">
-      <div class="lsn-t">${esc(l.title)}
+      <div class="lsn-t" dir="auto">${esc(l.title)}
         ${l.done?'<span class="badge ok">أُنجز'+(l.best!=null?' '+AR(l.best)+'٪':'')+'</span>':''}
         ${l.locked?'<span class="badge lock">🔒</span>':''}</div>
       ${l.summary?`<div class="lsn-m">${esc(l.summary)}</div>`:''}
@@ -260,7 +260,7 @@ export function openLesson(l){
       <div class="itm ${i.kind==='quiz'?'quiz':''}" data-i="${i.id}">
         <div class="itm-ic">${ICONS[i.kind]||'•'}</div>
         <div style="flex:1">
-          <div class="itm-t">${esc(i.title)}</div>
+          <div class="itm-t" dir="auto">${esc(i.title)}</div>
           <div class="itm-m">${KINDS[i.kind]||i.kind}
             ${i.duration?` · ${AR(i.duration)} دقيقة`:''}
             ${i.is_graded?' · يُحتسب في النتيجة':''}
@@ -306,7 +306,7 @@ export async function loadFeedback(){
   app.innerHTML = `
     ${errBox(error,'ملاحظات المعلم')}
     ${list.length?list.map(f=>`
-      <div class="rev ${f.read_by_student?'':'no'}" style="border-right-color:${f.read_by_student?'var(--cyan)':'var(--sand)'}">
+      <div class="rev ${f.read_by_student?'ok':'new'}">
         <div class="rev-q">${esc(f.quizzes?.title||'')} ${f.read_by_student?'':'<span class="badge lock">جديد</span>'}</div>
         <div class="line">${new Date(f.submitted_at).toLocaleDateString('ar-EG')} · اختيار ${AR(f.score)}/${AR(f.total)} (${AR(f.pct)}٪)${f.essay_score!=null?` · مقالي: ${AR(f.essay_score)}`:''}</div>
         <div class="model" style="background:rgba(72,207,192,.07)">${esc(f.teacher_comment).replace(/\n/g,"<br>")}</div>
