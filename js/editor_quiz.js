@@ -430,6 +430,76 @@ async function reload(focusId){
 }
 
 
+/* ═══════════ المعاينة ═══════════
+   بفئات شاشة الطالب نفسها (.psg .qtext .opts .opt .key) — فما
+   يراه المؤلّف هو ما سيراه الطالب، لا محاكاةً له.
+   ولا تُسجَّل محاولة: النقر يُبرز الخيار ولا يُرسل شيئاً. */
+
+let pv = 0;
+
+function preview(){
+  const qs = Z.questions || [];
+  if(!qs.length){ toast("لا أسئلة للمعاينة"); return; }
+  pv = Math.min(pv, qs.length - 1);
+  const q = qs[pv];
+  const p = (Z.passages||[]).find(x => String(x.id) === String(q.passage_id));
+
+  app.innerHTML = `
+    <div class="crumb" id="pvx">← رجوع إلى التحرير</div>
+    <div class="warnbox">👁️ معاينة — هكذا يرى الطالب هذا السؤال.
+      لا تُسجَّل محاولة ولا تُعرض الإجابة الصحيحة.</div>
+
+    <div class="timerbar" style="position:static;border-radius:11px;margin-bottom:14px">
+      <span class="clock">${mmssPv(Z.minutes*60)}</span>
+      <span class="track"><span class="trackfill" style="width:100%"></span></span>
+      <span class="qcount">${AR(pv+1)} / ${AR(qs.length)}</span>
+    </div>
+
+    ${q.section ? `<div class="q-sec">${esc(q.section)}</div>` : ''}
+    ${p ? `<div class="card" style="padding:16px">
+        ${p.title?`<div class="psg-t">${esc(p.title)}</div>`:''}
+        ${pgMedia(p)}
+        ${p.body?`<div class="psg" dir="${p.lang==='ar'?'rtl':'ltr'}">${fmt(p.body)}</div>`:''}
+      </div>` : ''}
+
+    <div class="card">
+      <div class="qnum">سؤال ${AR(pv+1)} · ${q.kind==='mcq'?'اختيار من متعدد':'مقالي قصير'}</div>
+      ${q.image?`<img class="media" src="${esc(q.image)}" alt="">`:''}
+      ${q.audio?`<audio controls src="${esc(q.audio)}" style="width:100%;margin-bottom:12px"></audio>`:''}
+      ${q.video?`<iframe class="media-v" src="${esc(q.video)}" allowfullscreen></iframe>`:''}
+      <div class="qtext" dir="${q.lang==='ar'?'rtl':'ltr'}">${fmt(q.body)}</div>
+      ${q.kind === 'mcq'
+        ? `<div class="opts">${(q.options||[]).map((o,j) => `
+            <button class="opt" data-pvo="${j}" dir="${q.lang==='ar'?'rtl':'ltr'}"
+                    style="text-align:${q.lang==='ar'?'right':'left'}">
+              <span class="key">${esc(o.label || L[j] || '')}</span>
+              <span>${esc(o.body)}</span></button>`).join("")}</div>`
+        : `<textarea placeholder="اكتب السلسلة السببية كاملة…"></textarea>`}
+    </div>
+
+    <div class="nav">
+      ${pv > 0 ? '<button class="btn ghost" id="pvp">السابق</button>' : ''}
+      <button class="btn primary" id="pvn">
+        ${pv === qs.length-1 ? 'نهاية المعاينة' : 'التالي'}</button>
+    </div>`;
+
+  document.getElementById("pvx").onclick = () => render();
+  const pp = document.getElementById("pvp"); if(pp) pp.onclick = () => { pv--; preview(); };
+  document.getElementById("pvn").onclick = () => {
+    if(pv === qs.length-1){ toast("انتهت المعاينة"); pv = 0; render(); return; }
+    pv++; preview();
+  };
+  app.querySelectorAll("[data-pvo]").forEach(el => el.onclick = () => {
+    app.querySelectorAll(".opt").forEach(x => x.classList.remove('sel'));
+    el.classList.add('sel');
+  });
+  scrollTop();
+}
+
+const mmssPv = s => { const m = Math.floor(s/60), x = s%60;
+                      return m + ":" + (x<10?"0":"") + x; };
+
+
 /* ═══════════ الاستيراد ═══════════
    يُضيف ولا يستبدل · ويعاين قبل الإدراج · وكل سؤال يمرّ بـ
    save_question — فالحراسة نفسها: كود تشخيص لكل مشتّت وشرحٌ
@@ -792,19 +862,44 @@ function readiness(){
         ? (r.issues||[]).map(i => `<div class="eq-iss">⚠️ ${esc(i)}</div>`).join("")
         : '<div class="eq-ok">✅ جاهز للنشر</div>'}
     </div>
-    <div class="nav" style="flex-direction:column;gap:8px;margin-top:12px">
+    <div class="nav" style="gap:8px;margin-top:12px">
       <button class="btn ${Z.published?'ghost':'primary'}" id="pb" ${r.ok?'':'disabled'}>
-        ${Z.published ? 'إلغاء النشر' : 'نشر الاختبار'}</button>
+        ${Z.published ? 'إلغاء النشر' : 'نشر'}</button>
+      <button class="btn ghost" id="pv" title="عِش تجربة الطالب">👁️ معاينة</button>
     </div>
     <p class="hint" style="text-align:right;margin-top:10px">
-      ${Z.published ? 'منشور — يراه طلاب هذا الدرس.'
-                    : 'غير منشور — لا يظهر لأحد بعد.'}</p>`;
+      ${Z.published
+        ? (ctx.lesson?.published
+            ? 'منشور — يراه طلاب هذا الدرس.'
+            : '⚠️ الاختبار منشور لكن <b>الدرس مسودّة</b> — فلا يصل أحداً.')
+        : 'غير منشور — لا يظهر لأحد بعد.'}</p>
+    ${Z.published && !ctx.lesson?.published
+      ? `<div class="nav"><button class="btn primary" id="pl">نشر الدرس أيضاً</button></div>` : ''}`;
+
+  document.getElementById("pv").onclick = preview;
+  const pl = document.getElementById("pl");
+  if(pl) pl.onclick = pubLesson;
 
   document.getElementById("pb").onclick = async () => {
     const { data, error } = await api.publishQuiz(Z.id, !Z.published);
     if(error){ toast(error.message); return; }
     if(!data.ok){ toast(data.error); return; }
-    toast(Z.published ? "أُلغي النشر" : "نُشر الاختبار");
+    if(Z.published){ toast("أُلغي النشر"); reload(); return; }
+    toast("نُشر الاختبار");
+    /* اختبارٌ منشور داخل درسٍ مسودّة لا يصل أحداً — نسأل ولا نفترض */
+    if(ctx.lesson && !ctx.lesson.published &&
+       confirm("نُشر الاختبار.\n\nوالدرس ما زال مسودّة — فلن يظهر لأحد.\nأتنشر الدرس أيضاً؟")){
+      await pubLesson(true);
+    }
     reload();
   };
+
+async function pubLesson(quiet){
+  const { data, error } = await api.publishLesson(ctx.lesson.id, true);
+  if(error){ toast(error.message); return; }
+  if(!data.ok){ toast(data.error); return; }
+  ctx.lesson.published = true;
+  toast("نُشر الدرس — صار يظهر لطلابه");
+  if(!quiet) reload();
+}
 }
