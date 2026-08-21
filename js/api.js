@@ -235,6 +235,8 @@ export const attachPassage = (pid, ids) =>
   db.rpc('attach_passage', { p_passage: pid, p_ids: ids });
 export const setSection = (sec, ids) =>
   db.rpc('set_section', { p_section: sec, p_ids: ids });
+
+// والخانة ثالثتهما — لكنها مجموعة لا مدى: النسخ لا تتجاور بالضرورة
 export const setVariant   = ids => db.rpc('set_variant',   { p_ids: ids });
 export const clearVariant = ids => db.rpc('clear_variant', { p_ids: ids });
 
