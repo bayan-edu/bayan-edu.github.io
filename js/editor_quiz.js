@@ -91,7 +91,7 @@ function render(){
           <div class="eq-item ${i===cur?'on':''}" data-i="${i}">
             <span class="eq-n">${AR(i+1)}</span>
             <span class="eq-b" dir="auto">${esc((x.body||'').slice(0,40) || '—')}</span>
-            <span class="eq-k">${x.kind==='essay'?'✍️':'◉'}</span>
+            <span class="eq-k">${x.variant_key?'⇄':''}${x.kind==='essay'?'✍️':'◉'}</span>
           </div>`).join("")}
         <div class="nav" style="margin-top:12px;flex-direction:column;gap:7px">
           <button class="btn ghost eq-add" id="addm">＋ اختيار من متعدد</button>
@@ -175,6 +175,7 @@ function qCard(q){
 
     ${sectionBar(q, locked)}
     ${passageBar(q, locked)}
+    ${variantBar(q, locked)}
 
     <div class="card">
       <div class="qnum">سؤال ${AR(cur+1)} · ${q.kind==='mcq'?'اختيار من متعدد':'مقالي قصير'}
@@ -254,6 +255,82 @@ function passageBar(q, locked){
   </div>`;
 }
 
+/* ═══════════ الخانة — النسخ المكافئة ═══════════
+   ⚠️ الخانة ليست مدى كالقسم والنصّ: النسخ قد تتباعد في الترتيب،
+      فلا تُستعمل range() هنا بل بحثٌ بالمفتاح في كل الأسئلة.
+
+   والبصمة تُحسب في الواجهة لا في القاعدة: quiz_for_edit تُرجع
+   خيارات كل الأسئلة بأكوادها أصلاً — فالمقارنة بلا نداء. */
+
+/* بصمة الفخاخ — نظير array_agg(distinct dx order by dx) في القاعدة */
+const fp = q => [...new Set((q.options || [])
+    .filter(o => !o.correct).map(o => o.dx).filter(Boolean))].sort();
+
+const partners = q => !q.variant_key ? []
+  : (Z.questions || []).filter(x => x.variant_key === q.variant_key && x.id !== q.id);
+
+const dxName = code => ((S.tree?.dx) || []).find(d => d.code === code)?.name || code;
+
+function variantBar(q, locked){
+  if(!q.variant_key){
+    return (locked || !q.id) ? '' :
+      `<button class="eq-bar add" id="mkvar">⇄ اصنع بديلاً مكافئاً — يقيس المهارة نفسها بمحتوى آخر</button>`;
+  }
+
+  const ps   = partners(q);
+  const mine = fp(q).join(' · ');
+  const bad  = ps.filter(p => fp(p).join(' · ') !== mine);
+
+  const traps = p => (p.options || []).filter(o => !o.correct && o.dx)
+    .map(o => `<span class="chip">${esc(dxName(o.dx))}</span>`).join('');
+
+  return `<div class="eq-bar sec">
+    <div class="eq-brow">
+      <span class="eq-bt">⇄ خانة ${esc(q.variant_key)}</span>
+      <span class="eq-bs">${AR(ps.length + 1)} نسخ في الخانة</span>
+      ${locked ? '' : `<button class="it-b" id="rmvar">✕ فكّ</button>`}
+    </div>
+
+    ${ps.map(p => `<div class="eq-brow" style="margin-top:8px">
+        <span class="eq-bs">سؤال ${AR(p.position)}</span>
+        <span class="eq-bt" dir="auto" style="flex:1;min-width:0">
+          ${esc((p.body || '').slice(0, 60))}</span>
+        <span style="display:flex;gap:5px;flex-wrap:wrap">${traps(p)}</span>
+      </div>`).join('')}
+
+    ${bad.length ? `<div class="warnbox" style="margin-top:10px">
+        ⚠️ الفخاخ غير متطابقة — النسخة لا تقيس ما يقيسه شريكها.<br>
+        هنا: <b>${esc(mine || '—')}</b> · الشريك: <b>${esc(fp(bad[0]).join(' · ') || '—')}</b><br>
+        صحّح <b>الخيار</b> لا الكود — الكود يصف المشتّت ولا يصنعه.
+      </div>` : `<div class="eq-bs" style="margin-top:8px">✅ الفخاخ متطابقة</div>`}
+  </div>`;
+}
+
+/* التكرار حركة · والاقتران إعلان — وهذا الزرّ إعلانُ الكاتب صراحةً */
+async function makeVariant(q){
+  if(!q.id){ toast("احفظ السؤال أولاً ثم اصنع بديله"); return; }
+  if(dirty && !confirm("تغييرات غير محفوظة في هذا السؤال — أتتركها؟")) return;
+
+  const d = await api.duplicateQuestion(q.id);
+  if(d.error){ toast(d.error.message); return; }
+  if(!d.data.ok){ toast(d.data.error); return; }
+
+  const v = await api.setVariant([q.id, d.data.id]);
+  if(v.error || !v.data?.ok) toast(v.error?.message || v.data?.error || "تعذّر الاقتران");
+  else toast(`أُنشئ بديل في خانة ${v.data.key} — بدّل المحتوى وأبقِ الفخاخ`);
+
+  reload(d.data.id);              // تُعيد التحميل وتنتقل إلى البديل معاً
+}
+
+async function unVariant(q){
+  const { data, error } = await api.clearVariant([q.id]);
+  if(error){ toast(error.message); return; }
+  if(!data.ok){ toast(data.error); return; }
+  toast("فُكّت الخانة");
+  reload(q.id);
+}
+
+
 /* وسائط السؤال — الأعمدة موجودة في القاعدة ولم يكن لها منفذ */
 function mediaRow(q, locked){
   if(locked) return '';
@@ -315,6 +392,8 @@ function wire(q){
   bind("addpg",  () => passageForm(null));
   bind("edpg",   () => passageForm((Z.passages||[]).find(x => String(x.id) === String(q.passage_id))));
   bind("rmpg",   () => applyPassage(null));
+  bind("mkvar",  () => makeVariant(q));
+  bind("rmvar",  () => unVariant(q));
 
   main.querySelectorAll(".eq-ob").forEach(el => el.oninput = e => {
     q.options[+el.dataset.o].body = e.target.value; mark();
