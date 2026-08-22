@@ -626,10 +626,10 @@ const SAMPLE = JSON.stringify({
   questions: [
     { section: "A. Vocabulary", body: "\"Crossroads\" here means a ……",
       explanation: "Crossroads = ملتقى طرق، وأقربها junction.",
-      options: [ { body: "barrier",  dx: "SEM" },
+      options: [ { body: "barrier",  dx: "VOC" },
                  { body: "junction", correct: true },
-                 { body: "pathway",  dx: "SEM" },
-                 { body: "boundary", dx: "SEM" } ] },
+                 { body: "pathway",  dx: "VOC" },
+                 { body: "boundary", dx: "VOC" } ] },
     { section: "B. Reading", passage: "p1", body: "The best title is ……",
       explanation: "العنوان يجمع الماضي والحاضر.",
       options: [ { body: "Trade Routes", dx: "DTL" },
@@ -639,8 +639,8 @@ const SAMPLE = JSON.stringify({
       explanation: "الأوليان منصوصتان في الفقرة؛ والأخريان إسقاطٌ من خارج النصّ.",
       options: [ { body: "Egypt lies where old trade routes met", correct: true },
                  { body: "Its past still shapes its identity",     correct: true },
-                 { body: "Its economy depends mainly on tourism",  dx: "SEM" },
-                 { body: "It stayed untouched by other cultures",  dx: "DTL" } ] }
+                 { body: "Its economy depends mainly on tourism",  dx: "INF" },
+                 { body: "It stayed untouched by other cultures",  dx: "INF" } ] }
   ]
 }, null, 2);
 
@@ -751,6 +751,22 @@ function importBox(){
       <div class="qnum">⇪ استيراد اختبار · يُضاف إلى ${AR((Z.questions||[]).length)} سؤالاً قائماً</div>
       <div class="line" style="margin-bottom:12px">ألصق JSON — أسئلةً ونصوصاً مشتركة وأقساماً.
         كل سؤال يمرّ بنفس التحقّق: كود تشخيص لكل مشتّت، وشرحٌ للخطأ.</div>
+
+      <!-- 🔑 القائمة عند نقطة القرار: من يكتب JSON خارج المنصّة لا يرى
+           أكواده، فيخترع ما يظنّه معقولاً ثم يُفاجأ بالرفض. وأرخص من
+           رسالة خطأ دقيقة أن تُعرض القائمة قبل أن يُكتب الملف. -->
+      <details class="eq-dxlist" style="margin-bottom:12px">
+        <summary style="cursor:pointer;font-family:'Almarai';font-weight:700;font-size:.82rem">
+          أكواد التشخيص المتاحة (${AR(((S.tree?.dx)||[]).length)}) — انسخ الرمز كما هو</summary>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:9px">
+          ${[...new Set(((S.tree?.dx)||[]).map(d => d.family || 'عام'))].map(f => `
+            <div style="width:100%;margin-top:4px;font-size:.74rem;opacity:.6">${esc(f)}</div>
+            ${((S.tree?.dx)||[]).filter(d => (d.family||'عام') === f).map(d =>
+              `<span class="chip" title="${esc(d.name)}" dir="ltr">${esc(d.code)}</span>
+               <span style="font-size:.76rem;opacity:.75;margin-inline-end:10px">${esc(d.name)}</span>`
+            ).join('')}`).join('')}
+        </div>
+      </details>
       <div class="drop" id="idz">
         <div class="drop-i">⇪</div>
         <div>اسحب ملف JSON هنا · أو <span class="drop-a" id="ipick">اختر ملفاً</span>
