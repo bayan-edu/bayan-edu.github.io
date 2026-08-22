@@ -368,3 +368,39 @@
 .drop-a{color:var(--cyan);cursor:pointer;text-decoration:underline;
   font-family:'Almarai';font-weight:700}
 .drop-s{font-size:.72rem;opacity:.65;margin-top:7px}
+
+/* ═══════════════════════════════════════════════════════════
+   بيان — إضافة أنماط الاختيار المتعدّد (msq)
+   ⚠️ يُلحَق بآخر css/screens.css — لا يُستبدل به الملف.
+      كل المحدِّدات هنا جديدة، فلا تمسّ ما هو قائم:
+      .opt و .key و .rev و .trap تبقى كما هي حرفاً بحرف.
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── التلميح: يقول «أكثر من واحد» ولا يقول كم.
+      إعلان العدد يعيد المقارنة الترجيحية من الباب الخلفي،
+      وجوهر هذا النمط أن يُحاكَم كل خيار وحده. */
+.q-hint{font-family:'Almarai';font-weight:700;font-size:.78rem;color:var(--sand);
+  background:rgba(229,189,99,.09);border:1px solid rgba(229,189,99,.26);
+  border-radius:9px;padding:8px 11px;margin-bottom:11px}
+
+/* ── علامة الاختيار: مربّع لا دائرة.
+      الشكل نفسه رسالة — الدائرة تقول «واحدة»، والمربّع «ما شئت». */
+.opts.multi .opt{align-items:center}
+.tick{flex:0 0 22px;height:22px;border-radius:6px;border:1.5px solid var(--line);
+  margin-inline-start:auto;display:flex;align-items:center;justify-content:center;
+  font-size:.74rem;color:#06202e;background:transparent;transition:background .18s,border-color .18s}
+.opt.sel .tick{background:var(--cyan);border-color:var(--cyan)}
+
+/* ── المراجعة: صفٌّ لكل خيار، لا صفٌّ للسؤال */
+.jds{display:flex;flex-direction:column;gap:7px;margin:9px 0}
+.jd{display:flex;align-items:flex-start;gap:10px;padding:9px 11px;border-radius:10px;
+  background:rgba(157,184,201,.05);border:1px solid var(--line);
+  font-size:.86rem;line-height:1.7}
+.jd .key{flex:0 0 24px;height:24px;font-size:.74rem}
+.jd.hit{border-color:rgba(72,207,192,.42);background:rgba(72,207,192,.08)}
+.jd.err{border-color:rgba(242,119,107,.42);background:rgba(242,119,107,.08)}
+.jd.dim{opacity:.6}
+.jd-m{display:block;margin-top:4px;font-family:'Almarai';font-weight:800;font-size:.72rem;color:var(--mist)}
+.jd.hit .jd-m{color:var(--cyan)}
+.jd.err .jd-m{color:var(--coral)}
+.jd-dx{display:block;margin-top:4px;font-size:.79rem;color:var(--sand);line-height:1.65}
