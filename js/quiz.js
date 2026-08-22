@@ -185,18 +185,29 @@ function renderResult(){
   const countJ = (x, key, picked) =>
     (x.judgments||[]).filter(j => j.key===key && j.picked===picked).length;
 
+  /* تشخيص الإغفال من النمط لا من وسمٍ يكتبه المؤلّف.
+     ثلاث حالات تصف ما فعله الطالب — لا ما دار في ذهنه. */
+  const patternOf = (wide, narr, keys) =>
+      (wide && narr) ? { t:'الحدّ مضطرب من طرفيه',
+        s:`أدخلتَ ${AR(wide)} مما ليس منه، وأغفلتَ ${AR(narr)} مما هو منه.` }
+    : wide           ? { t:'توسيعٌ للمفهوم',
+        s:`عرفتَ المجموعة كلها ثم زدتَ عليها ${AR(wide)}. اسأل عن كل خيار وحده: أينتمي حقاً؟` }
+    : (narr >= keys) ? { t:'الحدّ لم يتّضح بعد',
+        s:'لم تُصب من المجموعة شيئاً — أعد قراءة الشرح قبل الإعادة.' }
+    :                  { t:'توقّفتَ قبل أن تُكمل',
+        s:`لم تخطئ في حكمٍ واحد، لكنك تركتَ ${AR(narr)} من المجموعة. التعليمة تطلب كل ما ينطبق — فأكمل الخيارات كلها قبل أن تنتقل.` };
+
   const objective = r.review.filter(x=>x.kind!=='essay').map((x,i)=>{
     const c = opt(x.chosen), k = opt(x.correct);
     const msq = x.kind==='msq';
-    const wide = msq ? countJ(x,false,true)  : 0;    // أدخل ما ليس منه
-    const narr = msq ? countJ(x,true,false) : 0;     // أخرج ما هو منه
+    const wide = msq ? countJ(x,false,true) : 0;                    // أدخل ما ليس منه
+    const narr = msq ? countJ(x,true,false) : 0;                    // أخرج ما هو منه
+    const keys = msq ? narr + countJ(x,true,true) : 0;              // حجم المجموعة
+    const pat  = (msq && !x.is_correct) ? patternOf(wide, narr, keys) : null;
 
     const answer = msq
       ? `<div class="jds">${jrows(x)}</div>
-         ${x.is_correct?'':`<div class="line">${[
-             wide?`توسيعٌ للمفهوم — أدخلتَ ${AR(wide)} مما ليس منه`:'',
-             narr?`تضييقٌ للمفهوم — أغفلتَ ${AR(narr)} مما هو منه`:''
-           ].filter(Boolean).join(' · ')}</div>`}`
+         ${pat?`<div class="line"><b>${pat.t}</b> — ${pat.s}</div>`:''}`
       : `<div class="line" dir="auto">إجابتك: <b>${c?esc(c._l+') '+c.body):'— لم تُجب —'}</b></div>
          ${x.is_correct?'':`<div class="line" dir="auto">الصحيحة: <b>${
              k?esc(k._l+') '+k.body):'—'}</b></div>`}`;
