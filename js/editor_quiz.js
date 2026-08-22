@@ -150,10 +150,9 @@ function qCard(q){
   const dx = (S.tree?.dx) || [];
   const fams = [...new Set(dx.map(d => d.family || 'عام'))];
 
-  /* في msq يُسأل الصحيح سؤالاً آخر: لا «لماذا اختاره؟» بل «لماذا أغفله؟» */
-  const dxSelect = (val, i, omit) => `
+  const dxSelect = (val, i) => `
     <select class="eq-dx ${val?'':'miss'}" data-o="${i}" ${locked?'disabled':''}>
-      <option value="">— ${omit ? 'لماذا قد يُغفله؟' : 'اختر التشخيص'} —</option>
+      <option value="">— اختر التشخيص —</option>
       ${fams.map(f => `<optgroup label="${esc(f)}">
         ${dx.filter(d => (d.family||'عام')===f).map(d =>
           `<option value="${esc(d.code)}" ${d.code===val?'selected':''}>${esc(d.name)}</option>`).join("")}
@@ -170,7 +169,7 @@ function qCard(q){
                ${o.correct?'checked':''} ${locked?'disabled':''}>
         صحيحة
       </label>
-      ${(o.correct && !multi) ? '<span class="eq-sp"></span>' : dxSelect(o.dx, i, multi && o.correct)}
+      ${o.correct ? '<span class="eq-sp"></span>' : dxSelect(o.dx, i)}
       ${locked ? '' : `<button class="eq-x" data-rm="${i}" title="حذف الخيار">✕</button>`}
     </div>`;
 
@@ -194,8 +193,8 @@ function qCard(q){
 
       ${(q.kind === 'mcq' || multi) ? `
         ${multi ? `<div class="eq-hint" style="display:block;margin-bottom:9px;line-height:1.85">
-          كل خيار يُحاكَم وحده: الخاطئ يحتاج كود «لماذا اختاره؟» والصحيح كود «لماذا أغفله؟»
-          · صحيحان فأكثر وخاطئ واحد على الأقل · ولا يُعلَن العدد للطالب</div>` : ''}
+          صحيحان فأكثر · وخاطئ واحد على الأقل · ولا يُعلَن العدد للطالب.
+          والكود للمشتّت وحده — والإغفال يُشخَّص من نمط الإجابة لا من وسمٍ تكتبه.</div>` : ''}
         <div class="opts eq-opts">${(q.options||[]).map(opt).join("")}</div>
         ${locked ? '' : '<button class="btn ghost eq-addo" id="addo">＋ خيار</button>'}
 
@@ -415,9 +414,16 @@ function wire(q){
   });
   main.querySelectorAll('input[name="corr"]').forEach(el => el.onchange = () => {
     const i = +el.dataset.o;
-    /* الاختيار الواحد إسنادٌ يُلغي ما سواه · والمتعدّد تبديلُ خيارٍ وحده */
-    if(q.kind === 'msq') q.options[i].correct = el.checked;
-    else q.options.forEach((o, j) => o.correct = (j === i));
+    /* الاختيار الواحد إسنادٌ يُلغي ما سواه · والمتعدّد تبديلُ خيارٍ وحده.
+       ⚠️ والكود يُبطَل مع كل تبديل ولا يُبدَّل: كودُ الإغفال جوابٌ عن
+       «لماذا تركها؟» وكودُ المشتّت عن «لماذا أخذها؟» — وليس بينهما
+       دالةُ تحويل. فمتى سقط السؤال، سقط جوابه ولزم سؤال المؤلّف من جديد. */
+    if(q.kind === 'msq'){
+      q.options[i].correct = el.checked;
+      q.options[i].dx = null;
+    } else {
+      q.options.forEach((o, j) => { o.correct = (j === i); if(o.correct) o.dx = null; });
+    }
     mark(); repaint(q);
   });
   main.querySelectorAll("[data-rm]").forEach(el => el.onclick = () => {
@@ -631,10 +637,10 @@ const SAMPLE = JSON.stringify({
     { kind: "msq", section: "B. Reading", passage: "p1",
       body: "Which statements does the passage support? (Choose all that apply)",
       explanation: "الأوليان منصوصتان في الفقرة؛ والأخريان إسقاطٌ من خارج النصّ.",
-      options: [ { body: "Egypt lies where old trade routes met", correct: true, dx: "DTL" },
-                 { body: "Its past still shapes its identity",     correct: true, dx: "DTL" },
+      options: [ { body: "Egypt lies where old trade routes met", correct: true },
+                 { body: "Its past still shapes its identity",     correct: true },
                  { body: "Its economy depends mainly on tourism",  dx: "SEM" },
-                 { body: "It stayed untouched by other cultures",  dx: "SEM" } ] }
+                 { body: "It stayed untouched by other cultures",  dx: "DTL" } ] }
   ]
 }, null, 2);
 
@@ -683,10 +689,8 @@ function parseImport(txt){
 
     opts.forEach((o, k) => {
       if(!String(o.body || '').trim()) out.issues.push(`س${n}: خيار ${k+1} بلا نصّ`);
-      /* في msq نصف الخطأ إغفالُ صحيح ⇒ لا يُعفى الصحيح من الكود */
-      if(o.correct && !multi) return;
-      if(!o.dx) out.issues.push(`س${n}: الخيار "${String(o.body||'').slice(0,18)}" بلا كود تشخيص${
-        o.correct ? ' — والصحيح في msq يحتاج كود الإغفال' : ''}`);
+      if(o.correct) return;              // الكود للمشتّت وحده — في النمطين
+      if(!o.dx) out.issues.push(`س${n}: الخيار "${String(o.body||'').slice(0,18)}" بلا كود تشخيص`);
       else if(!dxCodes.has(o.dx)) out.issues.push(`س${n}: كود غير معروف "${o.dx}"`);
     });
   });
@@ -728,12 +732,8 @@ function exportQuiz(){
       if(q.kind === 'essay'){ o.model = q.model || null; return o; }
       o.explanation = q.explanation || null;
       if(q.difficulty) o.difficulty = q.difficulty;
-      /* في msq يحمل الصحيح كود الإغفال — فلا يُسقَط عند التصدير،
-         وإلا عاد الاستيراد بنصف التشخيص ورفضه المدقّق. */
       o.options = (q.options || []).map(x => x.correct
-        ? (q.kind === 'msq' ? { body: x.body, correct: true, dx: x.dx || null }
-                            : { body: x.body, correct: true })
-        : { body: x.body, dx: x.dx || null });
+        ? { body: x.body, correct: true } : { body: x.body, dx: x.dx || null });
       return o;
     })
   };
