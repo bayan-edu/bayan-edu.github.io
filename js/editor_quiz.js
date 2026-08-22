@@ -91,10 +91,11 @@ function render(){
           <div class="eq-item ${i===cur?'on':''}" data-i="${i}">
             <span class="eq-n">${AR(i+1)}</span>
             <span class="eq-b" dir="auto">${esc((x.body||'').slice(0,40) || '—')}</span>
-            <span class="eq-k">${x.variant_key?'⇄':''}${x.kind==='essay'?'✍️':'◉'}</span>
+            <span class="eq-k">${x.variant_key?'⇄':''}${x.kind==='essay'?'✍️':x.kind==='msq'?'☑':'◉'}</span>
           </div>`).join("")}
         <div class="nav" style="margin-top:12px;flex-direction:column;gap:7px">
           <button class="btn ghost eq-add" id="addm">＋ اختيار من متعدد</button>
+          <button class="btn ghost eq-add" id="addmm">＋ اختيار متعدّد الإجابات</button>
           <button class="btn ghost eq-add" id="adde">＋ سؤال مقالي</button>
           <button class="btn ghost eq-add" id="imp">⇪ استيراد</button>
         </div>
@@ -108,8 +109,9 @@ function render(){
 
   document.getElementById("bk").onclick = leave;
   app.querySelectorAll(".eq-item").forEach(el => el.onclick = () => go(+el.dataset.i));
-  document.getElementById("addm").onclick = () => addQuestion('mcq');
-  document.getElementById("adde").onclick = () => addQuestion('essay');
+  document.getElementById("addm").onclick  = () => addQuestion('mcq');
+  document.getElementById("addmm").onclick = () => addQuestion('msq');
+  document.getElementById("adde").onclick   = () => addQuestion('essay');
   ["imp","imp0"].forEach(id => {
     const el = document.getElementById(id); if(el) el.onclick = importBox;
   });
@@ -144,12 +146,14 @@ function leave(){
 
 function qCard(q){
   const locked = q.answered > 0;
+  const multi  = q.kind === 'msq';
   const dx = (S.tree?.dx) || [];
   const fams = [...new Set(dx.map(d => d.family || 'عام'))];
 
-  const dxSelect = (val, i) => `
+  /* في msq يُسأل الصحيح سؤالاً آخر: لا «لماذا اختاره؟» بل «لماذا أغفله؟» */
+  const dxSelect = (val, i, omit) => `
     <select class="eq-dx ${val?'':'miss'}" data-o="${i}" ${locked?'disabled':''}>
-      <option value="">— اختر التشخيص —</option>
+      <option value="">— ${omit ? 'لماذا قد يُغفله؟' : 'اختر التشخيص'} —</option>
       ${fams.map(f => `<optgroup label="${esc(f)}">
         ${dx.filter(d => (d.family||'عام')===f).map(d =>
           `<option value="${esc(d.code)}" ${d.code===val?'selected':''}>${esc(d.name)}</option>`).join("")}
@@ -161,11 +165,12 @@ function qCard(q){
       <span class="key">${esc(optLabel(o,i))}</span>
       <input class="eq-ob" data-o="${i}" dir="auto" value="${esc(o.body||'')}"
              placeholder="نصّ الخيار" ${locked?'disabled':''}>
-      <label class="eq-c" title="الإجابة الصحيحة">
-        <input type="radio" name="corr" data-o="${i}" ${o.correct?'checked':''} ${locked?'disabled':''}>
+      <label class="eq-c" title="${multi?'من الإجابات الصحيحة':'الإجابة الصحيحة'}">
+        <input type="${multi?'checkbox':'radio'}" name="corr" data-o="${i}"
+               ${o.correct?'checked':''} ${locked?'disabled':''}>
         صحيحة
       </label>
-      ${o.correct ? '<span class="eq-sp"></span>' : dxSelect(o.dx, i)}
+      ${(o.correct && !multi) ? '<span class="eq-sp"></span>' : dxSelect(o.dx, i, multi && o.correct)}
       ${locked ? '' : `<button class="eq-x" data-rm="${i}" title="حذف الخيار">✕</button>`}
     </div>`;
 
@@ -178,7 +183,8 @@ function qCard(q){
     ${variantBar(q, locked)}
 
     <div class="card">
-      <div class="qnum">سؤال ${AR(cur+1)} · ${q.kind==='mcq'?'اختيار من متعدد':'مقالي قصير'}
+      <div class="qnum">سؤال ${AR(cur+1)} · ${
+        q.kind==='mcq'?'اختيار من متعدد':multi?'اختيار متعدّد الإجابات':'مقالي قصير'}
         ${locked ? '<span class="badge lock">مقفل</span>' : ''}</div>
 
       ${mediaRow(q, locked)}
@@ -186,7 +192,10 @@ function qCard(q){
       <textarea id="qb" class="eq-qt" dir="auto" placeholder="نصّ السؤال…"
         ${locked?'disabled':''}>${esc(q.body||'')}</textarea>
 
-      ${q.kind === 'mcq' ? `
+      ${(q.kind === 'mcq' || multi) ? `
+        ${multi ? `<div class="eq-hint" style="display:block;margin-bottom:9px;line-height:1.85">
+          كل خيار يُحاكَم وحده: الخاطئ يحتاج كود «لماذا اختاره؟» والصحيح كود «لماذا أغفله؟»
+          · صحيحان فأكثر وخاطئ واحد على الأقل · ولا يُعلَن العدد للطالب</div>` : ''}
         <div class="opts eq-opts">${(q.options||[]).map(opt).join("")}</div>
         ${locked ? '' : '<button class="btn ghost eq-addo" id="addo">＋ خيار</button>'}
 
@@ -263,8 +272,10 @@ function passageBar(q, locked){
    خيارات كل الأسئلة بأكوادها أصلاً — فالمقارنة بلا نداء. */
 
 /* بصمة الفخاخ — نظير array_agg(distinct dx order by dx) في القاعدة */
+/* في mcq لا كود للصحيح فيسقط من تلقائه · وفي msq يحمل كود الإغفال
+   فيدخل البصمة. شرطٌ واحد يخدم النمطين بلا تفريع. */
 const fp = q => [...new Set((q.options || [])
-    .filter(o => !o.correct).map(o => o.dx).filter(Boolean))].sort();
+    .map(o => o.dx).filter(Boolean))].sort();
 
 const partners = q => !q.variant_key ? []
   : (Z.questions || []).filter(x => x.variant_key === q.variant_key && x.id !== q.id);
@@ -281,7 +292,7 @@ function variantBar(q, locked){
   const mine = fp(q).join(' · ');
   const bad  = ps.filter(p => fp(p).join(' · ') !== mine);
 
-  const traps = p => (p.options || []).filter(o => !o.correct && o.dx)
+  const traps = p => (p.options || []).filter(o => o.dx)
     .map(o => `<span class="chip">${esc(dxName(o.dx))}</span>`).join('');
 
   return `<div class="eq-bar sec">
@@ -403,11 +414,17 @@ function wire(q){
     el.classList.toggle('miss', !e.target.value); mark();
   });
   main.querySelectorAll('input[name="corr"]').forEach(el => el.onchange = () => {
-    q.options.forEach((o,i) => o.correct = (i === +el.dataset.o));
+    const i = +el.dataset.o;
+    /* الاختيار الواحد إسنادٌ يُلغي ما سواه · والمتعدّد تبديلُ خيارٍ وحده */
+    if(q.kind === 'msq') q.options[i].correct = el.checked;
+    else q.options.forEach((o, j) => o.correct = (j === i));
     mark(); repaint(q);
   });
   main.querySelectorAll("[data-rm]").forEach(el => el.onclick = () => {
-    if(q.options.length <= 2){ toast("السؤال يحتاج خيارين على الأقل"); return; }
+    const min = q.kind === 'msq' ? 3 : 2;
+    if(q.options.length <= min){
+      toast(min === 3 ? "الاختيار المتعدّد يحتاج ثلاثة خيارات على الأقل"
+                      : "السؤال يحتاج خيارين على الأقل"); return; }
     q.options.splice(+el.dataset.rm, 1); mark(); repaint(q);
   });
 
@@ -467,10 +484,14 @@ async function saveQ(q){
 
 async function addQuestion(kind){
   if(dirty && !confirm("تغييرات غير محفوظة — أتتركها؟")) return;
-  Z.questions.push(kind === 'mcq'
-    ? { id:null, kind:'mcq', body:'', answered:0, explanation:'',
-        options: [0,1,2,3].map(i => ({ label:null, body:'', correct:i===0, dx:null })) }
-    : { id:null, kind:'essay', body:'', answered:0, model:'', options:[] });
+  const blank = {
+    mcq:   { id:null, kind:'mcq',   body:'', answered:0, explanation:'',
+             options: [0,1,2,3].map(i => ({ label:null, body:'', correct:i===0, dx:null })) },
+    msq:   { id:null, kind:'msq',   body:'', answered:0, explanation:'',
+             options: [0,1,2,3].map(i => ({ label:null, body:'', correct:i<2,   dx:null })) },
+    essay: { id:null, kind:'essay', body:'', answered:0, model:'', options:[] }
+  };
+  Z.questions.push(blank[kind] || blank.mcq);
   cur = Z.questions.length - 1; dirty = true; render();
 }
 
@@ -542,17 +563,21 @@ function preview(){
       </div>` : ''}
 
     <div class="card">
-      <div class="qnum">سؤال ${AR(pv+1)} · ${q.kind==='mcq'?'اختيار من متعدد':'مقالي قصير'}</div>
+      <div class="qnum">سؤال ${AR(pv+1)} · ${
+        q.kind==='mcq'?'اختيار من متعدد':q.kind==='msq'?'اختيار متعدّد الإجابات':'مقالي قصير'}</div>
       ${q.image?`<img class="media" src="${esc(q.image)}" alt="">`:''}
       ${q.audio?`<audio controls src="${esc(q.audio)}" style="width:100%;margin-bottom:12px"></audio>`:''}
       ${q.video?`<iframe class="media-v" src="${esc(q.video)}" allowfullscreen></iframe>`:''}
       <div class="qtext" dir="auto">${fmt(q.body)}</div>
-      ${q.kind === 'mcq'
-        ? `<div class="opts">${(q.options||[]).map((o,j) => `
+      ${(q.kind === 'mcq' || q.kind === 'msq')
+        ? `${q.kind==='msq'
+             ? `<div class="q-hint">اختر كل ما ينطبق — وقد ينطبق أكثر من خيار</div>` : ''}
+           <div class="opts${q.kind==='msq'?' multi':''}">${(q.options||[]).map((o,j) => `
             <button class="opt" data-pvo="${j}" dir="${dirOf(o.body)}"
                     style="text-align:start">
               <span class="key">${esc(optLabel(o,j))}</span>
-              <span>${esc(o.body)}</span></button>`).join("")}</div>`
+              <span style="flex:1">${esc(o.body)}</span>
+              ${q.kind==='msq'?`<span class="tick"></span>`:''}</button>`).join("")}</div>`
         : `<textarea placeholder="اكتب السلسلة السببية كاملة…"></textarea>`}
     </div>
 
@@ -569,6 +594,12 @@ function preview(){
     pv++; preview();
   };
   app.querySelectorAll("[data-pvo]").forEach(el => el.onclick = () => {
+    if(q.kind === 'msq'){                       // تبديلٌ في مكانه — لا إلغاء لما سواه
+      el.classList.toggle('sel');
+      const t = el.querySelector('.tick');
+      if(t) t.textContent = el.classList.contains('sel') ? '✔' : '';
+      return;
+    }
     app.querySelectorAll(".opt").forEach(x => x.classList.remove('sel'));
     el.classList.add('sel');
   });
@@ -596,7 +627,14 @@ const SAMPLE = JSON.stringify({
     { section: "B. Reading", passage: "p1", body: "The best title is ……",
       explanation: "العنوان يجمع الماضي والحاضر.",
       options: [ { body: "Trade Routes", dx: "DTL" },
-                 { body: "A Nation Proud of Its Past", correct: true } ] }
+                 { body: "A Nation Proud of Its Past", correct: true } ] },
+    { kind: "msq", section: "B. Reading", passage: "p1",
+      body: "Which statements does the passage support? (Choose all that apply)",
+      explanation: "الأوليان منصوصتان في الفقرة؛ والأخريان إسقاطٌ من خارج النصّ.",
+      options: [ { body: "Egypt lies where old trade routes met", correct: true, dx: "DTL" },
+                 { body: "Its past still shapes its identity",     correct: true, dx: "DTL" },
+                 { body: "Its economy depends mainly on tourism",  dx: "SEM" },
+                 { body: "It stayed untouched by other cultures",  dx: "SEM" } ] }
   ]
 }, null, 2);
 
@@ -622,14 +660,33 @@ function parseImport(txt){
       if(!String(q.model || '').trim()) out.issues.push(`س${n}: مقالي بلا إجابة نموذجية`);
       return;
     }
-    const opts = Array.isArray(q.options) ? q.options : [];
-    if(opts.length < 2) out.issues.push(`س${n}: يحتاج خيارين على الأقل`);
-    if(opts.filter(o => o.correct).length !== 1) out.issues.push(`س${n}: يلزم خيار صحيح واحد بالضبط`);
+    if(kind !== 'mcq' && kind !== 'msq'){
+      out.issues.push(`س${n}: نمط غير معروف "${kind}"`); return;
+    }
+
+    const multi = kind === 'msq';
+    const opts  = Array.isArray(q.options) ? q.options : [];
+    const nOk   = opts.filter(o => o.correct).length;
+
+    if(opts.length < (multi ? 3 : 2))
+      out.issues.push(`س${n}: يحتاج ${multi ? 'ثلاثة خيارات' : 'خيارين'} على الأقل`);
+
+    if(multi){
+      /* صحيحٌ واحد = اختيارٌ واحد متنكّر · وكلٌّ صحيح = لا تمييز */
+      if(nOk < 2) out.issues.push(`س${n}: الاختيار المتعدّد يلزمه خياران صحيحان على الأقل`);
+      if(nOk && nOk >= opts.length) out.issues.push(`س${n}: يلزم خيار خاطئ واحد على الأقل`);
+    } else if(nOk !== 1){
+      out.issues.push(`س${n}: يلزم خيار صحيح واحد بالضبط`);
+    }
+
     if(!String(q.explanation || '').trim()) out.issues.push(`س${n}: بلا شرح للخطأ`);
+
     opts.forEach((o, k) => {
       if(!String(o.body || '').trim()) out.issues.push(`س${n}: خيار ${k+1} بلا نصّ`);
-      if(o.correct) return;
-      if(!o.dx) out.issues.push(`س${n}: الخيار "${String(o.body||'').slice(0,18)}" بلا كود تشخيص`);
+      /* في msq نصف الخطأ إغفالُ صحيح ⇒ لا يُعفى الصحيح من الكود */
+      if(o.correct && !multi) return;
+      if(!o.dx) out.issues.push(`س${n}: الخيار "${String(o.body||'').slice(0,18)}" بلا كود تشخيص${
+        o.correct ? ' — والصحيح في msq يحتاج كود الإغفال' : ''}`);
       else if(!dxCodes.has(o.dx)) out.issues.push(`س${n}: كود غير معروف "${o.dx}"`);
     });
   });
@@ -671,8 +728,12 @@ function exportQuiz(){
       if(q.kind === 'essay'){ o.model = q.model || null; return o; }
       o.explanation = q.explanation || null;
       if(q.difficulty) o.difficulty = q.difficulty;
+      /* في msq يحمل الصحيح كود الإغفال — فلا يُسقَط عند التصدير،
+         وإلا عاد الاستيراد بنصف التشخيص ورفضه المدقّق. */
       o.options = (q.options || []).map(x => x.correct
-        ? { body: x.body, correct: true } : { body: x.body, dx: x.dx || null });
+        ? (q.kind === 'msq' ? { body: x.body, correct: true, dx: x.dx || null }
+                            : { body: x.body, correct: true })
+        : { body: x.body, dx: x.dx || null });
       return o;
     })
   };
@@ -936,6 +997,7 @@ function readiness(){
     <div class="eq-ready ${r.ok?'ok':''}">
       <div class="line"><b>${AR(r.mcq||0)}</b> اختيار من متعدد
         <span style="opacity:.6">(٦ مطلوبة)</span></div>
+      ${r.msq ? `<div class="line"><b>${AR(r.msq)}</b> اختيار متعدّد الإجابات</div>` : ''}
       <div class="line"><b>${AR(r.essay||0)}</b> مقالي</div>
       ${(r.issues||[]).length
         ? (r.issues||[]).map(i => `<div class="eq-iss">⚠️ ${esc(i)}</div>`).join("")
