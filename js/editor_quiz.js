@@ -286,8 +286,12 @@ const dxName = code => ((S.tree?.dx) || []).find(d => d.code === code)?.name || 
 
 function variantBar(q, locked){
   if(!q.variant_key){
-    return (locked || !q.id) ? '' :
-      `<button class="eq-bar add" id="mkvar">⇄ اصنع بديلاً مكافئاً — يقيس المهارة نفسها بمحتوى آخر</button>`;
+    /* فعلان مختلفان لا صورتان لفعل واحد:
+       الأول يبدأ من نسخة ثم يُبدَّل محتواها — للتأليف من الصفر.
+       والثاني إعلانُ تكافؤٍ بين مكتوبَين — لمن يؤلّف البنود معاً. */
+    return (locked || !q.id) ? '' : `
+      <button class="eq-bar add" id="mkvar">⇄ اصنع بديلاً مكافئاً — يبدأ نسخةً ثم تبدّل محتواها</button>
+      <button class="eq-bar add" id="pairvar">⇄ اقرن بسؤالٍ قائم — أعلِن أن مكتوبَين يقيسان الشيء نفسه</button>`;
   }
 
   const ps   = partners(q);
@@ -301,7 +305,8 @@ function variantBar(q, locked){
     <div class="eq-brow">
       <span class="eq-bt">⇄ خانة ${esc(q.variant_key)}</span>
       <span class="eq-bs">${AR(ps.length + 1)} نسخ في الخانة</span>
-      ${locked ? '' : `<button class="it-b" id="rmvar">✕ فكّ</button>`}
+      ${locked ? '' : `<button class="it-b" id="addvar">＋ نسخة قائمة</button>
+                       <button class="it-b" id="rmvar">✕ فكّ</button>`}
     </div>
 
     ${ps.map(p => `<div class="eq-brow" style="margin-top:8px">
@@ -317,6 +322,105 @@ function variantBar(q, locked){
         صحّح <b>الخيار</b> لا الكود — الكود يصف المشتّت ولا يصنعه.
       </div>` : `<div class="eq-bs" style="margin-top:8px">✅ الفخاخ متطابقة</div>`}
   </div>`;
+}
+
+/* ═══════════ اقتران مكتوبَين ═══════════
+   المحرّر كان يصنع الخانة بالتكرار وحده. ومن يؤلّف البنود المتكافئة
+   معاً (في JSON مثلاً) لا يملك ما ينسخه — فكان يضطرّ إلى SQL لعمليةٍ
+   تربوية خالصة: إعلان أن هذين يقيسان الشيء نفسه.
+
+   🔑 والبصمة تُعرض **قبل** الإعلان لا بعده: أن يرى المؤلّف عدم
+      التطابق وهو يختار خيرٌ من أن يراه تحذيراً بعد أن أعلن.
+
+   ── حدود set_variant كما هي في نصّها (لا كما خُمّنت):
+      • تشترط اختباراً واحداً ونمطاً واحداً وسؤالين فأكثر
+      • بين المحدَّدين مفتاحان مختلفان ⇒ رفض «فُكّ إحداهما أولاً»
+      • مفتاحٌ واحد ⇒ **يُتبنّى فتتّسع الخانة** — ولا يُعاد توليده
+      • لا مفتاح ⇒ يُولَّد من أصغر معرّف
+      ⇒ فالمقترن بخانة أخرى مرشَّحٌ صالح ما دام هذا السؤال حرّاً:
+        ينضمّ إليها ولا ينشئ خانة جديدة. */
+
+function pairForm(q){
+  if(dirty && !confirm("تغييرات غير محفوظة في هذا السؤال — أتتركها؟")) return;
+
+  const mine  = fp(q).join(' · ');
+  const group = new Set([q.id, ...partners(q).map(p => p.id)]);
+
+  /* هذا السؤال حرّ ⇒ يجوز أن ينضمّ إلى خانة مرشَّحٍ قائمة.
+     وهو مقترنٌ ⇒ لا يُقبل إلا مرشّحٌ حرّ، وإلا كانا خانتين فتُرفض. */
+  const free  = !q.variant_key;
+  const all   = (Z.questions || []).filter(x => x.id && !group.has(x.id) && x.kind === q.kind);
+  const cands = all.filter(x => free || !x.variant_key)
+                   .sort((a, b) => (fp(a).join(' · ') === mine ? 0 : 1)
+                                 - (fp(b).join(' · ') === mine ? 0 : 1)
+                                 || (a.position || 0) - (b.position || 0));
+  const taken = all.length - cands.length;
+
+  const row = x => {
+    const his  = fp(x).join(' · ');
+    const same = his === mine;
+    const dif  = [
+      same ? '' : 'الفخاخ',
+      (x.difficulty || 'medium') === (q.difficulty || 'medium') ? '' : 'الصعوبة',
+      (x.section || '') === (q.section || '') ? '' : 'القسم'
+    ].filter(Boolean);
+
+    return `<button class="eq-bar ${same ? 'pg' : 'sec'}" data-pair="${x.id}"
+              style="cursor:pointer;text-align:start">
+      <div class="eq-brow">
+        <span class="eq-bt" dir="auto" style="flex:1;min-width:0">
+          ${AR(x.position)}. ${esc((x.body || '').slice(0, 55))}</span>
+        ${x.variant_key ? `<span class="chip g">⇄ ينضمّ إلى ${esc(x.variant_key)}
+          · ${AR(partners(x).length + 2)} نسخ</span>` : ''}
+        <span class="eq-bs">${dif.length ? '⚠️ يختلف في: ' + esc(dif.join(' · ')) : '✅ مطابق'}</span>
+      </div>
+      <div class="eq-brow" style="margin-top:7px">
+        ${(x.options || []).filter(o => o.dx)
+            .map(o => `<span class="chip">${esc(dxName(o.dx))}</span>`).join('') || '<span class="eq-bs">بلا أكواد</span>'}
+      </div>
+    </button>`;
+  };
+
+  document.getElementById("main").innerHTML = `
+    <div class="card">
+      <div class="qnum">⇄ اقرن بسؤالٍ قائم</div>
+      <div class="line" style="margin-bottom:6px">
+        الاقتران <b>إعلانٌ</b> لا نسخ: تقول إن السؤالين يقيسان المهارة نفسها،
+        فيسحب البنك واحداً منهما في كل اختبار.</div>
+      <div class="line" style="margin-bottom:14px">
+        فخاخ هذا السؤال: ${fp(q).map(c => `<span class="chip">${esc(dxName(c))}</span>`).join(' ') || '—'}</div>
+
+      ${cands.length ? cands.map(row).join('') : `
+        <div class="warnbox">لا سؤال صالحاً للاقتران في هذا الاختبار.
+          الشرط: محفوظٌ · من النمط نفسه · وغير مقترن بخانة أخرى.</div>`}
+
+      ${taken ? `<div class="eq-bs" style="margin-top:10px">
+        و${AR(taken)} سؤالاً من النمط نفسه في خانة أخرى — ودمج خانتين ترفضه القاعدة،
+        ففُكّ إحداهما أولاً.</div>` : ''}
+
+      <div class="nav" style="margin-top:16px">
+        <button class="btn ghost" id="pxc">إلغاء</button>
+      </div>
+    </div>`;
+
+  document.getElementById("pxc").onclick = () => render();
+  document.querySelectorAll("[data-pair]").forEach(el => el.onclick = async () => {
+    const x = (Z.questions || []).find(y => y.id === +el.dataset.pair);
+    if(fp(x).join(' · ') !== mine &&
+       !confirm("الفخاخ غير متطابقة — النسختان لا تقيسان الشيء نفسه.\n\n" +
+                "الاقتران ممكن، لكن صحّح الخيارات بعده.\n\nأتقرن؟")) return;
+
+    /* العضوية كاملة لا الطرفان: set_variant تتبنّى المفتاح القائم
+       فلا يلزم ذلك تقنياً — لكنه يجعل النداء وصفاً للحالة النهائية
+       لا حركةً عليها، فيصحّ تكراره ولا يعتمد على تفاصيلها. */
+    const ids = [...group, x.id];
+    const v = await api.setVariant(ids);
+    if(v.error){ toast(v.error.message); return; }
+    if(!v.data?.ok){ toast(v.data?.error || "تعذّر الاقتران"); return; }
+    toast(`خانة ${v.data.key} — ${AR(v.data.size ?? ids.length)} نسخ`);
+    reload(q.id);
+  });
+  scrollTop();
 }
 
 /* التكرار حركة · والاقتران إعلان — وهذا الزرّ إعلانُ الكاتب صراحةً */
@@ -406,6 +510,8 @@ function wire(q){
   bind("edpg",   () => passageForm((Z.passages||[]).find(x => String(x.id) === String(q.passage_id))));
   bind("rmpg",   () => applyPassage(null));
   bind("mkvar",  () => makeVariant(q));
+  bind("pairvar",() => pairForm(q));
+  bind("addvar", () => pairForm(q));
   bind("rmvar",  () => unVariant(q));
 
   main.querySelectorAll(".eq-ob").forEach(el => el.oninput = e => {
