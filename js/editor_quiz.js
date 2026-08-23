@@ -41,8 +41,8 @@ export async function openQuiz(course, lesson){
   if(error){ app.innerHTML = errBox(error, 'تحميل الاختبار'); return; }
   if(!data.ok){ app.innerHTML = errBox({ message: data.error }, 'تحميل الاختبار'); return; }
 
-  Z = data; cur = 0; dirty = false;
-  render();
+ Z = data; cur = 0; dirty = false;
+  render(true);                 // الدخول من شاشةٍ أخرى ⇒ الوجهة الأعلى
 }
 
 /* درس بلا اختبار — لا يكتمل عند الطالب أبداً */
@@ -81,7 +81,7 @@ async function createQuiz(){
 
 /* ═══════════ الهيكل ═══════════ */
 
-function render(){
+function render(atTop){
   const qs = Z.questions || [];
   const q  = qs[cur] || null;
 
@@ -95,9 +95,9 @@ function render(){
 
   document.getElementById("bk").onclick = leave;
   wireList();
-  if(q) wire(q);
+if(q) wire(q);
   readiness();
-  scrollTop();
+  atTop ? scrollTop() : focusMain();      // كان: scrollTop()
 }
 
 const emptyCard = () => `<div class="card" style="text-align:center;padding:34px">
@@ -1335,13 +1335,26 @@ function readiness(){
   const box = document.getElementById("ready"); if(!box) return;
   const r = Z.readiness || { ok:false, mcq:0, essay:0, issues:[] };
 
+  const rrow = (k, label, req) => {
+    const n = k === 'mcq' ? (r.mcq || 0) : k === 'msq' ? (r.msq || 0) : (r.essay || 0);
+    if(k === 'msq' && !n) return '';
+    const s = kindStat(k);
+    return `<div class="eq-rl ${LS.f===k?'on':''}" data-rf="${k}"
+              title="اعرض هذا النمط وحده في شريط الأسئلة">
+        <b>${AR(n)}</b> ${label}
+        ${s.slots !== s.n ? `<span class="eq-rs">· ${AR(s.slots)} خانة</span>` : ''}
+        ${req ? `<span class="eq-rq">(٦ مطلوبة)</span>` : ''}
+      </div>
+      ${req && n >= 6 && s.slots < 6 ? `<div class="eq-iss">⚠️ البوّابة تعدّ البنود
+        (${AR(n)}) والطالب يرى ${AR(s.slots)} — وعتبة ٦٥٪ على هذا العدد هشّة.</div>` : ''}`;
+  };
+
   box.innerHTML = `
     <div class="eq-h">الجاهزية</div>
     <div class="eq-ready ${r.ok?'ok':''}">
-      <div class="line"><b>${AR(r.mcq||0)}</b> اختيار من متعدد
-        <span style="opacity:.6">(٦ مطلوبة)</span></div>
-      ${r.msq ? `<div class="line"><b>${AR(r.msq)}</b> اختيار متعدّد الإجابات</div>` : ''}
-      <div class="line"><b>${AR(r.essay||0)}</b> مقالي</div>
+      ${rrow('mcq','اختيار من متعدد', true)}
+      ${rrow('msq','اختيار متعدّد الإجابات', false)}
+      ${rrow('essay','مقالي', false)}
       ${(r.issues||[]).length
         ? (r.issues||[]).map(i => `<div class="eq-iss">⚠️ ${esc(i)}</div>`).join("")
         : `<div class="eq-ok">${Z.published
@@ -1363,11 +1376,13 @@ function readiness(){
       ? `<div class="nav"><button class="btn primary" id="pl">نشر الدرس أيضاً</button></div>` : ''}`;
 
   document.getElementById("pv").onclick = preview;
+   
   const pl = document.getElementById("pl");
   // ⚠️ pl.onclick = pubLesson كان يمرّر **حدث النقر** إلى quiet،
   //    فيصير صادقاً ⇒ لا إعادة تحميل ⇒ الزرّ يبقى بعد النشر.
   if(pl) pl.onclick = () => pubLesson(false);
-
+  box.querySelectorAll("[data-rf]").forEach(el =>
+    el.onclick = () => setFilter(el.dataset.rf));
   document.getElementById("pb").onclick = async () => {
     const { data, error } = await api.publishQuiz(Z.id, !Z.published);
     if(error){ toast(error.message); return; }
@@ -1576,13 +1591,15 @@ function sidebar(){
         <span class="chip g">${AR(st.slots)} خانة</span></div>
       <input class="eq-sr" id="lsq" value="${esc(LS.q)}"
              placeholder="ابحث في النصّ · أو اكتب رقماً واضغط Enter">
-      <div class="eq-f">
+           <div class="eq-f">
         ${fb('all','الكل', st.n)}
         ${fb('warn','⚠️ يحتاج نظرة', st.warn, 'warn')}
         ${fb('none','⬜ بلا فحص', st.none)}
-        ${fb('free','◉ بلا خانة', st.free)}
-        ${fb('mcq','◉')}${fb('msq','☑')}${fb('essay','✍️')}
+        ${fb('free','بلا خانة', st.free)}
       </div>
+      ${F_JUDGE.has(LS.f) ? '' : `<button class="eq-chipf" id="lclr">
+        <span>${esc(F_LABEL[LS.f] || LS.f)}</span>
+        <span style="margin-inline-start:auto">✕</span></button>`}
       <div class="eq-adds">
         <button class="eq-ab" id="addm"  title="اختيار من متعدد">＋◉</button>
         <button class="eq-ab" id="addmm" title="اختيار متعدّد الإجابات">＋☑</button>
@@ -1623,8 +1640,9 @@ function wireList(){
   }
 
   const box = app.querySelector('.eq-list');
-  box?.querySelectorAll("[data-f]").forEach(el => el.onclick = () => {
-    LS.f = LS.f === el.dataset.f ? 'all' : el.dataset.f; paintList(); });
+    box?.querySelectorAll("[data-f]").forEach(el => el.onclick = () => setFilter(el.dataset.f));
+  const cl = document.getElementById("lclr");
+  if(cl) cl.onclick = () => setFilter(LS.f);     // نقضٌ لنفسه ⇒ 'all'
   box?.querySelectorAll("[data-s]").forEach(el => el.onclick = () => {
     const k = 's:' + el.dataset.s;
     LS.open.has(k) ? LS.open.delete(k) : LS.open.add(k); paintList(); });
@@ -1717,4 +1735,32 @@ function compareVariant(key){
     if(i >= 0) go(i);
   });
   scrollTop();
+}
+/* ═══════════ b21 — الوجهة والفلترة ═══════════ */
+
+const F_LABEL = { mcq:'◉ اختيار من متعدد', msq:'☑ اختيار متعدّد الإجابات',
+                  essay:'✍️ مقالي' };
+const F_JUDGE = new Set(['all','warn','none','free']);   // ما يسكن الشريط نفسه
+
+/* الوجهة بطاقةُ التحرير لا رأس الصفحة.
+   والإزاحة تحت الشريط في CSS (.eq-main{scroll-margin-top}) — فعلوّ الشريط
+   شأنُ CSS، ورقمٌ في جافاسكربت يصف مقاساً في CSS ينكسر صامتاً حين يتغيّر. */
+function focusMain(){
+  document.getElementById("main")?.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+/* زنادٌ واحد لمصدرين: صفّ الشريط ولوحة الجاهزية.
+   والنقر على الفلتر الفعّال يُلغيه — فلا يحتاج المستخدم زرّ إلغاءٍ ثانياً. */
+function setFilter(k){
+  LS.f = (LS.f === k) ? 'all' : k;
+  paintList(); readiness();
+}
+
+/* 🔴 عدّ الخانات — ما يراه الطالب.
+   quiz_readiness تعدّ **البنود**: ٧٧+١٤+٤ = ٩٥ وهو مجموع المؤلَّف.
+   والفرق بين الرقمين هو ما كان مخفيّاً، وبوّابة «٦ مطلوبة» تقيس الأول. */
+function kindStat(k){
+  const qs = (Z.questions || []).filter(x => x.kind === k);
+  const slots = new Set(qs.map((x, i) => x.variant_key || ('q' + (x.id ?? 'n' + i)))).size;
+  return { n: qs.length, slots };
 }
