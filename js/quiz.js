@@ -4,12 +4,23 @@
 
    🔒 التصحيح كله في submit_attempt داخل قاعدة البيانات.
       لا يصل المتصفح مفتاح إجابة واحد.
+
+   🔓 b22 — الاختيار تبديلُ فئة لا إعادةَ رسم.
+      كانت renderQ() تُستدعى عند كل اختيار في mcq، فتهدم <audio>
+      (يعود التسجيل إلى صفر)، وتُعيد بناء النصّ المشترك، ثم تقفز
+      بالطالب إلى أعلى الصفحة وزرُّ «التالي» في أسفلها.
+      وأثرُه أبعد من الراحة: وقتُ التمرير يُحسب في a.sec، فيُقاس
+      التردّدُ حركةً لا فهماً — وذاك أساس التشخيص كله.
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
 import { S } from './state.js';
 import { app, bar, head, toast, esc, fmt, AR, mmss, media, pgMedia,
          optLabel, dirOf, ICONS, nav, scrollTop } from './ui.js';
 import { loadList, loadLessons } from './student.js';
+
+/* ذاكرةُ عرضٍ لا حالةُ محاولة: أيُّ نصٍّ مشترك كان معروضاً قبل هذا
+   السؤال. تسكن الوحدة ولا تُرسَل في التسليم ولا يعرفها غيرها. */
+let lastPg = null;
 
 /* ═══════════ ① بدء الاختبار ═══════════ */
 
@@ -25,6 +36,7 @@ export async function startQuiz(meta){
   S.i = 0;
   S.ans = data.questions.map(q=>({ q:q.id, kind:q.kind, o:null, os:[], essay:"", sec:0, chg:0 }));
   S.left = data.minutes*60; S.t0 = Date.now(); S.qenter = Date.now();
+  lastPg = null;
 
   clearInterval(S.tick);
   S.tick = setInterval(()=>{
@@ -82,7 +94,7 @@ function renderQ(){
   app.innerHTML = `
     ${q.section?`<div class="q-sec" dir="auto">${esc(q.section)}</div>`:''}
     ${pgHtml}
-    <div class="card">
+    <div class="card" id="qcard">
       <div class="qnum">سؤال ${AR(S.i+1)} · ${
         q.kind==='mcq'?'اختيار من متعدد':multi?'اختيار متعدّد الإجابات':'مقالي قصير'}</div>
       ${media(q)}
@@ -109,8 +121,14 @@ function renderQ(){
       document.getElementById("next").disabled = a.os.length===0;
       return;                                  // بلا renderQ: الصفحة لا تقفز
     }
+    /* mcq — الأثر نفسه: صِف الحالة النهائية ولا تُعِد بناء الشاشة.
+       toggle بوسيطها الثاني تفرض الحالة ولا تقلبها، فيستحيل أن
+       تبقى فئتا sel على زرّين. */
     if(a.o!==null && a.o!==v) a.chg++;
-    a.o = v; renderQ();
+    a.o = v;
+    app.querySelectorAll(".opt").forEach(x =>
+      x.classList.toggle('sel', +x.dataset.o === v));
+    document.getElementById("next").disabled = false;
   });
   const ta = document.getElementById("ta"); if(ta) ta.oninput = e => a.essay = e.target.value;
   const p  = document.getElementById("prev"); if(p) p.onclick = ()=>{ bankTime(); S.i--; renderQ(); };
@@ -118,7 +136,16 @@ function renderQ(){
     bankTime();
     if(S.i===n-1) finish(false); else { S.i++; renderQ(); }
   };
-  scrollTop();
+
+  /* الوجهة تتبع النصّ لا الصفحة:
+     نصٌّ جديد (أو بلا نصّ) ⇒ الأعلى، ليُقرأ من أوّله.
+     النصّ نفسه ⇒ بطاقة السؤال، فقد قرأه ولا يُطالَب بتخطّيه ثانيةً.
+     والإزاحة تحت شريط العدّاد في CSS: #qcard{scroll-margin-top} */
+  const pgKey = q.passage_id || null;
+  if(pgKey && pgKey === lastPg)
+    document.getElementById("qcard")?.scrollIntoView({ behavior:'smooth', block:'start' });
+  else scrollTop();
+  lastPg = pgKey;
 }
 
 /* ═══════════ ③ التسليم ═══════════ */
