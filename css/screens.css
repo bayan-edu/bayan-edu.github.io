@@ -504,3 +504,22 @@
   .eq-body{overflow:visible}
   .cmp{grid-template-columns:1fr!important}
 }
+/* ── b21: الوجهة والفلترة ── */
+.eq-main{scroll-margin-top:72px}
+
+/* شارة الفلتر الفعّال — الحالة تسكن حيث ينظر المستخدم، ولو كان الزناد بعيداً */
+.eq-chipf{display:flex;align-items:center;gap:6px;width:100%;cursor:pointer;
+  background:rgba(72,207,192,.13);border:1px solid rgba(72,207,192,.34);
+  color:var(--cyan);border-radius:9px;padding:5px 9px;
+  font-family:'Almarai';font-weight:700;font-size:.7rem}
+.eq-chipf:hover{background:rgba(242,119,107,.13);
+  border-color:rgba(242,119,107,.4);color:var(--coral)}
+
+/* أسطر الجاهزية — صارت أزراراً */
+.eq-rl{display:flex;align-items:center;gap:6px;flex-wrap:wrap;cursor:pointer;
+  border:1px solid transparent;border-radius:9px;padding:5px 7px;margin:0 -7px;
+  font-size:.85rem;line-height:1.9}
+.eq-rl:hover{background:rgba(157,184,201,.08);border-color:var(--line)}
+.eq-rl.on{background:rgba(72,207,192,.13);border-color:rgba(72,207,192,.34)}
+.eq-rs{font-size:.72rem;color:var(--cyan)}
+.eq-rq{font-size:.72rem;opacity:.6}
