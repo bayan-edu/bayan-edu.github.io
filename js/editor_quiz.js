@@ -755,15 +755,30 @@ const SAMPLE = JSON.stringify({
 
 function parseImport(txt){
   const dxCodes = new Set(((S.tree?.dx) || []).map(d => d.code));
-  const out = { passages: [], questions: [], issues: [] };
+  const out = { passages: [], questions: [], groups: {}, issues: [], warns: [] };
   let j;
   try { j = JSON.parse(txt); }
   catch(e){ out.issues.push('JSON غير صالح: ' + e.message); return out; }
 
   if(Array.isArray(j)) j = { questions: j };
+
+  /* 🔑 تطبيعٌ عند المدخل: شكلان مقبولان وشكلٌ داخليّ واحد.
+     groups تُسطَّح إلى questions بوسمٍ يجمعها، فيسير التحقّق
+     والإدراج على مسارٍ واحد ولا تتضاعف الحالات. */
+  if(!Array.isArray(j.questions) && Array.isArray(j.groups)){
+    j = { ...j, questions: j.groups.flatMap((g, i) =>
+      (Array.isArray(g.questions) ? g.questions : [])
+        .map(q => ({ ...q, variant: q.variant || g.variant || ('g' + (i + 1)) }))) };
+  }
+
   out.passages  = Array.isArray(j.passages)  ? j.passages  : [];
   out.questions = Array.isArray(j.questions) ? j.questions : [];
-  if(!out.questions.length){ out.issues.push('لا أسئلة في الملف'); return out; }
+  if(!out.questions.length){
+    out.issues.push(Array.isArray(j.groups)
+      ? 'المجموعات في groups بلا أسئلة'
+      : 'لا مصفوفة questions في الجذر — وإن كانت أسئلتك داخل مجموعات متكافئة فسمّها groups');
+    return out;
+  }
 
   const refs = new Set(out.passages.map(p => p.ref).filter(Boolean));
   out.questions.forEach((q, i) => {
@@ -803,6 +818,31 @@ function parseImport(txt){
       else if(!dxCodes.has(o.dx)) out.issues.push(`س${n}: كود غير معروف "${o.dx}"`);
     });
   });
+
+  /* ── الخانات ──────────────────────────────────────────────
+     التكافؤ في الملف إعلانٌ صريح من المؤلّف كما هو بالزرّ —
+     لا استنتاجاً من التشابه. فالمبدأ محفوظ والكلفة تسقط. */
+  out.questions.forEach((q, i) => {
+    const v = String(q.variant || '').trim();
+    if(v) (out.groups[v] = out.groups[v] || []).push({ q, n: i + 1 });
+  });
+
+  Object.entries(out.groups).forEach(([v, arr]) => {
+    const at = ' (' + arr.map(a => 'س' + a.n).join(' · ') + ')';
+
+    // شرطان ترفضهما set_variant ⇒ يُحجبان قبل الرفع لا بعده
+    if(arr.length < 2)
+      out.issues.push(`خانة "${v}": عضوٌ واحد${at} — سؤالٌ وحده ليس نسخةً لشيء`);
+    if(new Set(arr.map(a => a.q.kind || 'mcq')).size > 1)
+      out.issues.push(`خانة "${v}": أنماط مختلطة${at} — لا تُقرن أسئلة مختلفة النمط`);
+
+    // والفخاخ تحذيرٌ لا حجب: قد يقرن المؤلّف ثم يصحّح الخيارات
+    const fps = arr.map(a => [...new Set((a.q.options || [])
+      .map(o => o.dx).filter(Boolean))].sort().join(' · '));
+    if(new Set(fps).size > 1)
+      out.warns.push(`خانة "${v}": الفخاخ غير متطابقة${at} — ${fps.join('  ≠  ')}`);
+  });
+
   return out;
 }
 
@@ -859,7 +899,9 @@ function importBox(){
     <div class="card">
       <div class="qnum">⇪ استيراد اختبار · يُضاف إلى ${AR((Z.questions||[]).length)} سؤالاً قائماً</div>
       <div class="line" style="margin-bottom:12px">ألصق JSON — أسئلةً ونصوصاً مشتركة وأقساماً.
-        كل سؤال يمرّ بنفس التحقّق: كود تشخيص لكل مشتّت، وشرحٌ للخطأ.</div>
+        كل سؤال يمرّ بنفس التحقّق: كود تشخيص لكل مشتّت، وشرحٌ للخطأ.<br>
+        ولإعلان التكافؤ: أضِف <code dir="ltr">"variant": "F1"</code> إلى البندين —
+        أو ضعهما داخل <code dir="ltr">groups</code>. ويُقرنان بعد الإدراج تلقائياً.</div>
 
       <!-- 🔑 القائمة عند نقطة القرار: من يكتب JSON خارج المنصّة لا يرى
            أكواده، فيخترع ما يظنّه معقولاً ثم يُفاجأ بالرفض. وأرخص من
@@ -913,15 +955,22 @@ function importBox(){
     const p = parseImport(document.getElementById("ij").value || '');
     const box = document.getElementById("ipv");
     const okAll = !p.issues.length;
+    const nG = Object.keys(p.groups || {}).length;
     box.innerHTML = `
       <div class="eq-ready ${okAll?'ok':''}" style="margin-top:14px">
         <div class="line"><b>${AR(p.questions.length)}</b> سؤالاً ·
           <b>${AR(p.passages.length)}</b> نصاً مشتركاً ·
-          <b>${AR(new Set(p.questions.map(q=>q.section).filter(Boolean)).size)}</b> قسماً</div>
+          <b>${AR(new Set(p.questions.map(q=>q.section).filter(Boolean)).size)}</b> قسماً${
+          nG ? ` · <b>${AR(nG)}</b> خانة تُقرن بعد الإدراج` : ''}</div>
         ${okAll ? '<div class="eq-ok">✅ جاهز للاستيراد</div>'
                 : p.issues.slice(0,14).map(x => `<div class="eq-iss">⚠️ ${esc(x)}</div>`).join("")
                   + (p.issues.length > 14 ? `<div class="eq-iss">… و${AR(p.issues.length-14)} غيرها</div>` : '')}
       </div>
+      ${/* تحذيرٌ لا حجب — يُعرض ولا يمنع الزرّ */''}
+      ${p.warns.length ? `<div class="warnbox" style="margin-top:10px">
+        ${p.warns.map(x => `<div>⚠️ ${esc(x)}</div>`).join('')}
+        <div style="margin-top:7px;opacity:.85">الاستيراد ممكن — لكن صحّح <b>الخيارات</b> بعده،
+        فالنسخة التي تخالف فخاخ شريكها لا تقيس ما يقيسه.</div></div>` : ''}
       ${okAll ? `<div class="nav" style="margin-top:12px">
         <button class="btn primary" id="igo">استيراد ${AR(p.questions.length)} سؤالاً</button></div>` : ''}`;
     const go = document.getElementById("igo");
@@ -949,8 +998,8 @@ async function runImport(p){
     if(b) b.onclick = () => reload();
   };
 
-  const refMap = {};
-  let done = 0;
+  const refMap = {}, byVar = {};
+  let done = 0, paired = 0;
   try {
     for(const [k, pg] of p.passages.entries()){
       say(`جارٍ إضافة النصوص المشتركة… ${AR(k+1)} من ${AR(p.passages.length)}`);
@@ -981,12 +1030,26 @@ async function runImport(p){
         stop(`السؤال ${AR(i+1)}`, error?.message || data?.error, done); return;
       }
       done++;
+      const v = String(q.variant || '').trim();
+      if(v) (byVar[v] = byVar[v] || []).push(data.id);
+    }
+
+    /* الاقتران بعد الإدراج كله: المعرّفات لا تُعرف قبل الحفظ.
+       ولو فشل هنا لبقيت الأسئلة مُدرَجة — فالرسالة تقول ذلك صراحةً. */
+    for(const [v, ids] of Object.entries(byVar)){
+      if(ids.length < 2) continue;
+      say(`جارٍ اقتران الخانات… ${v}`);
+      const r = await api.setVariant(ids);
+      if(r.error || !r.data?.ok){
+        stop(`اقتران الخانة "${v}"`, r.error?.message || r.data?.error, done); return;
+      }
+      paired++;
     }
   } catch(e){
     stop('الاتصال', e?.message, done); return;
   }
 
-  toast(`استُورد ${AR(done)} سؤالاً`);
+  toast(`استُورد ${AR(done)} سؤالاً${paired ? ` · وقُرنت ${AR(paired)} خانة` : ''}`);
   reload();
 }
 
