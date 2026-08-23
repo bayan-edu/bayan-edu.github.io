@@ -102,8 +102,9 @@ h2.sec{font-family:'Almarai';font-weight:800;font-size:1.02rem;margin:24px 0 13p
 .toast.show{transform:translateX(50%) translateY(0)}
 
 /* ── شريط التنقّل الدائم ──
-   يشغل #bar في كل شاشة، ويتنحّى للعدّاد أثناء الاختبار. */
-.topbar{position:sticky;top:0;z-index:20;background:rgba(7,24,42,.94);
+/* يصير — الالتصاق ينتقل إلى الأب، فله مدى الصفحة يتحرّك فيه */
+#bar{position:sticky;top:0;z-index:20}
+.topbar{background:rgba(7,24,42,.94);
   backdrop-filter:blur(10px);border-bottom:1px solid var(--line);
   display:flex;align-items:center;gap:10px;padding:9px 14px}
 .navlinks{display:flex;gap:5px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none}
