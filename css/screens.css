@@ -229,7 +229,7 @@
 }
 
 /* ═══ محرّر الأسئلة — ثلاثة أعمدة ═══ */
-.eq{display:grid;grid-template-columns:250px 1fr 260px;gap:16px;align-items:start}
+.eq{display:grid;grid-template-columns:290px 1fr 260px;gap:16px;align-items:start}
 .eq-h{font-family:'Almarai';font-weight:800;font-size:.85rem;margin-bottom:10px;
   display:flex;align-items:center;gap:8px}
 
@@ -404,3 +404,102 @@
 .jd.hit .jd-m{color:var(--cyan)}
 .jd.err .jd-m{color:var(--coral)}
 .jd-dx{display:block;margin-top:4px;font-size:.79rem;color:var(--sand);line-height:1.65}
+/* ══════════════════════════════════════════════════════════
+   الشريط الهرميّ — رأسٌ ثابت وجسدٌ يُمرَّر
+   العقدة هي الخانة · والقسم مظروف · والنصّ شارة.
+   ⚠️ العرض يختار محوراً واحداً: الترتيب (قسم←نصّ←بند) للطالب،
+      والقياس (خانة←نسخُها) للمؤلّف — وهذا الشريط للمؤلّف.
+   ══════════════════════════════════════════════════════════ */
+
+.eq-list{display:flex;flex-direction:column;gap:9px;padding:11px;
+  max-height:calc(100vh - 76px)}
+
+/* الرأس — لا يتحرّك بحركة البيانات */
+.eq-top{flex:0 0 auto;display:flex;flex-direction:column;gap:8px}
+.eq-sr{padding:8px 11px;font-size:.8rem}
+.eq-f{display:flex;gap:5px;flex-wrap:wrap}
+.eq-fb{background:rgba(157,184,201,.08);border:1px solid var(--line);color:var(--mist);
+  border-radius:8px;padding:4px 8px;cursor:pointer;white-space:nowrap;
+  font-family:'Almarai';font-weight:700;font-size:.68rem}
+.eq-fb:hover{border-color:var(--cyan);color:var(--cyan)}
+.eq-fb.on{background:rgba(72,207,192,.16);border-color:rgba(72,207,192,.4);color:var(--cyan)}
+.eq-fb.warn.on{background:rgba(229,189,99,.16);border-color:rgba(229,189,99,.4);color:var(--sand)}
+.eq-adds{display:flex;gap:5px}
+.eq-ab{flex:1;background:rgba(157,184,201,.08);border:1px solid var(--line);
+  color:var(--foam);border-radius:9px;padding:7px 0;cursor:pointer;font-size:.82rem}
+.eq-ab:hover{border-color:var(--cyan);color:var(--cyan)}
+
+/* الجسد — هو وحده الذي يُمرَّر
+   ⚠️ min-height:0 لازم: عنصر المرونة لا ينكمش تحت مقاس محتواه بلا هذا،
+      فيتمدّد الصندوق ولا يعمل overflow أبداً. */
+.eq-body{flex:1 1 auto;min-height:0;overflow-y:auto;padding-inline-end:3px}
+.eq-body::-webkit-scrollbar{width:7px}
+.eq-body::-webkit-scrollbar-thumb{background:rgba(157,184,201,.22);border-radius:7px}
+.eq-body::-webkit-scrollbar-track{background:transparent}
+
+/* رأس القسم — مظروفٌ يُطوى */
+.eq-grp{display:flex;align-items:center;gap:7px;padding:8px 9px;border-radius:9px;
+  cursor:pointer;background:rgba(157,184,201,.07);border:1px solid var(--line);
+  margin:11px 0 5px;font-family:'Almarai';font-weight:800;font-size:.76rem}
+.eq-grp:first-child{margin-top:0}
+.eq-grp:hover{border-color:rgba(72,207,192,.35)}
+.eq-gt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.eq-gc{font-size:.66rem;color:var(--mist);font-weight:400;white-space:nowrap}
+.eq-ar{font-size:.6rem;color:var(--mist)}
+
+/* شريط نصوص القسم — جردٌ ومنفذُ تحرير، لا مستوى في الشجرة */
+.eq-pgs{display:flex;gap:5px;flex-wrap:wrap;padding:0 4px 8px}
+.eq-pgc{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-size:.66rem;color:var(--cyan);background:rgba(72,207,192,.09);
+  border:1px solid rgba(72,207,192,.22);border-radius:7px;padding:2px 6px;cursor:pointer}
+
+/* صفّ الخانة — نقرةٌ على رأسه تفتح المقارنة، وعلى نسخةٍ تفتح التحرير */
+.eq-var{border:1px solid var(--line);border-radius:10px;margin-bottom:5px;
+  background:rgba(157,184,201,.04);overflow:hidden}
+.eq-var.on{border-color:rgba(72,207,192,.35);background:rgba(72,207,192,.07)}
+.eq-vh{display:flex;align-items:center;gap:7px;padding:8px 9px;cursor:pointer}
+.eq-vh:hover{background:rgba(157,184,201,.06)}
+.eq-vk{font-family:'Almarai';font-weight:800;font-size:.68rem;color:var(--cyan);white-space:nowrap}
+.eq-vb{flex:1;min-width:0;font-size:.76rem;color:var(--mist);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.eq-subs{display:flex;flex-wrap:wrap;gap:5px;padding:0 9px 9px}
+.eq-sub{display:inline-flex;align-items:center;gap:4px;font-size:.7rem;color:var(--mist);
+  background:rgba(157,184,201,.09);border:1px solid var(--line);
+  border-radius:8px;padding:3px 7px;cursor:pointer}
+.eq-sub:hover{border-color:var(--cyan);color:var(--cyan)}
+.eq-sub.on{background:var(--cyan);border-color:var(--cyan);color:#06202e;font-weight:700}
+
+/* الحكم — و«لا فحص» ليست ✅ */
+.eq-flag{font-size:.7rem;white-space:nowrap}
+.eq-flag.ok{color:var(--cyan)}
+.eq-flag.warn{color:var(--sand)}
+.eq-flag.bad{color:var(--coral)}
+.eq-flag.none{color:var(--mist);opacity:.8}
+.eq-none{font-size:.74rem;color:var(--mist);text-align:center;padding:18px 6px;line-height:1.8}
+
+/* ══ شاشة مقارنة نسخ الخانة ══
+   الأعمدة تُضبط في الشيفرة — عددها عدد النسخ. */
+.cmp{display:grid;gap:12px;align-items:start}
+.cmp-col{background:linear-gradient(180deg,var(--card),var(--card2));
+  border:1px solid var(--line);border-radius:12px;padding:14px;min-width:0}
+.cmp-col.on{border-color:rgba(72,207,192,.45)}
+.cmp-h{display:flex;align-items:center;gap:7px;margin-bottom:10px;flex-wrap:wrap}
+.cmp-p{font-family:'Almarai';font-weight:800;font-size:.74rem;color:var(--cyan)}
+.cmp-lb{font-family:'Almarai';font-weight:700;font-size:.7rem;color:var(--mist);margin:12px 0 6px}
+.cmp-q{font-family:'Almarai';font-weight:700;font-size:.87rem;line-height:1.9}
+.cmp-o{display:flex;align-items:flex-start;gap:7px;font-size:.79rem;line-height:1.8;
+  background:rgba(157,184,201,.05);border:1px solid var(--line);
+  border-radius:9px;padding:7px 9px;margin-bottom:6px}
+.cmp-o.ok{border-color:rgba(72,207,192,.4);background:rgba(72,207,192,.07)}
+.cmp-tx{flex:1;min-width:0}
+.cmp-dx{font-size:.66rem;color:var(--sand);background:rgba(229,189,99,.1);
+  border:1px solid rgba(229,189,99,.25);border-radius:7px;padding:1px 6px;white-space:nowrap}
+.cmp-mark{outline:1px dashed rgba(242,119,107,.5);outline-offset:2px}
+.cmp-note{font-size:.76rem;color:var(--mist);line-height:1.8}
+
+/* الجوّال — نقضٌ لما سبق: هذه الكتلة بعد @media القائمة فتعلوها */
+@media(max-width:1000px){
+  .eq-list{max-height:none}
+  .eq-body{overflow:visible}
+  .cmp{grid-template-columns:1fr!important}
+}
