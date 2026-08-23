@@ -285,13 +285,21 @@ const partners = q => !q.variant_key ? []
 const dxName = code => ((S.tree?.dx) || []).find(d => d.code === code)?.name || code;
 
 function variantBar(q, locked){
+  /* 🔓 القفل يخصّ المحتوى لا الخانة.
+     تعديل نصّ سؤالٍ أُجيب عنه يكسر ربط المحاولات، أما variant_key
+     فوسمُ تجميع: لا يمسّ إجابةً سابقة، وأثره في السحب القادم وحده.
+     و set_variant نفسها لا تسأل عن الإجابات — فالحظر كان في الواجهة. */
+  const note = locked ? `<div class="eq-bs" style="margin-top:8px;line-height:1.7">
+      🔓 الخانة تُعدَّل ولو كان السؤال مقفلاً — هي وسمُ تجميعٍ لا محتوى.</div>` : '';
+
   if(!q.variant_key){
     /* فعلان مختلفان لا صورتان لفعل واحد:
        الأول يبدأ من نسخة ثم يُبدَّل محتواها — للتأليف من الصفر.
        والثاني إعلانُ تكافؤٍ بين مكتوبَين — لمن يؤلّف البنود معاً. */
-    return (locked || !q.id) ? '' : `
+    return !q.id ? '' : `
       <button class="eq-bar add" id="mkvar">⇄ اصنع بديلاً مكافئاً — يبدأ نسخةً ثم تبدّل محتواها</button>
-      <button class="eq-bar add" id="pairvar">⇄ اقرن بسؤالٍ قائم — أعلِن أن مكتوبَين يقيسان الشيء نفسه</button>`;
+      <button class="eq-bar add" id="pairvar">⇄ اقرن بسؤالٍ قائم — أعلِن أن مكتوبَين يقيسان الشيء نفسه</button>
+      ${note}`;
   }
 
   const ps   = partners(q);
@@ -305,8 +313,8 @@ function variantBar(q, locked){
     <div class="eq-brow">
       <span class="eq-bt">⇄ خانة ${esc(q.variant_key)}</span>
       <span class="eq-bs">${AR(ps.length + 1)} نسخ في الخانة</span>
-      ${locked ? '' : `<button class="it-b" id="addvar">＋ نسخة قائمة</button>
-                       <button class="it-b" id="rmvar">✕ فكّ</button>`}
+      <button class="it-b" id="addvar">＋ نسخة قائمة</button>
+      <button class="it-b" id="rmvar">✕ فكّ</button>
     </div>
 
     ${ps.map(p => `<div class="eq-brow" style="margin-top:8px">
@@ -321,6 +329,7 @@ function variantBar(q, locked){
         هنا: <b>${esc(mine || '—')}</b> · الشريك: <b>${esc(fp(bad[0]).join(' · ') || '—')}</b><br>
         صحّح <b>الخيار</b> لا الكود — الكود يصف المشتّت ولا يصنعه.
       </div>` : `<div class="eq-bs" style="margin-top:8px">✅ الفخاخ متطابقة</div>`}
+    ${note}
   </div>`;
 }
 
