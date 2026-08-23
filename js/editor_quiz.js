@@ -85,40 +85,16 @@ function render(){
   const qs = Z.questions || [];
   const q  = qs[cur] || null;
 
-  app.innerHTML = `
+   app.innerHTML = `
     <div class="crumb" id="bk">← ${esc(ctx.lesson.title)}</div>
     <div class="eq">
-      <aside class="eq-list">
-        <div class="eq-h">الأسئلة <span class="chip">${AR(qs.length)}</span></div>
-        ${qs.map((x,i) => `
-          <div class="eq-item ${i===cur?'on':''}" data-i="${i}">
-            <span class="eq-n">${AR(i+1)}</span>
-            <span class="eq-b" dir="auto">${esc((x.body||'').slice(0,40) || '—')}</span>
-            <span class="eq-k">${x.variant_key?'⇄':''}${x.kind==='essay'?'✍️':x.kind==='msq'?'☑':'◉'}</span>
-          </div>`).join("")}
-        <div class="nav" style="margin-top:12px;flex-direction:column;gap:7px">
-          <button class="btn ghost eq-add" id="addm">＋ اختيار من متعدد</button>
-          <button class="btn ghost eq-add" id="addmm">＋ اختيار متعدّد الإجابات</button>
-          <button class="btn ghost eq-add" id="adde">＋ سؤال مقالي</button>
-          <button class="btn ghost eq-add" id="imp">⇪ استيراد</button>
-        </div>
-
-      </aside>
-
+      <aside class="eq-list">${sidebar()}</aside>
       <section class="eq-main" id="main">${q ? qCard(q) : emptyCard()}</section>
-
       <aside class="eq-side" id="ready"></aside>
     </div>`;
 
   document.getElementById("bk").onclick = leave;
-  app.querySelectorAll(".eq-item").forEach(el => el.onclick = () => go(+el.dataset.i));
-  document.getElementById("addm").onclick  = () => addQuestion('mcq');
-  document.getElementById("addmm").onclick = () => addQuestion('msq');
-  document.getElementById("adde").onclick   = () => addQuestion('essay');
-  ["imp","imp0"].forEach(id => {
-    const el = document.getElementById(id); if(el) el.onclick = importBox;
-  });
-
+  wireList();
   if(q) wire(q);
   readiness();
   scrollTop();
@@ -1414,4 +1390,331 @@ async function pubLesson(quiet){
   toast("نُشر الدرس — صار يظهر لطلابه");
   if(!quiet) reload();
 }
+}
+/* ══════════════════════════════════════════════════════════
+   ④ الشريط الهرميّ والمقارنة   (b21)
+
+   🔑 البنية شبكة لا شجرة: النصّ المشترك **صفّ** (كتلةٌ تُقرأ مرّة)
+      والخانة **عمود** (مهارةٌ تُقاس)، والبند نقطة تقاطع. والشجرة
+      تختار محوراً واحداً ⇒ العقدة هي الخانة، والنصّ شارة عليها.
+      ولماذا لا العكس؟ لأن النصوص تتكرّر بالتصميم (ثلاثة متوازية)
+      فتجميعٌ بها يُنتج ثلاث نسخٍ من الشاشة نفسها.
+
+   🔴 والحكم ليس بصمة الفخاخ وحدها: fp() تُرجع [] للمقاليّ، فكانت
+      المقارنة '' !== '' ⇒ false ⇒ «✅ متطابقة» لأيّ خانةٍ مقالية
+      مهما تباعدت نسخُها. **صدقٌ فارغ** — والعلاج حالةٌ ثالثة:
+      لا «متطابق» ولا «مختلف» بل **«لا مادّة للفحص»**.
+
+   🔓 والشريط يُرسَم وحده بـ paintList — نظير repaint(q) في الاتجاه
+      المعاكس. فالبحث والطيّ والفلترة لا تمسّ cur ولا dirty ولا
+      بطاقة التحرير المفتوحة.
+   ══════════════════════════════════════════════════════════ */
+
+let LS = { open: new Set(), q: '', f: 'all', lastCur: -1 };
+
+const members = k => (Z.questions || []).filter(x => x.variant_key === k);
+const NOSEC   = '— بلا قسم —';
+
+/* الحكم على الخانة — يُفحص **الاتّساق** لا الحاجة.
+   فغياب النصّ المشترك في أسئلة الكتابة هو الصواب، لا نقص. */
+function verdict(ms){
+  if(ms.length < 2) return { cls:'none', icon:'⬜', fails:['نسخة واحدة'] };
+  if(new Set(ms.map(x => x.kind)).size > 1)
+    return { cls:'bad', icon:'❌', fails:['نمطان مختلفان — لا يتكافآن'] };
+  if(new Set(ms.map(x => x.section || '')).size > 1)
+    return { cls:'bad', icon:'❌', fails:['الخانة تعبر قسمين — مهارتان'] };
+
+  const fails = [];
+  const withPg = ms.filter(x => x.passage_id).length;
+  const pgs    = new Set(ms.filter(x => x.passage_id).map(x => String(x.passage_id)));
+  if(withPg && withPg < ms.length)
+    fails.push('بعضها بنصّ وبعضها بلا نصّ — سياقان مختلفان');
+  else if(withPg === ms.length && pgs.size < ms.length)
+    fails.push('نسختان تحت نصّ واحد — لا تُغنيان عن قراءته مرّتين');
+
+  /* ⚠️ الحالة الثالثة: بلا خيارات فلا بصمة — ولا يُمنح ✅ على فحصٍ لم يقع */
+  if(!ms.every(x => (x.options || []).length))
+    return fails.length
+      ? { cls:'warn', icon:'⚠️', fails, manual:true }
+      : { cls:'none', icon:'⬜', manual:true,
+          fails:['لا فحص آليّ للمقاليّ — التكافؤ حكمُك أنت'] };
+
+  if(new Set(ms.map(x => fp(x).join('·'))).size > 1)
+    fails.push('الفخاخ غير متطابقة — صحّح الخيار لا الكود');
+  if(new Set(ms.map(x => x.difficulty || 'medium')).size > 1)
+    fails.push('الصعوبة مختلفة');
+
+  return fails.length ? { cls:'warn', icon:'⚠️', fails }
+                      : { cls:'ok',   icon:'✅', fails:[] };
+}
+
+/* ═══════════ بناء الشجرة ═══════════ */
+
+/* Map لا كائن: المفتاح نصٌّ من عند المؤلّف — و«constructor» اسمُ قسمٍ صالح */
+function groups(){
+  const g = new Map();
+  (Z.questions || []).forEach((q, i) => {
+    const k = q.section || NOSEC;
+    if(!g.has(k)) g.set(k, []);
+    g.get(k).push(i);
+  });
+  return g;
+}
+
+/* عُقَدُ القسم: خانةٌ واحدة لكل مفتاح، وسؤالٌ حرٌّ لكل بندٍ بلا مفتاح */
+function nodes(idxs){
+  const out = [], seen = new Map();
+  for(const i of idxs){
+    const k = Z.questions[i].variant_key;
+    if(!k){ out.push({ t:'q', i }); continue; }
+    if(!seen.has(k)){ const n = { t:'v', key:k, idx:[] }; seen.set(k, n); out.push(n); }
+    seen.get(k).idx.push(i);
+  }
+  return out;
+}
+
+const kIcon = k => k === 'essay' ? '✍️' : k === 'msq' ? '☑' : '◉';
+
+function stats(){
+  const qs = Z.questions || [];
+  const keys = [...new Set(qs.map(x => x.variant_key).filter(Boolean))];
+  let warn = 0, none = 0;
+  keys.forEach(k => { const v = verdict(members(k));
+    if(v.cls === 'warn' || v.cls === 'bad') warn++; else if(v.cls === 'none') none++; });
+  const free = qs.filter(x => !x.variant_key).length;
+  return { n: qs.length, slots: keys.length + free, warn, none, free };
+}
+
+function nodePass(n){
+  const f = LS.f, s = LS.q.trim().toLowerCase();
+  const qs = n.t === 'q' ? [Z.questions[n.i]] : n.idx.map(i => Z.questions[i]);
+  if(s && !/^\d+$/.test(s) && !qs.some(x => (x.body || '').toLowerCase().includes(s)))
+    return false;
+  if(f === 'all')  return true;
+  if(f === 'free') return n.t === 'q';
+  if(f === 'mcq' || f === 'msq' || f === 'essay') return qs.some(x => x.kind === f);
+  if(n.t !== 'v')  return false;
+  const v = verdict(members(n.key));
+  if(f === 'warn') return v.cls === 'warn' || v.cls === 'bad';
+  if(f === 'none') return v.cls === 'none';
+  return true;
+}
+
+/* ═══════════ الرسم ═══════════ */
+
+function sidebar(){
+  const qs = Z.questions || [];
+  const st = stats();
+  const pg = new Map((Z.passages || []).map((p, i) => [String(p.id), i + 1]));
+
+  /* الانتقال يفتح مظروفَ السؤال — والطيّ اليدويّ يبقى بعده */
+  if(LS.lastCur !== cur){
+    const q = qs[cur];
+    if(q){
+      LS.open.add('s:' + (q.section || NOSEC));
+      if(q.variant_key) LS.open.add('v:' + q.variant_key);
+    }
+    LS.lastCur = cur;
+  }
+
+  const searching = !!LS.q.trim() || LS.f !== 'all';
+  const fb = (k, label, n, cls) => `<button class="eq-fb ${cls || ''} ${LS.f===k?'on':''}"
+      data-f="${k}">${label}${n !== undefined ? ' ' + AR(n) : ''}</button>`;
+
+  const qRow = i => {
+    const x = qs[i];
+    return `<div class="eq-item ${i===cur?'on':''}" data-i="${i}">
+      <span class="eq-n">${AR(i+1)}</span>
+      <span class="eq-b" dir="auto">${esc((x.body||'').slice(0,38) || '—')}</span>
+      <span class="eq-k">${x.passage_id?'📖':''}${kIcon(x.kind)}</span></div>`;
+  };
+
+  const vRow = n => {
+    const ms   = members(n.key);
+    const v    = verdict(ms);
+    const open = LS.open.has('v:' + n.key) || searching;
+    const here = n.idx.includes(cur);
+    const head = qs[n.idx[0]];
+    return `<div class="eq-var ${here?'on':''}">
+      <div class="eq-vh" data-v="${esc(n.key)}">
+        <span class="eq-ar">${open?'▾':'▸'}</span>
+        <span class="eq-vk">⇄ ${esc(n.key)} · ${AR(ms.length)}</span>
+        <span class="eq-vb" dir="auto">${esc((head.body||'').slice(0,30) || '—')}</span>
+        <span class="eq-flag ${v.cls}" data-cmp="${esc(n.key)}"
+              title="قارِن نسخ الخانة" style="cursor:pointer">${v.icon}</span>
+      </div>
+      ${open ? `<div class="eq-subs">
+        ${n.idx.map(i => `<span class="eq-sub ${i===cur?'on':''}" data-i="${i}">
+            ${AR(i+1)}${qs[i].passage_id ? ' 📖'+AR(pg.get(String(qs[i].passage_id))||0) : ''}
+          </span>`).join('')}
+        <span class="eq-sub" data-cmp="${esc(n.key)}">⇄ قارِن</span>
+      </div>` : ''}</div>`;
+  };
+
+  let body = '';
+  for(const [sec, idxs] of groups()){
+    const ns = nodes(idxs).filter(nodePass);
+    if(!ns.length) continue;
+    const open = LS.open.has('s:' + sec) || searching;
+    const slots = new Set(idxs.map(i => qs[i].variant_key || ('q' + i))).size;
+    const pgs = [...new Set(idxs.map(i => qs[i].passage_id).filter(Boolean).map(String))];
+
+    body += `<div class="eq-grp" data-s="${esc(sec)}">
+        <span class="eq-ar">${open?'▾':'▸'}</span>
+        <span class="eq-gt" dir="auto">${esc(sec)}</span>
+        <span class="eq-gc">${AR(idxs.length)} · ${AR(slots)} خانة</span></div>`;
+    if(!open) continue;
+    if(pgs.length) body += `<div class="eq-pgs">${pgs.map(id =>
+        `<span class="eq-pgc" data-pg="${esc(id)}">📖 ${AR(pg.get(id)||0)}
+          ${esc(((Z.passages||[]).find(p => String(p.id)===id)?.title) || 'نصّ مشترك')}
+        </span>`).join('')}</div>`;
+    body += ns.map(n => n.t === 'q' ? qRow(n.i) : vRow(n)).join('');
+  }
+
+  return `<div class="eq-top">
+      <div class="eq-h">الأسئلة <span class="chip">${AR(st.n)}</span>
+        <span class="chip g">${AR(st.slots)} خانة</span></div>
+      <input class="eq-sr" id="lsq" value="${esc(LS.q)}"
+             placeholder="ابحث في النصّ · أو اكتب رقماً واضغط Enter">
+      <div class="eq-f">
+        ${fb('all','الكل', st.n)}
+        ${fb('warn','⚠️ يحتاج نظرة', st.warn, 'warn')}
+        ${fb('none','⬜ بلا فحص', st.none)}
+        ${fb('free','◉ بلا خانة', st.free)}
+        ${fb('mcq','◉')}${fb('msq','☑')}${fb('essay','✍️')}
+      </div>
+      <div class="eq-adds">
+        <button class="eq-ab" id="addm"  title="اختيار من متعدد">＋◉</button>
+        <button class="eq-ab" id="addmm" title="اختيار متعدّد الإجابات">＋☑</button>
+        <button class="eq-ab" id="adde"  title="سؤال مقالي">＋✍️</button>
+        <button class="eq-ab" id="imp"   title="استيراد">⇪</button>
+      </div>
+    </div>
+    <div class="eq-body" id="lbody">${body ||
+      '<div class="eq-none">لا سؤال يطابق البحث أو الفلتر</div>'}</div>`;
+}
+
+/* الشريط وحده — فلا يفقد الوسط ما فيه */
+function paintList(){
+  const box = app.querySelector('.eq-list');
+  if(!box) return;
+  box.innerHTML = sidebar();
+  wireList();
+  box.querySelector('.eq-sub.on, .eq-item.on')?.scrollIntoView({ block:'nearest' });
+}
+
+function wireList(){
+  const sr = document.getElementById("lsq");
+  if(sr){
+    sr.oninput = e => {
+      const p = e.target.selectionStart;
+      LS.q = e.target.value; paintList();
+      const n = document.getElementById("lsq");
+      if(n){ n.focus(); n.setSelectionRange(p, p); }
+    };
+    sr.onkeydown = e => {
+      if(e.key !== 'Enter') return;
+      const m = /^\d+$/.exec(LS.q.trim());
+      if(!m) return;
+      const i = +m[0] - 1;
+      if(i >= 0 && i < (Z.questions||[]).length){ LS.q = ''; go(i); }
+      else toast("لا سؤال بهذا الرقم");
+    };
+  }
+
+  const box = app.querySelector('.eq-list');
+  box?.querySelectorAll("[data-f]").forEach(el => el.onclick = () => {
+    LS.f = LS.f === el.dataset.f ? 'all' : el.dataset.f; paintList(); });
+  box?.querySelectorAll("[data-s]").forEach(el => el.onclick = () => {
+    const k = 's:' + el.dataset.s;
+    LS.open.has(k) ? LS.open.delete(k) : LS.open.add(k); paintList(); });
+  box?.querySelectorAll(".eq-vh").forEach(el => el.onclick = () => {
+    const k = 'v:' + el.dataset.v;
+    LS.open.has(k) ? LS.open.delete(k) : LS.open.add(k); paintList(); });
+
+  /* ⚠️ الحكم داخل الرأس — فلولا إيقاف الفقاعة لطوى المظروفَ معه */
+  box?.querySelectorAll("[data-cmp]").forEach(el => el.onclick = e => {
+    e.stopPropagation(); compareVariant(el.dataset.cmp); });
+  box?.querySelectorAll("[data-i]").forEach(el => el.onclick = e => {
+    e.stopPropagation(); go(+el.dataset.i); });
+  box?.querySelectorAll("[data-pg]").forEach(el => el.onclick = () => {
+    const i = (Z.questions||[]).findIndex(x => String(x.passage_id) === el.dataset.pg);
+    if(i >= 0) go(i);
+  });
+
+  document.getElementById("addm").onclick  = () => addQuestion('mcq');
+  document.getElementById("addmm").onclick = () => addQuestion('msq');
+  document.getElementById("adde").onclick  = () => addQuestion('essay');
+  ["imp","imp0"].forEach(id => {
+    const el = document.getElementById(id); if(el) el.onclick = importBox; });
+}
+
+/* ═══════════ مقارنة نسخ الخانة ═══════════
+   الحارس الوحيد للمقاليّ — إذ لا بصمة تُفحص فيه.
+   وأقصى ما تفعله الشاشة: تُحضِر المادّة كاملةً في مجالٍ بصريّ واحد.
+   والحكم بعد ذلك بشريّ: أيقع الطالب في هذا وذاك **للسبب نفسه**؟ */
+
+function compareVariant(key){
+  if(dirty && !confirm("تغييرات غير محفوظة في هذا السؤال — أتتركها؟")) return;
+  const ms = members(key).sort((a,b) => (a.position||0) - (b.position||0));
+  if(ms.length < 2){ toast("الخانة نسخةٌ واحدة"); return; }
+
+  const v   = verdict(ms);
+  const pgN = id => (Z.passages||[]).find(p => String(p.id) === String(id));
+  /* كودٌ لا يظهر في كل النسخ ⇒ يُعلَّم: هو موضع الاختلاف بعينه */
+  const all = ms.map(x => new Set(fp(x)));
+  const odd = c => !all.every(s => s.has(c));
+
+  const col = x => `
+    <div class="cmp-col ${x.id === (Z.questions[cur]||{}).id ? 'on' : ''}">
+      <div class="cmp-h">
+        <span class="cmp-p">${AR(x.position)} · ${kIcon(x.kind)}</span>
+        ${x.passage_id
+          ? `<span class="chip g" dir="auto">📖 ${esc(pgN(x.passage_id)?.title || 'نصّ')}</span>`
+          : `<span class="chip">بلا نصّ</span>`}
+        <button class="it-b" data-cmed="${x.id}" style="margin-inline-start:auto">✏️ حرّر</button>
+      </div>
+      <div class="cmp-q" dir="auto">${fmt(x.body || '—')}</div>
+      ${(x.options||[]).length ? `
+        <div class="cmp-lb">الخيارات وأكوادها</div>
+        ${(x.options||[]).map((o,j) => `
+          <div class="cmp-o ${o.correct?'ok':''}" dir="${dirOf(o.body)}">
+            <span class="key">${esc(optLabel(o,j))}</span>
+            <span class="cmp-tx">${esc(o.body || '—')}</span>
+            ${o.dx ? `<span class="cmp-dx ${odd(o.dx)?'cmp-mark':''}">${esc(dxName(o.dx))}</span>`
+                   : (o.correct ? '' : '<span class="cmp-dx cmp-mark">بلا كود</span>')}
+          </div>`).join('')}
+        <div class="cmp-lb">شرح الخطأ</div>
+        <div class="cmp-note" dir="auto">${esc(x.explanation || '—')}</div>`
+      : `<div class="cmp-lb">الإجابة النموذجية</div>
+         <div class="cmp-note" dir="auto">${fmt(x.model || '—')}</div>`}
+    </div>`;
+
+  document.getElementById("main").innerHTML = `
+    <div class="card">
+      <div class="qnum">⇄ خانة ${esc(key)} · ${AR(ms.length)} نسخ</div>
+      <div class="eq-bar ${v.cls==='ok'?'pg':'sec'}">
+        <div class="eq-brow"><span class="eq-bt">${v.icon} ${
+          v.cls==='ok' ? 'متّسقة فيما يُفحص آلياً'
+        : v.cls==='none' ? 'لا فحص آليّ' : 'تحتاج نظرة'}</span></div>
+        ${(v.fails||[]).map(f => `<div class="eq-bs" style="margin-top:6px">· ${esc(f)}</div>`).join('')}
+      </div>
+      <div class="cmp-note" style="margin:10px 0 14px">
+        الشاشة تُحضِر المادّة ولا تحكم. والسؤال الأخير حكمُك:
+        <b>أيقع الطالب في مشتّت هذه وفي مشتّت تلك للسبب نفسه؟</b>
+        وبصمةٌ متطابقة قد تُخفي مشتّتاً جذّاباً وآخر ميتاً.</div>
+    </div>
+    <div class="cmp" style="grid-template-columns:repeat(${ms.length},minmax(0,1fr))">
+      ${ms.map(col).join('')}
+    </div>
+    <div class="nav" style="margin-top:14px">
+      <button class="btn ghost" id="cmpb">رجوع إلى التحرير</button>
+    </div>`;
+
+  document.getElementById("cmpb").onclick = () => render();
+  document.querySelectorAll("[data-cmed]").forEach(el => el.onclick = () => {
+    const i = (Z.questions||[]).findIndex(x => x.id === +el.dataset.cmed);
+    if(i >= 0) go(i);
+  });
+  scrollTop();
 }
