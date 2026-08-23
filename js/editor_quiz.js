@@ -257,6 +257,7 @@ function passageBar(q, locked){
     <div class="eq-brow">
       <span class="eq-bt" dir="auto">📖 ${esc(p.title || 'نصّ مشترك')}</span>
       <span class="eq-bs">${span(r)}</span>
+      <button class="it-b" id="pairpg">⇄ اقرن الكتلة</button>
       ${locked ? '' : `<button class="it-b" id="edpg">✏️ تحرير</button>
                        <button class="it-b" id="rmpg">✕ فصل</button>`}
     </div>
@@ -332,6 +333,142 @@ function variantBar(q, locked){
     ${note}
   </div>`;
 }
+
+/* ═══════════ اقتران كتلتَي نصّ ═══════════
+   وحدةُ الاقتران هنا ليست السؤال بل **الكتلة**: الطالب يقرأ الفقرة
+   مرّةً ويجيب أسئلتها كلها، وآلة الانتقاء تسحب النصّ كتلةً فتأخذ
+   أسئلته معاً. فاقترانُ سؤالٍ بسؤال سبعُ عملياتٍ لعملٍ واحد.
+
+   🔑 والمزاوجة بالترتيب لا بالاختيار: أوّل أسئلة النصّ بأوّل أسئلة
+      نظيره — وهو الصحيح في البنود المتوازية البناء. ودورُ المؤلّف
+      أن يتحقّق ويوقّع، لا أن يختار سبع مرات.
+
+   ⚠️ ولا يلزم فكٌّ لإضافة نصٍّ ثالث: set_variant تتبنّى المفتاح
+      القائم، فيُقرن p3 بـp1 فتتّسع الخانات القائمة إلى ثلاث نسخ. */
+
+const pgQs = pid => (Z.questions || [])
+  .filter(x => x.id && String(x.passage_id) === String(pid))
+  .sort((a, b) => (a.position || 0) - (b.position || 0));
+
+const pgTitle = pid => {
+  const p = (Z.passages || []).find(y => String(y.id) === String(pid));
+  return p ? (p.title || 'نصّ مشترك') : '—';
+};
+
+const groupOf = x => [x.id, ...partners(x).map(p => p.id)];
+
+function pairPassage(q){
+  if(dirty && !confirm("تغييرات غير محفوظة — أتتركها؟")) return;
+  const n = pgQs(q.passage_id).length;
+  const others = (Z.passages || []).filter(p => String(p.id) !== String(q.passage_id));
+
+  document.getElementById("main").innerHTML = `
+    <div class="card">
+      <div class="qnum">⇄ اقرن كتلة «${esc(pgTitle(q.passage_id))}» بنصٍّ آخر</div>
+      <div class="line" style="margin-bottom:6px">
+        تُزاوَج الأسئلة <b>بالترتيب</b>: الأول بالأول والثاني بالثاني — فتُصنع
+        ${AR(n)} خانة دفعةً واحدة، ويسحب الاختبار نصّاً واحداً بأسئلته كلها.</div>
+      <div class="eq-bs" style="margin-bottom:14px">
+        ولإضافة نصٍّ ثالث: اقرنه بأحد المقترنَين — تتّسع الخانات ولا تحتاج فكّاً.</div>
+
+      ${others.length ? others.map(p => {
+        const m = pgQs(p.id).length;
+        return `<button class="eq-bar ${m === n ? 'pg' : 'sec'}" data-pg="${p.id}"
+                  style="cursor:pointer;text-align:start">
+          <div class="eq-brow">
+            <span class="eq-bt" dir="auto" style="flex:1;min-width:0">📖 ${esc(p.title || 'نصّ مشترك')}</span>
+            <span class="eq-bs">${AR(m)} أسئلة</span>
+            <span class="eq-bs">${m === n ? '✅ عددٌ مطابق'
+              : '❌ العدد مختلف — الكتلتان غير متوازيتين'}</span>
+          </div></button>`;
+      }).join('') : `<div class="warnbox">لا نصّ مشترك آخر في هذا الاختبار.</div>`}
+
+      <div class="nav" style="margin-top:16px">
+        <button class="btn ghost" id="ppc">إلغاء</button>
+      </div>
+    </div>`;
+
+  document.getElementById("ppc").onclick = () => render();
+  document.querySelectorAll("[data-pg]").forEach(el => el.onclick = () => {
+    if(pgQs(el.dataset.pg).length !== n){
+      toast("الكتلتان مختلفتا العدد — لا تُزاوَجان بالترتيب"); return;
+    }
+    pairBlock(q, q.passage_id, el.dataset.pg);
+  });
+  scrollTop();
+}
+
+/* المعاينة قبل التوقيع: صفٌّ لكل مزاوجة بحكمٍ عليها */
+function pairBlock(back, pidA, pidB){
+  const A = pgQs(pidA), B = pgQs(pidB);
+  const keyOf = id => ((Z.questions || []).find(x => x.id === id) || {}).variant_key;
+
+  const rows = A.map((a, i) => {
+    const b = B[i];
+    const ids  = [...new Set([...groupOf(a), ...groupOf(b)])];
+    const keys = [...new Set(ids.map(keyOf).filter(Boolean))];
+    const v =
+        (a.kind !== b.kind)                        ? '❌ نمطان مختلفان'
+      : (keys.length > 1)                          ? '❌ خانتان — فُكّ إحداهما'
+      : (fp(a).join(' · ') !== fp(b).join(' · '))  ? '⚠️ الفخاخ غير متطابقة'
+      : (keys.length === 1)                        ? `✅ تتّسع ${keys[0]} إلى ${AR(ids.length)}`
+      :                                              '✅ مطابق';
+    return { a, b, ids, v, ok: !v.startsWith('❌') };
+  });
+
+  const doable = rows.filter(r => r.ok).length;
+
+  document.getElementById("main").innerHTML = `
+    <div class="card">
+      <div class="qnum">⇄ ${esc(pgTitle(pidA))} ↔ ${esc(pgTitle(pidB))}</div>
+      <div class="line" style="margin-bottom:12px">
+        ${AR(rows.length)} مزاوجة بالترتيب · <b>${AR(doable)}</b> قابلة للتنفيذ</div>
+
+      ${rows.map((r, i) => `
+        <div class="eq-bar ${r.v.startsWith('✅') ? 'pg' : 'sec'}">
+          <div class="eq-brow">
+            <span class="eq-bs">${AR(i + 1)}</span>
+            <span class="eq-bt" dir="auto" style="flex:1;min-width:0">
+              ${AR(r.a.position)}. ${esc((r.a.body || '').slice(0, 40))}</span>
+            <span class="eq-bt" dir="auto" style="flex:1;min-width:0">
+              ${AR(r.b.position)}. ${esc((r.b.body || '').slice(0, 40))}</span>
+            <span class="eq-bs">${esc(r.v)}</span>
+          </div>
+          <div class="eq-brow" style="margin-top:5px">
+            <span class="eq-bs">${esc(fp(r.a).join(' · ') || '—')}</span>
+            <span class="eq-bs">${esc(fp(r.b).join(' · ') || '—')}</span>
+          </div>
+        </div>`).join('')}
+
+      <div class="nav" style="margin-top:16px">
+        ${doable ? `<button class="btn primary" id="pbgo">اقرن ${AR(doable)} خانة</button>` : ''}
+        <button class="btn ghost" id="pbb">رجوع</button>
+      </div>
+    </div>`;
+
+  document.getElementById("pbb").onclick = () => pairPassage(back);
+  const go = document.getElementById("pbgo");
+  if(go) go.onclick = async () => {
+    const bad = rows.filter(r => r.ok && r.v.startsWith('⚠️')).length;
+    if(bad && !confirm(`${bad} مزاوجة فخاخُها غير متطابقة.\n\n` +
+        "الاقتران ممكن، لكن صحّح الخيارات بعده.\n\nأتقرن؟")) return;
+
+    const box = document.getElementById("main");
+    let done = 0, fail = [];
+    for(const [i, r] of rows.entries()){
+      if(!r.ok) continue;
+      box.innerHTML = `<div class="status">جارٍ الاقتران… ${AR(i + 1)} من ${AR(rows.length)}</div>`;
+      const v = await api.setVariant(r.ids);
+      if(v.error || !v.data?.ok) fail.push(`${AR(i + 1)}: ${v.error?.message || v.data?.error}`);
+      else done++;
+    }
+    toast(`قُرنت ${AR(done)} خانة${fail.length ? ` · وتعذّرت ${AR(fail.length)}` : ''}`);
+    if(fail.length) console.warn('تعذّر اقتران:', fail);
+    reload(back.id);
+  };
+  scrollTop();
+}
+
 
 /* ═══════════ اقتران مكتوبَين ═══════════
    المحرّر كان يصنع الخانة بالتكرار وحده. ومن يؤلّف البنود المتكافئة
@@ -550,6 +687,7 @@ function wire(q){
   bind("rmpg",   () => applyPassage(null));
   bind("mkvar",  () => makeVariant(q));
   bind("pairvar",() => pairForm(q));
+  bind("pairpg", () => pairPassage(q));
   bind("addvar", () => pairForm(q));
   bind("rmvar",  () => unVariant(q));
 
