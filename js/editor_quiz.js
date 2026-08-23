@@ -359,15 +359,36 @@ function pairForm(q){
      وهو مقترنٌ ⇒ لا يُقبل إلا مرشّحٌ حرّ، وإلا كانا خانتين فتُرفض. */
   const free  = !q.variant_key;
   const all   = (Z.questions || []).filter(x => x.id && !group.has(x.id) && x.kind === q.kind);
+  /* الترتيب يقرّب النظير: القسم أولاً — فهو أقوى إشارة حين تبلغ
+     أسئلة الاختبار العشرات — ثم تطابق الفخاخ، ثم اختلاف النصّ. */
+  const rank = x => (((x.section || '') === (q.section || '')) ? 0 : 8)
+                  + ((fp(x).join(' · ') === mine) ? 0 : 4)
+                  + ((q.passage_id && x.passage_id &&
+                      String(q.passage_id) !== String(x.passage_id)) ? 0 : 2);
+
   const cands = all.filter(x => free || !x.variant_key)
-                   .sort((a, b) => (fp(a).join(' · ') === mine ? 0 : 1)
-                                 - (fp(b).join(' · ') === mine ? 0 : 1)
+                   .sort((a, b) => rank(a) - rank(b)
                                  || (a.position || 0) - (b.position || 0));
   const taken = all.length - cands.length;
+
+  const pgName = id => {
+    const p = (Z.passages || []).find(y => String(y.id) === String(id));
+    return p ? (p.title || 'نصّ مشترك') : null;
+  };
+
+  /* حكمٌ ثلاثيّ على النصّ المشترك — نظير ما في variant_report:
+     نصّان مختلفان هو المقصود، ونصٌّ واحد يجعل الخانة بلا فائدة
+     (النسختان تُقرآن من الفقرة نفسها)، وواحدٌ بلا نصّ خللٌ صريح. */
+  const pgVerdict = x =>
+      (!q.passage_id && !x.passage_id) ? ''
+    : (!q.passage_id || !x.passage_id) ? '❌ أحدهما بلا نصّ'
+    : String(q.passage_id) === String(x.passage_id) ? '⚠️ النصّ نفسه'
+    : '✅ نصّ آخر';
 
   const row = x => {
     const his  = fp(x).join(' · ');
     const same = his === mine;
+    const pgv  = pgVerdict(x);
     const dif  = [
       same ? '' : 'الفخاخ',
       (x.difficulty || 'medium') === (q.difficulty || 'medium') ? '' : 'الصعوبة',
@@ -383,6 +404,11 @@ function pairForm(q){
           · ${AR(partners(x).length + 2)} نسخ</span>` : ''}
         <span class="eq-bs">${dif.length ? '⚠️ يختلف في: ' + esc(dif.join(' · ')) : '✅ مطابق'}</span>
       </div>
+      <div class="eq-brow" style="margin-top:5px">
+        <span class="eq-bs" dir="auto">${esc(x.section || 'بلا قسم')}</span>
+        ${pgName(x.passage_id) ? `<span class="eq-bs" dir="auto">📖 ${esc(pgName(x.passage_id))}</span>` : ''}
+        ${pgv ? `<span class="eq-bs">${pgv}</span>` : ''}
+      </div>
       <div class="eq-brow" style="margin-top:7px">
         ${(x.options || []).filter(o => o.dx)
             .map(o => `<span class="chip">${esc(dxName(o.dx))}</span>`).join('') || '<span class="eq-bs">بلا أكواد</span>'}
@@ -396,8 +422,12 @@ function pairForm(q){
       <div class="line" style="margin-bottom:6px">
         الاقتران <b>إعلانٌ</b> لا نسخ: تقول إن السؤالين يقيسان المهارة نفسها،
         فيسحب البنك واحداً منهما في كل اختبار.</div>
-      <div class="line" style="margin-bottom:14px">
-        فخاخ هذا السؤال: ${fp(q).map(c => `<span class="chip">${esc(dxName(c))}</span>`).join(' ') || '—'}</div>
+      <div class="line" style="margin-bottom:6px">
+        فخاخ هذا السؤال: ${fp(q).map(c => `<span class="chip">${esc(dxName(c))}</span>`).join(' ') || '—'}
+        ${pgName(q.passage_id) ? ` · 📖 ${esc(pgName(q.passage_id))}` : ''}</div>
+      <div class="eq-bs" style="margin-bottom:14px">
+        المرشّحون مرتَّبون: قسمُك أولاً · ثم تطابق الفخاخ · ثم من كان تحت نصٍّ آخر —
+        فنسختان تحت نصّ واحد لا تُغنيان عن قراءته مرّتين.</div>
 
       ${cands.length ? cands.map(row).join('') : `
         <div class="warnbox">لا سؤال صالحاً للاقتران في هذا الاختبار.
@@ -886,6 +916,8 @@ function exportQuiz(){
       kind: p.kind || 'text', lang: p.lang || 'ar' })),
     questions: (Z.questions || []).map(q => {
       const o = { section: q.section || null, kind: q.kind, body: q.body };
+      // بلا هذا السطر تعود النسخة الاحتياطية مفكوكة الخانات كلها
+      if(q.variant_key) o.variant = q.variant_key;
       const r = refOf(q.passage_id); if(r) o.passage = r;
       if(q.kind === 'essay'){ o.model = q.model || null; return o; }
       o.explanation = q.explanation || null;
