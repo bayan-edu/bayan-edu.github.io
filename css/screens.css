@@ -3,6 +3,9 @@
    ما يخصّ شاشة بعينها. مرتّبة بترتيب رحلة الطالب:
    البوابة ← المواد ← الدروس ← الدرس ← الاختبار ← النتيجة
    ← الإرشاد ← المحادثة ← لوحة المعلم ← لوحة المدير
+
+   ⚠️ الترتيب ليس زينة: حين تتساوى الخصوصية، المتأخّر يغلب.
+      فكل قاعدة تنقض ما قبلها موضوعةٌ بعده عمداً — وهي معلَّمة.
    ══════════════════════════════════════════════════════════ */
 
 /* ═══ البوابة ═══ */
@@ -75,6 +78,12 @@
 .trackfill{height:100%;background:linear-gradient(90deg,var(--cyan),#2a8fb8);transition:width 1s linear}
 .qcount{font-family:'Almarai';font-weight:700;font-size:.76rem;color:var(--mist);white-space:nowrap}
 
+/* بطاقة السؤال — وجهةُ التمرير حين يتكرّر النصّ المشترك.
+   الإزاحة تعادل علوّ .timerbar (١١+١١ حشو + ~٣٠ محتوى + هامش)، فلا
+   يختفي عنوان السؤال تحته. ورقمُها هنا لا في quiz.js: علوّ الشريط
+   شأنُ CSS، ورقمٌ في جافاسكربت يصف مقاساً في CSS ينكسر صامتاً. */
+#qcard{scroll-margin-top:76px}
+
 .qnum{font-family:'Almarai';font-weight:800;font-size:.72rem;color:var(--cyan);letter-spacing:.1em;margin-bottom:11px}
 .qtext{font-family:'Almarai';font-weight:700;font-size:1.01rem;line-height:1.9;margin-bottom:16px}
 .media{width:100%;border-radius:11px;border:1px solid var(--line);margin-bottom:15px;display:block}
@@ -91,6 +100,19 @@
 .key{flex:0 0 26px;height:26px;border-radius:8px;background:rgba(157,184,201,.13);color:var(--mist);
  font-family:'Almarai';font-weight:800;font-size:.8rem;display:flex;align-items:center;justify-content:center}
 .opt.sel .key{background:var(--cyan);color:#06202e}
+
+/* ── الاختيار متعدّد الإجابات (msq) ──
+   التلميح يقول «أكثر من واحد» ولا يقول كم: إعلان العدد يعيد المقارنة
+   الترجيحية من الباب الخلفي، وجوهر هذا النمط أن يُحاكَم كل خيار وحده.
+   والمربّع لا الدائرة — الشكل نفسه رسالة. */
+.q-hint{font-family:'Almarai';font-weight:700;font-size:.78rem;color:var(--sand);
+  background:rgba(229,189,99,.09);border:1px solid rgba(229,189,99,.26);
+  border-radius:9px;padding:8px 11px;margin-bottom:11px}
+.opts.multi .opt{align-items:center}
+.tick{flex:0 0 22px;height:22px;border-radius:6px;border:1.5px solid var(--line);
+  margin-inline-start:auto;display:flex;align-items:center;justify-content:center;
+  font-size:.74rem;color:#06202e;background:transparent;transition:background .18s,border-color .18s}
+.opt.sel .tick{background:var(--cyan);border-color:var(--cyan)}
 
 /* الحدّ الملوّن يتبع اتجاه النصّ تلقائياً مع border-inline-start */
 .psg{background:rgba(157,184,201,.06);border:1px solid var(--line);border-inline-start:3px solid var(--cyan);
@@ -132,6 +154,21 @@
 .fbnote{margin-top:14px;background:rgba(229,189,99,.12);border:1px solid rgba(229,189,99,.4);
  border-radius:11px;padding:13px;font-family:'Almarai';font-weight:700;font-size:.87rem;
  color:var(--sand);cursor:pointer;text-align:center}
+
+/* مراجعة msq — صفٌّ لكل خيار لا صفٌّ للسؤال.
+   فيرى الطالب حدّ المفهوم كاملاً: ما أدخله وليس منه، وما أخرجه وهو منه. */
+.jds{display:flex;flex-direction:column;gap:7px;margin:9px 0}
+.jd{display:flex;align-items:flex-start;gap:10px;padding:9px 11px;border-radius:10px;
+  background:rgba(157,184,201,.05);border:1px solid var(--line);
+  font-size:.86rem;line-height:1.7}
+.jd .key{flex:0 0 24px;height:24px;font-size:.74rem}
+.jd.hit{border-color:rgba(72,207,192,.42);background:rgba(72,207,192,.08)}
+.jd.err{border-color:rgba(242,119,107,.42);background:rgba(242,119,107,.08)}
+.jd.dim{opacity:.6}
+.jd-m{display:block;margin-top:4px;font-family:'Almarai';font-weight:800;font-size:.72rem;color:var(--mist)}
+.jd.hit .jd-m{color:var(--cyan)}
+.jd.err .jd-m{color:var(--coral)}
+.jd-dx{display:block;margin-top:4px;font-size:.79rem;color:var(--sand);line-height:1.65}
 
 /* ═══ الإرشاد — اختيار المعلم ═══ */
 .mentor{background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--line);
@@ -250,6 +287,7 @@
 .eq-add{font-size:.78rem;padding:9px}
 
 /* الوسط: تحرير بهيئة شاشة الطالب */
+.eq-main{scroll-margin-top:72px}
 .eq-qt{min-height:74px;font-family:'Almarai';font-weight:700;font-size:1rem;line-height:1.9}
 .eq-opts{margin-top:14px}
 .eq-opt{display:flex;align-items:center;gap:9px;flex-wrap:wrap;
@@ -275,6 +313,15 @@
 .eq-iss{font-size:.76rem;color:#f0dcae;line-height:1.75;margin-top:8px}
 .eq-ok{font-family:'Almarai';font-weight:800;font-size:.83rem;color:var(--cyan);margin-top:8px}
 
+/* أسطر الجاهزية — صارت أزرار فلترة تُصيب الشريط المقابل */
+.eq-rl{display:flex;align-items:center;gap:6px;flex-wrap:wrap;cursor:pointer;
+  border:1px solid transparent;border-radius:9px;padding:5px 7px;margin:0 -7px;
+  font-size:.85rem;line-height:1.9}
+.eq-rl:hover{background:rgba(157,184,201,.08);border-color:var(--line)}
+.eq-rl.on{background:rgba(72,207,192,.13);border-color:rgba(72,207,192,.34)}
+.eq-rs{font-size:.72rem;color:var(--cyan)}
+.eq-rq{font-size:.72rem;opacity:.6}
+
 /* زرّ الاختبار في صفّ الدرس */
 .eq-go{background:rgba(72,207,192,.12);border:1px solid rgba(72,207,192,.3);
   color:var(--cyan);border-radius:9px;padding:8px 12px;cursor:pointer;
@@ -288,132 +335,16 @@
   .eq-dx,.eq-sp{flex:1 1 100%}
 }
 
-/* ═══ محرّر المصادر ═══ */
-.it-row{display:flex;align-items:center;gap:11px;flex-wrap:wrap;
-  background:rgba(157,184,201,.05);border:1px solid var(--line);
-  border-radius:12px;padding:12px 14px;margin-bottom:8px}
-.it-b{background:rgba(157,184,201,.09);border:1px solid var(--line);
-  color:var(--foam);border-radius:9px;padding:8px 10px;cursor:pointer;
-  font-family:'Almarai';font-weight:700;font-size:.76rem;white-space:nowrap}
-.it-b:hover{border-color:var(--cyan);color:var(--cyan)}
-.it-b:disabled{opacity:.3;cursor:not-allowed}
-.it-b.wide{padding:8px 13px}
-.it-ord{display:flex;flex-direction:column;gap:3px}
-.it-ord .it-b{padding:2px 8px;font-size:.62rem;line-height:1.5}
-
-.it-kinds{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(126px,1fr))}
-.it-k{display:flex;align-items:center;gap:8px;cursor:pointer;
-  background:rgba(157,184,201,.05);border:1px solid var(--line);
-  border-radius:10px;padding:11px 12px;color:var(--foam);
-  font-family:inherit;font-size:.79rem;text-align:right;transition:border-color .16s}
-.it-k:hover{border-color:rgba(72,207,192,.45)}
-.it-k.on{border-color:var(--cyan);background:rgba(72,207,192,.12);color:var(--cyan)}
-.it-k span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-
-/* ═══ الأقسام والنصوص المشتركة ═══ */
-.q-sec{font-family:'Almarai';font-weight:800;font-size:.78rem;color:var(--sand);
-  letter-spacing:.06em;margin-bottom:11px;padding-inline-start:11px;
-  border-inline-start:3px solid rgba(229,189,99,.5)}
-.eq-meta{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
-.eq-meta .fl{font-size:.76rem;margin-bottom:6px}
-.eq-meta input,.eq-meta select{padding:9px 11px;font-size:.83rem}
-.eq-pg{display:flex;align-items:center;gap:7px;padding:9px 10px;border-radius:9px;
-  background:rgba(157,184,201,.06);border:1px solid var(--line);margin-bottom:5px}
-.eq-pt{font-size:.78rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.eq-pu{font-size:.68rem;color:var(--mist);margin-top:2px}
-.eq-pg .it-b{padding:5px 7px;font-size:.7rem}
-@media(max-width:1000px){ .eq-meta{grid-template-columns:1fr} }
-
-/* ═══ حاويات المحرّر: القسم والنصّ المشترك ═══ */
-.eq-bar{width:100%;display:block;border-radius:11px;padding:11px 14px;margin-bottom:9px;
-  border:1px solid var(--line);background:rgba(157,184,201,.05);text-align:start}
-.eq-bar.add{cursor:pointer;border-style:dashed;color:var(--mist);
-  font-family:'Almarai';font-weight:700;font-size:.78rem;transition:color .16s,border-color .16s}
-.eq-bar.add:hover{color:var(--cyan);border-color:rgba(72,207,192,.45)}
-.eq-bar.sec{background:rgba(229,189,99,.08);border-color:rgba(229,189,99,.3);
-  display:flex;align-items:center;gap:9px}
-.eq-bar.pg{background:rgba(72,207,192,.06);border-color:rgba(72,207,192,.25)}
-.eq-brow{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
-.eq-bt{font-family:'Almarai';font-weight:800;font-size:.83rem}
-.eq-bar.sec .eq-bt{color:var(--sand)}
-.eq-bar.pg  .eq-bt{color:var(--cyan)}
-.eq-bs{font-size:.72rem;color:var(--mist);margin-left:auto}
-.eq-pgbox{border-color:rgba(72,207,192,.35)}
-
-/* شريط أدوات السؤال والفقرة */
-.eq-tools{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:11px}
-.eq-tb{background:rgba(157,184,201,.08);border:1px solid var(--line);color:var(--foam);
-  border-radius:8px;padding:6px 10px;cursor:pointer;font-family:inherit;font-size:.76rem}
-.eq-tb:hover{border-color:var(--cyan);color:var(--cyan)}
-.eq-tb.on{background:rgba(72,207,192,.14);border-color:rgba(72,207,192,.4);color:var(--cyan)}
-.eq-sep{width:1px;height:20px;background:var(--line);margin:0 4px}
-.eq-hint{font-size:.7rem;color:var(--mist);opacity:.7;margin-right:auto}
-.eq-md{margin-bottom:9px;padding:8px 11px;font-size:.8rem}
-
-/* ═══ منطقة رفع ملف الاستيراد ═══ */
-.drop{border:2px dashed var(--line);border-radius:12px;padding:20px 16px;
-  text-align:center;color:var(--mist);font-size:.82rem;margin-bottom:12px;
-  transition:border-color .18s,background .18s}
-.drop.on{border-color:var(--cyan);background:rgba(72,207,192,.07);color:var(--foam)}
-.drop-i{font-size:1.7rem;margin-bottom:7px;opacity:.75}
-.drop-a{color:var(--cyan);cursor:pointer;text-decoration:underline;
-  font-family:'Almarai';font-weight:700}
-
-/* ═══ منطقة رفع ملف الاستيراد ═══ */
-.drop{border:2px dashed var(--line);border-radius:12px;padding:20px 16px;
-  text-align:center;margin-bottom:12px;font-size:.85rem;color:var(--mist);
-  transition:border-color .18s,background .18s}
-.drop.on{border-color:var(--cyan);background:rgba(72,207,192,.07);color:var(--foam)}
-.drop-i{font-size:1.7rem;margin-bottom:7px;opacity:.75}
-.drop-a{color:var(--cyan);cursor:pointer;text-decoration:underline;
-  font-family:'Almarai';font-weight:700}
-.drop-s{font-size:.72rem;opacity:.65;margin-top:7px}
-
-/* ═══════════════════════════════════════════════════════════
-   بيان — إضافة أنماط الاختيار المتعدّد (msq)
-   ⚠️ يُلحَق بآخر css/screens.css — لا يُستبدل به الملف.
-      كل المحدِّدات هنا جديدة، فلا تمسّ ما هو قائم:
-      .opt و .key و .rev و .trap تبقى كما هي حرفاً بحرف.
-   ═══════════════════════════════════════════════════════════ */
-
-/* ── التلميح: يقول «أكثر من واحد» ولا يقول كم.
-      إعلان العدد يعيد المقارنة الترجيحية من الباب الخلفي،
-      وجوهر هذا النمط أن يُحاكَم كل خيار وحده. */
-.q-hint{font-family:'Almarai';font-weight:700;font-size:.78rem;color:var(--sand);
-  background:rgba(229,189,99,.09);border:1px solid rgba(229,189,99,.26);
-  border-radius:9px;padding:8px 11px;margin-bottom:11px}
-
-/* ── علامة الاختيار: مربّع لا دائرة.
-      الشكل نفسه رسالة — الدائرة تقول «واحدة»، والمربّع «ما شئت». */
-.opts.multi .opt{align-items:center}
-.tick{flex:0 0 22px;height:22px;border-radius:6px;border:1.5px solid var(--line);
-  margin-inline-start:auto;display:flex;align-items:center;justify-content:center;
-  font-size:.74rem;color:#06202e;background:transparent;transition:background .18s,border-color .18s}
-.opt.sel .tick{background:var(--cyan);border-color:var(--cyan)}
-
-/* ── المراجعة: صفٌّ لكل خيار، لا صفٌّ للسؤال */
-.jds{display:flex;flex-direction:column;gap:7px;margin:9px 0}
-.jd{display:flex;align-items:flex-start;gap:10px;padding:9px 11px;border-radius:10px;
-  background:rgba(157,184,201,.05);border:1px solid var(--line);
-  font-size:.86rem;line-height:1.7}
-.jd .key{flex:0 0 24px;height:24px;font-size:.74rem}
-.jd.hit{border-color:rgba(72,207,192,.42);background:rgba(72,207,192,.08)}
-.jd.err{border-color:rgba(242,119,107,.42);background:rgba(242,119,107,.08)}
-.jd.dim{opacity:.6}
-.jd-m{display:block;margin-top:4px;font-family:'Almarai';font-weight:800;font-size:.72rem;color:var(--mist)}
-.jd.hit .jd-m{color:var(--cyan)}
-.jd.err .jd-m{color:var(--coral)}
-.jd-dx{display:block;margin-top:4px;font-size:.79rem;color:var(--sand);line-height:1.65}
 /* ══════════════════════════════════════════════════════════
    الشريط الهرميّ — رأسٌ ثابت وجسدٌ يُمرَّر
    العقدة هي الخانة · والقسم مظروف · والنصّ شارة.
    ⚠️ العرض يختار محوراً واحداً: الترتيب (قسم←نصّ←بند) للطالب،
       والقياس (خانة←نسخُها) للمؤلّف — وهذا الشريط للمؤلّف.
+   ⚠️ موضع هذه الكتلة لازم: تنقض .eq-list أعلاه و@media التي قبلها.
    ══════════════════════════════════════════════════════════ */
 
 .eq-list{display:flex;flex-direction:column;gap:9px;padding:11px;
-  max-height:calc(100vh - 76px);
-  overflow-y:auto}                    /* ← المضاف */
+  max-height:calc(100vh - 76px);overflow-y:auto}
 
 /* الرأس — لا يتحرّك بحركة البيانات */
 .eq-top{flex:0 0 auto;display:flex;flex-direction:column;gap:8px}
@@ -429,6 +360,14 @@
 .eq-ab{flex:1;background:rgba(157,184,201,.08);border:1px solid var(--line);
   color:var(--foam);border-radius:9px;padding:7px 0;cursor:pointer;font-size:.82rem}
 .eq-ab:hover{border-color:var(--cyan);color:var(--cyan)}
+
+/* شارة الفلتر الفعّال — الحالة تسكن حيث ينظر المستخدم، ولو كان الزناد بعيداً */
+.eq-chipf{display:flex;align-items:center;gap:6px;width:100%;cursor:pointer;
+  background:rgba(72,207,192,.13);border:1px solid rgba(72,207,192,.34);
+  color:var(--cyan);border-radius:9px;padding:5px 9px;
+  font-family:'Almarai';font-weight:700;font-size:.7rem}
+.eq-chipf:hover{background:rgba(242,119,107,.13);
+  border-color:rgba(242,119,107,.4);color:var(--coral)}
 
 /* الجسد — هو وحده الذي يُمرَّر
    ⚠️ min-height:0 لازم: عنصر المرونة لا ينكمش تحت مقاس محتواه بلا هذا،
@@ -504,22 +443,75 @@
   .eq-body{overflow:visible}
   .cmp{grid-template-columns:1fr!important}
 }
-/* ── b21: الوجهة والفلترة ── */
-.eq-main{scroll-margin-top:72px}
 
-/* شارة الفلتر الفعّال — الحالة تسكن حيث ينظر المستخدم، ولو كان الزناد بعيداً */
-.eq-chipf{display:flex;align-items:center;gap:6px;width:100%;cursor:pointer;
-  background:rgba(72,207,192,.13);border:1px solid rgba(72,207,192,.34);
-  color:var(--cyan);border-radius:9px;padding:5px 9px;
-  font-family:'Almarai';font-weight:700;font-size:.7rem}
-.eq-chipf:hover{background:rgba(242,119,107,.13);
-  border-color:rgba(242,119,107,.4);color:var(--coral)}
+/* ═══ محرّر المصادر ═══ */
+.it-row{display:flex;align-items:center;gap:11px;flex-wrap:wrap;
+  background:rgba(157,184,201,.05);border:1px solid var(--line);
+  border-radius:12px;padding:12px 14px;margin-bottom:8px}
+.it-b{background:rgba(157,184,201,.09);border:1px solid var(--line);
+  color:var(--foam);border-radius:9px;padding:8px 10px;cursor:pointer;
+  font-family:'Almarai';font-weight:700;font-size:.76rem;white-space:nowrap}
+.it-b:hover{border-color:var(--cyan);color:var(--cyan)}
+.it-b:disabled{opacity:.3;cursor:not-allowed}
+.it-b.wide{padding:8px 13px}
+.it-ord{display:flex;flex-direction:column;gap:3px}
+.it-ord .it-b{padding:2px 8px;font-size:.62rem;line-height:1.5}
 
-/* أسطر الجاهزية — صارت أزراراً */
-.eq-rl{display:flex;align-items:center;gap:6px;flex-wrap:wrap;cursor:pointer;
-  border:1px solid transparent;border-radius:9px;padding:5px 7px;margin:0 -7px;
-  font-size:.85rem;line-height:1.9}
-.eq-rl:hover{background:rgba(157,184,201,.08);border-color:var(--line)}
-.eq-rl.on{background:rgba(72,207,192,.13);border-color:rgba(72,207,192,.34)}
-.eq-rs{font-size:.72rem;color:var(--cyan)}
-.eq-rq{font-size:.72rem;opacity:.6}
+.it-kinds{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(126px,1fr))}
+.it-k{display:flex;align-items:center;gap:8px;cursor:pointer;
+  background:rgba(157,184,201,.05);border:1px solid var(--line);
+  border-radius:10px;padding:11px 12px;color:var(--foam);
+  font-family:inherit;font-size:.79rem;text-align:right;transition:border-color .16s}
+.it-k:hover{border-color:rgba(72,207,192,.45)}
+.it-k.on{border-color:var(--cyan);background:rgba(72,207,192,.12);color:var(--cyan)}
+.it-k span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ═══ الأقسام والنصوص المشتركة ═══ */
+.q-sec{font-family:'Almarai';font-weight:800;font-size:.78rem;color:var(--sand);
+  letter-spacing:.06em;margin-bottom:11px;padding-inline-start:11px;
+  border-inline-start:3px solid rgba(229,189,99,.5)}
+.eq-meta{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.eq-meta .fl{font-size:.76rem;margin-bottom:6px}
+.eq-meta input,.eq-meta select{padding:9px 11px;font-size:.83rem}
+.eq-pg{display:flex;align-items:center;gap:7px;padding:9px 10px;border-radius:9px;
+  background:rgba(157,184,201,.06);border:1px solid var(--line);margin-bottom:5px}
+.eq-pt{font-size:.78rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.eq-pu{font-size:.68rem;color:var(--mist);margin-top:2px}
+.eq-pg .it-b{padding:5px 7px;font-size:.7rem}
+@media(max-width:1000px){ .eq-meta{grid-template-columns:1fr} }
+
+/* ═══ حاويات المحرّر: القسم والنصّ المشترك ═══ */
+.eq-bar{width:100%;display:block;border-radius:11px;padding:11px 14px;margin-bottom:9px;
+  border:1px solid var(--line);background:rgba(157,184,201,.05);text-align:start}
+.eq-bar.add{cursor:pointer;border-style:dashed;color:var(--mist);
+  font-family:'Almarai';font-weight:700;font-size:.78rem;transition:color .16s,border-color .16s}
+.eq-bar.add:hover{color:var(--cyan);border-color:rgba(72,207,192,.45)}
+.eq-bar.sec{background:rgba(229,189,99,.08);border-color:rgba(229,189,99,.3);
+  display:flex;align-items:center;gap:9px}
+.eq-bar.pg{background:rgba(72,207,192,.06);border-color:rgba(72,207,192,.25)}
+.eq-brow{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.eq-bt{font-family:'Almarai';font-weight:800;font-size:.83rem}
+.eq-bar.sec .eq-bt{color:var(--sand)}
+.eq-bar.pg  .eq-bt{color:var(--cyan)}
+.eq-bs{font-size:.72rem;color:var(--mist);margin-left:auto}
+.eq-pgbox{border-color:rgba(72,207,192,.35)}
+
+/* شريط أدوات السؤال والفقرة */
+.eq-tools{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:11px}
+.eq-tb{background:rgba(157,184,201,.08);border:1px solid var(--line);color:var(--foam);
+  border-radius:8px;padding:6px 10px;cursor:pointer;font-family:inherit;font-size:.76rem}
+.eq-tb:hover{border-color:var(--cyan);color:var(--cyan)}
+.eq-tb.on{background:rgba(72,207,192,.14);border-color:rgba(72,207,192,.4);color:var(--cyan)}
+.eq-sep{width:1px;height:20px;background:var(--line);margin:0 4px}
+.eq-hint{font-size:.7rem;color:var(--mist);opacity:.7;margin-right:auto}
+.eq-md{margin-bottom:9px;padding:8px 11px;font-size:.8rem}
+
+/* ═══ منطقة رفع ملف الاستيراد ═══ */
+.drop{border:2px dashed var(--line);border-radius:12px;padding:20px 16px;
+  text-align:center;margin-bottom:12px;font-size:.85rem;color:var(--mist);
+  transition:border-color .18s,background .18s}
+.drop.on{border-color:var(--cyan);background:rgba(72,207,192,.07);color:var(--foam)}
+.drop-i{font-size:1.7rem;margin-bottom:7px;opacity:.75}
+.drop-a{color:var(--cyan);cursor:pointer;text-decoration:underline;
+  font-family:'Almarai';font-weight:700}
+.drop-s{font-size:.72rem;opacity:.65;margin-top:7px}
