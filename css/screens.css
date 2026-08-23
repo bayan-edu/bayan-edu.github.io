@@ -412,7 +412,8 @@
    ══════════════════════════════════════════════════════════ */
 
 .eq-list{display:flex;flex-direction:column;gap:9px;padding:11px;
-  max-height:calc(100vh - 76px)}
+  max-height:calc(100vh - 76px);
+  overflow-y:auto}                    /* ← المضاف */
 
 /* الرأس — لا يتحرّك بحركة البيانات */
 .eq-top{flex:0 0 auto;display:flex;flex-direction:column;gap:8px}
