@@ -14,6 +14,18 @@
    🎨 والوسط يستعمل فئات شاشة الطالب نفسها (.qtext .opts .opt .key)
       فيرى المؤلّف ما سيراه الطالب — لا محاكاةً له. وأي تغيير في
       تنسيق الاختبار ينعكس هنا تلقائياً: مصدر واحد للشكل.
+
+   🔒 b23 — تسمية المعرّفات بنطاقها.
+      كان زرّ النشر id="pb" ومربّع نصّ الفقرة id="pb" أيضاً، وهما
+      يسكنان الصفحة معاً (#ready و#main). و getElementById تُرجع
+      **الأول في ترتيب المستند** — و#main يسبق #ready في الشبكة —
+      فيُركَّب معالج النشر على مربّع النصّ. نائمٌ حتى b21، إذ صارت
+      setFilter تنادي readiness. ⇒ بادئة rd* وبحثٌ مقيَّد بالصندوق.
+
+   ⚖️ وحكمُ الخانة صار مصدراً واحداً: verdict() تخدم الشريط
+      و variantBar و pairForm و compareVariant. وكانت مكتوبةً
+      مرّتين ناقصتين، تمنحان ✅ لكل خانةٍ مقالية — لأن fp() تُرجع []
+      فتصير المقارنة '' !== '' ⇒ false. **صدقٌ فارغ.**
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
 import { S } from './state.js';
@@ -41,7 +53,7 @@ export async function openQuiz(course, lesson){
   if(error){ app.innerHTML = errBox(error, 'تحميل الاختبار'); return; }
   if(!data.ok){ app.innerHTML = errBox({ message: data.error }, 'تحميل الاختبار'); return; }
 
- Z = data; cur = 0; dirty = false;
+  Z = data; cur = 0; dirty = false;
   render(true);                 // الدخول من شاشةٍ أخرى ⇒ الوجهة الأعلى
 }
 
@@ -85,7 +97,7 @@ function render(atTop){
   const qs = Z.questions || [];
   const q  = qs[cur] || null;
 
-   app.innerHTML = `
+  app.innerHTML = `
     <div class="crumb" id="bk">← ${esc(ctx.lesson.title)}</div>
     <div class="eq">
       <aside class="eq-list">${sidebar()}</aside>
@@ -95,9 +107,9 @@ function render(atTop){
 
   document.getElementById("bk").onclick = leave;
   wireList();
-if(q) wire(q);
+  if(q) wire(q);
   readiness();
-  atTop ? scrollTop() : focusMain();      // كان: scrollTop()
+  atTop ? scrollTop() : focusMain();
 }
 
 const emptyCard = () => `<div class="card" style="text-align:center;padding:34px">
@@ -252,7 +264,10 @@ function passageBar(q, locked){
 
 /* بصمة الفخاخ — نظير array_agg(distinct dx order by dx) في القاعدة.
    والشرط «يحمل كوداً» لا «ليس صحيحاً»: يصف ما نريده بذاته لا بما
-   يصادف أن يساويه. النتيجة واحدة اليوم، والصياغة تصمد غداً. */
+   يصادف أن يساويه. النتيجة واحدة اليوم، والصياغة تصمد غداً.
+
+   ⚠️ وتُرجع [] للمقاليّ — فلا تُقارَن بصمتان بلا التحقّق من وجود
+      خيارات أصلاً، وإلا صار «لا اختلاف» و«لا شيء يُقارَن» سواءً. */
 const fp = q => [...new Set((q.options || [])
     .map(o => o.dx).filter(Boolean))].sort();
 
@@ -279,9 +294,10 @@ function variantBar(q, locked){
       ${note}`;
   }
 
-  const ps   = partners(q);
-  const mine = fp(q).join(' · ');
-  const bad  = ps.filter(p => fp(p).join(' · ') !== mine);
+  /* الحكم من verdict() لا من مقارنةِ بصمتين: هي وحدها التي تميّز
+     «لا اختلاف» من «لا مادّة للفحص»، وتنظر إلى النصّ والقسم والنمط. */
+  const ps = partners(q);
+  const v  = verdict([q, ...ps]);
 
   const traps = p => (p.options || []).filter(o => o.dx)
     .map(o => `<span class="chip">${esc(dxName(o.dx))}</span>`).join('');
@@ -290,6 +306,7 @@ function variantBar(q, locked){
     <div class="eq-brow">
       <span class="eq-bt">⇄ خانة ${esc(q.variant_key)}</span>
       <span class="eq-bs">${AR(ps.length + 1)} نسخ في الخانة</span>
+      <button class="it-b" id="cmpv">⇄ قارِن النسخ</button>
       <button class="it-b" id="addvar">＋ نسخة قائمة</button>
       <button class="it-b" id="rmvar">✕ فكّ</button>
     </div>
@@ -301,11 +318,13 @@ function variantBar(q, locked){
         <span style="display:flex;gap:5px;flex-wrap:wrap">${traps(p)}</span>
       </div>`).join('')}
 
-    ${bad.length ? `<div class="warnbox" style="margin-top:10px">
-        ⚠️ الفخاخ غير متطابقة — النسخة لا تقيس ما يقيسه شريكها.<br>
-        هنا: <b>${esc(mine || '—')}</b> · الشريك: <b>${esc(fp(bad[0]).join(' · ') || '—')}</b><br>
-        صحّح <b>الخيار</b> لا الكود — الكود يصف المشتّت ولا يصنعه.
-      </div>` : `<div class="eq-bs" style="margin-top:8px">✅ الفخاخ متطابقة</div>`}
+    ${v.cls === 'ok'
+      ? `<div class="eq-bs" style="margin-top:8px">✅ متّسقة فيما يُفحص آلياً</div>`
+      : `<div class="${v.cls === 'none' ? 'eq-bs' : 'warnbox'}" style="margin-top:10px">
+          ${v.icon} ${(v.fails || []).map(f => esc(f)).join('<br>')}
+          ${v.cls === 'warn' && !v.manual
+            ? '<br>صحّح <b>الخيار</b> لا الكود — الكود يصف المشتّت ولا يصنعه.' : ''}
+        </div>`}
     ${note}
   </div>`;
 }
@@ -383,9 +402,11 @@ function pairBlock(back, pidA, pidB){
     const b = B[i];
     const ids  = [...new Set([...groupOf(a), ...groupOf(b)])];
     const keys = [...new Set(ids.map(keyOf).filter(Boolean))];
+    const noFp = !(a.options || []).length || !(b.options || []).length;
     const v =
         (a.kind !== b.kind)                        ? '❌ نمطان مختلفان'
       : (keys.length > 1)                          ? '❌ خانتان — فُكّ إحداهما'
+      : noFp                                       ? '⬜ لا فحص آليّ'
       : (fp(a).join(' · ') !== fp(b).join(' · '))  ? '⚠️ الفخاخ غير متطابقة'
       : (keys.length === 1)                        ? `✅ تتّسع ${keys[0]} إلى ${AR(ids.length)}`
       :                                              '✅ مطابق';
@@ -425,9 +446,12 @@ function pairBlock(back, pidA, pidB){
   document.getElementById("pbb").onclick = () => pairPassage(back);
   const go = document.getElementById("pbgo");
   if(go) go.onclick = async () => {
-    const bad = rows.filter(r => r.ok && r.v.startsWith('⚠️')).length;
+    const bad  = rows.filter(r => r.ok && r.v.startsWith('⚠️')).length;
+    const none = rows.filter(r => r.ok && r.v.startsWith('⬜')).length;
     if(bad && !confirm(`${bad} مزاوجة فخاخُها غير متطابقة.\n\n` +
         "الاقتران ممكن، لكن صحّح الخيارات بعده.\n\nأتقرن؟")) return;
+    if(none && !confirm(`${none} مزاوجة مقالية — لا فحص آليّ لها.\n\n` +
+        "التكافؤ إعلانٌ منك: أمتقاربة في الجنس والطول والألفة؟\n\nأتقرن؟")) return;
 
     const box = document.getElementById("main");
     let done = 0, fail = [];
@@ -491,19 +515,25 @@ function pairForm(q){
 
   /* حكمٌ ثلاثيّ على النصّ المشترك — نظير ما في variant_report:
      نصّان مختلفان هو المقصود، ونصٌّ واحد يجعل الخانة بلا فائدة
-     (النسختان تُقرآن من الفقرة نفسها)، وواحدٌ بلا نصّ خللٌ صريح. */
+     (النسختان تُقرآن من الفقرة نفسها)، وواحدٌ بلا نصّ سياقان مختلفان.
+     ⚠️ ولا يُحكم بالنقص هنا: سؤال الكتابة بلا فقرة هو الصواب لا
+        خللاً — فالمفحوص **الاتّساق** بين النسخ، لا الحاجة إلى نصّ. */
   const pgVerdict = x =>
       (!q.passage_id && !x.passage_id) ? ''
-    : (!q.passage_id || !x.passage_id) ? '❌ أحدهما بلا نصّ'
+    : (!q.passage_id || !x.passage_id) ? '⚠️ أحدهما بلا نصّ — سياقان'
     : String(q.passage_id) === String(x.passage_id) ? '⚠️ النصّ نفسه'
     : '✅ نصّ آخر';
 
+  /* بلا خيارات لا بصمة ⇒ لا يُقال «مطابق» ولا «مختلف» بل «لا فحص» */
+  const noFpWith = x => !(q.options || []).length || !(x.options || []).length;
+
   const row = x => {
     const his  = fp(x).join(' · ');
-    const same = his === mine;
+    const noFp = noFpWith(x);
+    const same = !noFp && his === mine;
     const pgv  = pgVerdict(x);
     const dif  = [
-      same ? '' : 'الفخاخ',
+      (noFp || same) ? '' : 'الفخاخ',
       (x.difficulty || 'medium') === (q.difficulty || 'medium') ? '' : 'الصعوبة',
       (x.section || '') === (q.section || '') ? '' : 'القسم'
     ].filter(Boolean);
@@ -515,7 +545,10 @@ function pairForm(q){
           ${AR(x.position)}. ${esc((x.body || '').slice(0, 55))}</span>
         ${x.variant_key ? `<span class="chip g">⇄ ينضمّ إلى ${esc(x.variant_key)}
           · ${AR(partners(x).length + 2)} نسخ</span>` : ''}
-        <span class="eq-bs">${dif.length ? '⚠️ يختلف في: ' + esc(dif.join(' · ')) : '✅ مطابق'}</span>
+        <span class="eq-bs">${
+          noFp ? '⬜ لا فحص آليّ — اقرأ الاثنين'
+        : dif.length ? '⚠️ يختلف في: ' + esc(dif.join(' · '))
+        : '✅ مطابق'}</span>
       </div>
       <div class="eq-brow" style="margin-top:5px">
         <span class="eq-bs" dir="auto">${esc(x.section || 'بلا قسم')}</span>
@@ -524,7 +557,8 @@ function pairForm(q){
       </div>
       <div class="eq-brow" style="margin-top:7px">
         ${(x.options || []).filter(o => o.dx)
-            .map(o => `<span class="chip">${esc(dxName(o.dx))}</span>`).join('') || '<span class="eq-bs">بلا أكواد</span>'}
+            .map(o => `<span class="chip">${esc(dxName(o.dx))}</span>`).join('')
+          || `<span class="eq-bs">${noFp ? 'مقاليّ — بلا خيارات' : 'بلا أكواد'}</span>`}
       </div>
     </button>`;
   };
@@ -536,7 +570,8 @@ function pairForm(q){
         الاقتران <b>إعلانٌ</b> لا نسخ: تقول إن السؤالين يقيسان المهارة نفسها،
         فيسحب البنك واحداً منهما في كل اختبار.</div>
       <div class="line" style="margin-bottom:6px">
-        فخاخ هذا السؤال: ${fp(q).map(c => `<span class="chip">${esc(dxName(c))}</span>`).join(' ') || '—'}
+        فخاخ هذا السؤال: ${fp(q).map(c => `<span class="chip">${esc(dxName(c))}</span>`).join(' ')
+          || ((q.options||[]).length ? '—' : '<b>مقاليّ — لا بصمة تُفحص</b>')}
         ${pgName(q.passage_id) ? ` · 📖 ${esc(pgName(q.passage_id))}` : ''}</div>
       <div class="eq-bs" style="margin-bottom:14px">
         المرشّحون مرتَّبون: قسمُك أولاً · ثم تطابق الفخاخ · ثم من كان تحت نصٍّ آخر —
@@ -558,9 +593,13 @@ function pairForm(q){
   document.getElementById("pxc").onclick = () => render();
   document.querySelectorAll("[data-pair]").forEach(el => el.onclick = async () => {
     const x = (Z.questions || []).find(y => y.id === +el.dataset.pair);
-    if(fp(x).join(' · ') !== mine &&
-       !confirm("الفخاخ غير متطابقة — النسختان لا تقيسان الشيء نفسه.\n\n" +
-                "الاقتران ممكن، لكن صحّح الخيارات بعده.\n\nأتقرن؟")) return;
+    const noFp = noFpWith(x);
+    const msg = noFp
+      ? "لا فحص آليّ للمقاليّ — التكافؤ إعلانٌ منك.\n\n" +
+        "أمتقاربان في الجنس والطول والألفة عند طالب هذا الصف؟\n\nأتقرن؟"
+      : "الفخاخ غير متطابقة — النسختان لا تقيسان الشيء نفسه.\n\n" +
+        "الاقتران ممكن، لكن صحّح الخيارات بعده.\n\nأتقرن؟";
+    if((noFp || fp(x).join(' · ') !== mine) && !confirm(msg)) return;
 
     /* العضوية كاملة لا الطرفان: set_variant تتبنّى المفتاح القائم
        فلا يلزم ذلك تقنياً — لكنه يجعل النداء وصفاً للحالة النهائية
@@ -636,7 +675,7 @@ function wire(q){
   const mark = () => { dirty = true; };
   const main = document.getElementById("main");
 
-  ["qb","qe","qm","qs"].forEach(id => {
+  ["qb","qe","qm"].forEach(id => {
     const el = document.getElementById(id); if(el) el.oninput = mark;
   });
   ["qi","qa","qv"].forEach(id => {
@@ -654,7 +693,7 @@ function wire(q){
     wrapSel("qb", el.dataset.w); mark();
   });
 
-  const bind = (id, fn) => { const e = document.getElementById(id); if(e) e.onclick = fn; };
+  const bind = (id, fn) => { const e = main.querySelector('#' + id); if(e) e.onclick = fn; };
   bind("addsec", () => editSection(''));
   bind("edsec",  () => editSection(q.section || ''));
   bind("rmsec",  () => applySection(null));
@@ -664,6 +703,7 @@ function wire(q){
   bind("mkvar",  () => makeVariant(q));
   bind("pairvar",() => pairForm(q));
   bind("pairpg", () => pairPassage(q));
+  bind("cmpv",   () => compareVariant(q.variant_key));
   bind("addvar", () => pairForm(q));
   bind("rmvar",  () => unVariant(q));
 
@@ -696,16 +736,16 @@ function wire(q){
     q.options.splice(+el.dataset.rm, 1); mark(); repaint(q);
   });
 
-  const ao = document.getElementById("addo");
+  const ao = main.querySelector("#addo");
   if(ao) ao.onclick = () => {
     if(q.options.length >= 6){ toast("ستة خيارات حدّ كافٍ"); return; }
     q.options.push({ label: null, body: '', correct: false, dx: null });
     mark(); repaint(q);
   };
 
-  const sq = document.getElementById("sq"); if(sq) sq.onclick = () => saveQ(q);
-  const dq = document.getElementById("dq"); if(dq) dq.onclick = () => dupQ(q);
-  const xq = document.getElementById("xq"); if(xq) xq.onclick = () => delQ(q);
+  const sq = main.querySelector("#sq"); if(sq) sq.onclick = () => saveQ(q);
+  const dq = main.querySelector("#dq"); if(dq) dq.onclick = () => dupQ(q);
+  const xq = main.querySelector("#xq"); if(xq) xq.onclick = () => delQ(q);
 }
 
 /* إعادة رسم الوسط وحده — فلا يفقد الشريط موضعه */
@@ -717,14 +757,15 @@ function repaint(q){
 
 /* جمع ما في الحقول إلى الكائن قبل أي إعادة رسم أو حفظ */
 function collect(q){
-  const v = id => document.getElementById(id)?.value ?? null;
+  const main = document.getElementById("main");
+  const v = id => main.querySelector('#' + id)?.value ?? null;
   if(v("qb") !== null) q.body = v("qb");
   if(v("qe") !== null) q.explanation = v("qe");
   if(v("qm") !== null) q.model = v("qm");
   if(v("qi") !== null) q.image = v("qi") || null;
   if(v("qa") !== null) q.audio = v("qa") || null;
   if(v("qv") !== null) q.video = v("qv") || null;
-  document.querySelectorAll(".eq-ob").forEach(el =>
+  main.querySelectorAll(".eq-ob").forEach(el =>
     q.options[+el.dataset.o].body = el.value);
 }
 
@@ -830,7 +871,7 @@ function preview(){
         ${p.body?`<div class="psg" dir="auto">${fmt(p.body)}</div>`:''}
       </div>` : ''}
 
-    <div class="card">
+    <div class="card" id="qcard">
       <div class="qnum">سؤال ${AR(pv+1)} · ${
         q.kind==='mcq'?'اختيار من متعدد':q.kind==='msq'?'اختيار متعدّد الإجابات':'مقالي قصير'}</div>
       ${q.image?`<img class="media" src="${esc(q.image)}" alt="">`:''}
@@ -989,11 +1030,17 @@ function parseImport(txt){
     if(new Set(arr.map(a => a.q.kind || 'mcq')).size > 1)
       out.issues.push(`خانة "${v}": أنماط مختلطة${at} — لا تُقرن أسئلة مختلفة النمط`);
 
-    // والفخاخ تحذيرٌ لا حجب: قد يقرن المؤلّف ثم يصحّح الخيارات
-    const fps = arr.map(a => [...new Set((a.q.options || [])
-      .map(o => o.dx).filter(Boolean))].sort().join(' · '));
-    if(new Set(fps).size > 1)
-      out.warns.push(`خانة "${v}": الفخاخ غير متطابقة${at} — ${fps.join('  ≠  ')}`);
+    /* والفخاخ تحذيرٌ لا حجب: قد يقرن المؤلّف ثم يصحّح الخيارات.
+       ⚠️ والمقاليّ بلا بصمة — فلا يُقال «متطابقة» عمّا لم يُفحص. */
+    const essay = arr.every(a => (a.q.kind || 'mcq') === 'essay');
+    if(essay){
+      out.warns.push(`خانة "${v}": مقالية${at} — لا فحص آليّ، والتكافؤ إعلانٌ منك`);
+    } else {
+      const fps = arr.map(a => [...new Set((a.q.options || [])
+        .map(o => o.dx).filter(Boolean))].sort().join(' · '));
+      if(new Set(fps).size > 1)
+        out.warns.push(`خانة "${v}": الفخاخ غير متطابقة${at} — ${fps.join('  ≠  ')}`);
+    }
   });
 
   return out;
@@ -1245,18 +1292,22 @@ function editSection(cur_val){
 
 /* ═══════════ النصّ المشترك ═══════════ */
 
-/* صندوق يتمدّد في مكانه — لا صفحة تنفصل عن الأسئلة */
+/* صندوق يتمدّد في مكانه — لا صفحة تنفصل عن الأسئلة
+   ⚠️ معرّفات الحقول بادئتها pf* لا pb/pl: لوحة الجاهزية تسكن الصفحة
+      معها، و getElementById تُرجع الأول في ترتيب المستند — و#main
+      يسبق #ready — فكان معالج النشر يُركَّب على مربّع نصّ الفقرة. */
 function passageForm(p){
   const isNew = !p;
   const r = range(cur, 'passage_id');
   let pk = p?.kind && p.kind !== 'text' ? p.kind : null;   // نوع الوسيط المختار
-  document.getElementById("main").innerHTML = `
+  const main = document.getElementById("main");
+  main.innerHTML = `
     <div class="card eq-pgbox">
       <div class="qnum">${isNew ? 'نصّ مشترك جديد' : 'تحرير النصّ المشترك'}
         · ${isNew ? span(r) : ''}</div>
 
       <label class="fl">العنوان <span style="opacity:.6">(اختياري)</span></label>
-      <input id="pt" value="${esc(p?.title || '')}" placeholder="Reading Passage 1">
+      <input id="pfTitle" value="${esc(p?.title || '')}" placeholder="Reading Passage 1">
 
       <div class="eq-tools" style="margin-top:14px">
         <button class="eq-tb" data-pw="**" title="غامق"><b>B</b></button>
@@ -1268,50 +1319,50 @@ function passageForm(p){
         <button class="eq-tb ${pk==='video'?'on':''}" data-pk="video">🎬 فيديو</button>
         <span class="eq-hint">${SAFE_HOSTS}</span>
       </div>
-      <textarea id="pb" style="min-height:240px"
+      <textarea id="pfBody" style="min-height:240px"
         placeholder="ألصق الفقرة كاملة…">${esc(p?.body || '')}</textarea>
 
-      <input id="pm" dir="ltr" class="eq-md" value="${esc(p?.media || '')}"
+      <input id="pfMedia" dir="ltr" class="eq-md" value="${esc(p?.media || '')}"
              placeholder="${pk==='image'?'رابط الصورة':pk==='video'?'رابط الفيديو':'رابط المقطع الصوتي'}"
              ${pk ? '' : 'hidden'}>
 
       <label class="fl" style="margin-top:16px">اللغة</label>
-      <select id="pl">
+      <select id="pfLang">
         <option value="ar" ${p?.lang!=='en'?'selected':''}>العربية</option>
         <option value="en" ${p?.lang==='en'?'selected':''}>English</option>
       </select>
 
       <div class="nav" style="margin-top:16px">
-        <button class="btn primary" id="ps">${isNew ? 'إضافة وربط' : 'حفظ'}</button>
-        <button class="btn ghost" id="pc">إلغاء</button>
-        ${!isNew && !p.used ? '<button class="btn ghost eq-del" id="pd">🗑 حذف</button>' : ''}
+        <button class="btn primary" id="pfSave">${isNew ? 'إضافة وربط' : 'حفظ'}</button>
+        <button class="btn ghost" id="pfCancel">إلغاء</button>
+        ${!isNew && !p.used ? '<button class="btn ghost eq-del" id="pfDel">🗑 حذف</button>' : ''}
       </div>
     </div>`;
 
-  document.querySelectorAll("[data-pw]").forEach(el =>
-    el.onclick = () => wrapSel("pb", el.dataset.pw));
-  document.querySelectorAll("[data-pk]").forEach(el => el.onclick = () => {
-    const keep = { title: document.getElementById("pt").value,
-                   body:  document.getElementById("pb").value,
-                   media: document.getElementById("pm").value,
-                   lang:  document.getElementById("pl").value };
+  main.querySelectorAll("[data-pw]").forEach(el =>
+    el.onclick = () => wrapSel("pfBody", el.dataset.pw));
+  main.querySelectorAll("[data-pk]").forEach(el => el.onclick = () => {
+    const keep = { title: main.querySelector("#pfTitle").value,
+                   body:  main.querySelector("#pfBody").value,
+                   media: main.querySelector("#pfMedia").value,
+                   lang:  main.querySelector("#pfLang").value };
     const k = el.dataset.pk;
     passageForm({ ...(p || {}), ...keep, id: p?.id ?? null,
                   used: p?.used, position: p?.position,
                   kind: pk === k ? 'text' : k });
   });
-  document.getElementById("pc").onclick = () => render();
-  const pd = document.getElementById("pd");
+  main.querySelector("#pfCancel").onclick = () => render();
+  const pd = main.querySelector("#pfDel");
   if(pd) pd.onclick = () => delPassage(p.id);
 
-  document.getElementById("ps").onclick = async () => {
-    const v = id => (document.getElementById(id)?.value || '').trim();
-    if(!v("pb") && !v("pm")){ toast("النصّ يحتاج نصاً أو مقطعاً صوتياً"); return; }
+  main.querySelector("#pfSave").onclick = async () => {
+    const v = id => (main.querySelector('#' + id)?.value || '').trim();
+    if(!v("pfBody") && !v("pfMedia")){ toast("النصّ يحتاج نصاً أو مقطعاً صوتياً"); return; }
     const { data, error } = await api.savePassage({
-      id: p?.id ?? null, quiz: Z.id, title: v("pt") || null,
-      body: v("pb") || null, media: v("pm") || null,
-      kind: v("pm") ? (pk || 'audio') : 'text',
-      lang: v("pl") || 'ar',
+      id: p?.id ?? null, quiz: Z.id, title: v("pfTitle") || null,
+      body: v("pfBody") || null, media: v("pfMedia") || null,
+      kind: v("pfMedia") ? (pk || 'audio') : 'text',
+      lang: v("pfLang") || 'ar',
       position: p?.position ?? ((Z.passages||[]).length + 1) });
     if(error){ toast(error.message); return; }
     if(!data.ok){ toast(data.error); return; }
@@ -1329,7 +1380,9 @@ async function delPassage(id){
 }
 
 
-/* ═══════════ الجاهزية والنشر ═══════════ */
+/* ═══════════ الجاهزية والنشر ═══════════
+   🔒 معرّفاتها بادئتها rd* والبحث مقيَّد بـbox — فلا تعتمد على
+      ترتيب الأعمدة في الصفحة. */
 
 function readiness(){
   const box = document.getElementById("ready"); if(!box) return;
@@ -1362,9 +1415,9 @@ function readiness(){
              : '✅ جاهز للنشر'}</div>`}
     </div>
     <div class="nav" style="gap:8px;margin-top:12px">
-      <button class="btn ${Z.published?'ghost':'primary'}" id="pb" ${r.ok?'':'disabled'}>
+      <button class="btn ${Z.published?'ghost':'primary'}" id="rdPub" ${r.ok?'':'disabled'}>
         ${Z.published ? 'إلغاء النشر' : 'نشر'}</button>
-      <button class="btn ghost" id="pv" title="عِش تجربة الطالب">👁️ معاينة</button>
+      <button class="btn ghost" id="rdPrev" title="عِش تجربة الطالب">👁️ معاينة</button>
     </div>
     <p class="hint" style="text-align:right;margin-top:10px">
       ${Z.published
@@ -1373,17 +1426,19 @@ function readiness(){
             : '⚠️ الاختبار منشور لكن <b>الدرس مسودّة</b> — فلا يصل أحداً.')
         : 'غير منشور — لا يظهر لأحد بعد.'}</p>
     ${Z.published && !ctx.lesson?.published
-      ? `<div class="nav"><button class="btn primary" id="pl">نشر الدرس أيضاً</button></div>` : ''}`;
+      ? `<div class="nav"><button class="btn primary" id="rdLsn">نشر الدرس أيضاً</button></div>` : ''}`;
 
-  document.getElementById("pv").onclick = preview;
-   
-  const pl = document.getElementById("pl");
-  // ⚠️ pl.onclick = pubLesson كان يمرّر **حدث النقر** إلى quiet،
-  //    فيصير صادقاً ⇒ لا إعادة تحميل ⇒ الزرّ يبقى بعد النشر.
+  box.querySelector("#rdPrev").onclick = preview;
+
+  const pl = box.querySelector("#rdLsn");
+  /* ⚠️ pl.onclick = pubLesson كان يمرّر **حدث النقر** إلى quiet،
+     فيصير صادقاً ⇒ لا إعادة تحميل ⇒ الزرّ يبقى بعد النشر. */
   if(pl) pl.onclick = () => pubLesson(false);
+
   box.querySelectorAll("[data-rf]").forEach(el =>
     el.onclick = () => setFilter(el.dataset.rf));
-  document.getElementById("pb").onclick = async () => {
+
+  box.querySelector("#rdPub").onclick = async () => {
     const { data, error } = await api.publishQuiz(Z.id, !Z.published);
     if(error){ toast(error.message); return; }
     if(!data.ok){ toast(data.error); return; }
@@ -1396,6 +1451,7 @@ function readiness(){
     }
     reload();
   };
+}
 
 async function pubLesson(quiet){
   const { data, error } = await api.publishLesson(ctx.lesson.id, true);
@@ -1405,9 +1461,10 @@ async function pubLesson(quiet){
   toast("نُشر الدرس — صار يظهر لطلابه");
   if(!quiet) reload();
 }
-}
+
+
 /* ══════════════════════════════════════════════════════════
-   ④ الشريط الهرميّ والمقارنة   (b21)
+   ④ الشريط الهرميّ والمقارنة
 
    🔑 البنية شبكة لا شجرة: النصّ المشترك **صفّ** (كتلةٌ تُقرأ مرّة)
       والخانة **عمود** (مهارةٌ تُقاس)، والبند نقطة تقاطع. والشجرة
@@ -1430,8 +1487,13 @@ let LS = { open: new Set(), q: '', f: 'all', lastCur: -1 };
 const members = k => (Z.questions || []).filter(x => x.variant_key === k);
 const NOSEC   = '— بلا قسم —';
 
-/* الحكم على الخانة — يُفحص **الاتّساق** لا الحاجة.
-   فغياب النصّ المشترك في أسئلة الكتابة هو الصواب، لا نقص. */
+const F_LABEL = { mcq:'◉ اختيار من متعدد', msq:'☑ اختيار متعدّد الإجابات',
+                  essay:'✍️ مقالي' };
+const F_JUDGE = new Set(['all','warn','none','free']);   // ما يسكن الشريط نفسه
+
+/* الحكم على الخانة — مصدرٌ واحد يخدم الشريط و variantBar والمقارنة.
+   ويُفحص **الاتّساق** لا الحاجة: غياب النصّ المشترك في أسئلة الكتابة
+   هو الصواب لا نقص. و❌ تنحصر فيما لا يحتمل تأويلاً. */
 function verdict(ms){
   if(ms.length < 2) return { cls:'none', icon:'⬜', fails:['نسخة واحدة'] };
   if(new Set(ms.map(x => x.kind)).size > 1)
@@ -1500,6 +1562,15 @@ function stats(){
   return { n: qs.length, slots: keys.length + free, warn, none, free };
 }
 
+/* 🔴 عدّ الخانات — ما يراه الطالب.
+   quiz_readiness تعدّ **البنود**، ومجموعها مجموع المؤلَّف كله.
+   والفرق بين الرقمين هو ما كان مخفيّاً، وبوّابة «٦ مطلوبة» تقيس الأول. */
+function kindStat(k){
+  const qs = (Z.questions || []).filter(x => x.kind === k);
+  const slots = new Set(qs.map((x, i) => x.variant_key || ('q' + (x.id ?? 'n' + i)))).size;
+  return { n: qs.length, slots };
+}
+
 function nodePass(n){
   const f = LS.f, s = LS.q.trim().toLowerCase();
   const qs = n.t === 'q' ? [Z.questions[n.i]] : n.idx.map(i => Z.questions[i]);
@@ -1545,16 +1616,16 @@ function sidebar(){
   };
 
   const vRow = n => {
-    const ms   = members(n.key);
-    const v    = verdict(ms);
-    const open = LS.open.has('v:' + n.key) || searching;
-    const here = n.idx.includes(cur);
-    const head = qs[n.idx[0]];
+    const ms    = members(n.key);
+    const v     = verdict(ms);
+    const open  = LS.open.has('v:' + n.key) || searching;
+    const here  = n.idx.includes(cur);
+    const first = qs[n.idx[0]];              // لا تسمَّ head: مستوردةٌ من ui.js
     return `<div class="eq-var ${here?'on':''}">
       <div class="eq-vh" data-v="${esc(n.key)}">
         <span class="eq-ar">${open?'▾':'▸'}</span>
         <span class="eq-vk">⇄ ${esc(n.key)} · ${AR(ms.length)}</span>
-        <span class="eq-vb" dir="auto">${esc((head.body||'').slice(0,30) || '—')}</span>
+        <span class="eq-vb" dir="auto">${esc((first.body||'').slice(0,30) || '—')}</span>
         <span class="eq-flag ${v.cls}" data-cmp="${esc(n.key)}"
               title="قارِن نسخ الخانة" style="cursor:pointer">${v.icon}</span>
       </div>
@@ -1591,7 +1662,7 @@ function sidebar(){
         <span class="chip g">${AR(st.slots)} خانة</span></div>
       <input class="eq-sr" id="lsq" value="${esc(LS.q)}"
              placeholder="ابحث في النصّ · أو اكتب رقماً واضغط Enter">
-           <div class="eq-f">
+      <div class="eq-f">
         ${fb('all','الكل', st.n)}
         ${fb('warn','⚠️ يحتاج نظرة', st.warn, 'warn')}
         ${fb('none','⬜ بلا فحص', st.none)}
@@ -1621,12 +1692,15 @@ function paintList(){
 }
 
 function wireList(){
-  const sr = document.getElementById("lsq");
+  const box = app.querySelector('.eq-list');
+  if(!box) return;
+
+  const sr = box.querySelector("#lsq");
   if(sr){
     sr.oninput = e => {
       const p = e.target.selectionStart;
       LS.q = e.target.value; paintList();
-      const n = document.getElementById("lsq");
+      const n = app.querySelector('.eq-list #lsq');
       if(n){ n.focus(); n.setSelectionRange(p, p); }
     };
     sr.onkeydown = e => {
@@ -1639,32 +1713,48 @@ function wireList(){
     };
   }
 
-  const box = app.querySelector('.eq-list');
-    box?.querySelectorAll("[data-f]").forEach(el => el.onclick = () => setFilter(el.dataset.f));
-  const cl = document.getElementById("lclr");
+  box.querySelectorAll("[data-f]").forEach(el =>
+    el.onclick = () => setFilter(el.dataset.f));
+  const cl = box.querySelector("#lclr");
   if(cl) cl.onclick = () => setFilter(LS.f);     // نقضٌ لنفسه ⇒ 'all'
-  box?.querySelectorAll("[data-s]").forEach(el => el.onclick = () => {
+
+  box.querySelectorAll("[data-s]").forEach(el => el.onclick = () => {
     const k = 's:' + el.dataset.s;
     LS.open.has(k) ? LS.open.delete(k) : LS.open.add(k); paintList(); });
-  box?.querySelectorAll(".eq-vh").forEach(el => el.onclick = () => {
+  box.querySelectorAll(".eq-vh").forEach(el => el.onclick = () => {
     const k = 'v:' + el.dataset.v;
     LS.open.has(k) ? LS.open.delete(k) : LS.open.add(k); paintList(); });
 
   /* ⚠️ الحكم داخل الرأس — فلولا إيقاف الفقاعة لطوى المظروفَ معه */
-  box?.querySelectorAll("[data-cmp]").forEach(el => el.onclick = e => {
+  box.querySelectorAll("[data-cmp]").forEach(el => el.onclick = e => {
     e.stopPropagation(); compareVariant(el.dataset.cmp); });
-  box?.querySelectorAll("[data-i]").forEach(el => el.onclick = e => {
+  box.querySelectorAll("[data-i]").forEach(el => el.onclick = e => {
     e.stopPropagation(); go(+el.dataset.i); });
-  box?.querySelectorAll("[data-pg]").forEach(el => el.onclick = () => {
+  box.querySelectorAll("[data-pg]").forEach(el => el.onclick = () => {
     const i = (Z.questions||[]).findIndex(x => String(x.passage_id) === el.dataset.pg);
     if(i >= 0) go(i);
   });
 
-  document.getElementById("addm").onclick  = () => addQuestion('mcq');
-  document.getElementById("addmm").onclick = () => addQuestion('msq');
-  document.getElementById("adde").onclick  = () => addQuestion('essay');
-  ["imp","imp0"].forEach(id => {
-    const el = document.getElementById(id); if(el) el.onclick = importBox; });
+  box.querySelector("#addm").onclick  = () => addQuestion('mcq');
+  box.querySelector("#addmm").onclick = () => addQuestion('msq');
+  box.querySelector("#adde").onclick  = () => addQuestion('essay');
+  box.querySelector("#imp").onclick   = importBox;
+  const i0 = document.getElementById("imp0");      // في البطاقة الفارغة وسط الشاشة
+  if(i0) i0.onclick = importBox;
+}
+
+/* زنادٌ واحد لمصدرين: صفّ الشريط ولوحة الجاهزية.
+   والنقر على الفلتر الفعّال يُلغيه — فلا يحتاج المستخدم زرّ إلغاءٍ ثانياً. */
+function setFilter(k){
+  LS.f = (LS.f === k) ? 'all' : k;
+  paintList(); readiness();
+}
+
+/* الوجهة بطاقةُ التحرير لا رأس الصفحة.
+   والإزاحة تحت الشريط في CSS (.eq-main{scroll-margin-top}) — فعلوّ الشريط
+   شأنُ CSS، ورقمٌ في جافاسكربت يصف مقاساً في CSS ينكسر صامتاً حين يتغيّر. */
+function focusMain(){
+  document.getElementById("main")?.scrollIntoView({ behavior:'smooth', block:'start' });
 }
 
 /* ═══════════ مقارنة نسخ الخانة ═══════════
@@ -1673,6 +1763,7 @@ function wireList(){
    والحكم بعد ذلك بشريّ: أيقع الطالب في هذا وذاك **للسبب نفسه**؟ */
 
 function compareVariant(key){
+  if(!key){ toast("هذا السؤال بلا خانة"); return; }
   if(dirty && !confirm("تغييرات غير محفوظة في هذا السؤال — أتتركها؟")) return;
   const ms = members(key).sort((a,b) => (a.position||0) - (b.position||0));
   if(ms.length < 2){ toast("الخانة نسخةٌ واحدة"); return; }
@@ -1729,38 +1820,11 @@ function compareVariant(key){
       <button class="btn ghost" id="cmpb">رجوع إلى التحرير</button>
     </div>`;
 
-  document.getElementById("cmpb").onclick = () => render();
-  document.querySelectorAll("[data-cmed]").forEach(el => el.onclick = () => {
+  const main = document.getElementById("main");
+  main.querySelector("#cmpb").onclick = () => render();
+  main.querySelectorAll("[data-cmed]").forEach(el => el.onclick = () => {
     const i = (Z.questions||[]).findIndex(x => x.id === +el.dataset.cmed);
     if(i >= 0) go(i);
   });
   scrollTop();
-}
-/* ═══════════ b21 — الوجهة والفلترة ═══════════ */
-
-const F_LABEL = { mcq:'◉ اختيار من متعدد', msq:'☑ اختيار متعدّد الإجابات',
-                  essay:'✍️ مقالي' };
-const F_JUDGE = new Set(['all','warn','none','free']);   // ما يسكن الشريط نفسه
-
-/* الوجهة بطاقةُ التحرير لا رأس الصفحة.
-   والإزاحة تحت الشريط في CSS (.eq-main{scroll-margin-top}) — فعلوّ الشريط
-   شأنُ CSS، ورقمٌ في جافاسكربت يصف مقاساً في CSS ينكسر صامتاً حين يتغيّر. */
-function focusMain(){
-  document.getElementById("main")?.scrollIntoView({ behavior:'smooth', block:'start' });
-}
-
-/* زنادٌ واحد لمصدرين: صفّ الشريط ولوحة الجاهزية.
-   والنقر على الفلتر الفعّال يُلغيه — فلا يحتاج المستخدم زرّ إلغاءٍ ثانياً. */
-function setFilter(k){
-  LS.f = (LS.f === k) ? 'all' : k;
-  paintList(); readiness();
-}
-
-/* 🔴 عدّ الخانات — ما يراه الطالب.
-   quiz_readiness تعدّ **البنود**: ٧٧+١٤+٤ = ٩٥ وهو مجموع المؤلَّف.
-   والفرق بين الرقمين هو ما كان مخفيّاً، وبوّابة «٦ مطلوبة» تقيس الأول. */
-function kindStat(k){
-  const qs = (Z.questions || []).filter(x => x.kind === k);
-  const slots = new Set(qs.map((x, i) => x.variant_key || ('q' + (x.id ?? 'n' + i)))).size;
-  return { n: qs.length, slots };
 }
