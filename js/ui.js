@@ -6,7 +6,7 @@
 import { S } from './state.js';
 
 /* ── بصمة النسخة — لمعرفة أي شيفرة يشغّلها المتصفح فعلاً ── */
-export const BUILD = "b20";
+export const BUILD = "b21";
 
 /* ── مراسي الصفحة ── */
 export const app = document.getElementById("app");
