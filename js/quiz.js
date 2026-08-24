@@ -49,9 +49,14 @@ import { app, bar, head, toast, esc, fmt, AR, mmss, media, pgMedia,
          optLabel, dirOf, ICONS, nav, scrollTop } from './ui.js';
 import { loadList, loadLessons } from './student.js';
 
-/* فهارسُ عرضٍ لا حالةُ محاولة — تسكن الوحدة ولا تُرسَل في التسليم.
-   A: معرّف السؤال ← بطاقةُ إجابته   ·   N: معرّفه ← رقمُه المعروض */
-let A = null, N = null;
+/* مشتقّاتُ عرضٍ لا حالةَ محاولة — تُبنى كلُّها من S.quiz و S.ans عند
+   البدء، ولو ضاعت أُعيد بناؤها بسطر. فمكانها الوحدة لا الحالة:
+   ما يُستنتَج لا يُخزَّن مرّتين، لئلا تختلف النسختان.
+     A     — معرّف السؤال ← بطاقةُ إجابته
+     N     — معرّفه ← رقمُه المعروض
+     pages — الصفحات المشتقّة من النصوص
+   أما «في أيّ صفحةٍ أنا» فحالةٌ حقيقية ⇒ S.p */
+let A = null, N = null, pages = null;
 
 /* ═══════════ ⓪ ميزانية الوقت — سقفٌ لا إيقاع ═══════════
 
@@ -158,7 +163,7 @@ export async function startQuiz(meta){
 
   A = new Map(S.ans.map(a => [a.q, a]));
   N = new Map(data.questions.map((q,i) => [q.id, i+1]));
-  S.pages = paginate(data.questions);
+  pages = paginate(data.questions);
   S.p = 0;
 
   /* S.total تُحفظ لأن paintClock تحتاج المقام، ولو أعدنا حساب
@@ -187,9 +192,9 @@ function paintClock(){
 /* ═══════════ ④ عرض الصفحة ═══════════ */
 
 function renderPage(){
-  const P = S.pages[S.p], qs = P.qs, tot = S.quiz.questions.length;
+  const P = pages[S.p], qs = P.qs, tot = S.quiz.questions.length;
   const many = qs.length > 1;
-  const last = S.p === S.pages.length - 1;
+  const last = S.p === pages.length - 1;
   const pg   = P.pg ? S.passages[P.pg] : null;
 
   /* pgMedia تعرض الصوت في كل ما ليس صورةً ولا فيديو — فليكن
