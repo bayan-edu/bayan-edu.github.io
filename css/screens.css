@@ -78,11 +78,33 @@
 .trackfill{height:100%;background:linear-gradient(90deg,var(--cyan),#2a8fb8);transition:width 1s linear}
 .qcount{font-family:'Almarai';font-weight:700;font-size:.76rem;color:var(--mist);white-space:nowrap}
 
-/* بطاقة السؤال — وجهةُ التمرير حين يتكرّر النصّ المشترك.
-   الإزاحة تعادل علوّ .timerbar (١١+١١ حشو + ~٣٠ محتوى + هامش)، فلا
-   يختفي عنوان السؤال تحته. ورقمُها هنا لا في quiz.js: علوّ الشريط
-   شأنُ CSS، ورقمٌ في جافاسكربت يصف مقاساً في CSS ينكسر صامتاً. */
-#qcard{scroll-margin-top:76px}
+/* ══ علوّ شريط العدّاد — رقمٌ واحدٌ لمن يحتاجه ══
+   كان ٧٦ يسكن مكاناً واحداً، فلمّا احتاجه ثانٍ (الشريط الصوتي) صار
+   نسختين تتباعدان يوم يتغيّر الحشو. ومكانُه CSS لا جافاسكربت:
+   مقاسٌ في CSS يوصف في الشيفرة ينكسر صامتاً.
+   ⚠️ وهو في ‎:root‎ رغم أنه يخصّ شاشةً واحدة — لأن المتغيّرات تنحدر
+      في الشجرة ولا تعبُر إلى الإخوة، و.timerbar أخٌ للمحتوى لا أبٌ له.
+   ⚠️ و٥٣ أقلُّ هنيهةً من المقيس (١١+١١ حشو + ~٣٣ محتوى + حدّ)، وهذا
+      مقصود: الأقلُّ يُدخل الشريطين أحدهما تحت الآخر، والأكثرُ يفتح
+      بينهما فرجةً يطلّ منها النصّ فتبدو عطلاً. */
+:root{--barh:53px}
+
+/* بطاقة السؤال — وجهةُ التمرير حين يُنبَّه على فراغ.
+   صارت صنفاً لا معرّفاً: الصفحة تحمل بطاقاتٍ عدّة (b24)، والمعرّف
+   يجب أن يكون فريداً فصار #q17 لكلٍّ، والصنف يجمعها.
+   والمجموع ٧٦ كما كان — لم يتغيّر السلوك، بل مصدرُ الرقم. */
+.qcard{scroll-margin-top:calc(var(--barh) + 23px)}
+
+/* المقطع يلتصق تحت العدّاد: الصفحة صارت طويلة، وزرُّ الإعادة يجب أن
+   يبقى في المتناول — فالإعادةُ غير المحدودة هي ما يمنع الكود من
+   قياس الذاكرة العاملة بدل الفهم.
+   والهوامش السالبة تُخرجه إلى حافّتَي .wrap، وإلا ظهر منزلقاً في
+   ثمانية عشر بكسلاً من كل جانب حين يلتصق. */
+.psg-audio{position:sticky;top:var(--barh);z-index:15;
+  background:rgba(7,24,42,.93);
+  margin-inline:-18px;padding:9px 18px 4px;margin-bottom:6px}
+/* نقضُ نمطٍ داخل الوسم تكتبه pgMedia — ولا يُنقَض إلا بهذا */
+.psg-audio audio{margin-bottom:0!important}
 
 .qnum{font-family:'Almarai';font-weight:800;font-size:.72rem;color:var(--cyan);letter-spacing:.1em;margin-bottom:11px}
 .qtext{font-family:'Almarai';font-weight:700;font-size:1.01rem;line-height:1.9;margin-bottom:16px}
@@ -104,7 +126,9 @@
 /* ── الاختيار متعدّد الإجابات (msq) ──
    التلميح يقول «أكثر من واحد» ولا يقول كم: إعلان العدد يعيد المقارنة
    الترجيحية من الباب الخلفي، وجوهر هذا النمط أن يُحاكَم كل خيار وحده.
-   والمربّع لا الدائرة — الشكل نفسه رسالة. */
+   والمربّع لا الدائرة — الشكل نفسه رسالة.
+   🔓 ويشترك فيه تحذيرُ الفراغ (b24): كلاهما نداءٌ قبل الانتقال، لا حكمٌ
+      بعده — فيصحّ أن يتشابها. */
 .q-hint{font-family:'Almarai';font-weight:700;font-size:.78rem;color:var(--sand);
   background:rgba(229,189,99,.09);border:1px solid rgba(229,189,99,.26);
   border-radius:9px;padding:8px 11px;margin-bottom:11px}
@@ -114,7 +138,11 @@
   font-size:.74rem;color:#06202e;background:transparent;transition:background .18s,border-color .18s}
 .opt.sel .tick{background:var(--cyan);border-color:var(--cyan)}
 
-/* الحدّ الملوّن يتبع اتجاه النصّ تلقائياً مع border-inline-start */
+/* الحدّ الملوّن يتبع اتجاه النصّ تلقائياً مع border-inline-start
+   ⚠️ و max-height:44vh قرارٌ يُراجَع مع الصفحة الطويلة: النصّ يخرج من
+      الشاشة عند السؤال الرابع فيُمرَّر إليه ويُعاد. أرخصُ من التنقّل
+      القديم (لا يُهدَم شيء ولا يُصفَّر صوت) وليس مجاناً. والحلّ
+      الناضج عمودان — ينتظر طالباً يقول إن التمرير أزعجه. */
 .psg{background:rgba(157,184,201,.06);border:1px solid var(--line);border-inline-start:3px solid var(--cyan);
   border-radius:0 12px 12px 0;padding:16px;margin-bottom:15px;font-size:.9rem;line-height:2.05;
   max-height:44vh;overflow:auto;white-space:pre-wrap}
