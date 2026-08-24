@@ -18,6 +18,30 @@
       عددُ المعروض من محاولةٍ إلى أخرى، والعمودُ رقمٌ ثابت لا يعلم.
       ⇒ اختبارٌ أُلِّف بأربعةٍ وخمسين سؤالاً ويُقدَّم منه ثمانية عشر
         كان يأخذ ميزانية الأربعة والخمسين.
+
+   📄 b24 — الصفحةُ تتبع الحاويةَ لا العدّ.
+      أسئلة النصّ (أو المقطع) الواحد تُعرض معاً في صفحة واحدة:
+      ① فلا يُهدَم <audio> بين الأسئلة — علّةُ b22 تُحذَف لا تُرقَّع
+      ② والرجوع من س٥ إلى س١ حركةُ عينٍ لا رحلةُ تنقّل
+      ③ ويرى الطالب الأسئلة قبل التشغيل، فيستمع بغرض
+
+      🔗 وتصدُق به فرضيّةُ b23: COST.pg تحسب النصَّ مرّةً «مهما كثرت
+         أسئلته»، وكان الشكلُ القديم يكذّبها — يُعاد بناء النصّ مع كل
+         سؤال فيُقرأ خمساً وقد رُصدت له واحدة. والصفحةُ تجعلها صادقةً
+         بالبناء. ⚠️ إلا أن يتشابك نصّان في position، فيظهر النصّ
+         بطاقتين ويُدفع مرّتين ويُرصد مرّة.
+
+      🔴 والفراغ صار مسموحاً بتحذير. لأن الإجابة المُجبَرة تخمينٌ
+         مُكرَه، والتخمين يقع في مشتّتٍ فيُسجَّل له dx_code كاذب،
+         فيُرسَل الطالب إلى علاجٍ لا يخصّه. الفراغ يُفقدنا بياناً،
+         والكودُ الكاذب يُفقدنا الطالب.
+
+      ⚠️ دَينٌ موثَّق — كلفةُ قراءة النصّ ما تزال داخل a.sec.
+         الفترة السابقة لأول لمسةٍ في الصفحة تُنسَب إلى أول سؤالٍ
+         يُلمَس، كما كانت تُنسَب أمسِ إلى أول سؤالٍ يُعرَض. والفصل
+         (زمنُ الصفحة / زمنُ السؤال) يمسّ submit_attempt ⇒ خطوةٌ
+         مستقلّة. ولاحظ أنه سيصير حينئذٍ **قياساً لما تقدّره COST.pg
+         حَدْساً** — أوّلُ بيّنةٍ على أرقام الميزانية.
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
 import { S } from './state.js';
@@ -25,9 +49,9 @@ import { app, bar, head, toast, esc, fmt, AR, mmss, media, pgMedia,
          optLabel, dirOf, ICONS, nav, scrollTop } from './ui.js';
 import { loadList, loadLessons } from './student.js';
 
-/* ذاكرةُ عرضٍ لا حالةُ محاولة: أيُّ نصٍّ مشترك كان معروضاً قبل هذا
-   السؤال. تسكن الوحدة ولا تُرسَل في التسليم ولا يعرفها غيرها. */
-let lastPg = null;
+/* فهارسُ عرضٍ لا حالةُ محاولة — تسكن الوحدة ولا تُرسَل في التسليم.
+   A: معرّف السؤال ← بطاقةُ إجابته   ·   N: معرّفه ← رقمُه المعروض */
+let A = null, N = null;
 
 /* ═══════════ ⓪ ميزانية الوقت — سقفٌ لا إيقاع ═══════════
 
@@ -78,7 +102,48 @@ export function budget(quiz){
   return Math.ceil(sec / 60) * 60;          // يُجبَر إلى دقيقةٍ كاملة
 }
 
-/* ═══════════ ① بدء الاختبار ═══════════ */
+/* ═══════════ ① الصفحات ═══════════ */
+
+/* تُضَمّ الأسئلةُ المتجاورة التي تشترك في نصّ واحد.
+   والمفرد يبقى صفحةً وحده ⇒ الاختبارات بلا نصوص تعمل كما كانت
+   حرفاً بحرف. ولا يُعاد ترتيب شيء: position على حاله. */
+function paginate(qs){
+  const pages = [];
+  qs.forEach(q => {
+    const last = pages[pages.length - 1];
+    if (last && q.passage_id && last.pg === q.passage_id) last.qs.push(q);
+    else pages.push({ pg: q.passage_id || null, qs: [q] });
+  });
+  return pages;
+}
+
+/* ═══════════ ② الزمن — يُنسَب باللمسة لا بالعرض ═══════════
+
+   كانت الشاشة تحمل سؤالاً واحداً، فكلُّ زمنها له. وصارت تحمل ستّة،
+   فلا يصحّ أن يُقسَم الزمن بالتساوي: قسمةُ متوسّطٍ تخترع بياناً لا
+   يُميَّز عن المقيس، و answers.seconds هو ما يُفحَص به أثرُ العجلة
+   على التشخيص — فلو دخله المخترَع سقطت البيّنة كلّها.
+
+   فالمقياس: كلُّ فترةٍ بين لمستين تُنسَب إلى السؤال المَلموس —
+   «الزمن الذي سبق نقرتك على س٥ أنفقتَه في س٥». وما لم يُلمَس
+   يبقى صفراً، وهو صدقٌ لا نقص.                                   */
+
+let mark = 0, touched = null;
+
+function credit(qid){
+  const now = Date.now(), a = A.get(qid);
+  if(a) a.sec += Math.round((now - mark) / 1000);
+  mark = now; touched = qid;
+}
+
+/* ما بعد آخر لمسةٍ يُنسَب إلى صاحبها. وصفحةٌ لم تُلمَس لا مالك
+   لزمنها ⇒ يسقط. والمجموع محفوظ: التسليم يرسل زمنه كاملاً. */
+function leavePage(){
+  if(touched !== null) credit(touched);
+  touched = null; mark = Date.now();
+}
+
+/* ═══════════ ③ بدء الاختبار ═══════════ */
 
 export async function startQuiz(meta){
   app.innerHTML = `<div class="status">جارٍ تحميل الأسئلة…</div>`;
@@ -89,13 +154,18 @@ export async function startQuiz(meta){
   S.passages = {};
   (data.passages||[]).forEach(pg => S.passages[pg.id] = pg);
   S.itemId = meta.item_id || null;
-  S.i = 0;
   S.ans = data.questions.map(q=>({ q:q.id, kind:q.kind, o:null, os:[], essay:"", sec:0, chg:0 }));
+
+  A = new Map(S.ans.map(a => [a.q, a]));
+  N = new Map(data.questions.map((q,i) => [q.id, i+1]));
+  S.pages = paginate(data.questions);
+  S.p = 0;
+
   /* S.total تُحفظ لأن paintClock تحتاج المقام، ولو أعدنا حساب
      budget() في كل ثانية لَحسبناها ستّين مرّة في الدقيقة بلا داعٍ. */
   S.total = budget(data); S.left = S.total;
-  S.t0 = Date.now(); S.qenter = Date.now();
-  lastPg = null;
+  S.t0 = Date.now();
+  mark = Date.now(); touched = null;
 
   clearInterval(S.tick);
   S.tick = setInterval(()=>{
@@ -103,12 +173,7 @@ export async function startQuiz(meta){
     if(S.left<=0){ clearInterval(S.tick); toast("انتهى الوقت — تسليم تلقائي"); finish(true); }
   }, 1000);
 
-  renderQ();
-}
-
-function bankTime(){
-  S.ans[S.i].sec += Math.round((Date.now()-S.qenter)/1000);
-  S.qenter = Date.now();
+  renderPage();
 }
 
 function paintClock(){
@@ -119,98 +184,149 @@ function paintClock(){
   if(f) f.style.width = Math.max(0,(S.left/S.total)*100) + "%";
 }
 
-/* ═══════════ ② عرض السؤال ═══════════ */
+/* ═══════════ ④ عرض الصفحة ═══════════ */
 
-function renderQ(){
-  const qs = S.quiz.questions, q = qs[S.i], a = S.ans[S.i], n = qs.length;
-  head(S.quiz.title, "أجب بتأنٍ — كل خيار خاطئ يمثل فخاً مقصوداً");
+function renderPage(){
+  const P = S.pages[S.p], qs = P.qs, tot = S.quiz.questions.length;
+  const many = qs.length > 1;
+  const last = S.p === S.pages.length - 1;
+  const pg   = P.pg ? S.passages[P.pg] : null;
+
+  /* pgMedia تعرض الصوت في كل ما ليس صورةً ولا فيديو — فليكن
+     التمييز هنا بالقاعدة نفسها، لا بقائمةٍ ثانية تتباعد عنها. */
+  const isAudio = !!(pg && pg.media && pg.kind !== 'video' && pg.kind !== 'image');
+
+  head(S.quiz.title,
+    !many     ? "أجب بتأنٍ — كل خيار خاطئ يمثل فخاً مقصوداً"
+    : isAudio ? "اطّلع على الأسئلة أولاً ثم شغّل المقطع — تستمع بغرض، والإعادة مباحة"
+    :           "أسئلةُ نصٍّ واحد — ارجع إليه كلما احتجت");
+
+  const from = AR(N.get(qs[0].id)), to = AR(N.get(qs[qs.length-1].id));
   bar.innerHTML = `<div class="timerbar">
     <span class="clock" id="clock">${mmss(S.left)}</span>
     <span class="track"><span class="trackfill" id="tf"></span></span>
-    <span class="qcount">${AR(S.i+1)} / ${AR(n)}</span></div>`;
+    <span class="qcount">${many?`<bdi>${from}–${to}</bdi>`:from} / ${AR(tot)}</span></div>`;
   paintClock();
 
-  const multi = q.kind==='msq';
-  const picked = o => multi ? a.os.includes(o.id) : a.o===o.id;
-
-  const body = (q.kind==='mcq' || multi)
-    ? `${multi?`<div class="q-hint">اختر كل ما ينطبق — وقد ينطبق أكثر من خيار</div>`:''}
-       <div class="opts${multi?' multi':''}">${q.options.map((o,j)=>`
-         <button class="opt ${picked(o)?'sel':''}" data-o="${o.id}"
-                 dir="${dirOf(o.body)}" style="text-align:start">
-           <span class="key">${esc(optLabel(o,j))}</span><span style="flex:1">${esc(o.body)}</span>
-           ${multi?`<span class="tick">${picked(o)?'✔':''}</span>`:''}</button>`).join("")}</div>`
-    : `<textarea id="ta" placeholder="اكتب السلسلة السببية كاملة…">${esc(a.essay)}</textarea>`;
-
-  const pg = q.passage_id ? S.passages[q.passage_id] : null;
-  const pgHtml = pg ? `
+  /* المقطع الصوتي يخرج من بطاقة النصّ إلى شريطٍ ملتصق: الصفحة صارت
+     طويلة، وزرُّ الإعادة يجب أن يبقى في المتناول — فالإعادة غير
+     المحدودة هي ما يمنع الكود من قياس الذاكرة العاملة بدل الفهم. */
+  const pgHtml = !pg ? '' : `
+    ${isAudio ? `<div class="psg-audio">${pgMedia(pg)}</div>` : ''}
     <div class="card" style="padding:16px">
       ${pg.title?`<div class="psg-t" dir="auto">${esc(pg.title)}</div>`:''}
-      ${pgMedia(pg)}
+      ${isAudio ? '' : pgMedia(pg)}
       ${pg.body?`<div class="psg" dir="auto">${fmt(pg.body)}</div>`:''}
-    </div>` : '';
-
-  app.innerHTML = `
-    ${q.section?`<div class="q-sec" dir="auto">${esc(q.section)}</div>`:''}
-    ${pgHtml}
-    <div class="card" id="qcard">
-      <div class="qnum">سؤال ${AR(S.i+1)} · ${
-        q.kind==='mcq'?'اختيار من متعدد':multi?'اختيار متعدّد الإجابات':'مقالي قصير'}</div>
-      ${media(q)}
-      ${q.audio?`<audio controls src="${esc(q.audio)}" style="width:100%;margin-bottom:12px"></audio>`:''}
-      <div class="qtext" dir="auto">${fmt(q.body)}</div>
-      ${body}
-    </div>
-    <div class="nav">
-      ${S.i>0?'<button class="btn ghost" id="prev">السابق</button>':''}
-      <button class="btn primary" id="next" ${
-        (q.kind==='mcq'&&a.o===null)||(multi&&a.os.length===0)?'disabled':''}>
-        ${S.i===n-1?'إنهاء وتسليم':'التالي'}</button>
     </div>`;
 
-  app.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{
-    const v = +b.dataset.o;
-    if(multi){
+  let seen = null;                       // آخرُ عنوان قسمٍ كُتب في هذه الصفحة
+  const cards = qs.map(q => {
+    const a = A.get(q.id), multi = q.kind === 'msq';
+    const picked = o => multi ? a.os.includes(o.id) : a.o === o.id;
+
+    const body = (q.kind==='mcq' || multi)
+      ? `${multi?`<div class="q-hint">اختر كل ما ينطبق — وقد ينطبق أكثر من خيار</div>`:''}
+         <div class="opts${multi?' multi':''}">${q.options.map((o,j)=>`
+           <button class="opt ${picked(o)?'sel':''}" data-o="${o.id}"
+                   dir="${dirOf(o.body)}" style="text-align:start">
+             <span class="key">${esc(optLabel(o,j))}</span><span style="flex:1">${esc(o.body)}</span>
+             ${multi?`<span class="tick">${picked(o)?'✔':''}</span>`:''}</button>`).join("")}</div>`
+      : `<textarea class="essay" placeholder="اكتب السلسلة السببية كاملة…">${esc(a.essay)}</textarea>`;
+
+    const sec = (q.section && q.section !== seen)
+      ? `<div class="q-sec" dir="auto">${esc(q.section)}</div>` : '';
+    seen = q.section || seen;
+
+    return `${sec}
+      <div class="card qcard" id="q${q.id}" data-q="${q.id}">
+        <div class="qnum">سؤال ${AR(N.get(q.id))} · ${
+          q.kind==='mcq'?'اختيار من متعدد':multi?'اختيار متعدّد الإجابات':'مقالي قصير'}</div>
+        ${media(q)}
+        ${q.audio?`<audio controls src="${esc(q.audio)}" style="width:100%;margin-bottom:12px"></audio>`:''}
+        <div class="qtext" dir="auto">${fmt(q.body)}</div>
+        ${body}
+      </div>`;
+  }).join("");
+
+  app.innerHTML = `${pgHtml}${cards}
+    <div id="warn"></div>
+    <div class="nav">
+      ${S.p>0?'<button class="btn ghost" id="prev">السابق</button>':''}
+      <button class="btn primary" id="next">${last?'إنهاء وتسليم':'التالي'}</button>
+    </div>`;
+
+  /* ── التفويض: مستمعٌ واحد للصفحة كلها ──
+     صارت الصفحة تحمل عشرات الأزرار؛ وربطُ مستمعٍ بكلٍّ منها عملٌ
+     يتضاعف بلا داعٍ. والحدثُ يصعد من الزرّ إلى ما يحويه، فيكفي أن
+     ننصت عند الجذر ونسأل: من أين جئت؟ */
+  app.onclick = e => {
+    const b = e.target.closest('.opt'); if(!b) return;
+    const card = b.closest('.qcard'), qid = +card.dataset.q;
+    const a = A.get(qid), v = +b.dataset.o;
+    credit(qid);
+
+    if(a.kind === 'msq'){
       const j = a.os.indexOf(v);
       if(a.os.length) a.chg++;                 // تبديلٌ بعد أول اختيار = تغيير
       if(j>=0) a.os.splice(j,1); else a.os.push(v);
       const on = a.os.includes(v);
       b.classList.toggle('sel', on);
       const t = b.querySelector('.tick'); if(t) t.textContent = on ? '✔' : '';
-      document.getElementById("next").disabled = a.os.length===0;
-      return;                                  // بلا renderQ: الصفحة لا تقفز
+      return;
     }
-    /* mcq — الأثر نفسه: صِف الحالة النهائية ولا تُعِد بناء الشاشة.
-       toggle بوسيطها الثاني تفرض الحالة ولا تقلبها، فيستحيل أن
-       تبقى فئتا sel على زرّين. */
+    /* mcq — صِف الحالة النهائية ولا تُعِد بناء الشاشة. و toggle
+       بوسيطها الثاني تفرض الحالة ولا تقلبها، فيستحيل أن تبقى
+       فئتا sel على زرّين. والنطاق بطاقةُ السؤال لا الصفحة. */
     if(a.o!==null && a.o!==v) a.chg++;
     a.o = v;
-    app.querySelectorAll(".opt").forEach(x =>
+    card.querySelectorAll('.opt').forEach(x =>
       x.classList.toggle('sel', +x.dataset.o === v));
-    document.getElementById("next").disabled = false;
-  });
-  const ta = document.getElementById("ta"); if(ta) ta.oninput = e => a.essay = e.target.value;
-  const p  = document.getElementById("prev"); if(p) p.onclick = ()=>{ bankTime(); S.i--; renderQ(); };
-  document.getElementById("next").onclick = ()=>{
-    bankTime();
-    if(S.i===n-1) finish(false); else { S.i++; renderQ(); }
   };
 
-  /* الوجهة تتبع النصّ لا الصفحة:
-     نصٌّ جديد (أو بلا نصّ) ⇒ الأعلى، ليُقرأ من أوّله.
-     النصّ نفسه ⇒ بطاقة السؤال، فقد قرأه ولا يُطالَب بتخطّيه ثانيةً.
-     والإزاحة تحت شريط العدّاد في CSS: #qcard{scroll-margin-top} */
-  const pgKey = q.passage_id || null;
-  if(pgKey && pgKey === lastPg)
-    document.getElementById("qcard")?.scrollIntoView({ behavior:'smooth', block:'start' });
-  else scrollTop();
-  lastPg = pgKey;
+  app.oninput = e => {
+    const t = e.target; if(!t.classList.contains('essay')) return;
+    const qid = +t.closest('.qcard').dataset.q;
+    credit(qid);
+    A.get(qid).essay = t.value;
+  };
+
+  /* ── الفراغ: يُنبَّه عليه مرّة، ثم يُحترَم ── */
+  let warned = false;
+  const blanks = () => qs.filter(q => {
+    const a = A.get(q.id);
+    return a.kind==='mcq' ? a.o === null
+         : a.kind==='msq' ? a.os.length === 0
+         :                  !a.essay.trim();
+  });
+
+  const p = document.getElementById("prev");
+  if(p) p.onclick = ()=>{ leavePage(); S.p--; renderPage(); };
+
+  document.getElementById("next").onclick = ()=>{
+    leavePage();
+    const b = blanks();
+    if(b.length && !warned){
+      warned = true;
+      document.getElementById("warn").innerHTML = `<div class="q-hint">
+        بلا إجابة: ${b.map(q=>'س'+AR(N.get(q.id))).join(' · ')} —
+        أجب إن كان لك ترجيح، ودعها فارغةً إن لم يكن.
+        التخمينُ يقع في مشتّتٍ فيُسجَّل لك تشخيصٌ لا يخصّك.</div>`;
+      document.getElementById("next").textContent =
+        last ? 'سلّم دون إكمال' : 'تابع دون إجابة';
+      document.getElementById('q'+b[0].id)?.scrollIntoView({ behavior:'smooth', block:'start' });
+      return;
+    }
+    if(last) finish(false); else { S.p++; renderPage(); }
+  };
+
+  scrollTop();
 }
 
-/* ═══════════ ③ التسليم ═══════════ */
+/* ═══════════ ⑤ التسليم ═══════════ */
 
 async function finish(auto){
-  clearInterval(S.tick); bankTime();
+  clearInterval(S.tick); leavePage();
+  app.onclick = null; app.oninput = null;
   app.innerHTML = `<div class="status">جارٍ التصحيح…</div>`; bar.innerHTML = "";
 
   const payload = S.ans.map(a =>
@@ -226,7 +342,7 @@ async function finish(auto){
   renderResult();
 }
 
-/* ═══════════ ④ النتيجة والتشخيص ═══════════ */
+/* ═══════════ ⑥ النتيجة والتشخيص ═══════════ */
 
 function verdict(p){
   if(p>=90) return "إتقان ممتاز — أنت جاهز للدرس التالي";
