@@ -41,8 +41,14 @@ export async function openEditor(scaleId, levelId){
   const t = await tree();
   if(t._error){ app.innerHTML = errBox(t._error, 'شجرة التأليف'); return; }
 
-  const scales = t.scales || [];
-  if(!scales.length || !(t.courses || []).length){
+  /* 🏠 بيتُ المقرَّر سُلّمُ مادته لا مستواه.
+     ومادةٌ بلا سُلّم («كيف أذاكر؟») تسكن سلّماً اصطلاحياً id='free'. */
+  const FREE    = { id:'free', name:'🚀 مهارات عامة', kind:'proficiency' };
+  const scaleOf = c => (byId(t.subjects, c.subject_id) || {}).scale_id ?? 'free';
+  const owned   = new Set((t.courses || []).map(scaleOf));
+  const scales  = [...(t.scales || []), FREE].filter(s => owned.has(s.id));
+
+  if(!scales.length){
     app.innerHTML = `<div class="card" style="text-align:center;padding:30px">
       <div style="font-size:2rem;margin-bottom:10px">🗂️</div>
       <div class="rev-q">لا مقرّرات متاحة لك للتأليف</div>
@@ -50,13 +56,18 @@ export async function openEditor(scaleId, levelId){
     return;
   }
 
-  const sc = scaleId ? byId(scales, scaleId) : scales[0];
+  /* || لا ? : — فمعرّفٌ قديمٌ من زرّ رجوع يرتدّ للأول بدل أن يُنتج undefined */
+  const sc     = (scaleId ? byId(scales, scaleId) : null) || scales[0];
   const levels = (t.levels || []).filter(l => l.scale_id === sc.id)
                                  .sort((a,b) => a.rank - b.rank);
-  const lv = levelId ? byId(levels, levelId) : (levels[0] || null);
 
-  const courses = (t.courses || []).filter(c =>
-    lv ? c.level_id === lv.id : c.level_id === null);
+  const mine = (t.courses || []).filter(c => scaleOf(c) === sc.id);
+  const free = mine.some(c => c.level_id === null);
+  const lv   = (levelId ? byId(levels, levelId) : null) || (free ? null : levels[0] || null);
+  const courses = mine.filter(c => lv ? c.level_id === lv.id : c.level_id === null);
+
+  /* نكرةٌ تُبنى منها المعرفة: ال+نطاق · بلا+نطاق */
+  const rung = sc.kind === 'proficiency' ? 'مستوى' : 'صف';
 
   const subj = id => byId(t.subjects, id) || {};
   const path = id => byId(t.paths, id);
@@ -85,16 +96,20 @@ export async function openEditor(scaleId, levelId){
       <label class="fl" style="margin:0">المنهج</label>
       <select id="sc">${scales.map(x =>
         `<option value="${x.id}" ${x.id===sc.id?'selected':''}>${esc(x.name)}</option>`).join("")}</select>
-      <label class="fl" style="margin:0">الصف</label>
-      <select id="lv">${levels.map(x =>
-        `<option value="${x.id}" ${lv && x.id===lv.id?'selected':''}>${esc(x.name)}</option>`).join("")}
-      </select>
+           ${levels.length ? `
+        <label class="fl" style="margin:0">ال${rung}</label>
+        <select id="lv">
+          ${free ? `<option value="" ${lv?'':'selected'}>— بلا ${rung} —</option>` : ''}
+          ${levels.map(x => `<option value="${x.id}"
+            ${lv && x.id===lv.id?'selected':''}>${esc(x.name)}</option>`).join("")}
+        </select>` : ''}
     </div>
     <div class="ed-grid">${courses.map(card).join("")}</div>
-    ${!courses.length ? '<div class="status">لا مقرّرات في هذا الصف</div>' : ''}`;
+    ${!courses.length ? `<div class="status">لا مقرّرات في هذا ال${rung}</div>` : ''}`;
 
   document.getElementById("sc").onchange = e => openEditor(e.target.value, null);
-  document.getElementById("lv").onchange = e => openEditor(sc.id, e.target.value);
+    const lvEl = document.getElementById("lv");        // ⚠️ قد لا يوجد — سُلّم بلا مستويات
+  if(lvEl) lvEl.onchange = e => openEditor(sc.id, e.target.value);
   app.querySelectorAll(".ed-card").forEach(el =>
     el.onclick = () => openCourse(byId(t.courses, el.dataset.c)));
   scrollTop();
@@ -159,7 +174,8 @@ export async function openCourse(course){
     ${!lessons.length && course.curate
       ? `<p class="hint">ابدأ بوحدة ثم درس — أو درساً مباشرة.</p>` : ''}`;
 
-  document.getElementById("bk").onclick = () => openEditor(null, course.level_id);
+   document.getElementById("bk").onclick = () => openEditor(
+    (byId(t.subjects, course.subject_id) || {}).scale_id ?? 'free', course.level_id);
   const nb = document.getElementById("new");
   if(nb) nb.onclick = () => editLesson(course, null);
   const nu = document.getElementById("nu");
