@@ -89,7 +89,17 @@ body{background:var(--page);background-attachment:fixed;
 .wrap{max-width:760px;margin:0 auto;padding:0 18px}
 
 /* ── الترويسة والهوية ── */
-header{padding:28px 0 14px;text-align:center}
+/* ══ الترويسة الواحدة ══
+   كان الشعارُ يتكرّر: الشريط فوقه يقول «أنت في بيان» بوجهاته، ثم
+   يقوله الشعارُ ثانيةً بـ١٤٤ بكسلاً رأسياً. فانتقل إلى داخل الشريط
+   حيث يكلّف صفراً — والشريط موجودٌ أصلاً.
+   ⚠️ و text-align:start لا center: العنوان يحاذي المحتوى تحته، فتقلّ
+      مسافة انتقال العين. المركزةُ تصلح لشاشةٍ لا محتوى تحتها.
+   ⚠️ و .bare للشاشات التي تُنادي head("") — كانت تحجز ٤٢px من فراغ. */
+header{padding:15px 0 9px;text-align:start}
+header.bare{padding:0}
+/* الشعار يظهر في البوابة (hero) وفي الشريط (topbrand) — لا بينهما */
+.brand:not(.hero):not(.topbrand){display:none}
 .brand{margin-bottom:10px;line-height:1.5;display:flex;align-items:center;
   justify-content:center;gap:10px;flex-wrap:wrap}
 /* ⚠️ كانت .brand-logo مخفيّةً أبداً ولا قاعدة تُظهرها — فآلة الشعار
@@ -107,7 +117,7 @@ header{padding:28px 0 14px;text-align:center}
 .brand.hero{margin-bottom:6px}
 .brand.hero .brand-name{display:block;font-size:clamp(2.4rem,11vw,3.4rem);line-height:1.1;margin-bottom:6px}
 .brand.hero .brand-slogan{display:block;font-size:.95rem;margin-right:0;color:var(--text);opacity:.72}
-h1{font-family:'Almarai';font-weight:800;font-size:clamp(1.4rem,5vw,2rem);line-height:1.35}
+h1{font-family:'Almarai';font-weight:800;font-size:clamp(1.3rem,4.4vw,1.72rem);line-height:1.4}
 .sub{color:var(--text-muted);font-size:var(--fs-ui);margin-top:6px}
 
 /* ── البطاقة ── */
@@ -186,6 +196,14 @@ h2.sec{font-family:'Almarai';font-weight:800;font-size:var(--fs-h);margin:24px 0
 .topbar{background:var(--bar);
   backdrop-filter:blur(10px);border-bottom:1px solid var(--line);
   display:flex;align-items:center;gap:10px;padding:9px 14px}
+/* هوية الشريط — تُستنسخ من #brand فلا يُفترض شكلها ولا مكان ملفّها.
+   وتُخفى تحت ٥٦٠px: الوجهات أحقُّ بالعرض من الاسم في شاشةٍ ضيّقة. */
+.topbrand{flex:0 0 auto;margin:0 0 0 4px;gap:7px}
+.topbrand .brand-logo{height:25px}
+.topbrand .brand-slogan{display:none}
+.topbrand .brand-name{font-size:var(--fs-read)}
+@media(max-width:560px){ .topbrand{display:none} }
+
 .navlinks{display:flex;gap:5px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none}
 .navlinks::-webkit-scrollbar{display:none}
 .navlink{background:none;border:1px solid transparent;border-radius:9px;
