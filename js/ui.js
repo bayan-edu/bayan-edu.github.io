@@ -59,6 +59,9 @@ export function head(t, s, hero){
   h.textContent = t || "";
   h.style.display = t ? "" : "none";
   document.getElementById("subhead").textContent = s || "";
+  /* شاشةٌ بلا عنوان ولا وصف كانت تحجز ٢٤px حشواً فارغاً — و.bare تُلغيه.
+     والتبديل هنا لا في كل شاشة: head() ممرٌّ إجباريّ لا يُنسى. */
+  h.closest("header")?.classList.toggle("bare", !t && !s);
 }
 
 /* ── إشعار عابر ── */
@@ -156,7 +159,12 @@ export function nav(active){
   setWide(false);
   const role  = S.roleInfo?.role || S.prof?.role || 'student';
   const dests = DEST[role] || DEST.student;
+  /* ⚠️ لا نقرأ hero من className: nav() تسبق head() في أكثر الشاشات،
+     فقد نلتقط hero عالقةً من البوابة. نأخذ has-logo وحدها صراحةً. */
+  const bEl  = document.getElementById("brand");
+  const mark = `<div class="brand topbrand${bEl.classList.contains("has-logo")?" has-logo":""}">${bEl.innerHTML}</div>`;
   bar.innerHTML = `<div class="topbar">
+    ${mark}
     <nav class="navlinks">${dests.map(([k,label]) =>
       `<button class="navlink ${k===active?'on':''}" data-r="${k}">${label}</button>`).join("")}</nav>
     <button class="navtheme" id="themeBtn" aria-label="تبديل السِمة" title="تبديل السِمة">◐</button>
