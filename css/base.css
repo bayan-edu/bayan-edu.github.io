@@ -16,24 +16,30 @@
       soft (تعبئة خافتة) · fill (مختار/نشط) · line (حدّ) · edge (حدّ ظاهر)
    ══════════════════════════════════════════════════════════ */
 
-/* الفاتحة — الافتراضية. ورقٌ دافئ لا أبيضُ صريح: الأبيض في غرفةٍ
-   خافتة مصدرُ وهج، والدافئ يخفضه بلا أن يخفض التباين. */
+/* الفاتحة — الافتراضية.
+   ⚠️ سُلّم الارتفاع هو المسألة كلها: في الداكنة يُقرأ الارتفاع
+      بـ«أفتحُ مما حوله»، فالبطاقة #102f4c فوق صفحة #07182a. وعلى
+      الورق ينقلب المعنى ولا ينقلب المبدأ: البطاقة تبقى بيضاء
+      و**الصفحة تُغمَّق**. صفحةٌ بيضاء وبطاقةٌ بيضاء = لا ارتفاع.
+      والفرق هنا ١٫٢١:١ — يُرى ولا يُتعب.
+   ⚠️ وترتيب التعبئة: soft أقلّ حبراً و strong أكثره. في الداكنة
+      «أكثر حبراً» يعني أفتح، وعلى الورق أغمق — والاسم صادقٌ فيهما. */
 :root{
-  --page:#FBFAF7; --surface:#fff; --surface-2:#fff;
-  --bar:rgba(251,250,247,.94);
-  --fill-soft:#F5F3ED; --fill:#EFEDE4; --fill-strong:#E5E1D5;
-  --line:#E3DFD3; --line-strong:#C9C4B4;
+  --page:#EDE9DF; --surface:#fff; --surface-2:#fff;
+  --bar:rgba(253,252,249,.95);
+  --fill-soft:#F8F6F0; --fill:#F1EEE5; --fill-strong:#E4DFD0;
+  --line:#DCD6C6; --line-strong:#BFB9A6;
   --text:#2C2C2A; --text-muted:#5F5E5A;
   --on-accent:#fff; --on-warn:#fff;
-  --accent:#0F6E56; --accent-soft:#EBF6F1; --accent-fill:#D9EFE6;
-  --accent-line:#B0DDCD; --accent-edge:#5DCAA5;
+  --accent:#0F6E56; --accent-soft:#E9F5F0; --accent-fill:#D5EDE3;
+  --accent-line:#A9D9C7; --accent-edge:#5DCAA5;
   --track-grad:linear-gradient(90deg,#1D9E75,#185FA5);
-  --hero-accent:linear-gradient(180deg,#E1F5EE,#fff);
-  --warn:#854F0B; --warn-text:#412402; --warn-soft:#FBF2E1;
-  --warn-fill:#F8E7C6; --warn-line:#EFD5A0; --warn-edge:#EF9F27;
-  --hero-warn:linear-gradient(180deg,#FAEEDA,#fff);
-  --danger:#993C1D; --danger-text:#4A1B0C; --danger-soft:#FBEFEA;
-  --danger-fill:#F6DFD5; --danger-line:#EDC7B5; --danger-edge:#D85A30;
+  --hero-accent:linear-gradient(180deg,#DCF0E8,#fff);
+  --warn:#854F0B; --warn-text:#412402; --warn-soft:#FAF0DC;
+  --warn-fill:#F6E3BE; --warn-line:#EBCF97; --warn-edge:#EF9F27;
+  --hero-warn:linear-gradient(180deg,#F8E9CE,#fff);
+  --danger:#993C1D; --danger-text:#4A1B0C; --danger-soft:#FAEBE4;
+  --danger-fill:#F4D9CD; --danger-line:#E9C0AC; --danger-edge:#D85A30;
   --r:14px}
 
 /* الداكنة — بقيمها الأصلية. لم يتغيّر مظهرها إلا في مواضع
