@@ -6,7 +6,7 @@
 import { S } from './state.js';
 
 /* ── بصمة النسخة — لمعرفة أي شيفرة يشغّلها المتصفح فعلاً ── */
-export const BUILD = "b25";
+export const BUILD = "b26";
 
 /* ── مراسي الصفحة ── */
 export const app = document.getElementById("app");
@@ -134,6 +134,20 @@ export function setWide(on){
   document.querySelector('.wrap')?.classList.toggle('wide', !!on);
 }
 
+/* ── السِمة: الفاتحة افتراضية، والاختيار يُحفظ ──
+   ⚠️ القراءة الأولى ليست هنا بل في <head> داخل index.html — لأن
+      الوحدات (modules) مؤجَّلة، فلو قرأنا هنا لرُسمت الشاشة بيضاء
+      أوّلاً ثم صُبغت، فومض البياضُ في وجه من اختار الداكنة هرباً منه.
+   ⚠️ ولا تُعطَ الزرَّ سمة data-r: حلقة التوجيه أسفلُ تلتقط كل
+      [data-r] وتبحث له عن مسارٍ في ROUTES — ولا مسار للسِمة.
+   ⚠️ وlocalStorage يرمي في وضع التصفّح الخاص ببعض المتصفحات، فلولا
+      try لسقط تبديل السِمة كله لأجل حفظٍ فاشل. */
+export function toggleTheme(){
+  const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  document.documentElement.dataset.theme = next;
+  try{ localStorage.setItem("bayan.theme", next); }catch(e){}
+}
+
 // active = مفتاح الوجهة الحالية · النقر على النشط يُعيد التحميل
 export function nav(active){
   setWide(false);
@@ -142,12 +156,14 @@ export function nav(active){
   bar.innerHTML = `<div class="topbar">
     <nav class="navlinks">${dests.map(([k,label]) =>
       `<button class="navlink ${k===active?'on':''}" data-r="${k}">${label}</button>`).join("")}</nav>
-    <button class="navout" data-r="out">خروج ↩</button>
+    <button class="navtheme" id="themeBtn" aria-label="تبديل السِمة" title="تبديل السِمة">◐</button>
+    <button class="navout" data-r="out">خروج</button>
   </div>`;
   bar.querySelectorAll('[data-r]').forEach(b => b.onclick = () => {
     const go = ROUTES[b.dataset.r];
     if(go) go();
   });
+  bar.querySelector('#themeBtn').onclick = toggleTheme;
 }
 
 /* ── صندوق خطأ: يُظهر رسالة Supabase كاملة بدل ابتلاعها ──
