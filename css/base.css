@@ -116,7 +116,6 @@ header.bare{padding:0}
 .brand.has-logo .lt{display:block}
 :root[data-theme="dark"] .brand.has-logo .lt{display:none}
 :root[data-theme="dark"] .brand.has-logo .dk{display:block}
-.brand.has-logo .brand-text{display:none}
 .brand.hero{flex-direction:column;gap:6px}
 .brand.hero .brand-logo{height:clamp(110px,28vw,170px)}
 .brand-text{display:inline-flex;align-items:baseline;gap:9px}
@@ -125,7 +124,15 @@ header.bare{padding:0}
 .brand-slogan{font-size:.75rem;color:var(--text-muted);margin-right:9px}
 .brand.hero{margin-bottom:6px}
 .brand.hero .brand-name{display:block;font-size:clamp(2.4rem,11vw,3.4rem);line-height:1.1;margin-bottom:6px}
-.brand.hero .brand-slogan{display:block;font-size:.95rem;margin-right:0;color:var(--text);opacity:.72}
+.brand.hero .brand-slogan{display:block;font-size:var(--fs-ui);margin-right:0;
+  color:var(--text-muted);letter-spacing:.02em}
+
+/* ⚠️ موضع هذين السطرين لازمٌ بعد قواعد hero: تساويهما في الخصوصية
+   (٣ أصناف) يجعل المتأخّر يغلب. ولو وُضعا فوق لظهر الاسم في البوابة.
+   ولا يُخفى .brand-text كلّه: هو غلافٌ يضمّ الاسمَ والشعار النصّيّ
+   معاً — والصورة تكرّر الاسم ولا تحمل الشعار، فيُخفى الاسم وحده. */
+.brand.has-logo .brand-name{display:none}
+.brand.has-logo .brand-text{display:flex}
 h1{font-family:'Almarai';font-weight:800;font-size:clamp(1.3rem,4.4vw,1.72rem);line-height:1.4}
 .sub{color:var(--text-muted);font-size:var(--fs-ui);margin-top:6px}
 
