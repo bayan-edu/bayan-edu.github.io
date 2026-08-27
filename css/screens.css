@@ -9,46 +9,41 @@
    ══════════════════════════════════════════════════════════ */
 
 /* ══════════════════════════════════════════════════════════
-   البوابة — عمودان: «ما هذا؟» ثم «ادخل»
-   الشطر صحيحٌ هنا لسببٍ واحد: البوابة المكانُ الوحيد الذي تقول
-   فيه المنصة ما هي. وما تقوله ليس شعاراً تسويقياً بل **عيّنةً
-   حيّة من التشخيص** — والطالب الذي يدخل متوقّعاً «شرحاً لخطئي»
-   ينتبه غيرَ الذي يدخل متوقّعاً «اختباراً». التوقّع يسبق الانتباه.
-   ⚠️ ولا صور أشخاص: أصلُ بيان تشخيصُه لا مزاجُه.
-   ⚠️ والجوّال يقلب الترتيب: القول ← النموذج ← العيّنة. لأن الإجراء
-      يجب أن يُبلَغ بلا تمرير، والعيّنة تنتظر من يريد أن يعرف أكثر.
+   البوابة — عمودان: الهوية يساراً والنموذج يميناً
+   ⚠️ النموذج في اليمين لا اليسار خلافاً لمرآة RTL المعتادة: هذا
+      إجراءٌ متكرّر لعائدٍ يعرف ما يريد، فيسكن حيث تبدأ العين لا
+      حيث تنتهي. والهوية تُرى بالمحيط لا بالتركيز — فمكانها الطرف.
+   ⚠️ ولا ألسنة فوق النموذج: اللسان يفرض اختياراً قبل الفهم، ويجعل
+      الحالتين متساويتين وهما ليستا كذلك. الداخل أكثر من المسجِّل
+      بأضعاف — فله الزرّ الأول، وللمسجِّل زرٌّ تحت فاصل.
+   🔴 القول والعيّنة محذوفان مؤقّتاً بانتظار صياغة.
    ══════════════════════════════════════════════════════════ */
 body.gate header{display:none}
-body.gate .wrap{max-width:1060px}
+body.gate .wrap{max-width:1000px}
 
-.gatex{display:grid;grid-template-columns:1fr;gap:22px;padding-top:24px;
-  grid-template-areas:"say" "form" "demo"}
-.gate-say{grid-area:say;text-align:center}
-.gate-form{grid-area:form}
-.gate-demo{grid-area:demo}
+.gatex{display:grid;grid-template-columns:1fr;gap:24px;padding-top:20px;
+  grid-template-areas:"say" "form"}
+.gate-say{grid-area:say;text-align:center;
+  display:flex;flex-direction:column;justify-content:center}
+.gate-form{grid-area:form;width:100%;max-width:410px;margin-inline:auto}
 
-.gate-h{font-family:'Almarai';font-weight:800;line-height:1.55;margin-top:16px;
-  font-size:clamp(1.45rem,3.3vw,2.05rem)}
-.gate-h em{font-style:normal;color:var(--accent)}
-.gate-p{color:var(--text-muted);font-size:var(--fs-read);line-height:1.95;
-  margin-top:13px;max-width:44ch}
+/* فاصلٌ لا كلمة فيه: وظيفته أن يقول «انتهى الإجراء الأول» */
+.gate-sep{height:1px;background:var(--line);margin:20px 0 16px}
 
-/* العيّنة — نسخةٌ مصغّرة من بطاقة المراجعة الحقيقية، لا صورةُ تسويق */
-.gate-demo{border:1px solid var(--line);border-radius:var(--r);padding:14px;
-  background:var(--surface);box-shadow:var(--shadow)}
-.gate-demo .rev{margin-bottom:0;padding:13px}
-.gate-demo-l{font-family:'Almarai';font-weight:700;font-size:var(--fs-meta);
-  color:var(--text-muted);margin-bottom:10px}
+/* الإجراء الثانوي — مرئيٌّ تماماً وغيرُ منافس: لونُ الفعل نفسه
+   لكن بإطارٍ لا بتعبئة. الوزن البصريّ يتبع الاحتمال لا الأهمية. */
+.gate-alt{width:100%;cursor:pointer;border-radius:11px;padding:12px;
+  background:var(--accent-soft);border:1px solid var(--accent);color:var(--accent);
+  font-family:'Almarai';font-weight:800;font-size:var(--fs-ui);
+  transition:background .18s}
+.gate-alt:hover{background:var(--accent-fill)}
+.gate-alt:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
 @media(min-width:900px){
-  .gatex{grid-template-columns:1.04fr .96fr;gap:24px 52px;padding-top:0;
-    grid-template-areas:"say form" "demo form";
-    align-content:center;min-height:calc(100vh - 140px)}
-  .gate-say{text-align:start}
-  .gate-say .brand.hero,
-  .gate-say .brand.hero .brand-text{align-items:flex-start}
-  .gate-say .brand.hero .brand-name{font-size:clamp(2.2rem,5vw,3rem)}
-  .gate-demo{max-width:470px}
+  .gatex{grid-template-columns:1.02fr .98fr;gap:60px;padding-top:0;
+    grid-template-areas:"form say";
+    align-items:center;min-height:calc(100vh - 110px)}
+  .gate-form{margin-inline:0}
 }
 
 /* ═══ البوابة ═══ */
