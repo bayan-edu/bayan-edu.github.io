@@ -51,6 +51,9 @@ export const mmss = s => { const m=Math.floor(s/60), x=s%60; return m+":"+(x<10?
 
 /* ── الترويسة ── */
 export function head(t, s, hero){
+  /* البوابة وحدها تُخفي الترويسة. وإزالة الصنف هنا لا في كل شاشة:
+     head() تُستدعى في كل عرض، فهي المكان الوحيد الذي لا يُنسى. */
+  document.body.classList.remove("gate");
   const b = document.getElementById("brand"), h = document.getElementById("head");
   b.classList.toggle("hero", !!hero);
   h.textContent = t || "";
