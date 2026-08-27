@@ -4,8 +4,62 @@
    لا تضع هنا شيئاً يخصّ شاشة واحدة — مكانه screens.css
    ══════════════════════════════════════════════════════════ */
 
-:root{--card:#102f4c;--card2:#0c243b;--foam:#eaf4f8;--mist:#9db8c9;
- --cyan:#48cfc0;--coral:#f2776b;--sand:#e5bd63;--line:rgba(157,184,201,.18);--r:14px}
+/* ══════════════════════════════════════════════════════════
+   طبقة الأدوار — قلبُ نظام الألوان
+   الرمز يُسمّى بوظيفته لا بمظهره: accent لا cyan. لأن السماويّ
+   #48cfc0 تباينه على الورق ١٫٩٤:١ — لا يصلح نصّاً ولا حدّاً. فهو
+   والأخضرُ المزرقّ #0F6E56 لونان مختلفان يؤدّيان الدور نفسه.
+   ⚠️ والشفافيات لا تُترجَم: ٥٪ فاتحة فوق كحليّ = همسة، و٥٪ داكنة
+      فوق ورق = حدٌّ ظاهر. فالسِمة الفاتحة تستعمل ألواناً صلبة، ولا
+      يبقى في جسد الـCSS حسابُ شفافيةٍ واحد.
+   ⚠️ ستّون شفافية اختُزلت إلى أربع رتب لكل عائلة:
+      soft (تعبئة خافتة) · fill (مختار/نشط) · line (حدّ) · edge (حدّ ظاهر)
+   ══════════════════════════════════════════════════════════ */
+
+/* الفاتحة — الافتراضية. ورقٌ دافئ لا أبيضُ صريح: الأبيض في غرفةٍ
+   خافتة مصدرُ وهج، والدافئ يخفضه بلا أن يخفض التباين. */
+:root{
+  --page:#FBFAF7; --surface:#fff; --surface-2:#fff;
+  --bar:rgba(251,250,247,.94);
+  --fill-soft:#F5F3ED; --fill:#EFEDE4; --fill-strong:#E5E1D5;
+  --line:#E3DFD3; --line-strong:#C9C4B4;
+  --text:#2C2C2A; --text-muted:#5F5E5A;
+  --on-accent:#fff; --on-warn:#fff;
+  --accent:#0F6E56; --accent-soft:#EBF6F1; --accent-fill:#D9EFE6;
+  --accent-line:#B0DDCD; --accent-edge:#5DCAA5;
+  --track-grad:linear-gradient(90deg,#1D9E75,#185FA5);
+  --hero-accent:linear-gradient(180deg,#E1F5EE,#fff);
+  --warn:#854F0B; --warn-text:#412402; --warn-soft:#FBF2E1;
+  --warn-fill:#F8E7C6; --warn-line:#EFD5A0; --warn-edge:#EF9F27;
+  --hero-warn:linear-gradient(180deg,#FAEEDA,#fff);
+  --danger:#993C1D; --danger-text:#4A1B0C; --danger-soft:#FBEFEA;
+  --danger-fill:#F6DFD5; --danger-line:#EDC7B5; --danger-edge:#D85A30;
+  --r:14px}
+
+/* الداكنة — بقيمها الأصلية. لم يتغيّر مظهرها إلا في مواضع
+   التقريب داخل الرتبة الواحدة (‎.34 و‎.35 و‎.4 صارت ‎.38). */
+:root[data-theme="dark"]{
+  --page:radial-gradient(900px 500px at 80% -10%,rgba(72,207,192,.10),transparent 60%),
+         linear-gradient(180deg,#0d2b45 0%,#07182a 55%,#04101c 100%);
+  --surface:linear-gradient(180deg,#102f4c,#0c243b); --surface-2:#0c243b;
+  --bar:rgba(7,24,42,.94);
+  --fill-soft:rgba(157,184,201,.05); --fill:rgba(157,184,201,.09);
+  --fill-strong:rgba(157,184,201,.13);
+  --line:rgba(157,184,201,.18); --line-strong:rgba(157,184,201,.24);
+  --text:#eaf4f8; --text-muted:#9db8c9;
+  --on-accent:#06202e; --on-warn:#1a1206;
+  --accent:#48cfc0; --accent-soft:rgba(72,207,192,.08);
+  --accent-fill:rgba(72,207,192,.14); --accent-line:rgba(72,207,192,.25);
+  --accent-edge:rgba(72,207,192,.38);
+  --track-grad:linear-gradient(90deg,#48cfc0,#2a8fb8);
+  --hero-accent:linear-gradient(180deg,rgba(72,207,192,.14),rgba(16,47,76,.6));
+  --warn:#e5bd63; --warn-text:#f0dcae; --warn-soft:rgba(229,189,99,.1);
+  --warn-fill:rgba(229,189,99,.14); --warn-line:rgba(229,189,99,.27);
+  --warn-edge:rgba(229,189,99,.42);
+  --hero-warn:linear-gradient(180deg,rgba(229,189,99,.13),rgba(16,47,76,.6));
+  --danger:#f2776b; --danger-text:#ffd7d2; --danger-soft:rgba(242,119,107,.09);
+  --danger-fill:rgba(242,119,107,.17); --danger-line:rgba(242,119,107,.28);
+  --danger-edge:rgba(242,119,107,.45)}
 
 /* ══ السلّم الطباعيّ ══
    ستّ درجات لا أربعين. والقاعدة تُقرأ من الأسماء لا من الأرقام:
@@ -21,9 +75,8 @@
 
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{min-height:100%}
-body{background:radial-gradient(900px 500px at 80% -10%,rgba(72,207,192,.10),transparent 60%),
- linear-gradient(180deg,#0d2b45 0%,#07182a 55%,#04101c 100%);background-attachment:fixed;
- color:var(--foam);font-family:'Readex Pro','Almarai',system-ui,Tahoma,sans-serif;
+body{background:var(--page);background-attachment:fixed;
+ color:var(--text);font-family:'Readex Pro','Almarai',system-ui,Tahoma,sans-serif;
  font-weight:400;line-height:1.85;padding:0 0 90px;-webkit-font-smoothing:antialiased}
 .wrap{max-width:760px;margin:0 auto;padding:0 18px}
 
@@ -37,109 +90,119 @@ header{padding:28px 0 14px;text-align:center}
 .brand.hero .brand-logo{height:clamp(110px,28vw,170px)}
 .brand-text{display:inline-flex;align-items:baseline;gap:9px}
 .brand.hero .brand-text{flex-direction:column;align-items:center;gap:4px}
-.brand-name{font-family:'Almarai';font-weight:800;font-size:1.05rem;color:var(--cyan);letter-spacing:.01em}
-.brand-slogan{font-size:.75rem;color:var(--mist);margin-right:9px}
+.brand-name{font-family:'Almarai';font-weight:800;font-size:1.05rem;color:var(--accent);letter-spacing:.01em}
+.brand-slogan{font-size:.75rem;color:var(--text-muted);margin-right:9px}
 .brand.hero{margin-bottom:6px}
 .brand.hero .brand-name{display:block;font-size:clamp(2.4rem,11vw,3.4rem);line-height:1.1;margin-bottom:6px}
-.brand.hero .brand-slogan{display:block;font-size:.95rem;margin-right:0;color:var(--foam);opacity:.72}
+.brand.hero .brand-slogan{display:block;font-size:.95rem;margin-right:0;color:var(--text);opacity:.72}
 h1{font-family:'Almarai';font-weight:800;font-size:clamp(1.4rem,5vw,2rem);line-height:1.35}
-.sub{color:var(--mist);font-size:var(--fs-ui);margin-top:6px}
+.sub{color:var(--text-muted);font-size:var(--fs-ui);margin-top:6px}
 
 /* ── البطاقة ── */
-.card{background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--line);
+.card{background:var(--surface);border:1px solid var(--line);
  border-radius:var(--r);padding:22px 20px;margin-bottom:15px}
 
 /* ── الحقول ── */
-input,textarea,select{width:100%;background:rgba(157,184,201,.05);border:1px solid var(--line);
- border-radius:11px;padding:13px;color:var(--foam);font-family:inherit;font-size:var(--fs-ui);line-height:1.9}
+input,textarea,select{width:100%;background:var(--fill-soft);border:1px solid var(--line);
+ border-radius:11px;padding:13px;color:var(--text);font-family:inherit;font-size:var(--fs-ui);line-height:1.9}
 textarea{min-height:125px;resize:vertical}
-input:focus,textarea:focus,select:focus{outline:none;border-color:var(--cyan)}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent)}
 select{cursor:pointer}
-select option{background:#0c243b;color:var(--foam)}
+select option{background:var(--surface-2);color:var(--text)}
 label.fl{display:block;font-family:'Almarai';font-weight:700;font-size:var(--fs-meta);margin-bottom:8px}
-.small{font-size:var(--fs-meta);color:var(--mist);margin-top:7px;text-align:right;line-height:1.75}
+.small{font-size:var(--fs-meta);color:var(--text-muted);margin-top:7px;text-align:right;line-height:1.75}
 
 /* ── الأزرار ── */
 .nav{display:flex;gap:10px;margin-top:6px}
 button.btn{flex:1;border:none;border-radius:11px;padding:13px 18px;cursor:pointer;
  font-family:'Almarai';font-weight:800;font-size:var(--fs-ui);transition:transform .12s,filter .18s}
 button.btn:active{transform:translateY(1px)}
-button.btn:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
-.primary{background:var(--cyan);color:#06202e}
+button.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.primary{background:var(--accent);color:var(--on-accent)}
 .primary:hover{filter:brightness(1.08)}
 .primary:disabled{opacity:.35;cursor:not-allowed}
-.ghost{background:rgba(157,184,201,.09);color:var(--foam);border:1px solid var(--line)!important}
+.ghost{background:var(--fill);color:var(--text);border:1px solid var(--line)!important}
 
 /* ── الألسنة ── */
 .tabs,.subtabs{display:flex;gap:8px;margin-bottom:14px}
 .tab{flex:1;padding:11px;border-radius:11px;cursor:pointer;text-align:center;
- font-family:'Almarai';font-weight:800;font-size:var(--fs-ui);background:rgba(157,184,201,.07);
- border:1px solid var(--line);color:var(--mist)}
-.tab.on{background:rgba(72,207,192,.14);border-color:var(--cyan);color:var(--cyan)}
+ font-family:'Almarai';font-weight:800;font-size:var(--fs-ui);background:var(--fill);
+ border:1px solid var(--line);color:var(--text-muted)}
+.tab.on{background:var(--accent-fill);border-color:var(--accent);color:var(--accent)}
 
 /* ── عناصر نصية مشتركة ── */
 h2.sec{font-family:'Almarai';font-weight:800;font-size:var(--fs-h);margin:24px 0 13px;
- padding-right:12px;border-right:3px solid var(--cyan)}
+ padding-right:12px;border-right:3px solid var(--accent)}
 .grp{font-family:'Almarai';font-weight:800;font-size:var(--fs-read);margin:22px 0 12px;
   display:flex;align-items:center;gap:9px}
 .grp:first-child{margin-top:4px}
 .rev-q{font-family:'Almarai';font-weight:700;font-size:var(--fs-ui);margin-bottom:10px}
-.line{font-size:var(--fs-meta);color:var(--mist);margin-bottom:5px}
+.line{font-size:var(--fs-meta);color:var(--text-muted);margin-bottom:5px}
 /* ⚠️ كان ٤٠٠ يعني «أثقل من الجسد» حين كان الجسد ٣٠٠. ولمّا صار الجسد
    ٤٠٠ فقد التمييزَ صامتاً — فرُفع إلى ٦٠٠. */
-.line b{color:var(--foam);font-weight:600}
-.hint{color:var(--mist);font-size:var(--fs-meta);margin-top:10px;text-align:center}
-.crumb{font-size:var(--fs-meta);color:var(--mist);margin-bottom:12px;cursor:pointer}
-.crumb:hover{color:var(--cyan)}
+.line b{color:var(--text);font-weight:600}
+.hint{color:var(--text-muted);font-size:var(--fs-meta);margin-top:10px;text-align:center}
+.crumb{font-size:var(--fs-meta);color:var(--text-muted);margin-bottom:12px;cursor:pointer}
+.crumb:hover{color:var(--accent)}
 
 /* ── الوسوم والرقائق ── */
 .badge{display:inline-block;font-family:'Almarai';font-weight:800;font-size:var(--fs-tag);
  padding:3px 10px;border-radius:999px;margin-right:7px}
-.badge.ok{background:rgba(72,207,192,.16);color:var(--cyan)}
-.badge.lock{background:rgba(157,184,201,.14);color:var(--mist)}
+.badge.ok{background:var(--accent-fill);color:var(--accent)}
+.badge.lock{background:var(--fill-strong);color:var(--text-muted)}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
-.chip{background:rgba(157,184,201,.1);border:1px solid var(--line);border-radius:8px;
-  padding:4px 10px;font-size:var(--fs-tag);color:var(--mist)}
-.chip.g{background:rgba(72,207,192,.13);border-color:rgba(72,207,192,.3);color:var(--cyan)}
+.chip{background:var(--fill);border:1px solid var(--line);border-radius:8px;
+  padding:4px 10px;font-size:var(--fs-tag);color:var(--text-muted)}
+.chip.g{background:var(--accent-fill);border-color:var(--accent-line);color:var(--accent)}
 
 /* ── الحالات والرسائل ── */
-.status{text-align:center;padding:26px 14px;color:var(--mist);font-size:var(--fs-ui)}
-.err{background:rgba(242,119,107,.1);border:1px solid rgba(242,119,107,.3);border-radius:11px;
- padding:15px;font-size:var(--fs-ui);color:#ffd7d2;margin-bottom:14px}
+.status{text-align:center;padding:26px 14px;color:var(--text-muted);font-size:var(--fs-ui)}
+.err{background:var(--danger-soft);border:1px solid var(--danger-line);border-radius:11px;
+ padding:15px;font-size:var(--fs-ui);color:var(--danger-text);margin-bottom:14px}
 .err b{font-family:'Almarai';font-weight:800;display:block;margin-bottom:5px}
-.warnbox{background:rgba(229,189,99,.09);border:1px solid rgba(229,189,99,.3);
-  border-radius:11px;padding:12px 14px;font-size:var(--fs-ui);color:#f0dcae;
+.warnbox{background:var(--warn-soft);border:1px solid var(--warn-line);
+  border-radius:11px;padding:12px 14px;font-size:var(--fs-ui);color:var(--warn-text);
   line-height:1.85;margin-bottom:14px}
 .toast{position:fixed;bottom:22px;right:50%;transform:translateX(50%) translateY(90px);
- background:var(--cyan);color:#06202e;padding:11px 22px;border-radius:999px;
+ background:var(--accent);color:var(--on-accent);padding:11px 22px;border-radius:999px;
  font-family:'Almarai';font-weight:800;font-size:var(--fs-ui);transition:transform .35s;z-index:60}
 .toast.show{transform:translateX(50%) translateY(0)}
 
 /* ── شريط التنقّل الدائم ──
 /* يصير — الالتصاق ينتقل إلى الأب، فله مدى الصفحة يتحرّك فيه */
 #bar{position:sticky;top:0;z-index:20}
-.topbar{background:rgba(7,24,42,.94);
+.topbar{background:var(--bar);
   backdrop-filter:blur(10px);border-bottom:1px solid var(--line);
   display:flex;align-items:center;gap:10px;padding:9px 14px}
 .navlinks{display:flex;gap:5px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none}
 .navlinks::-webkit-scrollbar{display:none}
 .navlink{background:none;border:1px solid transparent;border-radius:9px;
-  padding:7px 13px;cursor:pointer;white-space:nowrap;color:var(--mist);
+  padding:7px 13px;cursor:pointer;white-space:nowrap;color:var(--text-muted);
   font-family:'Almarai';font-weight:700;font-size:var(--fs-meta);
   transition:color .18s,background .18s,border-color .18s}
-.navlink:hover{color:var(--foam);background:rgba(157,184,201,.08)}
-.navlink.on{color:var(--cyan);background:rgba(72,207,192,.13);border-color:rgba(72,207,192,.34)}
-.navlink:focus-visible,.navout:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+.navlink:hover{color:var(--text);background:var(--fill)}
+.navlink.on{color:var(--accent);background:var(--accent-fill);border-color:var(--accent-edge)}
+.navlink:focus-visible,.navout:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* مبدّل السِمة — أيقونةٌ لا كلمة، لأنه لا يُقرأ بل يُتعرَّف عليه.
+   و◐ نصفُ دائرة: رمزُ التباين المتعارف عليه، ولا يتحوّل إلى إيموجي
+   ملوّن في أي نظام — بخلاف ☀ و🌙. */
+.navtheme{flex:0 0 auto;width:33px;height:33px;padding:0;
+  background:none;border:1px solid var(--line);border-radius:999px;
+  cursor:pointer;color:var(--text-muted);font-size:1rem;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+  transition:color .18s,border-color .18s}
+.navtheme:hover{color:var(--accent);border-color:var(--accent-edge)}
+
 /* «خروج» ليس زراً — والقاعدة باقية. لكنه كان ٣٫٣:١ بالقياس، وحدّ
    WCAG AA أربعةٌ ونصف. فرُفع فوق أرضية القراءة ولم يُرفع فوق رتبته:
    الإطار يقول «هذا يُنقَر» واللون الرماديّ يقول «لستُ الإجراء الرئيس».
    و flex:0 0 auto تمنعه من الانكماش حين تزدحم الوجهات في الجوّال. */
 .navout{flex:0 0 auto;background:none;border:1px solid var(--line);
   border-radius:999px;cursor:pointer;white-space:nowrap;
-  color:var(--mist);font-family:'Almarai';font-weight:700;font-size:var(--fs-meta);
+  color:var(--text-muted);font-family:'Almarai';font-weight:700;font-size:var(--fs-meta);
   padding:6px 13px;transition:color .18s,border-color .18s,background .18s}
-.navout:hover{color:var(--coral);border-color:rgba(242,119,107,.45);
-  background:rgba(242,119,107,.08)}
+.navout:hover{color:var(--danger);border-color:var(--danger-edge);
+  background:var(--danger-soft)}
 @media(max-width:420px){
   .topbar{padding:8px 10px;gap:6px}
   .navlink{padding:7px 10px;font-size:var(--fs-meta)}
