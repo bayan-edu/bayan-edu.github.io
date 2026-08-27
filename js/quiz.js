@@ -430,7 +430,7 @@ function renderResult(){
           ${!msq && x.remedy?`<div style="margin-top:8px;opacity:.9">🎯 ${esc(x.remedy)}</div>`:''}</div>
         ${x.remedial?`<div class="remedy"><strong>راجع قبل الإعادة</strong>
           <a href="${esc(x.remedial.url||'#')}" target="_blank" rel="noopener"
-             style="color:var(--cyan)">${ICONS[x.remedial.kind]||'📎'} ${esc(x.remedial.title)}</a></div>`:''}`}
+             style="color:var(--accent)">${ICONS[x.remedial.kind]||'📎'} ${esc(x.remedial.title)}</a></div>`:''}`}
     </div>`;
   }).join("");
 
