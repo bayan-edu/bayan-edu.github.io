@@ -40,6 +40,7 @@
   --hero-warn:linear-gradient(180deg,#F8E9CE,#fff);
   --danger:#993C1D; --danger-text:#4A1B0C; --danger-soft:#FAEBE4;
   --danger-fill:#F4D9CD; --danger-line:#E9C0AC; --danger-edge:#D85A30;
+  --shadow:0 1px 2px rgba(70,58,34,.05), 0 4px 14px rgba(70,58,34,.07);
   --r:14px}
 
 /* الداكنة — بقيمها الأصلية. لم يتغيّر مظهرها إلا في مواضع
@@ -65,7 +66,8 @@
   --hero-warn:linear-gradient(180deg,rgba(229,189,99,.13),rgba(16,47,76,.6));
   --danger:#f2776b; --danger-text:#ffd7d2; --danger-soft:rgba(242,119,107,.09);
   --danger-fill:rgba(242,119,107,.17); --danger-line:rgba(242,119,107,.28);
-  --danger-edge:rgba(242,119,107,.45)}
+  --danger-edge:rgba(242,119,107,.45);
+  --shadow:0 1px 2px rgba(0,0,0,.22), 0 4px 16px rgba(0,0,0,.24)}
 
 /* ══ السلّم الطباعيّ ══
    ستّ درجات لا أربعين. والقاعدة تُقرأ من الأسماء لا من الأرقام:
@@ -90,7 +92,11 @@ body{background:var(--page);background-attachment:fixed;
 header{padding:28px 0 14px;text-align:center}
 .brand{margin-bottom:10px;line-height:1.5;display:flex;align-items:center;
   justify-content:center;gap:10px;flex-wrap:wrap}
+/* ⚠️ كانت .brand-logo مخفيّةً أبداً ولا قاعدة تُظهرها — فآلة الشعار
+   ميّتة والذي يظهر هو الوردمارك النصّيّ وحده. هذه هي القاعدة الناقصة:
+   ضَع class="brand has-logo" في index.html ليظهر الشعار مكان النصّ. */
 .brand-logo{height:36px;width:auto;max-width:100%;display:none}
+.brand.has-logo .brand-logo{display:block}
 .brand.has-logo .brand-text{display:none}
 .brand.hero{flex-direction:column;gap:6px}
 .brand.hero .brand-logo{height:clamp(110px,28vw,170px)}
@@ -105,7 +111,7 @@ h1{font-family:'Almarai';font-weight:800;font-size:clamp(1.4rem,5vw,2rem);line-h
 .sub{color:var(--text-muted);font-size:var(--fs-ui);margin-top:6px}
 
 /* ── البطاقة ── */
-.card{background:var(--surface);border:1px solid var(--line);
+.card{background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);
  border-radius:var(--r);padding:22px 20px;margin-bottom:15px}
 
 /* ── الحقول ── */
