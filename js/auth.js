@@ -16,10 +16,31 @@ import { openEditor } from './editor.js';
 
 export function renderGate(msg){
   bar.innerHTML = "";
-  head("", S.gate==="login" ? "سجّل الدخول لمتابعة تقدّمك"
-                            : "أنشئ حسابك في نصف دقيقة", true);
+  head("", "", true);
+  /* الترويسة تُخفى وتُنقَل هويتها إلى العمود — ونستنسخ #brand كما هو
+     ليتبعنا الشعارُ إن وُجد والوردمارك إن لم يوجد، بلا افتراض. */
+  document.body.classList.add("gate");
+  const bEl = document.getElementById("brand");
   const reg = S.gate==="register";
   app.innerHTML = `
+   <div class="gatex">
+    <div class="gate-say">
+      <div class="${bEl.className} hero">${bEl.innerHTML}</div>
+      <h1 class="gate-h">لا نقولها <em>«خطأ»</em> ونمضي —<br>نقول لك <em>لماذا</em> أخطأت.</h1>
+      <p class="gate-p">كلُّ سؤالٍ تخطئ فيه يُشخَّص: أيُّ فخٍّ وقعتَ فيه بالاسم،
+        وما الذي تراجعه قبل أن تُعيد. لأن الدرجة تقول أين أنت، والتشخيص يقول كيف تتقدّم.</p>
+    </div>
+
+    <div class="gate-demo" aria-hidden="true">
+      <div class="gate-demo-l">هكذا تبدو نتيجتك</div>
+      <div class="rev no">
+        <span class="tag no">خطأ</span>
+        <div class="rev-q" dir="auto">Choose the word closest in meaning to <b>preserve</b></div>
+        <div class="trap"><strong>تشخيص الخطأ — تجاهل كلمة مفتاحية:</strong>قرأتَ الجملة ولم تقف عند <i>closest in meaning</i>، فاخترتَ الضدّ.</div>
+      </div>
+    </div>
+
+    <div class="gate-form">
     <div class="tabs">
       <div class="tab ${reg?'':'on'}" data-g="login">تسجيل الدخول</div>
       <div class="tab ${reg?'on':''}" data-g="register">حساب جديد</div>
@@ -45,7 +66,9 @@ export function renderGate(msg){
     </div>
     <div class="nav"><button class="btn primary" id="go">${reg?'إنشاء الحساب':'دخول'}</button></div>
     ${reg?'':'<p class="hint" id="fp" style="cursor:pointer;text-decoration:underline">نسيت كلمة المرور؟</p>'}
-    <div class="teachlink"><a id="tlink">انضم كمعلم ←</a></div>`;
+    <div class="teachlink"><a id="tlink">انضم كمعلم ←</a></div>
+    </div>
+   </div>`;
 
   app.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{ S.gate=t.dataset.g; renderGate(); });
   document.getElementById("go").onclick = submitGate;
@@ -221,7 +244,7 @@ export function renderGradePicker(msg){
   app.innerHTML = `
     ${msg?`<div class="err"><b>تنبيه</b>${esc(msg)}</div>`:''}
     <div class="card">
-      <div class="line" style="color:var(--foam);margin-bottom:15px">
+      <div class="line" style="color:var(--text);margin-bottom:15px">
         لم يُحفظ منهجك بعد — اختره الآن لتظهر لك موادّ صفّك.
       </div>
       <label class="fl">المنهج الدراسي</label>
