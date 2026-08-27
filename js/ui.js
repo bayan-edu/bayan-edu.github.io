@@ -6,7 +6,7 @@
 import { S } from './state.js';
 
 /* ── بصمة النسخة — لمعرفة أي شيفرة يشغّلها المتصفح فعلاً ── */
-export const BUILD = "b27";
+export const BUILD = "b29";
 
 /* ── مراسي الصفحة ── */
 export const app = document.getElementById("app");
@@ -151,6 +151,10 @@ export function setWide(on){
 export function toggleTheme(){
   const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
   document.documentElement.dataset.theme = next;
+  /* شريط عنوان المتصفح في الجوّال يتلوّن بـmeta theme-color لا بـCSS —
+     فلو تُرك ثابتاً لبقي كحلياً معلَّقاً فوق صفحةٍ كريمية. */
+  const m = document.querySelector('meta[name="theme-color"]');
+  if(m) m.content = next === "dark" ? "#07182a" : "#EDE9DF";
   try{ localStorage.setItem("bayan.theme", next); }catch(e){}
 }
 
@@ -162,7 +166,9 @@ export function nav(active){
   /* ⚠️ لا نقرأ hero من className: nav() تسبق head() في أكثر الشاشات،
      فقد نلتقط hero عالقةً من البوابة. نأخذ has-logo وحدها صراحةً. */
   const bEl  = document.getElementById("brand");
-  const mark = `<div class="brand topbrand${bEl.classList.contains("has-logo")?" has-logo":""}">${bEl.innerHTML}</div>`;
+  /* بلا has-logo عمداً: ٢٥px لا تكفي لشعارٍ مركَّب، فيظهر الوردمارك
+     النصّيّ — حادٌّ في أي مقاس ويتلوّن مع السِمة بلا ملفٍّ ثانٍ. */
+  const mark = `<div class="brand topbrand">${bEl.innerHTML}</div>`;
   bar.innerHTML = `<div class="topbar">
     ${mark}
     <nav class="navlinks">${dests.map(([k,label]) =>
