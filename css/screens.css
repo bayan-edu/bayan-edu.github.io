@@ -52,6 +52,23 @@ body.gate .wrap{max-width:1000px}
   cursor:pointer;text-decoration:none;border-bottom:1px dashed var(--accent-edge);padding-bottom:2px}
 .teachlink a:hover{border-bottom-style:solid}
 
+/* ══ شبكة الاختيار ══
+   🔴 القاعدة تعليمية لا جمالية: **الشبكة تقول «اختر» والعمودُ يقول
+      «تابِع»**. فالمواد والمعلمون مجموعةٌ اعتباطية الترتيب ⇒ شبكة.
+      أما الدروسُ ومصادرُها فترتيبها **محتوى**: درسٌ يفتح ما بعده،
+      ومصدرٌ يُقرأ قبل مصدر. وعرضُها شبكةً يقول للطالب صامتاً إنها
+      متكافئة — وتلك كذبةٌ تربوية. فبقيت أعمدة عمداً.
+   ⚠️ والبطاقات مسطّحةٌ بلا حاوية، فـ#app هو الشبكة. والقاعدة
+      «كلُّ شيءٍ يمتدّ إلا البطاقة» — عكسُها يكسر أوّلَ عنصرٍ جديد
+      يُضاف ولا ينتبه له أحد. */
+.wrap:has(.subj) #app,
+.wrap:has(.mentor) #app{display:grid;gap:10px;align-items:start;
+  grid-template-columns:repeat(auto-fill,minmax(288px,1fr))}
+.wrap:has(.subj) #app > *,
+.wrap:has(.mentor) #app > *{grid-column:1/-1}
+.wrap:has(.subj) #app > .subj,
+.wrap:has(.mentor) #app > .mentor{grid-column:auto;margin-bottom:0}
+
 /* ═══ المواد ═══ */
 .subj{display:flex;justify-content:space-between;align-items:center;gap:12px;
   background:var(--surface);border:1px solid var(--line);
