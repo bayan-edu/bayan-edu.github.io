@@ -105,19 +105,18 @@ header.bare{padding:0}
 /* ══ الشعار — صورتان تتبادلان بالسِمة ══
    ملفّ المصدر ليس متجهاً: ٩٦٪ منه صور PNG مضمّنة، والألوان مخبوزةٌ
    في بكسلات لا في خصائص — فـcurrentColor غير ممكنة. ولهذا صورتان.
-   ⚠️ ويومَ يُعاد رسمه متجهاً حقيقياً، تُحذف هاتان القاعدتان ويكفي
+   ⚠️ ويومَ يُعاد رسمه متجهاً حقيقياً، تُحذف هذه القواعد ويكفي
       fill="currentColor" في ملفٍ واحد. الصورتان حلٌّ مؤقّت معلَّم.
+   ⚠️ ولا تُستعمل content:url() هنا: فشلُها يترك <img> بلا src فتظهر
+      أيقونة صورةٍ مكسورة. صورتان بـsrc حقيقيّ، وCSS يُخفي إحداهما —
+      فأسوأ ما يقع عند فشل CSS هو ظهور الاثنتين، لا ظهور عطل.
    ⚠️ والوردمارك أبيضُ في الأصل — أي أن الشعار صُمّم لخلفيةٍ داكنة
       وحدها. النسخة الفاتحة أُعيد تلوين أبيضها إلى #2C2C2A. */
 .brand-logo{height:36px;width:auto;max-width:100%;display:none}
-.brand.has-logo .brand-logo{display:block;content:url("../img/logo-light.png")}
-:root[data-theme="dark"] .brand.has-logo .brand-logo{content:url("../img/logo-dark.png")}
+.brand.has-logo .lt{display:block}
+:root[data-theme="dark"] .brand.has-logo .lt{display:none}
+:root[data-theme="dark"] .brand.has-logo .dk{display:block}
 .brand.has-logo .brand-text{display:none}
-
-/* في الشريط يُستبدل الشعارُ بالوردمارك النصّيّ: ٢٥px لا تكفي لصورة،
-   والنصّ حادٌّ في أي مقاس ويتلوّن مع السِمة بلا ملفّ ثانٍ. */
-.topbrand.has-logo .brand-logo{display:none}
-.topbrand.has-logo .brand-text{display:inline-flex}
 .brand.hero{flex-direction:column;gap:6px}
 .brand.hero .brand-logo{height:clamp(110px,28vw,170px)}
 .brand-text{display:inline-flex;align-items:baseline;gap:9px}
