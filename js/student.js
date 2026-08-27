@@ -254,7 +254,7 @@ export function openLesson(l){
 
   app.innerHTML = `
     <div class="crumb" id="bk">← ${esc(S.subj.name)}</div>
-    ${l.summary?`<div class="card"><div class="line" style="color:var(--foam)">${esc(l.summary)}</div></div>`:''}
+    ${l.summary?`<div class="card"><div class="line" style="color:var(--text)">${esc(l.summary)}</div></div>`:''}
     <div class="grp">📦 مصادر الدرس <span class="chip">${AR(done)} / ${AR(items.length)}</span></div>
     ${items.map(i=>`
       <div class="itm ${i.kind==='quiz'?'quiz':''}" data-i="${i.id}">
