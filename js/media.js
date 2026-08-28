@@ -108,7 +108,7 @@ export const AUDIO_MAX_MB = 10;
  * سيفشل. والحراسة في سياسة القاعدة، لأن ما يجري في المتصفح
  * يُتجاوَز بلصق سطر.
  */
-export function audioKey(lessonId, file){
+export function audioKey(scope, file){
   if(!file) return { key: null, error: "لم يُختر ملف" };
 
   const ext = (file.name.split(".").pop() || "").toLowerCase().slice(0, 4);
@@ -129,9 +129,15 @@ export function audioKey(lessonId, file){
         ويوم يجيء صوت الطالب — حيث الرابط نفسه هو الحارس —
         فالمطلوب crypto.randomUUID() لا هذه. */
   const rand = Math.random().toString(36).slice(2, 8).padEnd(6, "0");
-  const l    = Number(lessonId) || 0;
 
-  return { key: `audio/l${l}-${rand}.${ext}`, error: null };
+  /* النطاق وسمٌ للقراءة البشرية: l12 درس · q5 اختبار.
+     ⚠️ ولا يُعتمد عليه: مصدرٌ يُنقل إلى درسٍ آخر يبقى وسمه قديماً —
+        وهذا لا يضرّ، لأنه اسمٌ لا رابط.
+     ℹ️ تطهيرٌ لا تحويل: النطاق قد يكون l12 أو q5، فلا يُفترض رقماً.
+        وما لا يصلح في رابطٍ يُحذف، فيبقى المفتاح لاتينياً في أي مستودع. */
+  const s = String(scope || "x").replace(/[^a-z0-9]/gi, "").slice(0, 8).toLowerCase() || "x";
+
+  return { key: `audio/${s}-${rand}.${ext}`, error: null };
 }
 
 
