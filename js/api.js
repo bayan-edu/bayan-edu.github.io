@@ -282,3 +282,15 @@ export function publicUrl(key){
   if(!m){ console.warn("[media] مفتاح بلا مخزن:", key); return null; }
   return db.storage.from(m[1]).getPublicUrl(m[2]).data.publicUrl;
 }
+/* الرفع — نقطة الاختناق الوحيدة نحو المخزن.
+   ⚠️ upsert:false عمداً: سياسة storage لا تسمح بـupdate أصلاً،
+      فالتصادم (احتمالٌ في ملياريّ) يصير خطأً ظاهراً لا طمساً صامتاً. */
+export async function uploadMedia(key, file){
+  const m = KEY_RX.exec(key || "");
+  if(!m) return { error: { message: "مفتاح بلا مخزن: " + key } };
+  const { error } = await db.storage.from(m[1]).upload(m[2], file, {
+    contentType: file.type || 'audio/mpeg',
+    upsert: false
+  });
+  return { error };
+}
