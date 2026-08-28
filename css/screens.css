@@ -617,3 +617,13 @@ body.gate .wrap{max-width:1000px}
 .aud-b:hover{border-color:var(--accent);color:var(--accent)}
 .aud-note{font-size:var(--fs-meta);color:var(--text-muted)}
 .aud-err{font-size:var(--fs-meta);color:var(--danger-text)}
+
+/* ══ زرّ الرفع الملتصق (b32) ══ */
+.mf{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:7px}
+.mf-up{background:var(--fill);border:1px solid var(--line);border-radius:9px;
+ padding:6px 12px;font-family:inherit;font-size:var(--fs-meta);
+ color:var(--text);cursor:pointer;white-space:nowrap}
+.mf-up:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.mf-up:disabled{opacity:.55;cursor:default}
+.mf-note{font-size:var(--fs-meta);color:var(--text-muted)}
+.mf-note.bad{color:var(--danger-text)}
