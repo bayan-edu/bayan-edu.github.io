@@ -10,6 +10,7 @@ import { S } from './state.js';
 import { app, head, toast, esc, AR, ICONS, KINDS, bubble, errBox, nav,
          scrollTop, scrollBottom } from './ui.js';
 import { startQuiz } from './quiz.js';
+import { mediaUrl, isManaged } from './media.js';
 
 /* ═══════════ ① المواد ═══════════ */
 
@@ -244,6 +245,17 @@ export async function loadLessons(subj){
 
 /* ═══════════ ④ الدرس ومصادره ═══════════ */
 
+/* صيغ الصوت التي يشغّلها عنصر audio مباشرة.
+   ⚠️ الرابط الخارجي (يوتيوب · Drive) لا يُشغَّل داخلياً — صفحةٌ لا ملف.
+      فيبقى له السلوك القديم: يُفتح في تبويب. وهذا انحدارٌ لطيف
+      لا كسر: المحتوى القديم يعمل كما كان، والجديد يكسب المشغّل. */
+const AUD_RX = /\.(mp3|m4a|ogg|wav|aac)(\?|#|$)/i;
+
+function canEmbed(i){
+  if(!i.url || !['audio','recording'].includes(i.kind)) return false;
+  return isManaged(i.url) || AUD_RX.test(i.url);
+}
+
 export function openLesson(l){
   S.lesson = l;
   nav('subjects');
@@ -256,7 +268,7 @@ export function openLesson(l){
     <div class="crumb" id="bk">← ${esc(S.subj.name)}</div>
     ${l.summary?`<div class="card"><div class="line" style="color:var(--text)">${esc(l.summary)}</div></div>`:''}
     <div class="grp">📦 مصادر الدرس <span class="chip">${AR(done)} / ${AR(items.length)}</span></div>
-    ${items.map(i=>`
+      ${items.map(i=>`
       <div class="itm ${i.kind==='quiz'?'quiz':''}" data-i="${i.id}">
         <div class="itm-ic">${ICONS[i.kind]||'•'}</div>
         <div style="flex:1">
@@ -266,8 +278,10 @@ export function openLesson(l){
             ${i.is_graded?' · يُحتسب في النتيجة':''}
             ${i.required&&!i.is_graded?' · إلزامي':''}</div>
         </div>
-        <div class="itm-s">${i.status==='completed'?'✅':(i.kind==='quiz'?'←':'↗')}</div>
-      </div>`).join("")}
+        <div class="itm-s" data-s="${i.id}">${i.status==='completed'?'✅'
+          :(canEmbed(i)?'▶':(i.kind==='quiz'?'←':'↗'))}</div>
+      </div>
+      ${canEmbed(i)?`<div class="aud-slot" id="aud-${i.id}"></div>`:''}`).join("")}
     ${!items.length?'<div class="status">لم تُضف مصادر لهذا الدرس بعد</div>':''}
     <p class="hint">تحتاج ${AR(l.pass_mark)}٪ في الاختبار لإتمام الدرس</p>`;
 
@@ -284,6 +298,10 @@ export async function openItem(i){
     api.markItemOpened(i.id);
     return startQuiz({ id:i.quiz_id, item_id:i.id });
   }
+
+  /* صوتٌ نملك ملفه ⇒ يُسمع في مكانه. الطالب لا يغادر الدرس. */
+  if(canEmbed(i)) return toggleAudio(i);
+
   if(i.url){
     window.open(i.url,'_blank','noopener');
     await api.markItemCompleted(i.id);
@@ -293,6 +311,78 @@ export async function openItem(i){
     return;
   }
   toast("هذا المصدر غير متاح بعد");
+}
+
+/* ── مشغّل الصوت ──
+   ثلاث حاجات تعليمية تُملي التصميم:
+     ① الإعادة المضبوطة — جوهر تمرين الاستماع: أعد المقطع، لا الدرس
+     ② خفض السرعة — يمنح الأذن زمناً لتفكيك الكلام
+     ③ ألّا يغادر الطالب الصفحة — فالسياق جزءٌ من الفهم
+   ولا تشغيل تلقائيّ: الصوت المباغت يُخرج المتعلّم من قصده. */
+function toggleAudio(i){
+  const slot = document.getElementById("aud-"+i.id);
+  if(!slot) return;
+
+  /* نقرةٌ ثانية تطوي — والطيّ يوقف الصوت لأن العنصر يُزال */
+  if(slot.firstChild){ slot.innerHTML = ""; return; }
+
+  const src = mediaUrl(i.url);
+  if(!src){ toast("تعذّر الوصول إلى الملف"); return; }
+
+  api.markItemOpened(i.id);
+
+  slot.innerHTML = `
+    <div class="aud">
+      <audio class="aud-p" controls preload="metadata"></audio>
+      <div class="aud-row">
+        <button class="aud-b" data-a="back">⟲ ١٠ ثوانٍ</button>
+        <button class="aud-b" data-a="rate">السرعة ١٫٠×</button>
+        <span class="aud-note"></span>
+      </div>
+    </div>`;
+
+  const au   = slot.querySelector("audio");
+  const note = slot.querySelector(".aud-note");
+
+  /* ⚠️ الرابط يُسنَد خاصيةً لا يُدرَج في HTML.
+     esc() تهرّب & و< فقط، وعلامة اقتباسٍ في رابطٍ قديم تكسر
+     الوسم وتفتح باب حقنٍ. الإسناد لا يمرّ بمحلّل HTML أصلاً. */
+  au.src = src;
+
+  /* مشغّلٌ واحد يعمل في الصفحة — صوتان معاً لا يُفهم منهما شيء */
+  au.onplay = () => document.querySelectorAll("audio").forEach(o=>{ if(o!==au) o.pause(); });
+
+  au.onerror = () => {
+    note.className = "aud-err";
+    note.textContent = "تعذّر تشغيل الملف — أبلغ معلّمك";
+    console.warn("[media] فشل التشغيل:", i.url, "→", src);
+  };
+
+  /* التسجيل عند الانتهاء لا عند الفتح:
+     «فتحَ» ليست «سمعَ»، وإشارةٌ كاذبة أسوأ من إشارةٍ ناقصة. */
+  au.onended = async () => {
+    note.textContent = "سُجّل استماعك ✅";
+    if(i.status === 'completed') return;
+    const { error } = await api.markItemCompleted(i.id);
+    if(error){ note.textContent = "لم يُسجَّل — تحقّق من الاتصال"; return; }
+    i.status = 'completed';
+    const s = document.querySelector(`[data-s="${i.id}"]`);
+    if(s) s.textContent = '✅';
+  };
+
+  const RATES = [1, 0.75, 1.25];
+  let r = 0;
+
+  slot.querySelector('[data-a="back"]').onclick = () => {
+    au.currentTime = Math.max(0, au.currentTime - 10);
+    au.play();
+  };
+
+  slot.querySelector('[data-a="rate"]').onclick = e => {
+    r = (r + 1) % RATES.length;
+    au.playbackRate = RATES[r];
+    e.target.textContent = "السرعة " + AR(String(RATES[r].toFixed(2))).replace(".","٫") + "×";
+  };
 }
 
 /* ═══════════ ⑤ ملاحظات المعلم ═══════════ */
