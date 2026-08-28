@@ -4,6 +4,7 @@
    ══════════════════════════════════════════════════════════ */
 
 import { S } from './state.js';
+import { mediaUrl, isManaged } from './media.js';
 
 /* ── بصمة النسخة — لمعرفة أي شيفرة يشغّلها المتصفح فعلاً ── */
 export const BUILD = "b30";
@@ -83,28 +84,47 @@ export function fmt(s){
     .replace(/\n/g, '<br>');
 }
 
-/* ── الوسائط: مصادر موثوقة فقط ── */
+/* ── الوسائط ──
+   صنفان لا صنف، ولكلٍّ حارسه:
+     مفتاحٌ من مخزننا (audio/…) ⇒ موثوقٌ ببنائه — نحن صنعنا الرابط
+     رابطٌ خارجيّ (https://…)   ⇒ يمرّ بالقائمة البيضاء كما كان
+   ⚠️ ولم نُضف نطاق تخزيننا إلى SAFE عمداً: لو فعلنا، لقُبل أيّ رابط
+      Supabase مكتوبٍ يدوياً — مخزنٌ آخر أو مشروعٌ آخر. */
 const SAFE = /^https:\/\/(drive\.google\.com|lh3\.googleusercontent\.com|www\.youtube\.com|youtu\.be|i\.imgur\.com)\//;
 
-// المصادر المسموحة — تُعرض للمؤلّف حتى لا يضع رابطاً يُحجب صامتاً
-export const SAFE_HOSTS = 'Google Drive · YouTube · imgur';
+// يُعرض للمؤلّف حتى لا يضع مصدراً يُحجب صامتاً
+export const SAFE_HOSTS = 'مفتاح المخزن (audio/…) · أو Google Drive · YouTube · imgur';
+
+/* المصدر الصالح للعرض — أو null.
+   الحارس الوحيد لكل الوسائط: نقطةٌ واحدة تُراجَع وتُختبر. */
+export function srcOf(v){
+  if(!v) return null;
+  if(/["'<>]/.test(v)) return null;        // لا محرفٍ يكسر سمة HTML
+  if(isManaged(v))     return mediaUrl(v); // مفتاح
+  return SAFE.test(v) ? v : null;          // رابط خارجيّ
+}
 
 /* وسيط الفقرة: واحد ونوعه في kind */
 export function pgMedia(p){
   if(!p?.media) return '';
-  if(!SAFE.test(p.media))
+  const u = srcOf(p.media);
+  if(!u)
     return `<div class="err" style="margin:9px 0">مصدر غير مسموح — المسموح: ${SAFE_HOSTS}</div>`;
   if(p.kind === 'video')
-    return `<iframe class="media-v" src="${esc(p.media)}" allowfullscreen></iframe>`;
+    return `<iframe class="media-v" src="${esc(u)}" allowfullscreen></iframe>`;
   if(p.kind === 'image')
-    return `<img class="media" src="${esc(p.media)}" alt="" loading="lazy">`;
-  return `<audio controls src="${esc(p.media)}" style="width:100%;margin-bottom:12px"></audio>`;
+    return `<img class="media" src="${esc(u)}" alt="" loading="lazy">`;
+  /* preload=metadata: تُعرف المدّة ولا يُنزَّل الملف حتى يُطلب.
+     الطالب على شبكةٍ ضعيفة لا يدفع ثمن مقطعٍ قد لا يشغّله. */
+  return `<audio controls preload="metadata" src="${esc(u)}"
+                 style="width:100%;margin-bottom:12px"></audio>`;
 }
 
 export function media(q){
   let h = "";
-  if(q.image && SAFE.test(q.image)) h += `<img class="media" src="${esc(q.image)}" alt="" loading="lazy">`;
-  if(q.video && SAFE.test(q.video)) h += `<iframe class="media-v" src="${esc(q.video)}" allowfullscreen></iframe>`;
+  const i = srcOf(q.image), v = srcOf(q.video);
+  if(i) h += `<img class="media" src="${esc(i)}" alt="" loading="lazy">`;
+  if(v) h += `<iframe class="media-v" src="${esc(v)}" allowfullscreen></iframe>`;
   return h;
 }
 
