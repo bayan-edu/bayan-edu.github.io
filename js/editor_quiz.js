@@ -874,9 +874,11 @@ function preview(){
     <div class="card" id="qcard">
       <div class="qnum">سؤال ${AR(pv+1)} · ${
         q.kind==='mcq'?'اختيار من متعدد':q.kind==='msq'?'اختيار متعدّد الإجابات':'مقالي قصير'}</div>
-      ${q.image?`<img class="media" src="${esc(q.image)}" alt="">`:''}
-      ${q.audio?`<audio controls src="${esc(q.audio)}" style="width:100%;margin-bottom:12px"></audio>`:''}
-      ${q.video?`<iframe class="media-v" src="${esc(q.video)}" allowfullscreen></iframe>`:''}
+          ${(()=>{ const i=srcOf(q.image), a=srcOf(q.audio), v=srcOf(q.video); return `
+        ${i?`<img class="media" src="${esc(i)}" alt="">`:''}
+        ${a?`<audio controls preload="metadata" src="${esc(a)}"
+                    style="width:100%;margin-bottom:12px"></audio>`:''}
+        ${v?`<iframe class="media-v" src="${esc(v)}" allowfullscreen></iframe>`:''}`; })()}
       <div class="qtext" dir="auto">${fmt(q.body)}</div>
       ${(q.kind === 'mcq' || q.kind === 'msq')
         ? `${q.kind==='msq'
