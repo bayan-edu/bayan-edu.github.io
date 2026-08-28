@@ -272,7 +272,13 @@ export const adminDecide = (id, approve, note) =>
   db.rpc('admin_decide', { p_request: id, p_approve: approve, p_note: note });
 
 /* ═══════════ ⑦ الوسائط ═══════════ */
-/* بناء رابط الملف العام يبقى هنا: العنوان وشكلُ المسار تفصيلُ Supabase،
-   وطبقةٌ واحدة تعرفه. و media.js تنادي هذه ولا تعرف النطاق.
-   ℹ️ getPublicUrl لا تُصيب الشبكة ولا تحتاج جلسة — بناءُ نصٍّ محضٌ. */
-export const publicUrl = key => db.storage.from('media').getPublicUrl(key).data.publicUrl;
+/* 📐 العقد: المقطع الأول من المفتاح هو اسم المخزن.
+     "audio/l1-a1.mp3"  ⇒  المخزن audio · المسار l1-a1.mp3
+   فمخزنٌ جديد (img · docs) لا يحتاج تعديلاً هنا. */
+const KEY_RX = /^([a-z0-9][a-z0-9-]*)\/(.+)$/;
+
+export function publicUrl(key){
+  const m = KEY_RX.exec(key || "");
+  if(!m){ console.warn("[media] مفتاح بلا مخزن:", key); return null; }
+  return db.storage.from(m[1]).getPublicUrl(m[2]).data.publicUrl;
+}
