@@ -45,8 +45,8 @@
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
 import { S } from './state.js';
-import { app, bar, head, toast, esc, fmt, AR, mmss, media, pgMedia,
-         optLabel, dirOf, ICONS, nav, scrollTop } from './ui.js';
+import { app, bar, head, toast, esc, fmt, AR, mmss, media, pgMedia, srcOf,
+        optLabel, dirOf, ICONS, nav, scrollTop } from './ui.js';
 import { loadList, loadLessons } from './student.js';
 
 /* مشتقّاتُ عرضٍ لا حالةَ محاولة — تُبنى كلُّها من S.quiz و S.ans عند
@@ -227,6 +227,7 @@ function renderPage(){
   let seen = null;                       // آخرُ عنوان قسمٍ كُتب في هذه الصفحة
   const cards = qs.map(q => {
     const a = A.get(q.id), multi = q.kind === 'msq';
+         const qAudio = srcOf(q.audio);
     const picked = o => multi ? a.os.includes(o.id) : a.o === o.id;
 
     const body = (q.kind==='mcq' || multi)
@@ -247,7 +248,8 @@ function renderPage(){
         <div class="qnum">سؤال ${AR(N.get(q.id))} · ${
           q.kind==='mcq'?'اختيار من متعدد':multi?'اختيار متعدّد الإجابات':'مقالي قصير'}</div>
         ${media(q)}
-        ${q.audio?`<audio controls src="${esc(q.audio)}" style="width:100%;margin-bottom:12px"></audio>`:''}
+              ${qAudio?`<audio controls preload="metadata" src="${esc(qAudio)}"
+                         style="width:100%;margin-bottom:12px"></audio>`:''}
         <div class="qtext" dir="auto">${fmt(q.body)}</div>
         ${body}
       </div>`;
