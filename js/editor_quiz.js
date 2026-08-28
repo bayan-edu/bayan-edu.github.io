@@ -30,7 +30,7 @@
 import * as api from './api.js';
 import { S } from './state.js';
 import { app, head, toast, esc, fmt, AR, errBox, nav, setWide, scrollTop, L,
-         pgMedia, SAFE_HOSTS, optLabel, dirOf } from './ui.js';
+                  pgMedia, srcOf, SAFE_HOSTS, optLabel, dirOf } from './ui.js';
 import { openCourse } from './editor.js';
 
 let Z    = null;   // الاختبار المحمَّل
