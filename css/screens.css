@@ -604,3 +604,16 @@ body.gate .wrap{max-width:1000px}
 .drop-a{color:var(--accent);cursor:pointer;text-decoration:underline;
   font-family:'Almarai';font-weight:700}
 .drop-s{font-size:var(--fs-tag);opacity:.65;margin-top:7px}
+
+/* ══ مشغّل الصوت داخل الدرس (b30) ══
+   color-scheme يجعل المتصفح يرسم أزرار المشغّل الأصلية
+   بألوان السمة — وإلا بقي شريطٌ فاتحٌ ناشزٌ في الوضع الليلي. */
+.aud{background:var(--fill-soft);border:1px solid var(--line);border-radius:var(--r);
+ padding:12px;margin:0 0 14px;color-scheme:light dark}
+.aud-p{width:100%;height:40px;display:block}
+.aud-row{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
+.aud-b{background:var(--fill);border:1px solid var(--line);border-radius:9px;
+ padding:7px 12px;font-family:inherit;font-size:var(--fs-meta);color:var(--text);cursor:pointer}
+.aud-b:hover{border-color:var(--accent);color:var(--accent)}
+.aud-note{font-size:var(--fs-meta);color:var(--text-muted)}
+.aud-err{font-size:var(--fs-meta);color:var(--danger-text)}
