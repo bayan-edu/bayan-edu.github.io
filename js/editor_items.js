@@ -11,6 +11,7 @@
 import * as api from './api.js';
 import { S } from './state.js';
 import { app, head, toast, esc, AR, errBox, nav, setWide, scrollTop } from './ui.js';
+import { attachUpload } from './upload.js';
 import { openCourse } from './editor.js';
 import { openQuiz } from './editor_quiz.js';
 
@@ -172,6 +173,8 @@ function form(item, official){
       </div>`;
 
     document.getElementById("bk").onclick = () => render();
+      // ctx.lesson لا S.lesson
+    attachUpload('ur', 'l' + (ctx.lesson?.id ?? ''));
     app.querySelectorAll("[data-k]").forEach(el => el.onclick = () => {
       if(!isNew) return;                    // النمط لا يتغيّر بعد الإنشاء
       k = kind(el.dataset.k); draw();
