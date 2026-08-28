@@ -270,3 +270,9 @@ export const adminRequests = status => db.rpc('admin_requests', { p_status: stat
 
 export const adminDecide = (id, approve, note) =>
   db.rpc('admin_decide', { p_request: id, p_approve: approve, p_note: note });
+
+/* ═══════════ ⑦ الوسائط ═══════════ */
+/* بناء رابط الملف العام يبقى هنا: العنوان وشكلُ المسار تفصيلُ Supabase،
+   وطبقةٌ واحدة تعرفه. و media.js تنادي هذه ولا تعرف النطاق.
+   ℹ️ getPublicUrl لا تُصيب الشبكة ولا تحتاج جلسة — بناءُ نصٍّ محضٌ. */
+export const publicUrl = key => db.storage.from('media').getPublicUrl(key).data.publicUrl;
