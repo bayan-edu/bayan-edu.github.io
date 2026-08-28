@@ -115,10 +115,10 @@ function form(item, official){
           <div class="ed-hint">${off
             ? '📦 <b>مصدر معتمد</b> — جزء من المنهج، ويمكن أن يكون شرط انتقال.'
             : '➕ <b>مصدر إضافي باسمك</b> — إثراء لا يحجب ولا يدخل البوّابة.'}</div>
-          ${k.needs === 'url' ? `<div class="ed-hint" style="opacity:.75">
-            الرابط يُفتح في تبويب جديد. تأكّد أنه متاح للطلاب —
-            روابط Drive تحتاج «أي شخص لديه الرابط».</div>` : ''}
-        </div>
+                   ${k.needs === 'url' ? `<div class="ed-hint" style="opacity:.75">
+            <b>الصوت:</b> ارفعه إلى المخزن ثم ألصق مفتاحه — <code>audio/l1-a1.mp3</code>
+            — فيُشغَّل داخل الدرس.<br>
+            <b>غيره:</b> رابطٌ يُفتح في تبويب جديد. تأكّد أنه متاح للطلاب.</div>` : ''}
 
         <div class="card" style="flex:1">
           <label class="fl">نوع المصدر</label>
@@ -134,7 +134,7 @@ function form(item, official){
           ${k.needs === 'url' ? `
             <label class="fl" style="margin-top:16px">الرابط *</label>
             <input type="text" id="ur" dir="ltr" value="${esc(item?.url || '')}"
-                   placeholder="https://…">` : ''}
+                     placeholder="audio/l1-a1.mp3  أو  https://…">` : ''}
           ${k.needs === 'body' ? `
             <label class="fl" style="margin-top:16px">النصّ *</label>
             <textarea id="bo" style="min-height:150px">${esc(item?.body || '')}</textarea>` : ''}
