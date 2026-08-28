@@ -31,6 +31,7 @@ import * as api from './api.js';
 import { S } from './state.js';
 import { app, head, toast, esc, fmt, AR, errBox, nav, setWide, scrollTop, L,
                   pgMedia, srcOf, SAFE_HOSTS, optLabel, dirOf } from './ui.js';
+import { attachUpload } from './upload.js';
 import { openCourse } from './editor.js';
 
 let Z    = null;   // الاختبار المحمَّل
@@ -684,6 +685,10 @@ function wire(q){
       q[{qi:'image',qa:'audio',qv:'video'}[id]] = e.target.value || null; mark();
     };
   });
+  /* qa قد لا يكون موجوداً (زرّ 🎧 مطفأ) — attachUpload تتجاهل بصمت.
+     و wire تُنادى بعد كل رسم، فالزرّ يظهر لحظة فتح الحقل. */
+  attachUpload('qa', 'q' + (Z?.id ?? ''));
+   
   main.querySelectorAll("[data-m]").forEach(el => el.onclick = () => {
     const k = el.dataset.m;
     q[k] = (q[k] === null || q[k] === undefined) ? '' : null;   // إظهار/إخفاء الحقل
@@ -1343,6 +1348,12 @@ function passageForm(p){
 
   main.querySelectorAll("[data-pw]").forEach(el =>
     el.onclick = () => wrapSel("pfBody", el.dataset.pw));
+   
+    /* pfMedia حقلٌ واحد يقبل صوتاً وصورةً وفيديو، والزرّ يرفع الصوت وحده —
+     ولذلك يقول نصّه ذلك. وهو مخفيّ (hidden) حتى يُختار نوع الوسيط،
+     فالزرّ يظهر معه. */
+  attachUpload('pfMedia', 'q' + (Z?.id ?? ''));
+   
   main.querySelectorAll("[data-pk]").forEach(el => el.onclick = () => {
     const keep = { title: main.querySelector("#pfTitle").value,
                    body:  main.querySelector("#pfBody").value,
