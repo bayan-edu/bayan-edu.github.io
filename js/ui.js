@@ -132,7 +132,10 @@ export function fmt(s){
     const { tex, blk } = keep[i];
     /* اللفّ هنا لا في يد المؤلّف: \alwaysar نطاقٌ لا أمر، وما يقع
        خارج قوسيها لا يُترجم ولو جاوره. ⇒ التعبير كلُّه لفّةٌ واحدة. */
-    const body = (MATH_AR && !/\\alwaysar/.test(tex)) ? `\\alwaysar{${tex}}` : tex;
+       /* لا تلفّ إن صرّح المؤلّف بأيٍّ من الشكلين — لفَّ صريحاً أو تركاً
+       صريحاً. والقاعدة ثابتة لا تقرأ عَلَماً ولا مادة: دالّةٌ نقيّة
+       ناتجُها من نصّها وحده. */
+    const body = (MATH_AR && !/\\(alwaysar|en)\b/.test(tex)) ? `\\alwaysar{${tex}}` : tex;
     const src  = blk ? `\\[${body}\\]` : `\\(${body}\\)`;
     return `<span class="tex${blk ? ' blk' : ''}">${esc(src)}</span>`;
   });
@@ -293,6 +296,9 @@ function loadMathJax(){
       messageStyle: 'none',
       /* تصريحٌ لازم: يمنع $ أن يصير محدِّداً في أي حال */
       tex2jax: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+             /* ماكرو تمرير: \en{…} يمرّ محتواه كما هو، ووجودُه وحده هو
+         الإشارة إلى fmt بألّا تلفّ. ⇒ الباب اللاتينيّ في مقرَّرٍ عربيّ. */
+      TeX: { Macros: { en: ['#1', 1] } },
       AuthorInit(){
         MathJax.Ajax.config.path["arabic"] = ARABIC_EXT;
         MathJax.Hub.Register.StartupHook("End", ok);
