@@ -27,6 +27,9 @@ export const L_EN = ["A","B","C","D","E","F"];
 
 /* موضع المكتبة. للفحص الأول يجوز توجيهه إلى CDN، وفي الإنتاج
    يُستضاف في المستودع: لا طرفَ ثالثاً في مسار عرضِ الطالب. */
+/* 🔬 مؤقّتٌ للفحص — والاستضافة الذاتية هي القرار:
+   export const MATHJAX_SRC = 'vendor/mathjax/MathJax.js?config=TeX-MML-AM_CHTML';
+   export const ARABIC_EXT  = 'vendor/arabic-mathjax';                            */
 export const MATHJAX_SRC = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js?config=TeX-MML-AM_CHTML';
 export const ARABIC_EXT  = 'https://cdn.jsdelivr.net/gh/OmarIthawi/arabic-mathjax@main/dist';
 
