@@ -235,7 +235,7 @@ function renderPage(){
          <div class="opts${multi?' multi':''}">${q.options.map((o,j)=>`
            <button class="opt ${picked(o)?'sel':''}" data-o="${o.id}"
                    dir="${dirOf(o.body)}" style="text-align:start">
-             <span class="key">${esc(optLabel(o,j))}</span><span style="flex:1">${esc(o.body)}</span>
+             <span class="key">${esc(optLabel(o,j))}</span><span style="flex:1">${fmt(o.body)}</span>
              ${multi?`<span class="tick">${picked(o)?'✔':''}</span>`:''}</button>`).join("")}</div>`
       : `<textarea class="essay" placeholder="اكتب السلسلة السببية كاملة…">${esc(a.essay)}</textarea>`;
 
@@ -384,7 +384,7 @@ function renderResult(){
     return `<div class="jd ${cls}">
       <span class="key">${esc(o._l)}</span>
       <div style="flex:1">
-        <span dir="${dirOf(o.body)}" style="display:block">${esc(o.body)}</span>
+        <span dir="${dirOf(o.body)}" style="display:block">${fmt(o.body)}</span>
         <span class="jd-m">${mark}</span>
         ${!hit && j.dx_name ? `<span class="jd-dx">${esc(j.dx_name)}${
             j.remedy?' — '+esc(j.remedy):''}</span>` : ''}
@@ -423,7 +423,7 @@ function renderResult(){
 
     return `<div class="rev ${x.is_correct?'ok':'no'}">
       <span class="tag ${x.is_correct?'ok':'no'}">${x.is_correct?'صحيحة':'خاطئة'}</span>
-      <div class="rev-q" dir="auto">${AR(i+1)}. ${esc(x.body)}</div>
+      <div class="rev-q" dir="auto">${AR(i+1)}. ${fmt(x.body)}</div>
       ${answer}
       ${x.is_correct?'':`
         <div class="trap"><strong>تشخيص الخطأ${
@@ -438,7 +438,7 @@ function renderResult(){
 
   const ess = r.review.filter(x=>x.kind==='essay').map(x=>`
     <div class="rev">
-      <div class="rev-q" dir="auto">${esc(x.body)}</div>
+      <div class="rev-q" dir="auto">${fmt(x.body)}</div>
       <div class="line" dir="auto">إجابتك: <b>${x.essay?esc(x.essay).replace(/\n/g,"<br>"):'— لم تُكتب —'}</b></div>
       <div class="model"><strong>الإجابة النموذجية — قارن بنفسك</strong>${esc(x.model||'').replace(/\n/g,"<br>")}</div>
     </div>`).join("");
