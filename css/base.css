@@ -283,3 +283,7 @@ h2.sec{font-family:'Almarai';font-weight:800;font-size:var(--fs-h);margin:24px 0
 
 /* ── الإتاحة ── */
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ── الرياضيات ── */
+.tex{ unicode-bidi:isolate }               /* معادلةٌ جزيرة والجملة بحر */
+.tex.blk{ display:block; text-align:center; margin:.6em 0 }
