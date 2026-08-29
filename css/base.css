@@ -299,3 +299,6 @@ h2.sec{font-family:'Almarai';font-weight:800;font-size:var(--fs-h);margin:24px 0
   display:block; font-size:var(--fs-tag);
   color:var(--text-muted); margin-bottom:6px;
 }
+/* الاستثناء أخفت من الافتراض — واجهةٌ تعرض خيارين متساويين
+   تطلب قراراً لم يكن مطلوباً. */
+.eq-alt{ opacity:.6; font-size:.85em }
