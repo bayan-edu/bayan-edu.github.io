@@ -7,7 +7,7 @@ import { S } from './state.js';
 import { mediaUrl, isManaged } from './media.js';
 
 /* ── بصمة النسخة — لمعرفة أي شيفرة يشغّلها المتصفح فعلاً ── */
-export const BUILD = "b36";
+export const BUILD = "b37";
 
 /* ── مراسي الصفحة ── */
 export const app = document.getElementById("app");
