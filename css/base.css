@@ -287,3 +287,15 @@ h2.sec{font-family:'Almarai';font-weight:800;font-size:var(--fs-h);margin:24px 0
 /* ── الرياضيات ── */
 .tex{ unicode-bidi:isolate }               /* معادلةٌ جزيرة والجملة بحر */
 .tex.blk{ display:block; text-align:center; margin:.6em 0 }
+
+/* ── معاينة الرياضيات في المحرّر ── */
+.tex-prev{
+  margin:-4px 0 14px; padding:10px 12px;
+  border:1px dashed var(--line); border-radius:10px;
+  font-size:var(--fs-read); line-height:1.9;
+}
+.tex-prev::before{
+  content:'المعاينة — كما يراها الطالب';
+  display:block; font-size:var(--fs-tag);
+  color:var(--text-muted); margin-bottom:6px;
+}
