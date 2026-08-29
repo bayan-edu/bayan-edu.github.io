@@ -653,8 +653,9 @@ function mediaRow(q, locked){
       <button class="eq-tb" data-w="**" title="غامق"><b>B</b></button>
       <button class="eq-tb" data-w="_"  title="مائل"><i>I</i></button>
       <button class="eq-tb" data-w="__" title="مسطَّر"><u>U</u></button>
-            <span class="eq-sep"></span>
-      <button class="eq-tb" data-a="\\(" data-b="\\)" title="معادلة — أدرجها أولاً">∑</button>
+                  <span class="eq-sep"></span>
+      <button class="eq-tb" data-a="\\(" data-b="\\)" title="معادلة — بترميز الكتاب العربيّ">∑</button>
+      <button class="eq-tb eq-alt" data-a="\\(\\en{" data-b="}\\)" title="معادلة بالرموز اللاتينية">∑EN</button>
       <button class="eq-tb" data-a="\\frac{" data-b="}{}" title="كسر — داخل المعادلة">½</button>
       <button class="eq-tb" data-a="\\sqrt{" data-b="}"   title="جذر — داخل المعادلة">√</button>
       <button class="eq-tb" data-a="^{" data-b="}"        title="أسّ — داخل المعادلة">x²</button>
