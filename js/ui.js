@@ -21,6 +21,25 @@ export const bar = document.getElementById("bar");
 export const L    = ["أ","ب","ج","د","هـ","و"];
 export const L_EN = ["A","B","C","D","E","F"];
 
+/* ── الرياضيات ─────────────────────────────────────────────────
+   المصدر LaTeX نصّاً — لا HTML من المؤلّف، والثابت المحروس باقٍ.
+   القرار وأدلّته في STATE.md ← «الرياضيات — قرارٌ مقيس». */
+
+/* موضع المكتبة. للفحص الأول يجوز توجيهه إلى CDN، وفي الإنتاج
+   يُستضاف في المستودع: لا طرفَ ثالثاً في مسار عرضِ الطالب. */
+export const MATHJAX_SRC = 'vendor/mathjax/MathJax.js?config=TeX-MML-AM_CHTML';
+export const ARABIC_EXT  = 'vendor/arabic-mathjax';
+
+/* علم اللفّ — أيُقلب المحتوى إلى اتجاه الكتاب العربيّ؟
+   🔴 الرياضيات نعم؛ والفيزياء والكيمياء تُكتبان LTR في كتبهما،
+      فلفُّهما يقلبهما خطأً. ⇒ صفةُ مقرَّر لاحقاً، وموضع التغيير
+      هذا السطر وحده. (STATE.md ← «جسر المقرَّر».) */
+export let MATH_AR = true;
+
+/* 🔴 المحدِّدان \(…\) و \[…\] — لا $…$ عمداً:
+   نصُّ قراءةٍ منشورٌ فيه "$5 to $10" كان سيُقرأ رياضياتٍ صامتاً.
+   التغيير يجب ألّا يُرى في محتوىً قائم. */
+const TEX_RX = /\\\(([\s\S]+?)\\\)|\\\[([\s\S]+?)\\\]/g;
 const AR_RX  = /[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]/;
 const STRONG = /[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]|[A-Za-z\u00C0-\u024F]/;
 
@@ -28,8 +47,16 @@ const STRONG = /[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]|[A-Za-z\u
    نحسبه بأنفسنا حين نحتاج القرار في JS لا في العرض وحده:
    صندوق الخيار يبدأ بحرف المفتاح، فلو تُرك لـauto لحسم الاتجاه
    بالحرف نفسه — دورٌ مغلق. */
+/* أول محرف قويّ — نفس ما يفعله dir="auto" في المتصفح.
+   نحسبه بأنفسنا حين نحتاج القرار في JS لا في العرض وحده:
+   صندوق الخيار يبدأ بحرف المفتاح، فلو تُرك لـauto لحسم الاتجاه
+   بالحرف نفسه — دورٌ مغلق. */
 export function dirOf(t){
-  const m = String(t || '').match(STRONG);
+  /* 🔴 تُسقط الرياضيات قبل البحث: في `\(\frac{1}{2}\)` أولُ محرفٍ
+     قويّ هو `f` من `\frac` ⇒ ltr ⇒ optLabel تعطي A B C في مقرَّرٍ
+     عربيّ — نقضٌ للقاعدة التي كُتبت لأجلها L_EN نفسها.
+     وخيارٌ رياضيّ محضٌ يصير بلا محرفٍ قويّ ⇒ rtl ⇒ أ ب ج. وهو المطلوب. */
+  const m = String(t || '').replace(TEX_RX, ' ').match(STRONG);
   return m ? (AR_RX.test(m[0]) ? 'rtl' : 'ltr') : 'rtl';
 }
 
@@ -73,17 +100,42 @@ export function toast(m){
   setTimeout(()=>t.classList.remove("show"), 2800);
 }
 
-/* ── تنسيق خفيف: **غامق** _مائل_ __مسطَّر__ ──
+/* ── تنسيق خفيف: **غامق** _مائل_ __مسطَّر__ + رياضيات ──
    يُهرَّب النصّ أولاً ثم تُستبدل العلامات — فلا يدخل HTML من
-   المؤلّف إطلاقاً. تغطية ما يحتاجه التعليم بلا سطح هجوم. */
+   المؤلّف إطلاقاً. تغطية ما يحتاجه التعليم بلا سطح هجوم.
+   🔑 و fmt تبقى **متزامنة ولا ترسم**: تُخرج نائباً نصُّه هو المصدر،
+      والرسم يقع في mathBoot. لأنها تُستدعى داخل قوالبَ نصّية في
+      عشرات المواضع، وجعلها async يهدم كلّ موضعٍ تُبنى فيه شاشة. */
 export function fmt(s){
-  return esc(s)
+  const keep = [];
+
+  /* ① اخطف الرياضيات أولاً — فـ_ و^ فيها معنىً آخر:
+     fmt تجعل _نص_ مائلاً، و`_` في LaTeX هو الأسّ السفليّ. */
+  const held = String(s==null?"":s).replace(TEX_RX, (m, inl, dsp) => {
+    keep.push({ tex: inl ?? dsp, blk: dsp != null });
+    return "\u0000" + (keep.length - 1) + "\u0000";
+  });
+
+  /* ② نسّق ما بقي — بلا تغييرٍ عمّا كان */
+  const out = esc(held)
     .replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>')
     .replace(/__([^_\n]+)__/g,        '<u>$1</u>')
     .replace(/_([^_\n]+)_/g,          '<i>$1</i>')
     .replace(/\n/g, '<br>');
-}
 
+  /* ③ أعِدها نائباً — والمصدر في النصّ لا في سمة data:
+     esc لا تُهرّب علامة الاقتباس، وسمةٌ تحملها تنكسر.
+     ⇒ وإن تعذّر تحميل المكتبة بقي المصدر مقروءاً، ولم تُترك
+       للطالب فجوةٌ بيضاء في سؤالٍ أثناء اختبار. */
+  return out.replace(/\u0000(\d+)\u0000/g, (_, i) => {
+    const { tex, blk } = keep[i];
+    /* اللفّ هنا لا في يد المؤلّف: \alwaysar نطاقٌ لا أمر، وما يقع
+       خارج قوسيها لا يُترجم ولو جاوره. ⇒ التعبير كلُّه لفّةٌ واحدة. */
+    const body = (MATH_AR && !/\\alwaysar/.test(tex)) ? `\\alwaysar{${tex}}` : tex;
+    const src  = blk ? `\\[${body}\\]` : `\\(${body}\\)`;
+    return `<span class="tex${blk ? ' blk' : ''}">${esc(src)}</span>`;
+  });
+}
 /* ── الوسائط ──
    صنفان لا صنف، ولكلٍّ حارسه:
      مفتاحٌ من مخزننا (audio/…) ⇒ موثوقٌ ببنائه — نحن صنعنا الرابط
@@ -218,3 +270,51 @@ export function errBox(error, where){
 /* ── التمرير ── */
 export const scrollTop    = () => window.scrollTo({ top:0, behavior:'smooth' });
 export const scrollBottom = () => window.scrollTo({ top:document.body.scrollHeight, behavior:'smooth' });
+/* ── محرّك الرياضيات: يُحمَّل كسولاً عند أول معادلة تُرى ──
+   شاشةٌ بلا رياضيات لا تدفع بايتاً واحداً. */
+let mjReady = null;
+function loadMathJax(){
+  if (mjReady) return mjReady;
+  return mjReady = new Promise((ok, no) => {
+    const css = document.createElement('link');
+    css.rel = 'stylesheet'; css.href = ARABIC_EXT + '/arabic.css';
+    document.head.appendChild(css);   // الإضافة لا تحمّل تنسيقها بنفسها
+
+    /* الضبط يسبق التحميل، ومسارُ الإضافة داخل AuthorInit:
+       MathJax.Ajax لا يوجد قبل التحميل، وضبطُ المسار يجب أن يقع
+       قبل أن تبدأ في تحميل إضافاتها. لحظتان متعاكستان — و
+       AuthorInit هي الدالّة التي تناديها المكتبة بينهما. */
+    window.MathJax = {
+      extensions: ["[arabic]/arabic.js"],
+      jax: ["input/TeX", "output/CommonHTML"],
+      CommonHTML: { undefinedFamily: 'Amiri' },  // ⚠️ اسمٌ واحد لا قائمة — علّة موثَّقة
+      showMathMenu: false,
+      messageStyle: 'none',
+      /* تصريحٌ لازم: يمنع $ أن يصير محدِّداً في أي حال */
+      tex2jax: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+      AuthorInit(){
+        MathJax.Ajax.config.path["arabic"] = ARABIC_EXT;
+        MathJax.Hub.Register.StartupHook("End", ok);
+      }
+    };
+    const s = document.createElement('script');
+    s.src = MATHJAX_SRC; s.onerror = no;
+    document.head.appendChild(s);
+  });
+}
+
+/* الممرّ الإجباريّ — مراقبٌ واحد يُسجَّل مرة في start().
+   والبديل نداءٌ بعد كل innerHTML: يُنسى في أوّل شاشة تُكتب بعد
+   شهر، فتظهر المعادلات مصدراً خاماً **بلا خطأ في أيّ سجلّ**. */
+export function mathBoot(root){
+  const draw = () => {
+    const list = [...root.querySelectorAll('.tex:not(.done)')];
+    if (!list.length) return;                 // ← الحارس: يوقف الدورة
+    list.forEach(el => el.classList.add('done'));  // قبل الرسم لا بعده
+    loadMathJax()
+      .then(() => MathJax.Hub.Queue(["Typeset", MathJax.Hub, list]))
+      .catch(() => {});                       // فشل ⇒ يبقى المصدر ظاهراً
+  };
+  new MutationObserver(draw).observe(root, { childList:true, subtree:true });
+  draw();
+}
