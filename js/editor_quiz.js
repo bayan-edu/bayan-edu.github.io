@@ -653,6 +653,13 @@ function mediaRow(q, locked){
       <button class="eq-tb" data-w="**" title="غامق"><b>B</b></button>
       <button class="eq-tb" data-w="_"  title="مائل"><i>I</i></button>
       <button class="eq-tb" data-w="__" title="مسطَّر"><u>U</u></button>
+            <span class="eq-sep"></span>
+      <button class="eq-tb" data-a="\\(" data-b="\\)" title="معادلة — أدرجها أولاً">∑</button>
+      <button class="eq-tb" data-a="\\frac{" data-b="}{}" title="كسر — داخل المعادلة">½</button>
+      <button class="eq-tb" data-a="\\sqrt{" data-b="}"   title="جذر — داخل المعادلة">√</button>
+      <button class="eq-tb" data-a="^{" data-b="}"        title="أسّ — داخل المعادلة">x²</button>
+      <button class="eq-tb" data-a="_{" data-b="}"        title="سفليّ — داخل المعادلة">xₙ</button>
+      <button class="eq-tb" data-a="\\left(" data-b="\\right)" title="قوسان يتمدّدان">( )</button>
     </div>
     ${f('qi', q.image ?? null, 'رابط الصورة')}
     ${f('qa', q.audio ?? null, 'رابط المقطع الصوتي')}
@@ -669,6 +676,20 @@ function wrapSel(id, mark){
   if(el.setSelectionRange) el.setSelectionRange(a + mark.length, a + mark.length + sel.length);
 }
 
+/* إدراج قالب — طرفان مختلفان والمؤشّر بينهما.
+   تُكمل wrapSel ولا تحلّ محلّها: تلك للتنسيق المتماثل (**نص**)،
+   وهذه للبنى الرياضية (\frac{…}{…}) حيث الطرفان مختلفان. */
+function ins(id, before, after = ''){
+  const el = document.getElementById(id); if(!el) return;
+  const a = el.selectionStart ?? el.value.length, b = el.selectionEnd ?? a;
+  const sel = el.value.slice(a, b);
+  el.value = el.value.slice(0, a) + before + sel + after + el.value.slice(b);
+  el.focus();
+  /* بلا تحديد ⇒ المؤشّر بين الطرفين · مع تحديد ⇒ يبقى محدَّداً
+     ليُلَفّ بقالبٍ ثانٍ فوراً: \frac ثم \sqrt على البسط نفسه. */
+  const p = a + before.length;
+  el.setSelectionRange(p, p + sel.length);
+}
 /* ── المعاينة الحيّة للرياضيات ──────────────────────────────
    لا تظهر إلا حين يحوي الحقل معادلة. ⇒ ١٩٤ سؤالاً قائماً لا
    يتغيّر شكل تحريرها بشيء، ومن لا يكتب رياضيات لا يرى صندوقاً.
@@ -712,6 +733,12 @@ function wire(q){
   const mark = () => { dirty = true; };
   const main = document.getElementById("main");
 
+  /* الحقل المقصود = آخر ما لمسه المؤلّف. وكانت "qb" مثبَّتةً، فزرّ
+     التنسيق يكتب في نصّ السؤال ولو كان المؤلّف في «شرح الخطأ». */
+  let field = "qb";
+  ["qb","qe","qm"].forEach(id =>
+    document.getElementById(id)?.addEventListener('focus', () => field = id));
+  const target = () => document.getElementById(field) ? field : "qb";
    ["qb","qe","qm"].forEach(id => {
     const el = document.getElementById(id); if(el) el.oninput = mark;
     livePreview(id);                 // ← السطر الجديد الوحيد
@@ -732,9 +759,11 @@ function wire(q){
     mark(); repaint(q);
   });
   main.querySelectorAll("[data-w]").forEach(el => el.onclick = () => {
-    wrapSel("qb", el.dataset.w); mark();
+    wrapSel(target(), el.dataset.w); mark();
   });
-
+  main.querySelectorAll("[data-a]").forEach(el => el.onclick = () => {
+    ins(target(), el.dataset.a, el.dataset.b || ''); mark();
+  });
   const bind = (id, fn) => { const e = main.querySelector('#' + id); if(e) e.onclick = fn; };
   bind("addsec", () => editSection(''));
   bind("edsec",  () => editSection(q.section || ''));
