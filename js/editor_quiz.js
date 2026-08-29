@@ -892,7 +892,7 @@ function preview(){
             <button class="opt" data-pvo="${j}" dir="${dirOf(o.body)}"
                     style="text-align:start">
               <span class="key">${esc(optLabel(o,j))}</span>
-              <span style="flex:1">${esc(o.body)}</span>
+              <span style="flex:1">${fmt(o.body)}</span>
               ${q.kind==='msq'?`<span class="tick"></span>`:''}</button>`).join("")}</div>`
         : `<textarea placeholder="اكتب السلسلة السببية كاملة…"></textarea>`}
     </div>
@@ -1802,7 +1802,7 @@ function compareVariant(key){
         ${(x.options||[]).map((o,j) => `
           <div class="cmp-o ${o.correct?'ok':''}" dir="${dirOf(o.body)}">
             <span class="key">${esc(optLabel(o,j))}</span>
-            <span class="cmp-tx">${esc(o.body || '—')}</span>
+            <span class="cmp-tx">${fmt(o.body || '—')}</span>
             ${o.dx ? `<span class="cmp-dx ${odd(o.dx)?'cmp-mark':''}">${esc(dxName(o.dx))}</span>`
                    : (o.correct ? '' : '<span class="cmp-dx cmp-mark">بلا كود</span>')}
           </div>`).join('')}
