@@ -7,7 +7,7 @@
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
 import { S } from './state.js';
-import { app, head, toast, esc, AR, bubble, errBox, nav, BUILD, scrollTop, scrollBottom } from './ui.js';
+import { app, head, toast, esc, fmt, AR, bubble, errBox, nav, BUILD, scrollTop, scrollBottom } from './ui.js';
 
 /* ═══════════ ① التصحيح ═══════════ */
 
@@ -53,7 +53,7 @@ export async function openGrade(id){
       <div class="line">اختيار من متعدد: ${AR(a.score)}/${AR(a.total)} (${AR(a.pct)}٪)</div>
       ${essays.map(e=>`
         <div style="margin-top:14px">
-          <div class="rev-q">${esc(e.questions.body)}</div>
+          <div class="rev-q">${fmt(e.questions.body)}</div>
           <div class="essaybox">${esc(e.essay_text||'— لم تُكتب —')}</div>
         </div>`).join("")}
       <label class="fl">درجة الأسئلة المقالية</label>
