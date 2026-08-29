@@ -7,7 +7,7 @@
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
 import { S } from './state.js';
-import { app, bar, head, toast, esc, AR, errBox, nav, registerRoutes } from './ui.js';
+import { app, bar, head, toast, esc, AR, errBox, nav, registerRoutes, mathBoot } from './ui.js';
 import { loadList, loadFeedback, loadChat } from './student.js';
 import { loadTeacher, loadInbox, loadMySubjects } from './teacher.js';
 import { openEditor } from './editor.js';
@@ -424,6 +424,11 @@ export function start(){
     requests:   loadAdmin,
     out:        signOut
   });
+
+   /* الرياضيات: مراقبٌ واحد على #app يلتقط أي معادلة تُرسم — هنا
+     لا في كل شاشة، فأوّلُ شاشة تُكتب بعد شهر لن تنساه. */
+  mathBoot(app);
+   
   api.onAuthChange((e)=>{
     if(e === 'SIGNED_OUT'){ S.gate = "login"; renderGate(); }
   });
