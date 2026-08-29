@@ -669,6 +669,42 @@ function wrapSel(id, mark){
   if(el.setSelectionRange) el.setSelectionRange(a + mark.length, a + mark.length + sel.length);
 }
 
+/* ── المعاينة الحيّة للرياضيات ──────────────────────────────
+   لا تظهر إلا حين يحوي الحقل معادلة. ⇒ ١٩٤ سؤالاً قائماً لا
+   يتغيّر شكل تحريرها بشيء، ومن لا يكتب رياضيات لا يرى صندوقاً.
+
+   🔑 ولا رسمَ هنا: نضع خرْج fmt في عنصرٍ داخل #app، فيلتقطه
+      المراقب المسجَّل في start(). الممرّ الإجباريّ نفسه يخدم
+      المؤلّف كما يخدم الطالب — بلا سطرٍ ثانٍ.
+
+   ولماذا للرياضيات وحدها دون **غامق**؟ لأن `**نص**` يُقرأ مفهوماً
+   في مصدره، أما \frac{-64}{9} فلا يُعرف أصحيحٌ هو إلا مرسوماً. */
+const HAS_TEX = /\\\(|\\\[/;
+
+function livePreview(id){
+  const ta = document.getElementById(id);
+  if(!ta) return;
+  let box = null, timer = null;
+
+  const draw = () => {
+    if(!HAS_TEX.test(ta.value)){ box?.remove(); box = null; return; }
+    if(!box){
+      box = document.createElement('div');
+      box.className = 'tex-prev';
+      box.dir = 'auto';
+      ta.after(box);
+    }
+    box.innerHTML = fmt(ta.value);
+  };
+
+  /* التأخير ٤٠٠ملّي: أثناء كتابة \frac{ يمرّ النصّ بحالاتٍ مكسورة،
+     ورسمُها يُري المؤلّف أحمرَ لم يُخطئه بعد. ننتظر توقّف اليد. */
+  ta.addEventListener('input', () => {
+    clearTimeout(timer);
+    timer = setTimeout(draw, 400);
+  });
+  draw();                       // عند فتح بطاقةٍ فيها معادلة أصلاً
+}
 
 /* ═══════════ الربط ═══════════ */
 
@@ -676,8 +712,9 @@ function wire(q){
   const mark = () => { dirty = true; };
   const main = document.getElementById("main");
 
-  ["qb","qe","qm"].forEach(id => {
+   ["qb","qe","qm"].forEach(id => {
     const el = document.getElementById(id); if(el) el.oninput = mark;
+    livePreview(id);                 // ← السطر الجديد الوحيد
   });
   ["qi","qa","qv"].forEach(id => {
     const el = document.getElementById(id);
