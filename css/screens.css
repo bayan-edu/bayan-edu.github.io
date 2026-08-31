@@ -195,6 +195,12 @@ body.gate .wrap{max-width:1000px}
   font-size:var(--fs-tag);color:var(--on-accent);background:transparent;transition:background .18s,border-color .18s}
 .opt.sel .tick{background:var(--accent);border-color:var(--accent)}
 
+.gaps{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+.gap-in{width:100%;padding:13px 15px;border-radius:11px;
+        border:1px solid var(--accent-line);background:var(--accent-soft);
+        font-family:'Almarai';font-size:var(--fs-read);color:inherit}
+.gap-in:focus{outline:none;border-color:var(--accent)}
+
 /* الحدّ الملوّن يتبع اتجاه النصّ تلقائياً مع border-inline-start
    ⚠️ و max-height:44vh قرارٌ يُراجَع مع الصفحة الطويلة: النصّ يخرج من
       الشاشة عند السؤال الرابع فيُمرَّر إليه ويُعاد. أرخصُ من التنقّل
