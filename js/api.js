@@ -220,7 +220,10 @@ export const saveQuestion = o => db.rpc('save_question', {
   p_image:       o.image   ?? null,
   p_video:       o.video   ?? null,
   p_audio:       o.audio   ?? null,
-  p_section:     o.section ?? null });
+  p_section:     o.section ?? null,
+  p_accept:      o.accept  ?? null,
+  p_wrong:       o.wrong   ?? null,
+  p_bank:        o.bank    ?? null });
 
 export const savePassage = o => db.rpc('save_passage', {
   p_id: o.id ?? null, p_quiz: o.quiz, p_title: o.title ?? null,
