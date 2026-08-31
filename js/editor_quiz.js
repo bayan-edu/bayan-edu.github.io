@@ -825,6 +825,20 @@ function wire(q){
     mark(); repaint(q);
   };
 
+     /* الفراغات تُشتقّ من النصّ ⇒ حقول المقبولات تتبع الكتابة فوراً.
+     ولا يُعاد رسم البطاقة كلّها لئلّا يقفز المؤشّر من مربّع النصّ. */
+  const qb = main.querySelector("#qb");
+  if(qb && q.kind === 'gap'){
+    let last = gapCount(q.body || '');
+    qb.oninput = () => {
+      const n = gapCount(qb.value);
+      if(n === last) return;                 // لا تغيير في العدد ⇒ لا رسم
+      last = n;
+      collect(q); q.body = qb.value;         // collect تقرأ الحقول القائمة
+      const box = main.querySelector("#gapbox");
+      if(box) box.innerHTML = gapFields(q, false);
+    };
+  }
   const sq = main.querySelector("#sq"); if(sq) sq.onclick = () => saveQ(q);
   const dq = main.querySelector("#dq"); if(dq) dq.onclick = () => dupQ(q);
   const xq = main.querySelector("#xq"); if(xq) xq.onclick = () => delQ(q);
