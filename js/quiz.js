@@ -440,6 +440,38 @@ function renderResult(){
     </div>`;
   }).join("");
 
+     /* ما تكرّر — يُجمع على النصّ لا على الكود، لأن النصّ هو ما يقرؤه الطالب.
+     ويُوصف الوقوع ولا يُضاف إلى الطالب: «تكرّر لديك» لا «نمطك».
+     والأرقام تحمل العدد، فلا يُذكر معها. */
+  const recur = (() => {
+    const map = new Map();                                  // نصّ → مجموعة أرقام
+    r.review.filter(x => x.kind !== 'essay').forEach((x, i) => {
+      const n = i + 1;
+      const add = t => { if(!t) return;
+        if(!map.has(t)) map.set(t, new Set());
+        map.get(t).add(n); };                               // Set ⇒ رقمٌ مرّةً واحدة
+      if(!x.is_correct) add(x.note);                        // البند المفرد
+      (x.judgments || []).forEach(j => {                    // وخيارات msq
+        if(j.picked && !j.key) add(j.note);
+      });
+    });
+
+    const rows = [...map.entries()]
+      .filter(([, s]) => s.size > 1)
+      .sort((a, b) => b[1].size - a[1].size)
+      .map(([txt, s]) => {
+        const ns = [...s].sort((a,b) => a-b).map(AR);
+        const lbl = ns.length === 2
+          ? `في السؤالين ${ns[0]} و${ns[1]}`
+          : `في الأسئلة ${ns.slice(0,-1).join(' و')} و${ns.at(-1)}`;
+        return `<div class="rc-row"><div class="rc-where">تكرّر لديك ${lbl}:</div>
+                <div class="rc-note">${esc(txt)}</div></div>`;
+      });
+
+    return rows.length
+      ? `<div class="recur"><h3>ما تكرّر معك اليوم</h3>${rows.join("")}</div>`
+      : '';
+  })();
   const ess = r.review.filter(x=>x.kind==='essay').map(x=>`
     <div class="rev">
       <div class="rev-q" dir="auto">${fmt(x.body)}</div>
@@ -458,7 +490,7 @@ function renderResult(){
       ${(r.unlocked||[]).length?`<div class="unlocked">🔓 فُتح لك الآن: ${esc(r.unlocked.join(' · '))}</div>`:''}
     </div>
     <div class="nav"><button class="btn primary" id="again">إعادة الاختبار</button></div>
-    <h2 class="sec">المراجعة التشخيصية</h2>${objective}
+    <h2 class="sec">المراجعة التشخيصية</h2>${objective}${recur}
     <h2 class="sec">الأسئلة المقالية — بانتظار تصحيح معلمك</h2>${ess}`;
 
   document.getElementById("again").onclick = ()=>startQuiz({ id:S.quiz.id, item_id:S.itemId });
