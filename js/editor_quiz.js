@@ -872,6 +872,8 @@ async function addQuestion(kind){
              options: [0,1,2,3].map(i => ({ label:null, body:'', correct:i===0, dx:null })) },
     msq:   { id:null, kind:'msq',   body:'', answered:0, explanation:'',
              options: [0,1,2,3].map(i => ({ label:null, body:'', correct:i<2,   dx:null })) },
+         gap:   { id:null, kind:'gap',   body:'', answered:0, explanation:'', options:[],
+             accept:{ ordered:true, slots:[] }, wrong:{}, bank:null },
     essay: { id:null, kind:'essay', body:'', answered:0, model:'', options:[] }
   };
   Z.questions.push(blank[kind] || blank.mcq);
@@ -1744,9 +1746,17 @@ function sidebar(){
         <span>${esc(F_LABEL[LS.f] || LS.f)}</span>
         <span style="margin-inline-start:auto">✕</span></button>`}
       <div class="eq-adds">
-        <button class="eq-ab" id="addm"  title="اختيار من متعدد">＋◉</button>
-        <button class="eq-ab" id="addmm" title="اختيار متعدّد الإجابات">＋☑</button>
-        <button class="eq-ab" id="adde"  title="سؤال مقالي">＋✍️</button>
+               <div class="addwrap">
+          <button class="eq-ab" id="addq" title="أضف سؤالاً">＋</button>
+          <div class="addmenu" id="addmenu" hidden>
+            <button data-k="mcq"><b>اختيار من متعدد</b><span>إجابةٌ واحدة صحيحة</span></button>
+            <button data-k="msq"><b>اختيار متعدّد</b><span>أكثر من إجابةٍ صحيحة</span></button>
+            <button data-k="gap"><b>إكمال الناقص</b><span>يكتب الطالب الإجابة</span></button>
+            <button disabled><b>إكمال من قائمة</b><span>قريباً — يختار من كلماتٍ مُعطاة</span></button>
+            <button disabled><b>المزاوجة</b><span>قريباً — يربط عنصراً بعنصر</span></button>
+            <button data-k="essay"><b>مقالي قصير</b><span>يصحّحه المعلّم</span></button>
+          </div>
+        </div>
         <button class="eq-ab" id="imp"   title="استيراد">⇪</button>
       </div>
     </div>
@@ -1807,9 +1817,12 @@ function wireList(){
     if(i >= 0) go(i);
   });
 
-  box.querySelector("#addm").onclick  = () => addQuestion('mcq');
-  box.querySelector("#addmm").onclick = () => addQuestion('msq');
-  box.querySelector("#adde").onclick  = () => addQuestion('essay');
+    const ab = box.querySelector("#addq"), am = box.querySelector("#addmenu");
+  ab.onclick = e => { e.stopPropagation(); am.hidden = !am.hidden; };
+  am.querySelectorAll("[data-k]").forEach(el =>
+    el.onclick = () => { am.hidden = true; addQuestion(el.dataset.k); });
+  // نقرةٌ خارج القائمة تطويها — وإلا بقيت مفتوحةً تحجب ما تحتها
+  document.addEventListener('click', () => { am.hidden = true; }, { capture:true });
   box.querySelector("#imp").onclick   = importBox;
   const i0 = document.getElementById("imp0");      // في البطاقة الفارغة وسط الشاشة
   if(i0) i0.onclick = importBox;
