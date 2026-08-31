@@ -33,6 +33,7 @@ import { app, head, toast, esc, fmt, AR, errBox, nav, setWide, scrollTop, L,
                   pgMedia, srcOf, SAFE_HOSTS, optLabel, dirOf } from './ui.js';
 import { attachUpload } from './upload.js';
 import { openCourse } from './editor.js';
+import { questionText, questionBody, KIND_LABEL } from './render_q.js';
 
 let Z    = null;   // الاختبار المحمَّل
 let cur  = 0;      // فهرس السؤال المعروض
@@ -174,8 +175,7 @@ function qCard(q){
     ${variantBar(q, locked)}
 
     <div class="card">
-      <div class="qnum">سؤال ${AR(cur+1)} · ${
-        q.kind==='mcq'?'اختيار من متعدد':multi?'اختيار متعدّد الإجابات':'مقالي قصير'}
+            <div class="qnum">سؤال ${AR(cur+1)} · ${KIND_LABEL[q.kind]||'سؤال'}
         ${locked ? '<span class="badge lock">مقفل</span>' : ''}</div>
 
       ${mediaRow(q, locked)}
@@ -944,24 +944,14 @@ function preview(){
       </div>` : ''}
 
     <div class="card" id="qcard">
-      <div class="qnum">سؤال ${AR(pv+1)} · ${
-        q.kind==='mcq'?'اختيار من متعدد':q.kind==='msq'?'اختيار متعدّد الإجابات':'مقالي قصير'}</div>
+          <div class="qnum">سؤال ${AR(pv+1)} · ${KIND_LABEL[q.kind]||'سؤال'}</div>
           ${(()=>{ const i=srcOf(q.image), a=srcOf(q.audio), v=srcOf(q.video); return `
         ${i?`<img class="media" src="${esc(i)}" alt="">`:''}
         ${a?`<audio controls preload="metadata" src="${esc(a)}"
                     style="width:100%;margin-bottom:12px"></audio>`:''}
         ${v?`<iframe class="media-v" src="${esc(v)}" allowfullscreen></iframe>`:''}`; })()}
-      <div class="qtext" dir="auto">${fmt(q.body)}</div>
-      ${(q.kind === 'mcq' || q.kind === 'msq')
-        ? `${q.kind==='msq'
-             ? `<div class="q-hint">اختر كل ما ينطبق — وقد ينطبق أكثر من خيار</div>` : ''}
-           <div class="opts${q.kind==='msq'?' multi':''}">${(q.options||[]).map((o,j) => `
-            <button class="opt" data-pvo="${j}" dir="${dirOf(o.body)}"
-                    style="text-align:start">
-              <span class="key">${esc(optLabel(o,j))}</span>
-              <span style="flex:1">${fmt(o.body)}</span>
-              ${q.kind==='msq'?`<span class="tick"></span>`:''}</button>`).join("")}</div>`
-        : `<textarea placeholder="اكتب السلسلة السببية كاملة…"></textarea>`}
+      ${questionText(q)}
+      ${questionBody(q, { bank: q.bank })}
     </div>
 
     <div class="nav">
