@@ -7,7 +7,7 @@ import { esc, fmt, dirOf, optLabel, AR } from './ui.js';
 export const KIND_LABEL = {
   mcq:  'اختيار من متعدد',
   msq:  'اختيار متعدّد الإجابات',
-  gap:  'إجابة قصيرة',
+  gap:  'إكمال الناقص',
   essay:'مقالي قصير'
 };
 
