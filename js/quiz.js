@@ -437,9 +437,14 @@ function renderResult(){
     const keys = msq ? narr + countJ(x,true,true) : 0;              // حجم المجموعة
     const pat  = (msq && !x.is_correct) ? patternOf(wide, narr, keys) : null;
 
-    const answer = msq
+        const answer = msq
       ? `<div class="jds">${jrows(x)}</div>
          ${pat?`<div class="line"><b>${pat.t}</b> — ${pat.s}</div>`:''}`
+      : x.kind==='gap'
+      ? `<div class="line" dir="auto">إجابتك: <b dir="auto">${
+             esc((x.given||[]).filter(v=>v.trim()).join('  ·  ')) || '— لم تُجب —'}</b></div>
+         ${x.is_correct?'':`<div class="line" dir="auto">المقبول: <b dir="auto">${
+             esc((x.accept||[]).map(s=>s.join(' / ')).join('  ·  ')) || '—'}</b></div>`}`
       : `<div class="line" dir="auto">إجابتك: <b>${c?esc(c._l+') '+c.body):'— لم تُجب —'}</b></div>
          ${x.is_correct?'':`<div class="line" dir="auto">الصحيحة: <b>${
              k?esc(k._l+') '+k.body):'—'}</b></div>`}`;
