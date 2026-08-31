@@ -159,7 +159,8 @@ export async function startQuiz(meta){
   S.passages = {};
   (data.passages||[]).forEach(pg => S.passages[pg.id] = pg);
   S.itemId = meta.item_id || null;
-  S.ans = data.questions.map(q=>({ q:q.id, kind:q.kind, o:null, os:[], essay:"", sec:0, chg:0 }));
+   S.ans = data.questions.map(q=>({ q:q.id, kind:q.kind, o:null, os:[],
+                                   txt:Array(q.gaps||1).fill(""), essay:"", sec:0, chg:0 }));
 
   A = new Map(S.ans.map(a => [a.q, a]));
   N = new Map(data.questions.map((q,i) => [q.id, i+1]));
@@ -237,6 +238,13 @@ function renderPage(){
                    dir="${dirOf(o.body)}" style="text-align:start">
              <span class="key">${esc(optLabel(o,j))}</span><span style="flex:1">${fmt(o.body)}</span>
              ${multi?`<span class="tick">${picked(o)?'✔':''}</span>`:''}</button>`).join("")}</div>`
+            : q.kind==='gap'
+      ? `${(q.gaps||1)>1?`<div class="q-hint">فراغان — والبند يُحتسب كاملاً أو لا يُحتسب</div>`:''}
+         <div class="gaps">${a.txt.map((v,i)=>`
+           <input class="gap-in" type="text" dir="auto" data-i="${i}"
+                  autocomplete="off" autocapitalize="off" spellcheck="false"
+                  value="${esc(v)}"
+                  placeholder="${(q.gaps||1)>1?`الفراغ ${AR(i+1)}`:'اكتب إجابتك'}">`).join("")}</div>`
       : `<textarea class="essay" placeholder="اكتب السلسلة السببية كاملة…">${esc(a.essay)}</textarea>`;
 
     const sec = (q.section && q.section !== seen)
@@ -246,7 +254,8 @@ function renderPage(){
     return `${sec}
       <div class="card qcard" id="q${q.id}" data-q="${q.id}">
         <div class="qnum">سؤال ${AR(N.get(q.id))} · ${
-          q.kind==='mcq'?'اختيار من متعدد':multi?'اختيار متعدّد الإجابات':'مقالي قصير'}</div>
+                   q.kind==='mcq'?'اختيار من متعدد':multi?'اختيار متعدّد الإجابات'
+          :q.kind==='gap'?'إجابة قصيرة':'مقالي قصير'}</div>
         ${media(q)}
               ${qAudio?`<audio controls preload="metadata" src="${esc(qAudio)}"
                          style="width:100%;margin-bottom:12px"></audio>`:''}
@@ -290,19 +299,27 @@ function renderPage(){
       x.classList.toggle('sel', +x.dataset.o === v));
   };
 
-  app.oninput = e => {
-    const t = e.target; if(!t.classList.contains('essay')) return;
-    const qid = +t.closest('.qcard').dataset.q;
-    credit(qid);
-    A.get(qid).essay = t.value;
+    app.oninput = e => {
+    const t = e.target;
+    const card = t.closest('.qcard'); if(!card) return;
+    const qid = +card.dataset.q, a = A.get(qid);
+
+    if(t.classList.contains('gap-in')){ credit(qid);
+      const i = +t.dataset.i;
+      if(a.txt[i] && a.txt[i] !== t.value) a.chg++;   // تبديلٌ بعد كتابة = تغيير
+      a.txt[i] = t.value;
+      return;
+    }
+    if(t.classList.contains('essay')){ credit(qid); a.essay = t.value; }
   };
 
   /* ── الفراغ: يُنبَّه عليه مرّة، ثم يُحترَم ── */
   let warned = false;
   const blanks = () => qs.filter(q => {
     const a = A.get(q.id);
-    return a.kind==='mcq' ? a.o === null
+        return a.kind==='mcq' ? a.o === null
          : a.kind==='msq' ? a.os.length === 0
+         : a.kind==='gap' ? a.txt.every(v => !v.trim())
          :                  !a.essay.trim();
   });
 
@@ -336,9 +353,10 @@ async function finish(auto){
   app.onclick = null; app.oninput = null;
   app.innerHTML = `<div class="status">جارٍ التصحيح…</div>`; bar.innerHTML = "";
 
-  const payload = S.ans.map(a =>
+    const payload = S.ans.map(a =>
       a.kind==='mcq' ? { q:a.q, o:a.o,   sec:a.sec, chg:a.chg }
     : a.kind==='msq' ? { q:a.q, os:a.os, sec:a.sec, chg:a.chg }
+    : a.kind==='gap' ? { q:a.q, txt:a.txt.map(v=>v.trim()), sec:a.sec, chg:a.chg }
     :                  { q:a.q, essay:a.essay, sec:a.sec });
 
   const { data, error } = await api.submitAttempt(
