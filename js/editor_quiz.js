@@ -197,6 +197,12 @@ function qCard(q){
         <div class="eq-hint" style="display:block;margin-bottom:11px;line-height:1.85">
           ضع الفراغ في النصّ هكذا: <code>{{1}}</code> — وفراغين: <code>{{1}}</code> و<code>{{2}}</code>.
           والحقل يُرسم في موضعه من الجملة، فيرى الطالب ما قبله وما بعده.</div>
+        <div class="gaprow">
+          ${locked ? '' : `<button class="btn ghost gapbtn" id="addgap">＋ فراغ</button>`}
+          <div class="gaplive" id="gaplive">${
+            gapCount(q.body||'') ? questionText(q, [], true)
+                                 : '<span class="eq-hint">…هكذا يراه الطالب</span>'}</div>
+        </div>
 
         <div id="gapbox">${gapFields(q, locked)}</div>
 
@@ -827,16 +833,41 @@ function wire(q){
 
      /* الفراغات تُشتقّ من النصّ ⇒ حقول المقبولات تتبع الكتابة فوراً.
      ولا يُعاد رسم البطاقة كلّها لئلّا يقفز المؤشّر من مربّع النصّ. */
-  const qb = main.querySelector("#qb");
+    const qb = main.querySelector("#qb");
   if(qb && q.kind === 'gap'){
     let last = gapCount(q.body || '');
+
+    /* المعاينة الحيّة تستدعي دالّة الطالب نفسها — فما يُرى هو ما سيُرى. */
+    const live = () => {
+      q.body = qb.value;
+      const lv = main.querySelector("#gaplive");
+      if(lv) lv.innerHTML = gapCount(qb.value)
+        ? questionText(q, [], true)
+        : '<span class="eq-hint">…هكذا يراه الطالب</span>';
+    };
+
     qb.oninput = () => {
       const n = gapCount(qb.value);
-      if(n === last) return;                 // لا تغيير في العدد ⇒ لا رسم
+      live();
+      if(n === last) return;              // العدد لم يتغيّر ⇒ لا رسم للحقول
       last = n;
-      collect(q); q.body = qb.value;         // collect تقرأ الحقول القائمة
+      collect(q); q.body = qb.value;
       const box = main.querySelector("#gapbox");
       if(box) box.innerHTML = gapFields(q, false);
+    };
+
+    const ag = main.querySelector("#addgap");
+    if(ag) ag.onclick = () => {
+      /* الرقم يُحسب فلا يُخطئ المؤلّف في التتابع.
+         والإدراج عند المؤشّر لا في الذيل — فالفراغ يقع حيث يريد. */
+      const n = gapCount(qb.value) + 1;
+      const p = qb.selectionStart ?? qb.value.length;
+      const tag = `{{${n}}}`;
+      qb.value = qb.value.slice(0,p) + tag + qb.value.slice(p);
+      qb.focus();
+      qb.setSelectionRange(p + tag.length, p + tag.length);
+      qb.dispatchEvent(new Event('input'));   // يُشغّل ما سبق ⇒ لا تكرار
+      mark();
     };
   }
   const sq = main.querySelector("#sq"); if(sq) sq.onclick = () => saveQ(q);
