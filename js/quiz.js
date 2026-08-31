@@ -48,6 +48,7 @@ import { S } from './state.js';
 import { app, bar, head, toast, esc, fmt, AR, mmss, media, pgMedia, srcOf,
         optLabel, dirOf, ICONS, nav, scrollTop } from './ui.js';
 import { loadList, loadLessons } from './student.js';
+import { questionText, questionBody, KIND_LABEL, gapCount } from './render_q.js';
 
 /* مشتقّاتُ عرضٍ لا حالةَ محاولة — تُبنى كلُّها من S.quiz و S.ans عند
    البدء، ولو ضاعت أُعيد بناؤها بسطر. فمكانها الوحدة لا الحالة:
@@ -159,8 +160,9 @@ export async function startQuiz(meta){
   S.passages = {};
   (data.passages||[]).forEach(pg => S.passages[pg.id] = pg);
   S.itemId = meta.item_id || null;
-   S.ans = data.questions.map(q=>({ q:q.id, kind:q.kind, o:null, os:[],
-                                   txt:Array(q.gaps||1).fill(""), essay:"", sec:0, chg:0 }));
+     S.ans = data.questions.map(q=>({ q:q.id, kind:q.kind, o:null, os:[],
+                                   txt:Array(gapCount(q.body)||1).fill(""),
+                                   essay:"", sec:0, chg:0 }));
 
   A = new Map(S.ans.map(a => [a.q, a]));
   N = new Map(data.questions.map((q,i) => [q.id, i+1]));
@@ -231,35 +233,19 @@ function renderPage(){
          const qAudio = srcOf(q.audio);
     const picked = o => multi ? a.os.includes(o.id) : a.o === o.id;
 
-    const body = (q.kind==='mcq' || multi)
-      ? `${multi?`<div class="q-hint">اختر كل ما ينطبق — وقد ينطبق أكثر من خيار</div>`:''}
-         <div class="opts${multi?' multi':''}">${q.options.map((o,j)=>`
-           <button class="opt ${picked(o)?'sel':''}" data-o="${o.id}"
-                   dir="${dirOf(o.body)}" style="text-align:start">
-             <span class="key">${esc(optLabel(o,j))}</span><span style="flex:1">${fmt(o.body)}</span>
-             ${multi?`<span class="tick">${picked(o)?'✔':''}</span>`:''}</button>`).join("")}</div>`
-            : q.kind==='gap'
-      ? `${(q.gaps||1)>1?`<div class="q-hint">فراغان — والبند يُحتسب كاملاً أو لا يُحتسب</div>`:''}
-         <div class="gaps">${a.txt.map((v,i)=>`
-           <input class="gap-in" type="text" dir="auto" data-i="${i}"
-                  autocomplete="off" autocapitalize="off" spellcheck="false"
-                  value="${esc(v)}"
-                  placeholder="${(q.gaps||1)>1?`الفراغ ${AR(i+1)}`:'اكتب إجابتك'}">`).join("")}</div>`
-      : `<textarea class="essay" placeholder="اكتب السلسلة السببية كاملة…">${esc(a.essay)}</textarea>`;
+       const body = questionBody(q, { picked, essay:a.essay, values:a.txt });
 
     const sec = (q.section && q.section !== seen)
       ? `<div class="q-sec" dir="auto">${esc(q.section)}</div>` : '';
     seen = q.section || seen;
 
-    return `${sec}
+        return `${sec}
       <div class="card qcard" id="q${q.id}" data-q="${q.id}">
-        <div class="qnum">سؤال ${AR(N.get(q.id))} · ${
-                   q.kind==='mcq'?'اختيار من متعدد':multi?'اختيار متعدّد الإجابات'
-          :q.kind==='gap'?'إجابة قصيرة':'مقالي قصير'}</div>
+        <div class="qnum">سؤال ${AR(N.get(q.id))} · ${KIND_LABEL[q.kind]||'سؤال'}</div>
         ${media(q)}
-              ${qAudio?`<audio controls preload="metadata" src="${esc(qAudio)}"
-                         style="width:100%;margin-bottom:12px"></audio>`:''}
-        <div class="qtext" dir="auto">${fmt(q.body)}</div>
+        ${qAudio?`<audio controls preload="metadata" src="${esc(qAudio)}"
+                   style="width:100%;margin-bottom:12px"></audio>`:''}
+        ${questionText(q, a.txt)}
         ${body}
       </div>`;
   }).join("");
