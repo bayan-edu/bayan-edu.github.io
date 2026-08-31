@@ -195,11 +195,20 @@ body.gate .wrap{max-width:1000px}
   font-size:var(--fs-tag);color:var(--on-accent);background:transparent;transition:background .18s,border-color .18s}
 .opt.sel .tick{background:var(--accent);border-color:var(--accent)}
 
-.gaps{display:flex;flex-direction:column;gap:10px;margin-top:6px}
-.gap-in{width:100%;padding:13px 15px;border-radius:11px;
-        border:1px solid var(--accent-line);background:var(--accent-soft);
-        font-family:'Almarai';font-size:var(--fs-read);color:inherit}
-.gap-in:focus{outline:none;border-color:var(--accent)}
+.gap-in{display:inline-block;min-width:110px;width:auto;
+        padding:2px 8px;margin:0 3px;
+        border:0;border-bottom:2px solid var(--accent);border-radius:0;
+        background:transparent;color:inherit;
+        font-family:inherit;font-size:inherit;font-weight:inherit;
+        text-align:center}
+.gap-in:focus{outline:none;background:var(--accent-soft);
+              border-radius:6px 6px 0 0}
+.gap-in:disabled{border-bottom-style:dashed;opacity:.6}
+
+.bank{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.bank-w{padding:7px 14px;border-radius:9px;
+        background:var(--accent-soft);border:1px solid var(--accent-line);
+        font-size:var(--fs-ui)}
 
 /* الحدّ الملوّن يتبع اتجاه النصّ تلقائياً مع border-inline-start
    ⚠️ و max-height:44vh قرارٌ يُراجَع مع الصفحة الطويلة: النصّ يخرج من
