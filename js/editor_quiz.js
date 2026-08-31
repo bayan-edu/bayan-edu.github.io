@@ -1749,12 +1749,13 @@ function sidebar(){
                <div class="addwrap">
           <button class="eq-ab" id="addq" title="أضف سؤالاً">＋</button>
           <div class="addmenu" id="addmenu" hidden>
-            <button data-k="mcq"><b>اختيار من متعدد</b><span>إجابةٌ واحدة صحيحة</span></button>
-            <button data-k="msq"><b>اختيار متعدّد</b><span>أكثر من إجابةٍ صحيحة</span></button>
-            <button data-k="gap"><b>إكمال الناقص</b><span>يكتب الطالب الإجابة</span></button>
-            <button disabled><b>إكمال من قائمة</b><span>قريباً — يختار من كلماتٍ مُعطاة</span></button>
-            <button disabled><b>المزاوجة</b><span>قريباً — يربط عنصراً بعنصر</span></button>
-            <button data-k="essay"><b>مقالي قصير</b><span>يصحّحه المعلّم</span></button>
+                      <button data-k="mcq"><i>◉</i><div><b>اختيار من متعدد</b><span>إجابةٌ واحدة صحيحة</span></div></button>
+            <button data-k="msq"><i>☑</i><div><b>اختيار متعدّد</b><span>أكثر من إجابةٍ صحيحة</span></div></button>
+            <button data-k="gap"><i>✎</i><div><b>إكمال الناقص</b><span>يكتب الطالب الإجابة</span></div></button>
+            <button disabled><i>⇢</i><div><b>إكمال من قائمة</b><span>قريباً — يختار من كلماتٍ مُعطاة</span></div></button>
+            <button disabled><i>⇄</i><div><b>المزاوجة</b><span>قريباً — يربط عنصراً بعنصر</span></div></button>
+            <hr>
+            <button data-k="essay"><i>¶</i><div><b>مقالي قصير</b><span>يصحّحه المعلّم</span></div></button>
           </div>
         </div>
         <button class="eq-ab" id="imp"   title="استيراد">⇪</button>
@@ -1818,8 +1819,15 @@ function wireList(){
   });
 
     const ab = box.querySelector("#addq"), am = box.querySelector("#addmenu");
-  ab.onclick = e => { e.stopPropagation(); am.hidden = !am.hidden; };
-  am.querySelectorAll("[data-k]").forEach(el =>
+   ab.onclick = e => {
+    e.stopPropagation();
+    if(!am.hidden){ am.hidden = true; return; }
+    const r = ab.getBoundingClientRect();
+    am.style.top  = (r.bottom + 6) + 'px';
+    am.style.left = Math.max(8, Math.min(r.left, innerWidth - 300)) + 'px';
+    am.hidden = false;
+  };
+   am.querySelectorAll("[data-k]").forEach(el =>
     el.onclick = () => { am.hidden = true; addQuestion(el.dataset.k); });
   // نقرةٌ خارج القائمة تطويها — وإلا بقيت مفتوحةً تحجب ما تحتها
   document.addEventListener('click', () => { am.hidden = true; }, { capture:true });
