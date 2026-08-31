@@ -27,6 +27,7 @@ export function bodyWithSlots(body, values = [], ro = false){
     return `<input class="gap-in" type="text" dir="auto" data-i="${n}"
               autocomplete="off" autocapitalize="off" spellcheck="false"
               value="${esc(values[n] || '')}" ${ro ? 'disabled' : ''}
+              placeholder="${ro ? '' : '…'}"
               aria-label="الفراغ ${AR(n+1)}">`;
   }).join("");
 }
