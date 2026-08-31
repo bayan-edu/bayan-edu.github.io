@@ -472,11 +472,11 @@ body.gate .wrap{max-width:1000px}
   color:var(--text);border-radius:9px;padding:7px 0;cursor:pointer;font-size:.82rem}
 .eq-ab:hover{border-color:var(--accent);color:var(--accent)}
 
-.addwrap{position:relative;display:inline-block}
-.addmenu{position:absolute;top:calc(100% + 6px);inset-inline-start:0;z-index:40;
-         min-width:260px;padding:6px;border-radius:12px;
-         background:var(--card);border:1px solid var(--accent-line);
-         box-shadow:0 8px 24px rgba(0,0,0,.12)}
+.addwrap{position:relative;display:inline-flex;z-index:60}
+.addmenu{position:absolute;top:calc(100% + 6px);inset-inline-start:0;z-index:60;
+         min-width:260px;max-width:min(300px,80vw);padding:6px;border-radius:12px;
+         background:var(--card,var(--accent-soft));border:1px solid var(--accent-line);
+         box-shadow:0 8px 24px rgba(0,0,0,.18)}
 .addmenu button{display:block;width:100%;padding:9px 12px;border:0;border-radius:9px;
                 background:transparent;color:inherit;cursor:pointer;text-align:start}
 .addmenu button:hover:not(:disabled){background:var(--accent-soft)}
