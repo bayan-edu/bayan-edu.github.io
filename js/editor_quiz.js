@@ -837,8 +837,10 @@ function collect(q){
   if(v("qi") !== null) q.image = v("qi") || null;
   if(v("qa") !== null) q.audio = v("qa") || null;
   if(v("qv") !== null) q.video = v("qv") || null;
-  main.querySelectorAll(".eq-ob").forEach(el =>
-    q.options[+el.dataset.o].body = el.value);
+   main.querySelectorAll(".eq-ob").forEach(el => {
+    const o = q.options?.[+el.dataset.o];      // حقلٌ لخيارٍ حُذف ⇒ يُتجاوز
+    if(o) o.body = el.value;
+  });
 }
 
 
