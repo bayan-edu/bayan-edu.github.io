@@ -375,21 +375,26 @@ function renderResult(){
 
   /* حكمٌ على كل خيار — لا على السؤال. فيرى الطالب حدّ المفهوم كاملاً:
      ما أدخله وليس منه، وما أخرجه وهو منه. */
-  const jrows = x => (x.judgments||[]).map(j=>{
+  const jrows = x => {
+    const seen = new Set();                                   // 🆕 نصٌّ مرّةً واحدة
+    return (x.judgments||[]).map(j=>{
     const o = opt(j.o); if(!o) return '';
     const hit  = (j.key === j.picked);
     const cls  = hit ? (j.key ? 'hit' : 'dim') : 'err';
     const mark = j.key ? (j.picked ? '✔ صحيحة · اخترتَها' : '✗ صحيحة · أغفلتَها')
                        : (j.picked ? '✗ خاطئة · اخترتَها' : '✔ خاطئة · تجنّبتَها');
+    const txt  = j.note || (j.dx_name ? j.dx_name + (j.remedy?' — '+j.remedy:'') : '');
+    const show = !hit && txt && !seen.has(txt);                // 🆕
+    if(show) seen.add(txt);                                    // 🆕
     return `<div class="jd ${cls}">
       <span class="key">${esc(o._l)}</span>
       <div style="flex:1">
         <span dir="${dirOf(o.body)}" style="display:block">${fmt(o.body)}</span>
         <span class="jd-m">${mark}</span>
-        ${!hit && j.dx_name ? `<span class="jd-dx">${esc(j.dx_name)}${
-            j.remedy?' — '+esc(j.remedy):''}</span>` : ''}
+        ${show ? `<span class="jd-dx">${esc(txt)}</span>` : ''}
       </div></div>`;
   }).join("");
+  };
 
   const countJ = (x, key, picked) =>
     (x.judgments||[]).filter(j => j.key===key && j.picked===picked).length;
@@ -426,10 +431,9 @@ function renderResult(){
       <div class="rev-q" dir="auto">${AR(i+1)}. ${fmt(x.body)}</div>
       ${answer}
       ${x.is_correct?'':`
-        <div class="trap"><strong>تشخيص الخطأ${
-            !msq && x.dx_name?' — '+esc(x.dx_name):''}:</strong>
+                          <div class="trap"><strong>تشخيص الخطأ:</strong>
           ${esc(x.explanation||'').replace(/\n/g,"<br>")}
-          ${!msq && x.remedy?`<div style="margin-top:8px;opacity:.9">🎯 ${esc(x.remedy)}</div>`:''}</div>
+                      ${!msq && (x.note || x.remedy)?`<div style="margin-top:8px;opacity:.9">🎯 ${esc(x.note || x.remedy)}</div>`:''}</div>
         ${x.remedial?`<div class="remedy"><strong>راجع قبل الإعادة</strong>
           <a href="${esc(x.remedial.url||'#')}" target="_blank" rel="noopener"
              style="color:var(--accent)">${ICONS[x.remedial.kind]||'📎'} ${esc(x.remedial.title)}</a></div>`:''}`}
