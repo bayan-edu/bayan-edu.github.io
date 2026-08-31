@@ -33,7 +33,7 @@ import { app, head, toast, esc, fmt, AR, errBox, nav, setWide, scrollTop, L,
                   pgMedia, srcOf, SAFE_HOSTS, optLabel, dirOf } from './ui.js';
 import { attachUpload } from './upload.js';
 import { openCourse } from './editor.js';
-import { questionText, questionBody, KIND_LABEL } from './render_q.js';
+import { questionText, questionBody, KIND_LABEL, gapCount } from './render_q.js';
 
 let Z    = null;   // الاختبار المحمَّل
 let cur  = 0;      // فهرس السؤال المعروض
@@ -189,6 +189,16 @@ function qCard(q){
           والكود للمشتّت وحده — والإغفال يُشخَّص من نمط الإجابة لا من وسمٍ تكتبه.</div>` : ''}
         <div class="opts eq-opts">${(q.options||[]).map(opt).join("")}</div>
         ${locked ? '' : '<button class="btn ghost eq-addo" id="addo">＋ خيار</button>'}
+
+        <label class="fl" style="margin-top:20px">شرح الخطأ — يراه الطالب بعد التسليم *</label>
+        <textarea id="qe" placeholder="لماذا الإجابة الصحيحة صحيحة، وأين يزلّ الفهم؟"
+          ${locked?'disabled':''}>${esc(q.explanation||'')}</textarea>
+             ` : q.kind === 'gap' ? `
+        <div class="eq-hint" style="display:block;margin-bottom:11px;line-height:1.85">
+          ضع الفراغ في النصّ هكذا: <code>{{1}}</code> — وفراغين: <code>{{1}}</code> و<code>{{2}}</code>.
+          والحقل يُرسم في موضعه من الجملة، فيرى الطالب ما قبله وما بعده.</div>
+
+        <div id="gapbox">${gapFields(q, locked)}</div>
 
         <label class="fl" style="margin-top:20px">شرح الخطأ — يراه الطالب بعد التسليم *</label>
         <textarea id="qe" placeholder="لماذا الإجابة الصحيحة صحيحة، وأين يزلّ الفهم؟"
@@ -827,6 +837,36 @@ function repaint(q){
   wire(q);
 }
 
+/* حقول «إكمال الناقص» — عددُها يُشتقّ من {{n}} في نصّ السؤال،
+   فيراها المؤلّف تظهر وتختفي وهو يكتب. لا عمود يتفارق مع النصّ. */
+function gapFields(q, locked){
+  const n = gapCount(q.body || '');
+  if(!n) return `<div class="eq-hint" style="display:block;padding:14px 0">
+    لا فراغ بعد — اكتب <code>{{1}}</code> في نصّ السؤال أعلاه.</div>`;
+
+  const slots = q.accept?.slots || [];
+  const rows = Array.from({length:n}, (_,i) => `
+    <label class="fl">الفراغ ${AR(i+1)} — المقبولات، والبدائل بينها <b>|</b> *</label>
+    <input class="gp-acc" data-i="${i}" dir="auto" ${locked?'disabled':''}
+           value="${esc((slots[i]||[]).join(' | '))}"
+           placeholder="45 | £45 | forty-five">`).join("");
+
+  const ord = n > 1 ? `
+    <label class="eq-ck" style="display:flex;gap:9px;margin-top:13px;align-items:center">
+      <input type="checkbox" id="gpord" ${locked?'disabled':''}
+             ${q.accept?.ordered === false ? '' : 'checked'}>
+      <span>الترتيب ملزم — أزل العلامة إن قُبلت الإجابات بأيّ ترتيب</span></label>` : '';
+
+  const w = Object.entries(q.wrong || {}).map(([k,v]) => `${k} = ${v}`).join('\n');
+
+  return `${rows}${ord}
+    <label class="fl" style="margin-top:18px">أخطاء متوقّعة وأكوادها — اختياريّ</label>
+    <textarea id="gpw" dir="ltr" style="min-height:78px" ${locked?'disabled':''}
+      placeholder="1:30 = RTR">${esc(w)}</textarea>
+    <div class="eq-hint" style="display:block;margin-top:6px;line-height:1.8">
+      سطرٌ لكل خطأ، والرقم قبل النقطتين رقمُ الفراغ.
+      واتركه فارغاً إن لم تتوقّع خطأً بعينه — تُقاس الأخطاء الشائعة لاحقاً من إجابات الطلاب.</div>`;
+}
 /* جمع ما في الحقول إلى الكائن قبل أي إعادة رسم أو حفظ */
 function collect(q){
   const main = document.getElementById("main");
@@ -841,7 +881,21 @@ function collect(q){
     const o = q.options?.[+el.dataset.o];      // حقلٌ لخيارٍ حُذف ⇒ يُتجاوز
     if(o) o.body = el.value;
   });
-}
+  if(q.kind === 'gap'){
+    const slots = [];
+    main.querySelectorAll(".gp-acc").forEach(el =>
+      slots[+el.dataset.i] = el.value.split('|').map(s=>s.trim()).filter(Boolean));
+    const ord = main.querySelector("#gpord");
+    q.accept = { ordered: ord ? ord.checked : true, slots };
+
+    // "1:30 = RTR" — الرقم قبل النقطتين رقمُ الفراغ
+    const w = {};
+    (main.querySelector("#gpw")?.value || '').split('\n').forEach(ln => {
+      const m = ln.match(/^\s*(\d+\s*:\s*.+?)\s*=\s*([A-Z_]+)\s*$/);
+      if(m) w[m[1].replace(/\s*:\s*/, ':')] = m[2];
+    });
+    q.wrong = Object.keys(w).length ? w : null;
+  }}
 
 
 /* ═══════════ العمليات ═══════════ */
@@ -856,7 +910,10 @@ async function saveQ(q){
     explanation: q.explanation, model: q.model,
     passage: q.passage_id, objective: q.objective_id, section: q.section,
     points: q.points, lang: q.lang, difficulty: q.difficulty,
-    image: q.image, video: q.video, audio: q.audio });
+    image: q.image, video: q.video, audio: q.audio,
+    accept: q.kind==='gap' ? q.accept : null,
+    wrong:  q.kind==='gap' ? q.wrong  : null,
+    bank:   q.kind==='gap' ? q.bank   : null });
 
   if(error){ toast(error.message); return; }
   if(!data.ok){ toast(data.error); return; }
