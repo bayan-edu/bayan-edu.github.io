@@ -149,19 +149,6 @@ export async function openTools(){
 
   app.innerHTML = `
     ${narrowNote()}
-    ${tools.map(t => `
-      <div class="ed-sec">
-        <div class="ed-sec-h">
-          <span class="ed-t">${esc(t.tool)}</span>
-          <span class="chip">${esc(t.subject)}</span>
-          <span class="chip g">${AR((t.stations||[]).length)} محطّة</span>
-        </div>
-        <div class="ed-grid">${(t.stations||[]).map(stationRow).join("")}</div>
-      </div>`).join("")}
-    ${!tools.length ? `<div class="card" style="text-align:center;padding:30px">
-      <div style="font-size:2rem;margin-bottom:10px">🎯</div>
-  app.innerHTML = `
-    ${narrowNote()}
     <div class="ed-bar"><button class="btn ghost" id="bk2">← رجوع إلى التأليف</button></div>
     ${tools.map(t => `
       <div class="ed-sec">
