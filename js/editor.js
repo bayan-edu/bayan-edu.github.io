@@ -221,21 +221,7 @@ async function newStation(tools){
     document.getElementById("ns_ok").onclick = async (e) => {
     const btn = e.currentTarget;
     if(btn.disabled) return;
-    const g = id => document.getElementById(id).value.trim();
-    if(!g("ns_tool") || !g("ns_title")){ toast("اسم الأداة وعنوان المحطّة مطلوبان"); return; }
-
-    btn.disabled = true; btn.textContent = "…جارٍ الإنشاء";   // 🔒 نقرةٌ واحدة
-    const { data, error } = await api.saveQuiz({
-      subject: +g("ns_sub"), tool: g("ns_tool"), title: g("ns_title"),
-      station: +g("ns_no") || null, minutes: +g("ns_min") || 25, official: true });
-
-    if(error || !data.ok){
-      btn.disabled = false; btn.textContent = "إنشاء";
-      toast(error?.message || data.error); return;
-    }
-    toast("أُنشئت المحطّة");
-    openTools();
-  };
+   
     const g = id => document.getElementById(id).value.trim();
     if(!g("ns_tool") || !g("ns_title")){ toast("اسم الأداة وعنوان المحطّة مطلوبان"); return; }
 
