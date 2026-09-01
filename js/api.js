@@ -205,8 +205,9 @@ export const saveQuiz = o => db.rpc('save_quiz', {
   p_code: o.code ?? null, p_official: o.official ?? true,
   p_subject: o.subject ?? null, p_tool: o.tool ?? null,
   p_station: o.station ?? null,
-  // ⚠️ null تعني «بلا حدّ» لا «لا تُغيّر» ⇒ تُرسل القيمة الحالية دائماً
-  p_plays: o.plays ?? null });
+  // ⚠️ null في plays معنًى («بلا حدّ») لا «لم يُرسل» ⇒ تُرسل دائماً
+  p_plays: o.plays ?? null, p_reveal: o.reveal ?? null,
+  p_pass_mark: o.passMark ?? null, p_shuffle: o.shuffle ?? null });
 
 // p_options: [{label, body, correct, dx}] — المعرّفات تُبنى في القاعدة
 export const saveQuestion = o => db.rpc('save_question', {
