@@ -194,16 +194,12 @@ function qCard(q){
         <textarea id="qe" placeholder="لماذا الإجابة الصحيحة صحيحة، وأين يزلّ الفهم؟"
           ${locked?'disabled':''}>${esc(q.explanation||'')}</textarea>
              ` : q.kind === 'gap' ? `
-        <div class="eq-hint" style="display:block;margin-bottom:11px;line-height:1.85">
-          ضع الفراغ في النصّ هكذا: <code>{{1}}</code> — وفراغين: <code>{{1}}</code> و<code>{{2}}</code>.
-          والحقل يُرسم في موضعه من الجملة، فيرى الطالب ما قبله وما بعده.</div>
+
         <div class="gaprow">
-          ${locked ? '' : `<button class="btn ghost gapbtn" id="addgap">＋ فراغ</button>`}
           <div class="gaplive" id="gaplive">${
             gapCount(q.body||'') ? questionText(q, [], true)
                                  : '<span class="eq-hint">…هكذا يراه الطالب</span>'}</div>
         </div>
-
         <div id="gapbox">${gapFields(q, locked)}</div>
 
         <label class="fl" style="margin-top:20px">شرح الخطأ — يراه الطالب بعد التسليم *</label>
@@ -665,6 +661,8 @@ function mediaRow(q, locked){
       <button class="eq-tb ${q.image?'on':''}" data-m="image">🖼️ صورة</button>
       <button class="eq-tb ${q.audio?'on':''}" data-m="audio">🎧 صوت</button>
       <button class="eq-tb ${q.video?'on':''}" data-m="video">🎬 فيديو</button>
+            ${q.kind === 'gap' && !locked
+        ? `<button class="eq-tb gapbtn" id="addgap" title="أدرج فراغاً">⌷ فراغ</button>` : ''}
       <span class="eq-sep"></span>
       <button class="eq-tb" data-w="**" title="غامق"><b>B</b></button>
       <button class="eq-tb" data-w="_"  title="مائل"><i>I</i></button>
@@ -860,12 +858,14 @@ function wire(q){
     if(ag) ag.onclick = () => {
       /* الرقم يُحسب فلا يُخطئ المؤلّف في التتابع.
          والإدراج عند المؤشّر لا في الذيل — فالفراغ يقع حيث يريد. */
-      const n = gapCount(qb.value) + 1;
       const p = qb.selectionStart ?? qb.value.length;
-      const tag = `{{${n}}}`;
-      qb.value = qb.value.slice(0,p) + tag + qb.value.slice(p);
+      let v = qb.value.slice(0,p) + '{{§}}' + qb.value.slice(p);
+      let i = 0;
+      v = v.replace(/\{\{(\d+|§)\}\}/g, () => `{{${++i}}}`);   // ترقيمٌ شامل
+      qb.value = v;
       qb.focus();
-      qb.setSelectionRange(p + tag.length, p + tag.length);
+      const after = v.indexOf('}}', p) + 2;
+      qb.setSelectionRange(after, after);
       qb.dispatchEvent(new Event('input'));   // يُشغّل ما سبق ⇒ لا تكرار
       mark();
     };
