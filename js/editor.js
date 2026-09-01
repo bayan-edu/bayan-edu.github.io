@@ -178,9 +178,11 @@ export async function openTools(){
    والأداة تُخلق بأوّل محطّةٍ تحمل اسمها: لا جدولَ لها. */
 async function newStation(tools){
   const t = await tree();
-  const subs = (t.subjects || []).filter(s => s.curate);
-  if(!subs.length){ toast("لا مواد تملك الإشراف عليها"); return; }
-
+  // author_tree تُرجع المواد النشطة كلَّها بلا وسم إشراف.
+  // والحارس في save_quiz (can_curate) ⇒ يردّ من لا يملك، برسالةٍ تقول السبب.
+  const subs = t.subjects || [];
+  if(!subs.length){ toast("لا مواد نشطة"); return; }
+   
   const names = [...new Set((tools||[]).map(x => x.tool))];
 
   app.innerHTML = `
