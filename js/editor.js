@@ -170,7 +170,8 @@ export async function openTools(){
   document.getElementById("bk2").onclick = () => openEditor();
      document.getElementById("newst").onclick = () => newStation(tools);
   app.querySelectorAll(".ed-card").forEach(el =>
-    el.onclick = () => openQuiz({ id: +el.dataset.q }));
+    el.onclick = () => openQuiz({ id: +el.dataset.q, station: true,
+                                  title: el.querySelector('.ed-t')?.textContent || '' }));
   scrollTop();
 }
 
@@ -217,7 +218,24 @@ async function newStation(tools){
     </div>`;
 
   document.getElementById("ns_no2").onclick = () => openTools();
-  document.getElementById("ns_ok").onclick = async () => {
+    document.getElementById("ns_ok").onclick = async (e) => {
+    const btn = e.currentTarget;
+    if(btn.disabled) return;
+    const g = id => document.getElementById(id).value.trim();
+    if(!g("ns_tool") || !g("ns_title")){ toast("اسم الأداة وعنوان المحطّة مطلوبان"); return; }
+
+    btn.disabled = true; btn.textContent = "…جارٍ الإنشاء";   // 🔒 نقرةٌ واحدة
+    const { data, error } = await api.saveQuiz({
+      subject: +g("ns_sub"), tool: g("ns_tool"), title: g("ns_title"),
+      station: +g("ns_no") || null, minutes: +g("ns_min") || 25, official: true });
+
+    if(error || !data.ok){
+      btn.disabled = false; btn.textContent = "إنشاء";
+      toast(error?.message || data.error); return;
+    }
+    toast("أُنشئت المحطّة");
+    openTools();
+  };
     const g = id => document.getElementById(id).value.trim();
     if(!g("ns_tool") || !g("ns_title")){ toast("اسم الأداة وعنوان المحطّة مطلوبان"); return; }
 
@@ -228,7 +246,7 @@ async function newStation(tools){
     if(error){ toast(error.message); return; }
     if(!data.ok){ toast(data.error); return; }
     toast("أُنشئت المحطّة");
-    openQuiz({ id: data.id });
+    openTools();
   };
   scrollTop();
 }
