@@ -208,6 +208,10 @@ h2.sec{font-family:'Almarai';font-weight:800;font-size:var(--fs-h);margin:24px 0
 .hint{color:var(--text-muted);font-size:var(--fs-meta);margin-top:10px;text-align:center}
 .crumb{font-size:var(--fs-meta);color:var(--text-muted);margin-bottom:12px;cursor:pointer}
 .crumb:hover{color:var(--accent)}
+.crumb:hover{color:var(--accent)}
+
+.crumb-row{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.crumb-row .crumb{margin:0}
 
 /* ── الوسوم والرقائق ── */
 .badge{display:inline-block;font-family:'Almarai';font-weight:800;font-size:var(--fs-tag);
