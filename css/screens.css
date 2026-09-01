@@ -388,6 +388,8 @@ body.gate .wrap{max-width:1000px}
   .ed-3{grid-template-columns:1fr}
   .ed-bar select{min-width:0;flex:1}
 }
+.modal{position:fixed;inset:0;z-index:300;display:flex;padding:24px;
+       overflow:auto;background:rgba(0,0,0,.35)}
 
 /* ═══ محرّر الأسئلة — ثلاثة أعمدة ═══ */
 .eq{display:grid;grid-template-columns:290px 1fr 260px;gap:16px;align-items:start}
