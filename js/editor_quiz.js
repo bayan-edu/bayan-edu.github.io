@@ -105,7 +105,10 @@ function render(atTop){
   const q  = qs[cur] || null;
 
   app.innerHTML = `
-    <div class="crumb" id="bk">← ${esc(ctx.lesson?.title || 'أدوات القياس')}</div>
+    <div class="crumb-row">
+      <span class="crumb" id="bk">← ${esc(ctx.lesson?.title || 'أدوات القياس')}</span>
+      <button class="it-b" id="qset" title="إعدادات الاختبار">⚙</button>
+    </div>
     <div class="eq">
       <aside class="eq-list">${sidebar()}</aside>
       <section class="eq-main" id="main">${q ? qCard(q) : emptyCard()}</section>
@@ -113,6 +116,7 @@ function render(atTop){
     </div>`;
 
   document.getElementById("bk").onclick = leave;
+     document.getElementById("qset").onclick = quizSettings;
   wireList();
   if(q) wire(q);
   readiness();
@@ -141,6 +145,93 @@ function leave(){
   openCourse(ctx.course);
 }
 
+/* إعدادات الاختبار — تُحرَّر مرّةً في مكانٍ واحد.
+   وكانت كلُّها تُضبط عند الإنشاء ولا تُعدَّل بعده. */
+function quizSettings(){
+  const A = Z.attempts || 0;
+  const box = document.createElement('div');
+  box.className = 'modal';
+  box.innerHTML = `
+    <div class="card" style="max-width:520px;margin:auto">
+      <div class="ed-t" style="margin-bottom:16px">إعدادات الاختبار</div>
+
+      <label class="fl">العنوان</label>
+      <input id="qs_t" dir="auto" value="${esc(Z.title||'')}">
+
+      <label class="fl" style="margin-top:12px">الكود</label>
+      <input id="qs_c" dir="ltr" value="${esc(Z.code||'')}" ${A?'disabled':''}>
+      ${A ? `<div class="eq-hint">أجاب عنه ${AR(A)} — الكود مِرساةُ المحاولات فلا يُبدَّل.</div>` : ''}
+
+      <div style="display:flex;gap:12px;margin-top:12px">
+        <div style="flex:1"><label class="fl">الدقائق</label>
+          <input id="qs_m" type="number" min="1" max="240" value="${Z.minutes||25}"></div>
+        <div style="flex:1"><label class="fl">درجة النجاح ٪</label>
+          <input id="qs_p" type="number" min="1" max="100" value="${Z.pass_mark||65}"></div>
+      </div>
+
+      <label class="fl" style="margin-top:12px">تشغيل المقطع الصوتيّ</label>
+      <select id="qs_pl">
+        <option value="" ${!Z.plays?'selected':''}>بلا حدّ — التشخيص يقيس الفهم</option>
+        <option value="1" ${Z.plays===1?'selected':''}>مرّة — كما في الامتحان الحقيقيّ</option>
+        <option value="2" ${Z.plays===2?'selected':''}>مرّتان</option>
+        <option value="3" ${Z.plays===3?'selected':''}>ثلاث</option>
+      </select>
+      <div class="eq-hint" id="qs_pw" style="${Z.plays?'':'display:none'}">
+        ⚠️ أكواد تشخيص الاستماع تصير أضعف — قد يكون الخطأ فوات سمعٍ لا سوء فهم.</div>
+
+      <label class="fl" style="margin-top:12px">بعد التسليم</label>
+      <select id="qs_r">
+        <option value="immediate" ${Z.reveal!=='never'?'selected':''}>تُعرض المراجعة والتشخيص</option>
+        <option value="never" ${Z.reveal==='never'?'selected':''}>لا يُعرض شيء — لمحطّات القياس</option>
+      </select>
+
+      <label class="eq-ck" style="display:flex;gap:9px;margin-top:14px;align-items:flex-start">
+        <input type="checkbox" id="qs_s" ${Z.shuffle?'checked':''}>
+        <span>ترتيبٌ متغيّر لكل طالب
+          <div class="eq-hint" style="margin-top:3px">الأقسام والنصوص تبقى كتلاً بترتيبها،
+            والخلط داخلها. وأسئلة النصّ المشترك لا تُخلط.</div></span></label>
+
+      ${Z.tool ? `
+        <div style="display:flex;gap:12px;margin-top:14px">
+          <div style="flex:1"><label class="fl">الأداة</label>
+            <input id="qs_tl" dir="ltr" value="${esc(Z.tool)}"></div>
+          <div style="flex:1"><label class="fl">رقم المحطّة</label>
+            <input id="qs_st" type="number" min="1" value="${Z.station||''}"></div>
+        </div>` : ''}
+
+      <div class="nav" style="margin-top:20px">
+        <button class="btn primary" id="qs_ok">حفظ</button>
+        <button class="btn ghost" id="qs_x">إلغاء</button>
+      </div>
+    </div>`;
+  document.body.appendChild(box);
+
+  const $ = id => box.querySelector('#' + id);
+  $('qs_pl').onchange = e => $('qs_pw').style.display = e.target.value ? '' : 'none';
+  $('qs_x').onclick = () => box.remove();
+
+  $('qs_ok').onclick = async e => {
+    const b = e.currentTarget; if(b.disabled) return;
+    b.disabled = true; b.textContent = "…";
+
+    const { data, error } = await api.saveQuiz({
+      id: Z.id, title: $('qs_t').value.trim(),
+      code: A ? null : $('qs_c').value.trim(),
+      minutes: +$('qs_m').value || 25, passMark: +$('qs_p').value || 65,
+      plays: +$('qs_pl').value || null, reveal: $('qs_r').value,
+      shuffle: $('qs_s').checked,
+      tool: $('qs_tl')?.value.trim() || null,
+      station: +($('qs_st')?.value) || null,
+      official: Z.official });
+
+    if(error || !data.ok){
+      b.disabled = false; b.textContent = "حفظ";
+      toast(error?.message || data.error); return;
+    }
+    box.remove(); toast("حُفظت الإعدادات");
+    openQuiz(ctx.course, ctx.lesson);
+  };
+}
 
 /* ═══════════ بطاقة السؤال — تحرير ومعاينة معاً ═══════════ */
 
