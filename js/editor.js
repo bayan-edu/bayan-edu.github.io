@@ -149,7 +149,10 @@ export async function openTools(){
 
   app.innerHTML = `
     ${narrowNote()}
-    <div class="ed-bar"><button class="btn ghost" id="bk2">← رجوع إلى التأليف</button></div>
+    <div class="ed-bar">
+      <button class="btn ghost" id="bk2">← رجوع إلى التأليف</button>
+      <button class="btn primary" id="newst" style="margin-inline-start:auto">＋ محطّة جديدة</button>
+    </div>
     ${tools.map(t => `
       <div class="ed-sec">
         <div class="ed-sec-h">
@@ -165,8 +168,66 @@ export async function openTools(){
       <div class="line">أداةٌ تُنشأ بأن يُعطى اختبارٌ اسمَ أداةٍ ورقمَ محطّة.</div></div>` : ''}`;
 
   document.getElementById("bk2").onclick = () => openEditor();
+     document.getElementById("newst").onclick = () => newStation(tools);
   app.querySelectorAll(".ed-card").forEach(el =>
     el.onclick = () => openQuiz({ id: +el.dataset.q }));
+  scrollTop();
+}
+
+/* محطّةٌ جديدة — تُنشأ باسم أداةٍ ومادّة، لا بمقرَّر.
+   والأداة تُخلق بأوّل محطّةٍ تحمل اسمها: لا جدولَ لها. */
+async function newStation(tools){
+  const t = await tree();
+  const subs = (t.subjects || []).filter(s => s.curate);
+  if(!subs.length){ toast("لا مواد تملك الإشراف عليها"); return; }
+
+  const names = [...new Set((tools||[]).map(x => x.tool))];
+
+  app.innerHTML = `
+    <div class="card" style="max-width:560px;margin:0 auto">
+      <div class="ed-t" style="margin-bottom:16px">محطّة جديدة</div>
+
+      <label class="fl">المادة</label>
+      <select id="ns_sub">${subs.map(s =>
+        `<option value="${s.id}">${esc(s.name)}</option>`).join("")}</select>
+
+      <label class="fl" style="margin-top:14px">اسم الأداة</label>
+      <input id="ns_tool" list="ns_tools" dir="auto"
+             placeholder="ielts_placement" value="${esc(names[0] || '')}">
+      <datalist id="ns_tools">${names.map(n =>
+        `<option value="${esc(n)}">`).join("")}</datalist>
+      <div class="eq-hint">اكتب اسماً قائماً لتُضاف المحطّة إليه، أو اسماً جديداً لأداةٍ جديدة.</div>
+
+      <label class="fl" style="margin-top:14px">عنوان المحطّة</label>
+      <input id="ns_title" dir="auto" placeholder="التوجيه · اللوحة L · فحص الحدّ ١">
+
+      <div style="display:flex;gap:12px;margin-top:14px">
+        <div style="flex:1"><label class="fl">رقم المحطّة</label>
+          <input id="ns_no" type="number" min="1" value="1"></div>
+        <div style="flex:1"><label class="fl">الدقائق</label>
+          <input id="ns_min" type="number" min="1" value="12"></div>
+      </div>
+
+      <div class="nav" style="margin-top:20px">
+        <button class="btn primary" id="ns_ok">إنشاء</button>
+        <button class="btn ghost" id="ns_no2">إلغاء</button>
+      </div>
+    </div>`;
+
+  document.getElementById("ns_no2").onclick = () => openTools();
+  document.getElementById("ns_ok").onclick = async () => {
+    const g = id => document.getElementById(id).value.trim();
+    if(!g("ns_tool") || !g("ns_title")){ toast("اسم الأداة وعنوان المحطّة مطلوبان"); return; }
+
+    const { data, error } = await api.saveQuiz({
+      subject: +g("ns_sub"), tool: g("ns_tool"), title: g("ns_title"),
+      station: +g("ns_no") || null, minutes: +g("ns_min") || 25, official: true });
+
+    if(error){ toast(error.message); return; }
+    if(!data.ok){ toast(data.error); return; }
+    toast("أُنشئت المحطّة");
+    openQuiz({ id: data.id });
+  };
   scrollTop();
 }
 
