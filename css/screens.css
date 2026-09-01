@@ -206,8 +206,10 @@ body.gate .wrap{max-width:1000px}
 .gap-in:focus{outline:none;background:var(--card,#fff);
               box-shadow:0 0 0 2px var(--accent) inset}
 .gap-in:disabled{background:transparent;border-bottom-style:dashed;opacity:.55}
-.gaprow{margin-top:12px}
-.gapbtn{padding:6px 14px;font-size:.86em}
+.gaprow{margin-top:10px}
+.gapbtn{background:var(--accent-fill,var(--accent-soft)) !important;
+        border-color:var(--accent) !important;color:var(--accent) !important;
+        font-weight:700}
 .gaplive{margin-top:11px;padding:13px 15px;border-radius:11px;
          background:var(--accent-soft);border:1px dashed var(--accent-line);
          min-height:22px}
