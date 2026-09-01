@@ -176,6 +176,8 @@ export const setMySubjects         = ids => db.rpc('set_my_subjects', { p_ids: i
 export const authorTree   = ()  => db.rpc('author_tree');
 export const authorLessons = cid => db.rpc('author_lessons', { p_course: cid });
 export const listTools = () => db.rpc('list_tools');
+export const deleteQuiz = (id, confirm=false) =>
+  db.rpc('delete_quiz', { p_quiz: id, p_confirm: confirm });
 export const saveLesson = o => db.rpc('save_lesson', {
   p_id:        o.id       ?? null,
   p_course:    o.course,
