@@ -846,12 +846,19 @@ function wire(q){
 
     qb.oninput = () => {
       const n = gapCount(qb.value);
+      if(n !== last){
+        /* حذفُ فراغٍ من الوسط يترك فجوة ⇒ يُعاد الترقيم فوراً،
+           فلا يرى المؤلّف {{2}} و{{3}} بلا {{1}}. */
+        const p = qb.selectionStart ?? qb.value.length;
+        let i = 0;
+        const v = qb.value.replace(/\{\{\d+\}\}/g, () => `{{${++i}}}`);
+        if(v !== qb.value){ qb.value = v; qb.setSelectionRange(p, p); }
+        last = n;
+        collect(q); q.body = qb.value;
+        const box = main.querySelector("#gapbox");
+        if(box) box.innerHTML = gapFields(q, false);
+      }
       live();
-      if(n === last) return;              // العدد لم يتغيّر ⇒ لا رسم للحقول
-      last = n;
-      collect(q); q.body = qb.value;
-      const box = main.querySelector("#gapbox");
-      if(box) box.innerHTML = gapFields(q, false);
     };
 
     const ag = main.querySelector("#addgap");
