@@ -1936,6 +1936,11 @@ function wireList(){
     am.style.left = Math.max(8, Math.min(r.left, innerWidth - 300)) + 'px';
     am.hidden = false;
   };
+     /* الموضع يُحسب لحظة الفتح ⇒ يتقادم عند التمرير أو تغيير التكبير.
+     والأبسط أن تُطوى، فالقائمة لحظيّةٌ لا تُترك مفتوحة. */
+  const shut = () => { if(!am.hidden) am.hidden = true; };
+  addEventListener('scroll', shut, true);
+  addEventListener('resize', shut);
    am.querySelectorAll("[data-k]").forEach(el =>
     el.onclick = () => { am.hidden = true; addQuestion(el.dataset.k); });
   // نقرةٌ خارج القائمة تطويها — وإلا بقيت مفتوحةً تحجب ما تحتها
