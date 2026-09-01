@@ -204,11 +204,19 @@ function renderPage(){
      التمييز هنا بالقاعدة نفسها، لا بقائمةٍ ثانية تتباعد عنها. */
   const isAudio = !!(pg && pg.media && pg.kind !== 'video' && pg.kind !== 'image');
 
+  /* حدُّ التشغيل خاصّةٌ للاختبار لا مبدأ للمنصّة:
+     في الدرس الإعادة مباحة — وإلا قاس الكودُ الذاكرةَ العاملة لا الفهم.
+     وفي التسكين مرّةٌ واحدة — والإعادة ترفع التقدير نصف نطاق. */
+  const lim = S.quiz.plays || null;
+
   head(S.quiz.title,
     !many     ? "أجب بتأنٍ — كل خيار خاطئ يمثل فخاً مقصوداً"
-    : isAudio ? "اطّلع على الأسئلة أولاً ثم شغّل المقطع — تستمع بغرض، والإعادة مباحة"
+    : isAudio ? (lim === 1
+        ? "يُشغَّل المقطع مرّةً واحدة — اطّلع على الأسئلة قبل أن تبدأ"
+        : lim ? `يُشغَّل المقطع ${AR(lim)} مرّات — اطّلع على الأسئلة أولاً`
+              : "اطّلع على الأسئلة أولاً ثم شغّل المقطع")
     :           "أسئلةُ نصٍّ واحد — ارجع إليه كلما احتجت");
-
+   
   const from = AR(N.get(qs[0].id)), to = AR(N.get(qs[qs.length-1].id));
   bar.innerHTML = `<div class="timerbar">
     <span class="clock" id="clock">${mmss(S.left)}</span>
@@ -261,7 +269,17 @@ function renderPage(){
      صارت الصفحة تحمل عشرات الأزرار؛ وربطُ مستمعٍ بكلٍّ منها عملٌ
      يتضاعف بلا داعٍ. والحدثُ يصعد من الزرّ إلى ما يحويه، فيكفي أن
      ننصت عند الجذر ونسأل: من أين جئت؟ */
-  app.onclick = e => {
+  /* الحدُّ يُطبَّق على المشغّل نفسه — والعدّ لا يُحفظ بين الصفحات
+     لأن المقطع يُرسم مع صفحته، ولا رجوع بين الصفحات في التسكين. */
+  if(lim) app.querySelectorAll('audio').forEach(a => {
+    let n = 0;
+    a.onplay = () => { n++; };
+    a.onended = () => { if(n >= lim){
+      a.insertAdjacentHTML('afterend',
+        `<div class="eq-hint" style="display:block;padding:8px 0">انتهى التشغيل المتاح</div>`);
+      a.remove(); } };
+  });
+   app.onclick = e => {
     const b = e.target.closest('.opt'); if(!b) return;
     const card = b.closest('.qcard'), qid = +card.dataset.q;
     const a = A.get(qid), v = +b.dataset.o;
