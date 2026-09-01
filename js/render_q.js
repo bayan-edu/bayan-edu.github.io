@@ -15,7 +15,9 @@ export const KIND_LABEL = {
    والسياق حول الفراغ هو ما يقيسه البند — لا يُفصل عنه. */
 const SLOT = /\{\{(\d+)\}\}/g;
 
-export const gapCount = body => (String(body||'').match(SLOT)||[]).length;
+/* الأرقام المميّزة لا المطابقات — فحذف {{1}} لا يُنتج ترقيماً مكرّراً */
+export const gapCount = body =>
+  new Set([...String(body||'').matchAll(/\{\{(\d+)\}\}/g)].map(m => m[1])).size;
 
 /* نصُّ البند: يُقسَم على {{n}} ويُنسج بحقولٍ في مواضعها.
    values: ما كتبه الطالب · ro: للعرض لا للكتابة */
