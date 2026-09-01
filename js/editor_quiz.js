@@ -32,7 +32,7 @@ import { S } from './state.js';
 import { app, head, toast, esc, fmt, AR, errBox, nav, setWide, scrollTop, L,
                   pgMedia, srcOf, SAFE_HOSTS, optLabel, dirOf } from './ui.js';
 import { attachUpload } from './upload.js';
-import { openCourse } from './editor.js';
+import { openCourse, openTools } from './editor.js';
 import { questionText, questionBody, KIND_LABEL, gapCount } from './render_q.js';
 
 let Z    = null;   // الاختبار المحمَّل
@@ -105,7 +105,7 @@ function render(atTop){
   const q  = qs[cur] || null;
 
   app.innerHTML = `
-    <div class="crumb" id="bk">← ${esc(ctx.lesson.title)}</div>
+    <div class="crumb" id="bk">← ${esc(ctx.lesson?.title || 'أدوات القياس')}</div>
     <div class="eq">
       <aside class="eq-list">${sidebar()}</aside>
       <section class="eq-main" id="main">${q ? qCard(q) : emptyCard()}</section>
@@ -136,6 +136,8 @@ function go(i){
 
 function leave(){
   if(dirty && !confirm("تغييرات غير محفوظة — أتتركها؟")) return;
+  // محطّةُ أداةٍ تعود إلى فهرس الأدوات · واختبارُ درسٍ إلى مقرَّره
+  if(ctx.course?.station === true) return openTools();
   openCourse(ctx.course);
 }
 
