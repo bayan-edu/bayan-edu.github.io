@@ -103,6 +103,8 @@ export async function openEditor(scaleId, levelId){
           ${levels.map(x => `<option value="${x.id}"
             ${lv && x.id===lv.id?'selected':''}>${esc(x.name)}</option>`).join("")}
         </select>` : ''}
+      ${S.roleInfo?.role === 'admin' ? `<button class="btn ghost" id="tools"
+         style="margin-inline-start:auto">🎯 أدوات القياس</button>` : ''}
     </div>
     <div class="ed-grid">${courses.map(card).join("")}</div>
     ${!courses.length ? `<div class="status">لا مقرّرات في هذا ال${rung}</div>` : ''}`;
@@ -110,6 +112,8 @@ export async function openEditor(scaleId, levelId){
   document.getElementById("sc").onchange = e => openEditor(e.target.value, null);
     const lvEl = document.getElementById("lv");        // ⚠️ قد لا يوجد — سُلّم بلا مستويات
   if(lvEl) lvEl.onchange = e => openEditor(sc.id, e.target.value);
+   const tb = document.getElementById("tools");
+  if(tb) tb.onclick = () => openTools();
   app.querySelectorAll(".ed-card").forEach(el =>
     el.onclick = () => openCourse(byId(t.courses, el.dataset.c)));
   scrollTop();
@@ -122,8 +126,9 @@ export async function openEditor(scaleId, levelId){
 export async function openTools(){
   nav('editor'); setWide(true);
   head("أدوات القياس", "اختبارات قائمة بذاتها — لا تتبع درساً ولا مقرَّراً");
-  app.innerHTML = `<div class="status">جارٍ التحميل…</div>`;
-
+  app.innerHTML = `<div class="ed-bar">
+    <button class="btn ghost" id="bk2">← رجوع إلى التأليف</button></div>
+    <div class="status">جارٍ التحميل…</div>`;
   const { data, error } = await api.listTools();
   if(error){ app.innerHTML = errBox(error.message, 'أدوات القياس'); return; }
   const tools = data || [];
@@ -155,9 +160,24 @@ export async function openTools(){
       </div>`).join("")}
     ${!tools.length ? `<div class="card" style="text-align:center;padding:30px">
       <div style="font-size:2rem;margin-bottom:10px">🎯</div>
+  app.innerHTML = `
+    ${narrowNote()}
+    <div class="ed-bar"><button class="btn ghost" id="bk2">← رجوع إلى التأليف</button></div>
+    ${tools.map(t => `
+      <div class="ed-sec">
+        <div class="ed-sec-h">
+          <span class="ed-t">${esc(t.tool)}</span>
+          <span class="chip">${esc(t.subject)}</span>
+          <span class="chip g">${AR((t.stations||[]).length)} محطّة</span>
+        </div>
+        <div class="ed-grid">${(t.stations||[]).map(stationRow).join("")}</div>
+      </div>`).join("")}
+    ${!tools.length ? `<div class="card" style="text-align:center;padding:30px">
+      <div style="font-size:2rem;margin-bottom:10px">🎯</div>
       <div class="rev-q">لا أدوات قياس بعد</div>
       <div class="line">أداةٌ تُنشأ بأن يُعطى اختبارٌ اسمَ أداةٍ ورقمَ محطّة.</div></div>` : ''}`;
 
+  document.getElementById("bk2").onclick = () => openEditor();
   app.querySelectorAll(".ed-card").forEach(el =>
     el.onclick = () => openQuiz({ id: +el.dataset.q }));
   scrollTop();
