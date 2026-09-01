@@ -175,7 +175,7 @@ export const setMySubjects         = ids => db.rpc('set_my_subjects', { p_ids: i
 // + أنماط العناصر وأكواد التشخيص. تُحمَّل مرة وتُخزَّن في S.tree
 export const authorTree   = ()  => db.rpc('author_tree');
 export const authorLessons = cid => db.rpc('author_lessons', { p_course: cid });
-
+export const listTools = () => db.rpc('list_tools');
 export const saveLesson = o => db.rpc('save_lesson', {
   p_id:        o.id       ?? null,
   p_course:    o.course,
