@@ -115,6 +115,53 @@ export async function openEditor(scaleId, levelId){
   scrollTop();
 }
 
+/* ═══════════ ①ب أدوات القياس ═══════════
+   أداةٌ قائمة بذاتها: لا درسَ لها ولا مقرَّر — لأن التسكين يسبق التسكين.
+   والمحطّة اختبارٌ كامل في quizzes، والذي يربطها جدولُ التوجيه. */
+
+export async function openTools(){
+  nav('editor'); setWide(true);
+  head("أدوات القياس", "اختبارات قائمة بذاتها — لا تتبع درساً ولا مقرَّراً");
+  app.innerHTML = `<div class="status">جارٍ التحميل…</div>`;
+
+  const { data, error } = await api.listTools();
+  if(error){ app.innerHTML = errBox(error.message, 'أدوات القياس'); return; }
+  const tools = data || [];
+
+  const stationRow = st => `
+    <div class="ed-card" data-q="${st.id}">
+      <div class="ed-ic">${st.published ? '🟢' : '⚪'}</div>
+      <div style="flex:1;min-width:0">
+        <div class="ed-t">${esc(st.title || st.code)}</div>
+        <div class="ed-m">
+          ${st.station != null ? `<span class="chip g">محطّة ${AR(st.station)}</span>` : ''}
+          <span class="chip ${st.n ? 'g' : ''}">${AR(st.n || 0)} بنداً</span>
+          ${st.published ? '' : '<span class="chip">غير منشورة</span>'}
+        </div>
+      </div>
+      <div class="qz-go">←</div>
+    </div>`;
+
+  app.innerHTML = `
+    ${narrowNote()}
+    ${tools.map(t => `
+      <div class="ed-sec">
+        <div class="ed-sec-h">
+          <span class="ed-t">${esc(t.tool)}</span>
+          <span class="chip">${esc(t.subject)}</span>
+          <span class="chip g">${AR((t.stations||[]).length)} محطّة</span>
+        </div>
+        <div class="ed-grid">${(t.stations||[]).map(stationRow).join("")}</div>
+      </div>`).join("")}
+    ${!tools.length ? `<div class="card" style="text-align:center;padding:30px">
+      <div style="font-size:2rem;margin-bottom:10px">🎯</div>
+      <div class="rev-q">لا أدوات قياس بعد</div>
+      <div class="line">أداةٌ تُنشأ بأن يُعطى اختبارٌ اسمَ أداةٍ ورقمَ محطّة.</div></div>` : ''}`;
+
+  app.querySelectorAll(".ed-card").forEach(el =>
+    el.onclick = () => openQuiz({ id: +el.dataset.q }));
+  scrollTop();
+}
 
 /* ═══════════ ② دروس المقرَّر ═══════════ */
 
