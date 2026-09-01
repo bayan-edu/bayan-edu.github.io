@@ -46,17 +46,22 @@ let dirty = false; // تغييرات غير محفوظة في السؤال ال�
 export async function openQuiz(course, lesson){
   ctx = { course, lesson };
   nav('editor'); setWide(true);
-  head("اختبار الدرس", lesson.title);
+
+  /* مساران: اختبارُ درسٍ (course, lesson) · ومحطّةُ أداة (station) بلا
+     مقرَّرٍ ولا درس. والفرق في المدخل وحده — والمحرّر بعده واحد. */
+  const st = course && course.station === true;
+  head(st ? "محطّة قياس" : "اختبار الدرس", st ? (course.title || '') : lesson.title);
   app.innerHTML = `<div class="status">جارٍ التحميل…</div>`;
 
-  if(!lesson.quiz_id) return offerCreate();
+  const qid = st ? course.id : lesson.quiz_id;
+  if(!qid) return offerCreate();
 
-  const { data, error } = await api.quizForEdit(lesson.quiz_id);
+  const { data, error } = await api.quizForEdit(qid);
   if(error){ app.innerHTML = errBox(error, 'تحميل الاختبار'); return; }
   if(!data.ok){ app.innerHTML = errBox({ message: data.error }, 'تحميل الاختبار'); return; }
 
   Z = data; cur = 0; dirty = false;
-  render(true);                 // الدخول من شاشةٍ أخرى ⇒ الوجهة الأعلى
+  render(true);
 }
 
 /* درس بلا اختبار — لا يكتمل عند الطالب أبداً */
