@@ -144,9 +144,9 @@ export async function openTools(){
           ${st.published ? '' : '<span class="chip">غير منشورة</span>'}
         </div>
       </div>
+      <button class="it-b st-del" data-del="${st.id}" title="حذف">🗑</button>
       <div class="qz-go">←</div>
     </div>`;
-
   app.innerHTML = `
     ${narrowNote()}
     <div class="ed-bar">
@@ -169,6 +169,21 @@ export async function openTools(){
 
   document.getElementById("bk2").onclick = () => openEditor();
      document.getElementById("newst").onclick = () => newStation(tools);
+     app.querySelectorAll(".st-del").forEach(el => el.onclick = async ev => {
+    ev.stopPropagation();                    // لئلّا يُفتح الاختبار مع الحذف
+    const id = +el.dataset.del;
+    const { data } = await api.deleteQuiz(id);
+    if(!data?.confirm){ toast(data?.error || "تعذّر الحذف"); return; }
+
+    const msg = data.n > 0
+      ? `«${data.title}» فيها ${AR(data.n)} بنداً — أتُحذف كلُّها؟`
+      : `أتُحذف المحطّة «${data.title}»؟`;
+    if(!confirm(msg)) return;
+
+    const r = await api.deleteQuiz(id, true);
+    if(!r.data?.ok){ toast(r.data?.error || r.error?.message); return; }
+    toast("حُذفت"); openTools();
+  });
   app.querySelectorAll(".ed-card").forEach(el =>
     el.onclick = () => openQuiz({ id: +el.dataset.q, station: true,
                                   title: el.querySelector('.ed-t')?.textContent || '' }));
