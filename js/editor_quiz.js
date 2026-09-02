@@ -230,6 +230,7 @@ function quizSettings(){
       shuffle: $('qs_s').checked,
       tool: $('qs_tl')?.value.trim() || null,
       station: +($('qs_st')?.value) || null,
+      stationKind: $('qs_k')?.value || null,       
       official: Z.official });
 
     if(error || !data.ok){
