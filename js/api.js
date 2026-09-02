@@ -205,6 +205,7 @@ export const saveQuiz = o => db.rpc('save_quiz', {
   p_code: o.code ?? null, p_official: o.official ?? true,
   p_subject: o.subject ?? null, p_tool: o.tool ?? null,
   p_station: o.station ?? null,
+     p_kind: o.stationKind ?? null,
   // ⚠️ null في plays معنًى («بلا حدّ») لا «لم يُرسل» ⇒ تُرسل دائماً
   p_plays: o.plays ?? null, p_reveal: o.reveal ?? null,
   p_pass_mark: o.passMark ?? null, p_shuffle: o.shuffle ?? null });
