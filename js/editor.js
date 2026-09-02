@@ -224,7 +224,16 @@ async function newStation(tools){
           <input id="ns_no" type="number" min="1" value="1"></div>
         <div style="flex:1"><label class="fl">الدقائق</label>
           <input id="ns_min" type="number" min="1" value="12"></div>
+            </div>
       </div>
+
+      <label class="fl" style="margin-top:14px">دور المحطّة في التوجيه</label>
+      <select id="ns_k">
+        <option value="routing">محطّة التوجيه — يدخلها الجميع، ولا مستوى يخرج منها</option>
+        <option value="panel">محطّة قياس — يخرج منها مستوًى أو إحالةٌ إلى حدّ</option>
+        <option value="boundary">محطّة حدّ — تحسم لبساً، ويخرج منها مستوًى دائماً</option>
+        <option value="productive">محطّة إنتاج — يصحّحها المعلّم، ولا توجيه لها</option>
+      </select>
 
       <div class="nav" style="margin-top:20px">
         <button class="btn primary" id="ns_ok">إنشاء</button>
@@ -242,7 +251,8 @@ async function newStation(tools){
 
     const { data, error } = await api.saveQuiz({
       subject: +g("ns_sub"), tool: g("ns_tool"), title: g("ns_title"),
-      station: +g("ns_no") || null, minutes: +g("ns_min") || 25, official: true });
+      station: +g("ns_no") || null, minutes: +g("ns_min") || 25,
+      stationKind: g("ns_k"), official: true });
 
     if(error){ toast(error.message); return; }
     if(!data.ok){ toast(data.error); return; }
