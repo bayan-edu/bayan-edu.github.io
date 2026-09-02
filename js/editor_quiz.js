@@ -197,7 +197,15 @@ function quizSettings(){
             <input id="qs_tl" dir="ltr" value="${esc(Z.tool)}"></div>
           <div style="flex:1"><label class="fl">رقم المحطّة</label>
             <input id="qs_st" type="number" min="1" value="${Z.station||''}"></div>
-        </div>` : ''}
+        </div>
+
+        <label class="fl" style="margin-top:12px">دور المحطّة في التوجيه</label>
+        <select id="qs_k">
+          <option value="routing"   ${Z.station_kind==='routing'?'selected':''}>محطّة التوجيه — يدخلها الجميع، ولا مستوى يخرج منها</option>
+          <option value="panel"     ${Z.station_kind==='panel'?'selected':''}>محطّة قياس — يخرج منها مستوًى أو إحالةٌ إلى حدّ</option>
+          <option value="boundary"  ${Z.station_kind==='boundary'?'selected':''}>محطّة حدّ — تحسم لبساً، ويخرج منها مستوًى دائماً</option>
+          <option value="productive" ${Z.station_kind==='productive'?'selected':''}>محطّة إنتاج — يصحّحها المعلّم، ولا توجيه لها</option>
+        </select>` : ''}
 
       <div class="nav" style="margin-top:20px">
         <button class="btn primary" id="qs_ok">حفظ</button>
