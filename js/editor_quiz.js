@@ -1603,30 +1603,17 @@ async function runImport(p){
   try {
     for(const [k, pg] of p.passages.entries()){
       say(`جارٍ إضافة النصوص المشتركة… ${AR(k+1)} من ${AR(p.passages.length)}`);
-    /* 🔑 الحال تُقرأ لحظةَ الحفظ لا لحظةَ الرسم: النموذج يُعاد بناؤه
-       عند اختيار نوع الوسيط، فمتغيّرٌ محفوظ من رسمةٍ سابقة يكذب.
-       وهذا هو العطل الذي جعل النصّ يُحفظ ولا يُربط. */
-    const wasNew = !p?.id;
-
-    const { data, error } = await api.savePassage({
-      id: p?.id ?? null, quiz: Z.id, title: v("pfTitle") || null,
-      body: v("pfBody") || null, media: v("pfMedia") || null,
-      kind: v("pfMedia") ? (pk || 'audio') : 'text',
-      lang: v("pfLang") || 'ar',
-      position: p?.position ?? ((Z.passages||[]).length + 1) });
-    if(error){ toast(error.message); return; }
-    if(!data.ok){ toast(data.error); return; }
-
-    /* الربط يقع متى لم يكن السؤال مرتبطاً بهذا النصّ — لا متى كان
-       النصّ جديداً. فنصٌّ قائمٌ يُختار لسؤالٍ حرّ يجب أن يُربط أيضاً. */
-    if(Z.questions[cur]?.passage_id !== data.id){
-      await applyPassage(data.id);
-      toast(wasNew ? "أُضيف النصّ ورُبط" : "رُبط النصّ");
-      return;
+      const { data, error } = await api.savePassage({
+        quiz: Z.id, title: pg.title || null, body: pg.body || null,
+        media: pg.media || null, kind: pg.kind || 'text',
+        lang: pg.lang || 'ar',
+        position: (Z.passages || []).length + k + 1 });
+      if(error || !data?.ok){
+        stop(`النصّ المشترك ${AR(k+1)}`, error?.message || data?.error, 0); return;
+      }
+      // الأسئلة تشير إلى النصّ بـ ref، والقاعدة تعرف المعرّف وحده
+      if(pg.ref) refMap[pg.ref] = data.id;
     }
-    toast("حُفظ النصّ"); reload();
-    }
-
     const base = (Z.questions || []).length;
     for(const [i, q] of p.questions.entries()){
       say(`جارٍ الاستيراد… ${AR(i+1)} من ${AR(p.questions.length)}`);
