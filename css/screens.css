@@ -166,6 +166,15 @@ body.gate .wrap{max-width:1000px}
 .media{width:100%;border-radius:11px;border:1px solid var(--line);margin-bottom:15px;display:block}
 .media-v{width:100%;aspect-ratio:16/9;border:0;border-radius:11px;margin-bottom:15px}
 
+/* .qnum لا تُمسّ: تسكن في عشرة مواضع، وتحويلها إلى flex يُزيح ما لا شأن له */
+.qmove{display:flex;align-items:center;gap:6px;margin:-4px 0 13px}
+.qmv{width:26px;height:26px;line-height:1;cursor:pointer;
+  background:var(--fill);border:1px solid var(--line);border-radius:7px;
+  color:var(--text-muted);font-size:var(--fs-tag)}
+.qmv:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.qmv:disabled{opacity:.3;cursor:default}
+.qmv-s{font-size:var(--fs-tag);color:var(--text-muted)}
+
 .opts{display:flex;flex-direction:column;gap:9px}
 .opt{display:flex;align-items:flex-start;gap:12px;width:100%;text-align:start;
  background:var(--fill-soft);border:1px solid var(--line);border-radius:11px;padding:13px 15px;
