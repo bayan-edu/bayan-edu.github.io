@@ -134,6 +134,7 @@ const emptyCard = () => `<div class="card" style="text-align:center;padding:34px
 </div>`;
 
 function go(i){
+  if(i === cur) return focusMain();   // نقرةٌ على الحاضر: تقريبٌ لا انتقال
   if(dirty && !confirm("تغييرات غير محفوظة في هذا السؤال — أتتركها؟")) return;
   cur = i; dirty = false; render();
 }
