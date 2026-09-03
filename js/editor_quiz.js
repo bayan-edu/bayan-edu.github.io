@@ -1630,18 +1630,24 @@ async function passageRange(pid){
    ⚠️ معرّفات الحقول بادئتها pf* لا pb/pl: لوحة الجاهزية تسكن الصفحة
       معها، و getElementById تُرجع الأول في ترتيب المستند — و#main
       يسبق #ready — فكان معالج النشر يُركَّب على مربّع نصّ الفقرة. */
-function passageForm(p){
+/* مُعامِلان لا واحد:
+     p     نصٌّ محفوظٌ في القاعدة  ⇒ «تحرير» · و«حفظ»
+     draft ما كُتب ولم يُحفظ بعد   ⇒ «جديد»  · و«إضافة وربط»
+   وخلطُهما كان يجعل تبديلَ نوع الوسيط يُنشئ كائناً حيث كان null،
+   فتنقلب الحال ويسقط الربط. */
+function passageForm(p, draft){
   const isNew = !p;
+  const d = p || draft || {};              // ما يملأ الحقول
   const r = range(cur, 'passage_id');
-  let pk = p?.kind && p.kind !== 'text' ? p.kind : null;   // نوع الوسيط المختار
-  const main = document.getElementById("main");
+  let pk = d.kind && d.kind !== 'text' ? d.kind : null;   // نوع الوسيط المختار
+     const main = document.getElementById("main");
   main.innerHTML = `
     <div class="card eq-pgbox">
       <div class="qnum">${isNew ? 'نصّ مشترك جديد' : 'تحرير النصّ المشترك'}
         · ${isNew ? span(r) : ''}</div>
 
       <label class="fl">العنوان <span style="opacity:.6">(اختياري)</span></label>
-      <input id="pfTitle" value="${esc(p?.title || '')}" placeholder="Reading Passage 1">
+         <input id="pfTitle" value="${esc(d.title || '')}" placeholder="Reading Passage 1">
 
       <div class="eq-tools" style="margin-top:14px">
         <button class="eq-tb" data-pw="**" title="غامق"><b>B</b></button>
@@ -1654,16 +1660,16 @@ function passageForm(p){
         <span class="eq-hint">${SAFE_HOSTS}</span>
       </div>
       <textarea id="pfBody" style="min-height:240px"
-        placeholder="ألصق الفقرة كاملة…">${esc(p?.body || '')}</textarea>
+        placeholder="ألصق الفقرة كاملة…">${esc(d.body || '')}</textarea>
 
-      <input id="pfMedia" dir="ltr" class="eq-md" value="${esc(p?.media || '')}"
+        <input id="pfMedia" dir="ltr" class="eq-md" value="${esc(d.media || '')}"
              placeholder="${pk==='image'?'رابط الصورة':pk==='video'?'رابط الفيديو':'رابط المقطع الصوتي'}"
              ${pk ? '' : 'hidden'}>
 
       <label class="fl" style="margin-top:16px">اللغة</label>
       <select id="pfLang">
-        <option value="ar" ${p?.lang!=='en'?'selected':''}>العربية</option>
-        <option value="en" ${p?.lang==='en'?'selected':''}>English</option>
+        <option value="ar" ${d.lang!=='en'?'selected':''}>العربية</option>
+        <option value="en" ${d.lang==='en'?'selected':''}>English</option>
       </select>
 
       <div class="nav" style="margin-top:16px">
@@ -1685,11 +1691,13 @@ function passageForm(p){
     const keep = { title: main.querySelector("#pfTitle").value,
                    body:  main.querySelector("#pfBody").value,
                    media: main.querySelector("#pfMedia").value,
-                   lang:  main.querySelector("#pfLang").value };
-    const k = el.dataset.pk;
-    passageForm({ ...(p || {}), ...keep, id: p?.id ?? null,
-                  used: p?.used, position: p?.position,
-                  kind: pk === k ? 'text' : k });
+                   lang:  main.querySelector("#pfLang").value,
+                   kind:  pk === el.dataset.pk ? 'text' : el.dataset.pk };
+    /* 🔑 المحفوظ يبقى محفوظاً والجديد يبقى جديداً.
+       وتمريرُ كائنٍ حيث كان null كان يجعل isNew = !p تصير false،
+       فينقلب «إضافة وربط» إلى «حفظ» ويسقط الربط. */
+    p ? passageForm({ ...p, ...keep })
+      : passageForm(null, keep);
   });
   main.querySelector("#pfCancel").onclick = () => render();
   const pd = main.querySelector("#pfDel");
