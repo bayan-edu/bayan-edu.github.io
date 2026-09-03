@@ -284,7 +284,7 @@ function qCard(q){
     <div class="card">
             <div class="qnum">سؤال ${AR(cur+1)} · ${KIND_LABEL[q.kind]||'سؤال'}
         ${locked ? '<span class="badge lock">مقفل</span>' : ''}</div>
-
+      ${moveBar(q)}
       ${mediaRow(q, locked)}
 
       <textarea id="qb" class="eq-qt" dir="auto" placeholder="نصّ السؤال…"
@@ -990,6 +990,8 @@ function wire(q){
   const sq = main.querySelector("#sq"); if(sq) sq.onclick = () => saveQ(q);
   const dq = main.querySelector("#dq"); if(dq) dq.onclick = () => dupQ(q);
   const xq = main.querySelector("#xq"); if(xq) xq.onclick = () => delQ(q);
+  const mu = main.querySelector("#mvup"); if(mu) mu.onclick = () => moveQ(-1);
+  const md = main.querySelector("#mvdn"); if(md) md.onclick = () => moveQ(+1);
 }
 
 /* إعادة رسم الوسط وحده — فلا يفقد الشريط موضعه */
@@ -1099,6 +1101,74 @@ async function addQuestion(kind){
   cur = Z.questions.length - 1; dirty = true; render();
 }
 
+/* ═══════════ الترتيب ═══════════
+   🔑 المدى = من يشارك السؤالَ نصَّه المشترك. ومن لا نصّ له، مداه
+      إخوته الذين لا نصّ لهم. وبهذا القيد وحده تبقى كتلة النصّ
+      متجاورة — و range() في شريطَي القسم والنصّ تقرأ **مدى
+      متجاوراً**، فسهمٌ حرٌّ يُخرج سؤالاً من كتلته يشقّ المدى نصفين،
+      فتصير أداة التعليق تُعلّق بعضَ ما تعرضه. */
+function scopeIdx(){
+  const qs = Z.questions || [];
+  const k  = qs[cur]?.passage_id ?? null;
+  return qs.map((x, i) => ((x.passage_id ?? null) === k ? i : -1))
+           .filter(i => i >= 0);
+}
+
+/* 🔴 والذي يراه الطالب ترتيبُ **خانات** لا أسئلة: get_quiz ترتّب
+   الخانة بأصغر موضعٍ بين نسخها — المِرساة. فنسخةٌ لها توأمٌ أسبق،
+   ترتيبُ كتلتها بكارةٌ لا تصل إلى أحد. والصمتُ هنا أسوأ من العجز:
+   المؤلّف يرتّب نصّه الثالث بعناية ويظنّ أنه رتّب اختباراً. */
+function orderLead(q){
+  if(!q.variant_key) return null;
+  const ms = members(q.variant_key);
+  if(ms.length < 2) return null;
+  const lead = ms.reduce((a, b) => (a.position || 0) <= (b.position || 0) ? a : b);
+  return lead.id === q.id ? null : lead;
+}
+
+function moveBar(q){
+  const sc = scopeIdx();
+  if(sc.length < 2) return '';
+  const at    = sc.indexOf(cur);
+  const where = q.passage_id            ? '📖 ' + esc(pgTitle(q.passage_id))
+              : (Z.passages||[]).length ? 'أسئلة بلا نصّ'
+                                        : 'الاختبار';
+  const lead = orderLead(q);
+  return `<div class="qmove">
+      <button class="qmv" id="mvup" ${at === 0 ? 'disabled' : ''}
+        title="ارفعه داخل ${where}">▲</button>
+      <button class="qmv" id="mvdn" ${at === sc.length - 1 ? 'disabled' : ''}
+        title="أنزله داخل ${where}">▼</button>
+      <span class="qmv-s">${AR(at + 1)} من ${AR(sc.length)} · ${where}</span>
+    </div>
+    ${lead ? `<div class="eq-bs" style="margin:-7px 0 13px;line-height:1.8">
+      ⚠️ نسخةٌ تابعة — مِرساة هذه الخانة في
+      ${lead.passage_id ? '📖 ' + esc(pgTitle(lead.passage_id)) : 'سؤالٍ بلا نصّ'}
+      عند الموضع ${AR(lead.position)}. رتّبْ هناك ليصل الأثر إلى الطالب.
+    </div>` : ''}`;
+}
+
+async function moveQ(dir){
+  const qs = Z.questions || [];
+  const sc = scopeIdx(), at = sc.indexOf(cur), j = sc[at + dir];
+  if(j === undefined) return;
+
+  if(qs.some(x => !x.id)){
+    toast("احفظ السؤال الجديد أولاً — الترتيب يحتاج معرّفاً"); return; }
+  if(dirty && !confirm("تغييرات غير محفوظة — أتتركها؟")) return;
+
+  const me  = qs[cur].id;
+  const ids = qs.map(x => x.id);
+  [ids[cur], ids[j]] = [ids[j], ids[cur]];      // تبديلٌ داخل المدى
+
+  const { data, error } = await api.reorderQuestions(Z.id, ids);
+  if(error){ toast(error.message); return; }
+  if(!data.ok){ toast(data.error); return; }
+
+  dirty = false;
+  toast(`صار ${AR(at + dir + 1)} في مدى ${AR(sc.length)}`);
+  reload(me);                                   // البؤرة تتبع السؤال لا الرقم
+}
 async function dupQ(q){
   if(!q.id){ toast("احفظ السؤال أولاً ثم كرّره"); return; }
   const { data, error } = await api.duplicateQuestion(q.id);
