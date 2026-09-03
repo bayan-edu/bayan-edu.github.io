@@ -256,6 +256,9 @@ export const lessonItems  = lid => db.rpc('lesson_items',  { p_lesson: lid });
 export const deleteItem   = id  => db.rpc('delete_item',   { p_id: id });
 export const reorderItems = (lid, ids) =>
   db.rpc('reorder_items', { p_lesson: lid, p_ids: ids });
+// وأسئلة الاختبار مثلها — والقائمة كاملة، فالناتج ١..ن بلا فجوة
+export const reorderQuestions = (qid, ids) =>
+  db.rpc('reorder_questions', { p_quiz: qid, p_ids: ids });
 
 export const saveItem = o => db.rpc('save_item', {
   p_id: o.id ?? null, p_lesson: o.lesson, p_kind: o.kind,
