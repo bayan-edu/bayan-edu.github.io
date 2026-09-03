@@ -1342,6 +1342,46 @@ function parseImport(txt){
       if(!String(q.model || '').trim()) out.issues.push(`س${n}: مقالي بلا إجابة نموذجية`);
       return;
     }
+
+    /* ── إكمال الناقص ──────────────────────────────────────────
+       عددُ الفراغات يُشتقّ من {{n}} في النصّ، فلا عمود يتفارق معه.
+       والمقبولات خانةٌ لكل فراغ — وفراغٌ بلا مقبولٍ لا يُصيبه أحد. */
+    if(kind === 'gap'){
+      const ids = [...String(q.body||'').matchAll(/\{\{(\d+)\}\}/g)].map(m => +m[1]);
+      const g   = new Set(ids).size;
+      if(!g){ out.issues.push(`س${n}: إكمالٌ بلا {{1}} في نصّه`); return; }
+      const seq = [...new Set(ids)].sort((a,b)=>a-b).join(',');
+      if(seq !== Array.from({length:g},(_,x)=>x+1).join(','))
+        out.issues.push(`س${n}: أرقام الفراغات متتالية من ١ بلا فجوة`);
+
+      const slots = q.accept?.slots;
+      if(!Array.isArray(slots)){
+        out.issues.push(`س${n}: بلا مقبولات — { "ordered":…, "slots":[[…]] }`); return; }
+      if(slots.length !== g)
+        out.issues.push(`س${n}: في النصّ ${AR(g)} فراغاً والمقبولات ${AR(slots.length)}`);
+      slots.forEach((s, k) => {
+        if(!Array.isArray(s) || !s.length || s.some(a => !String(a||'').trim()))
+          out.issues.push(`س${n}: الفراغ ${AR(k+1)} بلا مقبولٍ صالح`);
+      });
+
+      // المفتاح "الفراغ:النصّ" — بلا الرقم يُطابَق خطأُ فراغٍ بآخر
+      Object.entries(q.wrong || {}).forEach(([key, code]) => {
+        if(!/^[1-9]\d*:./.test(key))
+          out.issues.push(`س${n}: مفتاح الخطأ يبدأ برقم الفراغ ثم نقطتين — "${key}"`);
+        else if(+key.split(':')[0] > g)
+          out.issues.push(`س${n}: الخطأ "${key}" يشير إلى فراغٍ غير موجود`);
+        if(!dxCodes.has(code)) out.issues.push(`س${n}: كود غير معروف "${code}"`);
+      });
+
+      if(Array.isArray(q.bank) && q.bank.length){
+        const bad = slots.flat().find(a => !q.bank.includes(a));
+        if(bad) out.issues.push(`س${n}: مقبولٌ ليس في القائمة — "${bad}"`);
+      }
+
+      if(!String(q.explanation || '').trim()) out.issues.push(`س${n}: بلا شرح للخطأ`);
+      return;
+    }
+
     if(kind !== 'mcq' && kind !== 'msq'){
       out.issues.push(`س${n}: نمط غير معروف "${kind}"`); return;
     }
@@ -1598,7 +1638,11 @@ async function runImport(p){
         explanation: q.explanation || null, model: q.model || null,
         difficulty: q.difficulty || null, lang: q.lang || 'ar',
         options: (q.options || []).map(o => ({
-          label: o.label, body: o.body, correct: !!o.correct, dx: o.dx })) });
+          label: o.label, body: o.body, correct: !!o.correct, dx: o.dx })),
+        // مفاتيح «إكمال الناقص» — تُرسَل للنمط وحده لئلّا تُكتب لغيره
+        accept: q.kind === 'gap' ? (q.accept || null) : null,
+        wrong:  q.kind === 'gap' ? (q.wrong  || null) : null,
+        bank:   q.kind === 'gap' ? (q.bank   || null) : null });
       if(error || !data?.ok){
         stop(`السؤال ${AR(i+1)}`, error?.message || data?.error, done); return;
       }
