@@ -360,11 +360,13 @@ function passageBar(q, locked){
   const p = (Z.passages||[]).find(x => String(x.id) === String(q.passage_id));
   const r = range(cur, 'passage_id');
   if(!p) return locked ? '' :
-    `<button class="eq-bar add" id="addpg">＋ نصّ مشترك يشمل هذا السؤال وما بعده</button>`;
+    `<button class="eq-bar add" id="addpg">＋ نصّ مشترك ${
+       r.n > 1 ? `— سيشمل الأسئلة ${AR(r.from)}–${AR(r.to)}`
+               : `— سيشمل السؤال ${AR(r.from)}`}</button>`;
   return `<div class="eq-bar pg">
     <div class="eq-brow">
-      <span class="eq-bt" dir="auto">📖 ${esc(p.title || 'نصّ مشترك')}</span>
       <span class="eq-bs">${span(r)}</span>
+      <button class="it-b" id="pgrange" title="عدّل نطاق الأسئلة">⇢ النطاق</button>
       <button class="it-b" id="pairpg">⇄ اقرن الكتلة</button>
       ${locked ? '' : `<button class="it-b" id="edpg">✏️ تحرير</button>
                        <button class="it-b" id="rmpg">✕ فصل</button>`}
@@ -896,6 +898,7 @@ function wire(q){
   bind("mkvar",  () => makeVariant(q));
   bind("pairvar",() => pairForm(q));
   bind("pairpg", () => pairPassage(q));
+  bind("pgrange", () => passageRange(q.passage_id));
   bind("cmpv",   () => compareVariant(q.variant_key));
   bind("addvar", () => pairForm(q));
   bind("rmvar",  () => unVariant(q));
@@ -1489,15 +1492,28 @@ async function runImport(p){
   try {
     for(const [k, pg] of p.passages.entries()){
       say(`جارٍ إضافة النصوص المشتركة… ${AR(k+1)} من ${AR(p.passages.length)}`);
-      const { data, error } = await api.savePassage({
-        quiz: Z.id, title: pg.title || null, body: pg.body || null,
-        media: pg.media || null,
-        kind: pg.media ? (pg.kind && pg.kind !== 'text' ? pg.kind : 'audio') : 'text',
-        lang: pg.lang || 'ar', position: (Z.passages||[]).length + k + 1 });
-      if(error || !data?.ok){
-        stop(`النصّ المشترك ${AR(k+1)}`, error?.message || data?.error); return;
-      }
-      if(pg.ref) refMap[pg.ref] = data.id;
+    /* 🔑 الحال تُقرأ لحظةَ الحفظ لا لحظةَ الرسم: النموذج يُعاد بناؤه
+       عند اختيار نوع الوسيط، فمتغيّرٌ محفوظ من رسمةٍ سابقة يكذب.
+       وهذا هو العطل الذي جعل النصّ يُحفظ ولا يُربط. */
+    const wasNew = !p?.id;
+
+    const { data, error } = await api.savePassage({
+      id: p?.id ?? null, quiz: Z.id, title: v("pfTitle") || null,
+      body: v("pfBody") || null, media: v("pfMedia") || null,
+      kind: v("pfMedia") ? (pk || 'audio') : 'text',
+      lang: v("pfLang") || 'ar',
+      position: p?.position ?? ((Z.passages||[]).length + 1) });
+    if(error){ toast(error.message); return; }
+    if(!data.ok){ toast(data.error); return; }
+
+    /* الربط يقع متى لم يكن السؤال مرتبطاً بهذا النصّ — لا متى كان
+       النصّ جديداً. فنصٌّ قائمٌ يُختار لسؤالٍ حرّ يجب أن يُربط أيضاً. */
+    if(Z.questions[cur]?.passage_id !== data.id){
+      await applyPassage(data.id);
+      toast(wasNew ? "أُضيف النصّ ورُبط" : "رُبط النصّ");
+      return;
+    }
+    toast("حُفظ النصّ"); reload();
     }
 
     const base = (Z.questions || []).length;
@@ -1573,6 +1589,40 @@ function editSection(cur_val){
   applySection(v.trim() || null);
 }
 
+/* نطاق النصّ صراحةً — يُلغي «أين أقف؟».
+   والمدى يبقى محسوباً من passage_id، وهذا يكتبه على مدًى يختاره
+   المؤلّف: ما داخل النطاق يُربط، وما خرج منه يُفصل. */
+async function passageRange(pid){
+  const qs = Z.questions || [];
+  const cur_ids = qs.filter(q => String(q.passage_id) === String(pid))
+                    .map(q => qs.indexOf(q) + 1);
+  const a = prompt(`نطاق أسئلة هذا النصّ — من أيّ سؤال؟\n` +
+                   `(الأسئلة ١–${AR(qs.length)})`, cur_ids[0] || (cur + 1));
+  if(a === null) return;
+  const b = prompt("وإلى أيّ سؤال؟", cur_ids[cur_ids.length-1] || (cur + 1));
+  if(b === null) return;
+
+  const from = Math.max(1, +a), to = Math.min(qs.length, +b);
+  if(!(from >= 1 && to >= from)){ toast("نطاقٌ غير صالح"); return; }
+
+  const inIds  = qs.slice(from - 1, to).map(q => q.id).filter(Boolean);
+  const outIds = qs.filter((q, i) => (i < from - 1 || i > to - 1)
+                    && String(q.passage_id) === String(pid))
+                   .map(q => q.id).filter(Boolean);
+
+  if(!inIds.length){ toast("لا أسئلة محفوظة في هذا النطاق"); return; }
+
+  if(outIds.length){
+    const r0 = await api.attachPassage(null, outIds);   // فصلُ ما خرج
+    if(r0.error || !r0.data?.ok){
+      toast(r0.error?.message || r0.data?.error); return; }
+  }
+  const { data, error } = await api.attachPassage(pid, inIds);
+  if(error){ toast(error.message); return; }
+  if(!data.ok){ toast(data.error); return; }
+  toast(`رُبط بـ${AR(data.count)} سؤالاً`);
+  reload();
+}
 
 /* ═══════════ النصّ المشترك ═══════════ */
 
