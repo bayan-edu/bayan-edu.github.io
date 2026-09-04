@@ -259,7 +259,9 @@ function renderPage(){
   bar.innerHTML = `<div class="timerbar">
     <span class="clock" id="clock">${mmss(S.left)}</span>
     <span class="track"><span class="trackfill" id="tf"></span></span>
-    <span class="qcount">${many?`<bdi>${from}–${to}</bdi>`:from} / ${AR(tot)}</span></div>`;
+    <span class="qcount">${PL
+      ? (many ? `<bdi>${from}–${to}</bdi>` : from)          /* بلا مقام في الجلسة */
+      : `${many?`<bdi>${from}–${to}</bdi>`:from} / ${AR(tot)}`}</span></div>`;
   paintClock();
 
   /* المقطع الصوتي يخرج من بطاقة النصّ إلى شريطٍ ملتصق: الصفحة صارت
@@ -300,7 +302,8 @@ function renderPage(){
     <div id="warn"></div>
     <div class="nav">
       ${S.p>0?'<button class="btn ghost" id="prev">السابق</button>':''}
-      <button class="btn primary" id="next">${last?'إنهاء وتسليم':'التالي'}</button>
+      <button class="btn primary" id="next">${
+        last && !PL ? 'إنهاء وتسليم' : 'التالي'}</button>
     </div>`;
 
   /* ── التفويض: مستمعٌ واحد للصفحة كلها ──
