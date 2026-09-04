@@ -434,18 +434,13 @@ function renderChat(msgs, error){
   scrollBottom();
 }
 
-/* اختبار تحديد المستوى — جلسةٌ واحدة متّصلة.
-   حدُّ المحطّة حقيقةٌ عن الأداة لا عن التجربة: الطالب لا يرى
-   تسليماً ولا نتيجةً ولا دخولاً ثانياً، بل قسماً يتلو قسماً. */
+/* اختبار تحديد المستوى — أداةٌ قائمة بذاتها، لا درسَ لها ولا مقرَّر */
 async function startPlacement(x){
-  const tool = x.tool || (x.code ? x.code.replace(/^sk_/, '') + '_placement' : null);
-  if(!tool){ toast("أداةُ التسكين غير محدَّدة لهذه المادة"); return; }
-
+  if(!x.tool){ toast("اختبار تحديد المستوى قيد الإعداد"); return; }
   app.innerHTML = `<div class="status">جارٍ فتح الاختبار…</div>`;
-  const { data, error } = await api.placementStart(tool);
+  const { data, error } = await api.placementStart(x.tool);
   if(error){ app.innerHTML = errBox(error.message, 'تحديد المستوى'); return; }
   if(!data.ok){ toast(data.error); loadList(); return; }
-
   const { startPlacementQuiz } = await import('./quiz.js');
   startPlacementQuiz(data.session, data.quiz, x, data.resumed);
 }
