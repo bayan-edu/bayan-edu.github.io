@@ -182,6 +182,9 @@ export const saveRoute   = o => db.rpc('save_route', {
   p_min: o.min, p_max: o.max, p_verdict: o.verdict,
   p_to: o.to ?? null, p_level: o.level ?? null, p_note: o.note ?? null });
 export const deleteRoute = id => db.rpc('delete_route', { p_id: id });
+export const placementStart  = t => db.rpc('placement_start', { p_tool: t });
+export const placementSubmit = (sid, ans, sec) =>
+  db.rpc('placement_submit', { p_session: sid, p_answers: ans, p_duration: sec });
 export const deleteQuiz = (id, confirm=false) =>
   db.rpc('delete_quiz', { p_quiz: id, p_confirm: confirm });
 export const saveLesson = o => db.rpc('save_lesson', {
