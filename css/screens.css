@@ -365,7 +365,16 @@ body.gate .wrap{max-width:1000px}
 .ed-sec{margin-bottom:26px}
 .ed-sec-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
           margin-bottom:11px;padding-inline-start:3px}
-
+.rt-ok{border-color:var(--accent)}
+.rt-bad{border-color:var(--warn-edge);background:var(--warn-fill)}
+.rt-iss{margin:10px 0 0;padding-inline-start:20px;line-height:1.9;font-size:var(--fs-meta)}
+.rt-list{display:flex;flex-direction:column;gap:7px}
+.rt{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    padding:10px 13px;border-radius:10px;
+    background:var(--accent-soft);border:1px solid var(--accent-line)}
+.rt-n{flex:0 0 62px;font-weight:700;font-family:'Almarai'}
+.rt-a{font-weight:600}
+.rt-note{flex:1 1 100%;font-size:.82em;opacity:.65;line-height:1.7}
 .ed-grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
 .ed-card{display:flex;align-items:center;gap:13px;cursor:pointer;
   background:var(--surface);
