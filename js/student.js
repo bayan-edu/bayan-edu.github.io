@@ -96,7 +96,7 @@ export async function loadList(){
     const x = S.subjects.find(v=>String(v.id)===el.dataset.i);
     if(!x.needs_placement && bulk(x) === 0){
       toast("دروس هذه المادة قيد الإعداد — ستصلك عند جهوزها"); return; }
-    if(x.needs_placement){ toast("اختبار تحديد المستوى قيد الإعداد"); return; }
+    if(x.needs_placement) return startPlacement(x);
     if(!x.mentor_chosen) return loadMentors(x);
     loadLessons(x);
   });
@@ -432,4 +432,20 @@ function renderChat(msgs, error){
     toast(error?"تعذّر الإرسال":"أُرسلت رسالتك"); loadChat();
   };
   scrollBottom();
+}
+
+/* اختبار تحديد المستوى — جلسةٌ واحدة متّصلة.
+   حدُّ المحطّة حقيقةٌ عن الأداة لا عن التجربة: الطالب لا يرى
+   تسليماً ولا نتيجةً ولا دخولاً ثانياً، بل قسماً يتلو قسماً. */
+async function startPlacement(x){
+  const tool = x.tool || (x.code ? x.code.replace(/^sk_/, '') + '_placement' : null);
+  if(!tool){ toast("أداةُ التسكين غير محدَّدة لهذه المادة"); return; }
+
+  app.innerHTML = `<div class="status">جارٍ فتح الاختبار…</div>`;
+  const { data, error } = await api.placementStart(tool);
+  if(error){ app.innerHTML = errBox(error.message, 'تحديد المستوى'); return; }
+  if(!data.ok){ toast(data.error); loadList(); return; }
+
+  const { startPlacementQuiz } = await import('./quiz.js');
+  startPlacementQuiz(data.session, data.quiz, x, data.resumed);
 }
