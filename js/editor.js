@@ -159,6 +159,8 @@ export async function openTools(){
           <span class="ed-t">${esc(t.tool)}</span>
           <span class="chip">${esc(t.subject)}</span>
           <span class="chip g">${AR((t.stations||[]).length)} محطّة</span>
+          <button class="btn ghost" data-rt="${esc(t.tool)}"
+                  style="margin-inline-start:auto;padding:5px 12px;font-size:.85em">⇢ شجرة التوجيه</button>          
         </div>
         <div class="ed-grid">${(t.stations||[]).map(stationRow).join("")}</div>
       </div>`).join("")}
@@ -187,6 +189,8 @@ export async function openTools(){
   app.querySelectorAll(".ed-card").forEach(el =>
     el.onclick = () => openQuiz({ id: +el.dataset.q, station: true,
                                   title: el.querySelector('.ed-t')?.textContent || '' }));
+  app.querySelectorAll("[data-rt]").forEach(el =>
+    el.onclick = () => openRoutes(el.dataset.rt));
   scrollTop();
 }
 
@@ -260,6 +264,158 @@ async function newStation(tools){
     openTools();
   };
   scrollTop();
+}
+
+/* ═══════════ ①ج شجرة التوجيه ═══════════
+   التوجيه بياناتٌ لا شيفرة: الدليل يقول إن العتبات تُعاير بعد ١٠٠ طالب،
+   فتعديلُها صفٌّ في شاشة لا نشرُ إصدار. */
+
+export async function openRoutes(tool){
+  nav('editor'); setWide(true);
+  head("شجرة التوجيه", tool);
+  app.innerHTML = `<div class="status">جارٍ التحميل…</div>`;
+
+  const { data, error } = await api.toolRoutes(tool);
+  if(error){ app.innerHTML = errBox(error.message, 'التوجيه'); return; }
+  const T = data, R = T.readiness || {};
+  const st = T.stations || [], lv = T.levels || [];
+
+  const KIND = { routing:'توجيه', panel:'قياس', boundary:'حدّ', productive:'إنتاج' };
+
+  const routeRow = (r, s) => `
+    <div class="rt" data-r="${r.id}">
+      <span class="rt-n">${AR(r.min)}–${AR(r.max)}</span>
+      <span class="rt-a">${r.verdict === 'next'
+        ? `→ ${esc(r.to_title || '⚠️ محطّةٌ محذوفة')}`
+        : `⇒ ${esc(r.level || '⚠️ مستوًى محذوف')}`}</span>
+      ${r.note ? `<span class="rt-note">${esc(r.note)}</span>` : ''}
+      <button class="it-b" data-red="${r.id}" title="تحرير">✏️</button>
+      <button class="it-b" data-rdel="${r.id}" title="حذف">🗑</button>
+    </div>`;
+
+  app.innerHTML = `
+    ${narrowNote()}
+    <div class="ed-bar">
+      <button class="btn ghost" id="bk3">← رجوع إلى الأدوات</button>
+    </div>
+
+    <div class="card ${R.ok ? 'rt-ok' : 'rt-bad'}" style="margin-bottom:18px">
+      <div class="ed-t">${R.ok ? '✅ شجرةٌ مكتملة' : '⚠️ الشجرة ناقصة'}</div>
+      <div class="ed-m" style="margin-top:6px">
+        <span class="chip g">${AR(R.stations || 0)} محطّة</span>
+        <span class="chip g">${AR(R.routes || 0)} مسار</span></div>
+      ${(R.issues || []).length ? `<ul class="rt-iss">${
+        R.issues.map(i => `<li>${esc(i)}</li>`).join("")}</ul>` : ''}
+    </div>
+
+    ${st.map(s => `
+      <div class="ed-sec">
+        <div class="ed-sec-h">
+          <span class="ed-t">${s.station != null ? AR(s.station) + ' · ' : ''}${esc(s.title)}</span>
+          <span class="chip">${KIND[s.kind] || '—'}</span>
+          <span class="chip g">${AR(s.n || 0)} بنداً</span>
+          ${s.published ? '' : '<span class="chip">غير منشورة</span>'}
+          <button class="btn ghost" data-radd="${s.id}"
+                  style="margin-inline-start:auto;padding:5px 12px;font-size:.85em">＋ مسار</button>
+        </div>
+        ${(s.routes || []).length
+          ? `<div class="rt-list">${s.routes.map(r => routeRow(r, s)).join("")}</div>`
+          : `<div class="eq-hint" style="display:block;padding:10px 3px">
+               ${s.kind === 'productive' ? 'محطّة إنتاج — لا توجيه لها'
+                                         : '⚠️ لا مسارَ يغادر هذه المحطّة'}</div>`}
+      </div>`).join("")}`;
+
+  document.getElementById("bk3").onclick = () => openTools();
+
+  app.querySelectorAll("[data-radd]").forEach(el =>
+    el.onclick = () => routeForm(tool, +el.dataset.radd, null, st, lv));
+
+  app.querySelectorAll("[data-red]").forEach(el => el.onclick = () => {
+    const id = +el.dataset.red;
+    const s  = st.find(x => (x.routes||[]).some(r => r.id === id));
+    routeForm(tool, s.id, s.routes.find(r => r.id === id), st, lv);
+  });
+
+  app.querySelectorAll("[data-rdel]").forEach(el => el.onclick = async () => {
+    if(!confirm("حذف هذا المسار؟ ⚠️ وقد يُنتج فجوةً في المدى.")) return;
+    const { data, error } = await api.deleteRoute(+el.dataset.rdel);
+    if(error || !data?.ok){ toast(error?.message || data?.error); return; }
+    toast("حُذف المسار"); openRoutes(tool);
+  });
+  scrollTop();
+}
+
+
+/* نموذج المسار — والحقول تتبع الحكم: next تحتاج وجهة · done تحتاج مستوًى */
+function routeForm(tool, fromId, r, stations, levels){
+  const s = stations.find(x => x.id === fromId) || {};
+  const box = document.createElement('div');
+  box.className = 'modal';
+  box.innerHTML = `
+    <div class="card" style="max-width:520px;margin:auto">
+      <div class="ed-t" style="margin-bottom:4px">${r ? 'تحرير مسار' : 'مسار جديد'}</div>
+      <div class="eq-hint" style="display:block;margin-bottom:16px">
+        من «${esc(s.title || '')}» · ${AR(s.n || 0)} بنداً</div>
+
+      <div style="display:flex;gap:12px">
+        <div style="flex:1"><label class="fl">من درجة</label>
+          <input id="rf_min" type="number" min="0" max="${s.n || 0}" value="${r?.min ?? 0}"></div>
+        <div style="flex:1"><label class="fl">إلى درجة</label>
+          <input id="rf_max" type="number" min="0" max="${s.n || 0}" value="${r?.max ?? (s.n || 0)}"></div>
+      </div>
+
+      <label class="fl" style="margin-top:14px">الحكم</label>
+      <select id="rf_v">
+        <option value="next" ${r?.verdict !== 'done' ? 'selected' : ''}>→ إلى محطّةٍ تالية</option>
+        <option value="done" ${r?.verdict === 'done' ? 'selected' : ''}>⇒ ينتهي بمستوًى</option>
+      </select>
+
+      <div id="rf_next" style="${r?.verdict === 'done' ? 'display:none' : ''}">
+        <label class="fl" style="margin-top:12px">المحطّة التالية</label>
+        <select id="rf_to">${stations.filter(x => x.id !== fromId).map(x =>
+          `<option value="${x.id}" ${r?.to_quiz === x.id ? 'selected' : ''}>${
+            x.station != null ? AR(x.station) + ' · ' : ''}${esc(x.title)}</option>`).join("")}</select>
+      </div>
+
+      <div id="rf_done" style="${r?.verdict === 'done' ? '' : 'display:none'}">
+        <label class="fl" style="margin-top:12px">المستوى</label>
+        <select id="rf_lv">${levels.map(l =>
+          `<option value="${l.id}" ${r?.level_id === l.id ? 'selected' : ''}>${esc(l.name)}</option>`).join("")}</select>
+      </div>
+
+      <label class="fl" style="margin-top:14px">سببُ القاعدة — يقرؤه من يُعاير بعد سنة</label>
+      <input id="rf_note" dir="auto" value="${esc(r?.note || '')}"
+             placeholder="P2/P3 ملتبس ⇒ محطّة الحدّ ١">
+
+      <div class="nav" style="margin-top:20px">
+        <button class="btn primary" id="rf_ok">حفظ</button>
+        <button class="btn ghost" id="rf_x">إلغاء</button>
+      </div>
+    </div>`;
+  document.body.appendChild(box);
+
+  const $ = id => box.querySelector('#' + id);
+  $('rf_v').onchange = e => {
+    $('rf_next').style.display = e.target.value === 'next' ? '' : 'none';
+    $('rf_done').style.display = e.target.value === 'done' ? '' : 'none';
+  };
+  $('rf_x').onclick = () => box.remove();
+
+  $('rf_ok').onclick = async e => {
+    const b = e.currentTarget; if(b.disabled) return;
+    b.disabled = true; b.textContent = "…";
+    const v = $('rf_v').value;
+    const { data, error } = await api.saveRoute({
+      id: r?.id ?? null, from: fromId,
+      min: +$('rf_min').value, max: +$('rf_max').value, verdict: v,
+      to:    v === 'next' ? +$('rf_to').value : null,
+      level: v === 'done' ? +$('rf_lv').value : null,
+      note:  $('rf_note').value.trim() || null });
+    if(error || !data?.ok){
+      b.disabled = false; b.textContent = "حفظ";
+      toast(error?.message || data?.error); return; }
+    box.remove(); toast("حُفظ المسار"); openRoutes(tool);
+  };
 }
 
 /* ═══════════ ② دروس المقرَّر ═══════════ */
