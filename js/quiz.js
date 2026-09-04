@@ -227,8 +227,7 @@ function mountStation(data){
     if(S.left<=0){ clearInterval(S.tick); toast("انتهى وقت هذا القسم"); finish(true); }
   }, 1000);
 
-  guardPage();
-  render();
+  renderPage();
 }
 
 /* ═══════════ ④ عرض الصفحة ═══════════ */
@@ -413,7 +412,7 @@ async function finish(auto){
 
     if(!data.done){ mountStation(data.quiz); return; }
 
-    const sub = PL.subject; PL = null;
+    PL = null;
     app.innerHTML = `
       <div class="card" style="text-align:center;padding:34px;max-width:520px;margin:0 auto">
         <div style="font-size:2.4rem;margin-bottom:12px">🎯</div>
@@ -433,6 +432,7 @@ async function finish(auto){
 
   S.result = { ...data, auto, secs: Math.round((Date.now()-S.t0)/1000) };
   renderResult();
+}
 
 /* ═══════════ ⑥ النتيجة والتشخيص ═══════════ */
 
