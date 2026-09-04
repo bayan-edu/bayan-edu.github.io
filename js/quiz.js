@@ -192,6 +192,45 @@ function paintClock(){
   if(f) f.style.width = Math.max(0,(S.left/S.total)*100) + "%";
 }
 
+/* ═══════════ جلسةُ التسكين ═══════════
+   حدُّ المحطّة حقيقةٌ عن الأداة لا عن التجربة: الطالب لا يرى تسليماً
+   ولا نتيجةً ولا دخولاً ثانياً — بل قسماً يتلو قسماً.
+   ولا عدّادَ بنود: المجموع ٣٤ إلى ٥٢، فإعلانُ رقمٍ كذب. والزمن
+   هو الإطار الصادق، والدليل مبنيٌّ عليه. */
+let PL = null;                      // { session, subject }
+
+export function startPlacementQuiz(session, quiz, subject, resumed){
+  PL = { session, subject };
+  if(resumed) toast("نُستأنف من حيث توقّفت");
+  mountStation(quiz);
+}
+
+/* محطّةٌ تُركَّب في مكان سابقتها — بلا مغادرةٍ ولا دخولٍ ثانٍ */
+function mountStation(data){
+  S.quiz = data;
+  S.passages = {};
+  (data.passages||[]).forEach(pg => S.passages[pg.id] = pg);
+  S.itemId = null;
+  S.ans = data.questions.map(q=>({ q:q.id, kind:q.kind, o:null, os:[],
+                                   txt:Array(q.gaps||1).fill(""), essay:"", sec:0, chg:0 }));
+  A = new Map(S.ans.map(a => [a.q, a]));
+  N = new Map(data.questions.map((q,i) => [q.id, i+1]));
+  pages = paginate(data.questions);
+  S.p = 0;
+  S.total = budget(data); S.left = S.total;
+  S.t0 = Date.now();
+  mark = Date.now(); touched = null;
+
+  clearInterval(S.tick);
+  S.tick = setInterval(()=>{
+    S.left--; paintClock();
+    if(S.left<=0){ clearInterval(S.tick); toast("انتهى وقت هذا القسم"); finish(true); }
+  }, 1000);
+
+  guardPage();
+  render();
+}
+
 /* ═══════════ ④ عرض الصفحة ═══════════ */
 
 function renderPage(){
@@ -363,13 +402,37 @@ async function finish(auto){
     : a.kind==='gap' ? { q:a.q, txt:a.txt.map(v=>v.trim()), sec:a.sec, chg:a.chg }
     :                  { q:a.q, essay:a.essay, sec:a.sec });
 
+  /* 🔒 في الجلسة: لا مراجعة ولا درجة — المحطّة التالية تُركَّب مكانها.
+     ومحطّةٌ تعرض «١٤/١٨» تُخبر الطالب أين وُجِّه. */
+  if(PL){
+    const { data, error } = await api.placementSubmit(
+      PL.session, payload, Math.round((Date.now()-S.t0)/1000));
+    if(error || !data?.ok){
+      app.innerHTML = `<div class="err"><b>تعذّر المتابعة</b>${
+        esc(error?.message || data?.error || '')}</div>`; return; }
+
+    if(!data.done){ mountStation(data.quiz); return; }
+
+    const sub = PL.subject; PL = null;
+    app.innerHTML = `
+      <div class="card" style="text-align:center;padding:34px;max-width:520px;margin:0 auto">
+        <div style="font-size:2.4rem;margin-bottom:12px">🎯</div>
+        <div class="rev-q">مستواك: ${esc(data.level || '')}</div>
+        <div class="line" style="margin-top:10px">
+          حُدِّد بعد ${AR(data.stations || 0)} أقسام. ودروسُك صارت على مقاسك.</div>
+        <div class="nav" style="margin-top:22px">
+          <button class="btn primary" id="plgo">ابدأ التعلّم ←</button></div>
+      </div>`;
+    document.getElementById("plgo").onclick = () => loadList();
+    return;
+  }
+
   const { data, error } = await api.submitAttempt(
     S.quiz.id, payload, Math.round((Date.now()-S.t0)/1000), auto);
   if(error){ app.innerHTML = `<div class="err"><b>تعذّر التسليم</b>${esc(error.message)}</div>`; return; }
 
   S.result = { ...data, auto, secs: Math.round((Date.now()-S.t0)/1000) };
   renderResult();
-}
 
 /* ═══════════ ⑥ النتيجة والتشخيص ═══════════ */
 
