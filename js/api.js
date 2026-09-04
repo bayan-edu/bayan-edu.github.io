@@ -176,6 +176,12 @@ export const setMySubjects         = ids => db.rpc('set_my_subjects', { p_ids: i
 export const authorTree   = ()  => db.rpc('author_tree');
 export const authorLessons = cid => db.rpc('author_lessons', { p_course: cid });
 export const listTools = () => db.rpc('list_tools');
+export const toolRoutes  = t => db.rpc('tool_routes', { p_tool: t });
+export const saveRoute   = o => db.rpc('save_route', {
+  p_id: o.id ?? null, p_from: o.from ?? null,
+  p_min: o.min, p_max: o.max, p_verdict: o.verdict,
+  p_to: o.to ?? null, p_level: o.level ?? null, p_note: o.note ?? null });
+export const deleteRoute = id => db.rpc('delete_route', { p_id: id });
 export const deleteQuiz = (id, confirm=false) =>
   db.rpc('delete_quiz', { p_quiz: id, p_confirm: confirm });
 export const saveLesson = o => db.rpc('save_lesson', {
