@@ -276,8 +276,14 @@ function qCard(q){
 
   return `
     ${locked ? `<div class="warnbox">أُجيب عن هذا السؤال ${AR(q.answered)} مرة —
-      التعديل يكسر ربط المحاولات. لتغييره: انسخ الاختبار بكود جديد.</div>` : ''}
-
+      والتعديل يكسر ربط الإجابات بما رآه الطلاب فعلاً.
+      <div style="margin-top:11px">
+        <button class="btn primary" id="nv">✎ أنشئ إصداراً جديداً</button>
+      </div>
+      <div class="eq-bs" style="margin-top:9px;line-height:1.75">
+        يُنسخ السؤال بخياراته وأكواده وخانته وموضعه، فتحرّره بحرّية.
+        والقديم يتقاعد بإجاباته سليمة — يختفي من الاختبار ولا يُمحى.</div>
+    </div>` : ''}
     ${sectionBar(q, locked)}
     ${passageBar(q, locked)}
     ${variantBar(q, locked)}
@@ -990,6 +996,7 @@ function wire(q){
   }
   const sq = main.querySelector("#sq"); if(sq) sq.onclick = () => saveQ(q);
   const dq = main.querySelector("#dq"); if(dq) dq.onclick = () => dupQ(q);
+  const nv = main.querySelector("#nv"); if(nv) nv.onclick = () => newVersion(q);
   const xq = main.querySelector("#xq"); if(xq) xq.onclick = () => delQ(q);
   const mu = main.querySelector("#mvup"); if(mu) mu.onclick = () => moveQ(-1);
   const md = main.querySelector("#mvdn"); if(md) md.onclick = () => moveQ(+1);
@@ -1176,6 +1183,27 @@ async function dupQ(q){
   if(error){ toast(error.message); return; }
   if(!data.ok){ toast(data.error); return; }
   toast("كُرّر السؤال بخياراته وأكواده");
+  reload(data.id);
+}
+
+
+/* ✎ الإصدار الجديد — الجواب عن معضلة «سؤالٌ أُجيب عنه لا يُعدَّل».
+   القديم يتقاعد ولا يُمحى، فتبقى إجاباته وتشخيصها صادقة عمّا رآه
+   الطالب. والوريث يولد في موضعه وخانته، فارغاً من الإجابات ⇒ قابلاً
+   للتحرير بكل قواعد save_question. */
+async function newVersion(q){
+  if(!confirm(
+    `إصدارٌ جديد من هذا السؤال؟\n\n` +
+    `• يتقاعد الحاليّ وتبقى إجاباته ${AR(q.answered)} سليمة\n` +
+    `• تحلّ محلّه نسخةٌ قابلة للتحرير في موضعه وخانته\n` +
+    `• لا يتغيّر شيءٌ في وجه الاختبار`)) return;
+
+  const { data, error } = await api.retireQuestion(q.id);
+  if(error){ toast(error.message); return; }
+  if(!data.ok){ toast(data.error); return; }
+
+  toast(`أُنشئ الإصدار · ${AR(data.answers_kept)} إجابة محفوظة` +
+        (data.reviews_moved ? ` · ${AR(data.reviews_moved)} مراجعة انتقلت` : ''));
   reload(data.id);
 }
 
