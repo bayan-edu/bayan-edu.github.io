@@ -201,6 +201,7 @@ export const saveLesson = o => db.rpc('save_lesson', {
 // محرّر الأسئلة — نقيض get_quiz: يُعيد المفاتيح والتشخيص للمؤلّف
 export const quizForEdit      = id => db.rpc('quiz_for_edit',      { p_quiz: id });
 export const duplicateQuestion = id => db.rpc('duplicate_question', { p_id: id });
+export const retireQuestion    = id => db.rpc('retire_question',    { p_id: id });
 export const deleteQuestion    = id => db.rpc('delete_question',    { p_id: id });
 export const quizReadiness     = id => db.rpc('quiz_readiness',     { p_quiz: id });
 export const publishQuiz = (id, on = true) =>
