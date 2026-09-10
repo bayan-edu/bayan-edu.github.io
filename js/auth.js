@@ -11,6 +11,7 @@ import { app, bar, head, toast, esc, AR, errBox, nav, registerRoutes, mathBoot }
 import { loadList, loadFeedback, loadChat } from './student.js';
 import { loadTeacher, loadInbox, loadMySubjects } from './teacher.js';
 import { openEditor } from './editor.js';
+import { loadStudents } from './analytics.js';
 
 /* ═══════════ ① البوابة ═══════════ */
 
@@ -418,6 +419,7 @@ export function start(){
     feedback:   loadFeedback,
     chat:       loadChat,
     grade:      loadTeacher,
+    students:   loadStudents,
     inbox:      loadInbox,
     mySubjects: loadMySubjects,
     editor:     openEditor,
