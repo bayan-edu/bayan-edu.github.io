@@ -7,7 +7,7 @@ import { S } from './state.js';
 import { mediaUrl, isManaged } from './media.js';
 
 /* ── بصمة النسخة — لمعرفة أي شيفرة يشغّلها المتصفح فعلاً ── */
-export const BUILD = "b42";
+export const BUILD = "b43";
 
 /* ── مراسي الصفحة ── */
 export const app = document.getElementById("app");
@@ -204,10 +204,10 @@ export function registerRoutes(map){ Object.assign(ROUTES, map); }
 
 const DEST = {
   student: [['subjects','المواد'], ['feedback','ملاحظاتي'], ['chat','الرسائل']],
-  teacher: [['grade','التصحيح'],   ['inbox','الرسائل'],     ['mySubjects','موادّي'],
-            ['editor','التأليف']],
-  admin:   [['requests','الطلبات'], ['editor','التأليف'],   ['grade','التصحيح'],
-            ['inbox','الرسائل'],    ['mySubjects','موادّي']]
+  teacher: [['grade','التصحيح'],   ['students','الطلاب'],   ['inbox','الرسائل'],
+            ['mySubjects','موادّي'], ['editor','التأليف']],
+  admin:   [['requests','الطلبات'], ['students','الطلاب'],  ['editor','التأليف'],
+            ['grade','التصحيح'],    ['inbox','الرسائل'],     ['mySubjects','موادّي']]
 };
 
 /* المحرّر وحده يحتاج عرضاً أوسع: التأليف عمل مكتب لا إبهام.
