@@ -699,181 +699,136 @@ body.gate .wrap{max-width:1000px}
 .mf-note{font-size:var(--fs-meta);color:var(--text-muted)}
 .mf-note.bad{color:var(--danger-text)}
 
-/* ═══════════ التحليلات — b43 ═══════════
-   لا لونَ جديداً: كلُّ شيء من رموز base.css، فتتبع السِمتين معاً. */
+/* ══════════════════════════════════════════════════════════════
+   بيان — أنماط التحليلات · b50
+   كتلةٌ واحدة كاملة. لا تُضاف لها قواعدُ `.an-` في مكانٍ آخر:
+   التراكمُ عبر النسخ هو ما كسر b48 و b49.
+   ولا لونَ خارج رموز base.css، فتتبع السِمتين معاً.
+   ══════════════════════════════════════════════════════════════ */
 
+/* ── الفلاتر والتبويب ── */
 .an-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
 .an-sel{flex:1 1 140px;min-width:0;padding:10px 12px;border-radius:11px;
         border:1px solid var(--line);background:var(--surface-2);
         color:var(--text);font:inherit}
-
 .an-tabs{display:flex;gap:8px;margin-bottom:14px}
 .an-tab{flex:1;padding:10px;border-radius:11px;cursor:pointer;font:inherit;
         border:1px solid var(--line);background:var(--fill-soft);color:var(--text-muted)}
 .an-tab.on{background:var(--accent-fill);border-color:var(--accent-line);
            color:var(--text);font-weight:600}
 
+/* ── الصفّ العامّ ── */
 .an-row{border:1px solid var(--line);border-radius:var(--r);padding:13px 15px;
-        margin-bottom:9px;background:var(--surface);box-shadow:var(--shadow);
-        cursor:pointer}
+        margin-bottom:9px;background:var(--surface);box-shadow:var(--shadow);cursor:pointer}
 .an-row.static{cursor:default}
 .an-row:not(.static):hover{border-color:var(--line-strong)}
-
 .an-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
 .an-n{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
 .an-n.high{color:var(--accent)} .an-n.mid{color:var(--warn)}
 .an-n.low{color:var(--danger)}  .an-n.na{color:var(--text-muted)}
+.an-n.flat{color:var(--accent)}
 
+/* ── الشريط ── */
 .an-track{height:6px;border-radius:99px;background:var(--fill-strong);
           overflow:hidden;margin:8px 0 7px}
 .an-fill{height:100%;border-radius:99px;transition:width .5s ease}
-.an-fill.high{background:var(--accent-edge)} .an-fill.mid{background:var(--warn-edge)}
-.an-fill.low{background:var(--danger-edge)}  .an-fill.na{background:var(--line-strong)}
-/* العيّنة الصغيرة تبهت ولا تُخفى — العَلَمُ يُخبر والحذفُ يُخفي */
+.an-fill.high,.an-fill.flat{background:var(--accent-edge)}
+.an-fill.mid{background:var(--warn-edge)}
+.an-fill.low{background:var(--danger-edge)}
+.an-fill.na{background:var(--line-strong)}
+/* العيّنةُ الصغيرة تبهت ولا تُخفى — العَلَمُ يُخبر والحذفُ يُخفي */
 .an-fill.thin{opacity:.42}
-
 .an-thin{display:inline-block;margin-top:5px;padding:2px 9px;border-radius:99px;
          font-size:.78rem;background:var(--warn-soft);color:var(--warn);
          border:1px solid var(--warn-line)}
 
-.an-dx{margin-top:7px;font-size:.9rem;color:var(--text-muted)}
+.an-dx{margin-top:7px;font-size:.9rem;color:var(--text-muted);line-height:1.7}
 .an-dx .an-c{display:inline-block;margin-inline-start:6px;padding:1px 8px;
              border-radius:99px;background:var(--fill);font-variant-numeric:tabular-nums}
-
-.an-sum{text-align:start}
-
-/* ═══ الأداء — b46 ═══ */
-
-/* الاتجاه أوّلاً والحلقة بجانبه: أوّلُ ما تقع عليه العين يحدّد
-   ما يُقرأ بعده. فالاتجاه متنٌ والرقم سياقُه. */
-.an-top{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
-.an-tl{flex:1 1 260px;min-width:0}
-.an-tr{flex:0 0 auto;text-align:center}
-.an-head{font-size:var(--fs-read);line-height:1.7;margin-bottom:9px}
-.an-foot{font-size:.78rem;color:var(--text-muted);line-height:1.6;margin-top:6px}
-
-/* ═══ الرسم الزمنيّ — b47 ═══
-   بلا preserveAspectRatio="none": التمديدُ غيرُ المتناسب كان يُسمّن
-   الخطوطَ أفقياً ويُنحّفها رأسياً — وهو سببُ المظهر الرخيص كلِّه. */
-
-/* النقطة: قلبٌ من لون السطح — تُرى فوق المساحة لا تذوب فيها */
-
-.an-st{fill:var(--text-muted);font-size:11px}
-
+.an-drop{margin-top:6px;font-size:.84rem;color:var(--warn)}
 .an-more{width:100%;padding:11px;margin:2px 0 6px;border-radius:11px;cursor:pointer;
          font:inherit;border:1px solid var(--line);background:var(--fill-soft);
          color:var(--text-muted)}
 .an-more:hover{border-color:var(--line-strong);color:var(--text)}
 
-/* وضع الطالب: شريطٌ بلون واحد — الطولُ يُخبره أين هو،
-   واللونُ يبقى للتغيّر وحده. */
-.an-fill.flat{background:var(--accent-edge)}
-.an-gfg.flat{stroke:var(--accent-edge)}
-.an-gn.flat{color:var(--accent)}
-
-@media (max-width:560px){
-  .an-top{gap:10px}
-  .an-tr{flex:1 1 100%}
-  .an-gauge{width:132px;height:132px}
-}
-
-/* ═══ الفروع — b45 ═══
-   تابعةٌ لا نظيرة. والتبعية تُقرأ من ثلاثة مجتمعة، لا من إزاحةٍ وحدها:
-   إزاحةٌ تفصلها · أرضيةٌ تجمعها · وقياسٌ أصغر يرتّبها تحت أمّها. */
-
-.an-strands{margin:13px 0 2px;margin-inline-start:26px;
-            padding:10px 13px 4px;border-radius:11px;
-            background:var(--fill-soft);
-            border-inline-start:3px solid var(--accent-line)}
-
-.an-srh{font-size:.76rem;color:var(--text-muted);margin-bottom:9px;
-        letter-spacing:.02em}
-
-.an-sr{margin-bottom:11px}
-.an-sr:last-child{margin-bottom:0}
-.an-sr .an-h{font-size:.94rem}
-/* شريطٌ أرقّ: الفرع تفصيلٌ داخل المادة لا قياسٌ يوازيها */
-.an-sr .an-track{height:4px;margin:6px 0 5px}
-.an-sr .qz-m{font-size:.8rem}
-
-/* ═══ الحلقة — b44 ═══
-   SVG بلا مكتبة. والقياس من font-size ليكبر مع السِمة لا بأرقامٍ مثبّتة. */
-
-.an-gauge{position:relative;width:172px;height:172px;margin:6px auto 10px}
-.an-gauge.sm{width:92px;height:92px;margin:0}
-.an-gauge svg{width:100%;height:100%;display:block;
-              /* تسير من الأعلى يساراً — اتجاه التقدّم في صفحةٍ عربية */
-              transform:scaleX(-1)}
-
+/* ── الحلقة ── */
+.an-gauge{position:relative;width:168px;height:168px;margin:4px auto 8px}
+.an-gauge.sm{width:104px;height:104px;margin:0 auto}
+/* تسير من الأعلى يساراً — اتجاه التقدّم في صفحةٍ عربية */
+.an-gauge svg{width:100%;height:100%;display:block;transform:scaleX(-1)}
 .an-gbg{fill:none;stroke:var(--fill-strong);stroke-width:11}
-.an-gfg{fill:none;stroke-width:11;stroke-linecap:round;
-        transition:stroke-dasharray .7s ease}
-.an-gfg.high{stroke:var(--accent-edge)} .an-gfg.mid{stroke:var(--warn-edge)}
-.an-gfg.low{stroke:var(--danger-edge)}  .an-gfg.na{stroke:var(--line-strong)}
-/* العيّنة الصغيرة تبهت ولا تُخفى */
+.an-gfg{fill:none;stroke-width:11;stroke-linecap:round;transition:stroke-dasharray .7s ease}
+.an-gfg.high,.an-gfg.flat{stroke:var(--accent-edge)}
+.an-gfg.mid{stroke:var(--warn-edge)}
+.an-gfg.low{stroke:var(--danger-edge)}
+.an-gfg.na{stroke:var(--line-strong)}
 .an-gfg.thin{opacity:.42}
-
 .an-gt{position:absolute;inset:0;display:flex;flex-direction:column;
        align-items:center;justify-content:center;gap:2px;pointer-events:none}
-.an-gn{font-size:2.1rem;font-weight:700;line-height:1;
-       font-variant-numeric:tabular-nums}
-.an-gauge.sm .an-gn{font-size:1.15rem}
-.an-gn.high{color:var(--accent)} .an-gn.mid{color:var(--warn)}
-.an-gn.low{color:var(--danger)}  .an-gn.na{color:var(--text-muted)}
-.an-gs{font-size:.82rem;color:var(--text-muted)}
-.an-gauge.sm .an-gs{font-size:.7rem}
+.an-gn{font-size:2rem;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.an-gauge.sm .an-gn{font-size:1.28rem}
+.an-gn.high,.an-gn.flat{color:var(--accent)} .an-gn.mid{color:var(--warn)}
+.an-gn.low{color:var(--danger)} .an-gn.na{color:var(--text-muted)}
+.an-gs{font-size:.8rem;color:var(--text-muted)}
+.an-gauge.sm .an-gs{font-size:.72rem}
 
+/* ── بطاقة الرأس: الاتجاه متنٌ والرقمان سياقُه ── */
+.an-top{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.an-tl{flex:1 1 280px;min-width:0}
+.an-tr{flex:0 0 auto}
+.an-head{font-size:var(--fs-read);line-height:1.75;margin-bottom:8px}
+.an-foot{font-size:.78rem;color:var(--text-muted);line-height:1.7;margin-top:10px}
 .an-cen{text-align:center}
-/* رأس البطاقة: الحلقة إلى جانب الاسم لا فوقه — الرقم سياقٌ لا عنوان */
-.an-side{display:flex;align-items:center;gap:15px;text-align:start}
+.an-two{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.an-one{text-align:center;width:130px}
+.an-note{font-size:.72rem;color:var(--text-muted);line-height:1.5;margin-top:4px}
+.an-sum{text-align:start}
 
-/* ═══ الرسم — b48 · Chart.js ═══
-   ارتفاعٌ ثابت للحاوية: اللوحة تحتاج مقاساً تُحسب عليه، و
-   maintainAspectRatio:false يتركه للـCSS. */
-.an-chart{position:relative;height:232px;width:100%;margin:4px 0 2px}
-.an-chart canvas{display:block}
+/* ── الرسوم · Chart.js ──
+   🔴 الارتفاعُ هنا لا هناك: maintainAspectRatio:false يطلبه من CSS،
+      وحاويةٌ بلا ارتفاع تجعل اللوحة تطفح على ما تحتها. */
+.an-chart{width:100%;margin:6px 0 2px}
+.an-clab{font-size:.76rem;color:var(--text-muted);margin:10px 0 2px;font-weight:600}
+.an-cmain{position:relative;width:100%;height:186px}
+.an-cvol{position:relative;width:100%;height:96px}
+.an-cmain canvas,.an-cvol canvas{display:block}
 
-@media (max-width:560px){ .an-chart{height:200px} }
-
-/* ═══ الأداء — b49 ═══ */
-
-/* حلقتان متجاورتان: الإتقان جودةٌ والإنجاز تغطية — رقمان لا بديلان */
-.an-two{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
-.an-one{text-align:center;max-width:150px}
-.an-note{font-size:.72rem;color:var(--text-muted);line-height:1.5;margin-top:2px}
-
-/* الاندفاع: تنبيهٌ عن العمل لا حكمٌ على الطالب — ولهذا warn لا danger */
+/* ── الاندفاع: تنبيهٌ عن العمل لا حكمٌ على الطالب ⇒ warn لا danger ── */
 .an-rush{background:var(--warn-soft);border:1px solid var(--warn-line);
          color:var(--warn-text);border-radius:var(--r);padding:12px 15px;
-         margin:10px 0;line-height:1.75;font-size:.92rem}
+         margin:12px 0;line-height:1.8;font-size:.92rem}
 
-/* الانحدار عن الذروة */
-.an-drop{margin-top:6px;font-size:.84rem;color:var(--warn)}
-
-/* حالةُ النمط */
+/* ── حالةُ نمط الخطأ ── */
 .an-st{font-size:.76rem;padding:2px 10px;border-radius:99px;white-space:nowrap;
        border:1px solid var(--line);background:var(--fill);color:var(--text-muted)}
 .an-st.persistent{background:var(--danger-soft);border-color:var(--danger-line);color:var(--danger)}
 .an-st.partial{background:var(--warn-soft);border-color:var(--warn-line);color:var(--warn)}
 .an-st.cleared{background:var(--accent-fill);border-color:var(--accent-line);color:var(--accent)}
 
-/* تفاصيل الإجابة — شريطٌ جانبيّ يقول الحكم قبل أن يُقرأ النصّ */
+/* ── تفاصيل الإجابة: شريطٌ جانبيّ يقول الحكم قبل أن يُقرأ النصّ ── */
 .an-q{border:1px solid var(--line);border-radius:var(--r);padding:13px 15px;
       margin-bottom:9px;background:var(--surface);box-shadow:var(--shadow);
       border-inline-start:3px solid var(--line-strong)}
 .an-q.ok{border-inline-start-color:var(--accent-edge)}
 .an-q.no{border-inline-start-color:var(--danger-edge)}
-.an-q.na{border-inline-start-color:var(--line-strong)}
-
 .an-qh{display:flex;gap:10px;align-items:baseline}
 .an-qn{flex:0 0 auto;min-width:26px;height:26px;line-height:26px;text-align:center;
        border-radius:8px;background:var(--fill);color:var(--text-muted);
        font-size:.8rem;font-variant-numeric:tabular-nums}
-.an-qb{line-height:1.8}
+.an-qb{line-height:1.85}
 .an-qc{margin-top:8px;font-size:.9rem;color:var(--text-muted)}
-
 /* التشخيصُ متنٌ والإجابةُ سياق — فله أرضيةٌ ووزنٌ أظهر */
 .an-qd{margin-top:9px;padding:10px 12px;border-radius:11px;line-height:1.8;
        background:var(--accent-soft);border:1px solid var(--accent-line)}
 .an-qr{margin-top:9px;padding:10px 12px;border-radius:11px;line-height:1.8;
        background:var(--warn-soft);border:1px solid var(--warn-line);color:var(--warn-text)}
+
+/* ── الجوّال ── */
+@media (max-width:560px){
+  .an-top{gap:8px}
+  .an-tr{flex:1 1 100%}
+  .an-cmain{height:168px}
+  .an-cvol{height:86px}
+  .an-gauge{width:140px;height:140px}
+  .an-one{width:120px}
+}
