@@ -742,11 +742,24 @@ body.gate .wrap{max-width:1000px}
 
 .an-sum{text-align:start}
 
-/* الفروع تفصيلٌ داخل المادة — تُزاح لتُقرأ تابعةً لا نظيرة */
-.an-strands{margin-top:11px;padding-inline-start:13px;
-            border-inline-start:2px solid var(--line)}
-.an-sr{margin-bottom:9px}
+/* ═══ الفروع — b45 ═══
+   تابعةٌ لا نظيرة. والتبعية تُقرأ من ثلاثة مجتمعة، لا من إزاحةٍ وحدها:
+   إزاحةٌ تفصلها · أرضيةٌ تجمعها · وقياسٌ أصغر يرتّبها تحت أمّها. */
+
+.an-strands{margin:13px 0 2px;margin-inline-start:26px;
+            padding:10px 13px 4px;border-radius:11px;
+            background:var(--fill-soft);
+            border-inline-start:3px solid var(--accent-line)}
+
+.an-srh{font-size:.76rem;color:var(--text-muted);margin-bottom:9px;
+        letter-spacing:.02em}
+
+.an-sr{margin-bottom:11px}
 .an-sr:last-child{margin-bottom:0}
+.an-sr .an-h{font-size:.94rem}
+/* شريطٌ أرقّ: الفرع تفصيلٌ داخل المادة لا قياسٌ يوازيها */
+.an-sr .an-track{height:4px;margin:6px 0 5px}
+.an-sr .qz-m{font-size:.8rem}
 
 /* ═══ الحلقة — b44 ═══
    SVG بلا مكتبة. والقياس من font-size ليكبر مع السِمة لا بأرقامٍ مثبّتة. */
