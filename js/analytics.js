@@ -1,89 +1,291 @@
 /* ══════════════════════════════════════════════════════════
    بيان — analytics.js
-   تحليل الأداء: قائمة الطلاب · بطاقة الطالب · اللوحة
+   الأداء: شاشة الطالب · بطاقة المعلّم · قائمة الطلاب · اللوحة
 
-   📐 يقرأ ثلاث دوالّ (85 · 86 · 87) عبر api.js وحدها.
+   📐 يقرأ 85→89 و86→87 عبر api.js وحدها.
 
    🔒 لا شرطَ صلاحيةٍ في هذه الوحدة — ولا يُضاف.
-      الدوالّ الثلاث `security invoker`، وRLS هي التي تفصل:
+      الدوالّ `security invoker`، وRLS هي التي تفصل:
         المعلّم ⇒ طلابه · المدير ⇒ الجميع · الطالب ⇒ نفسه.
       ⚠️ وتصفيةٌ تُكتب هنا ستبدو أماناً وليست به.
 
-   🎓 ترتيب الشاشة قرارٌ تربويّ لا ذوق:
-      · الأضعف أوّلاً في كل قائمة — الترتيبُ نفسه توجيه.
-      · أثرُ الإعادة متنٌ لا حاشية — هو الرقم الوحيد الذي
-        يصف التعليمَ لا الطالب.
-      · الحلقةُ كبيرةٌ في اللوحة (الرقمُ هو موضوع الشاشة)،
-        وصغيرةٌ في بطاقة الطالب (الرقمُ سياقٌ وأثرُ الإعادة متن).
+   🎓 وشاشتا الطالب والمعلّم **مُصيِّرٌ واحد بوضعين** (M.forMe):
+      ولو كُتبتا مرّتين لافترقتا يوماً، فرأى المعلّم رقماً ورأى
+      الطالبُ غيرَه عن الشيء نفسه — وأيُّهما الصادق لا يُقرأ.
 
-   ⚠️ الفاصل «،» لا «·» — عمداً وفي كلّ سطر.
-      الصفر العربيّ «٠» نقطةٌ مرفوعة، والفاصل «·» نقطةٌ مرفوعة.
-      فـ«٩ · محاولة» تُقرأ «٩٠ محاولة». حرفان بشكلٍ واحد،
-      والخطأ صامتٌ لأن النصّ سليمٌ في المصدر ومقلوبٌ في العين.
+   🎓 والفرق بين الوضعين قرارٌ تربويّ لا ذوق:
+      · للطالب: اللونُ لا يحكم على إتقانه (شريطٌ واحد بلون واحد)،
+        ويحكم على **تغيّره** وحده. التغذية الراجعة التي تُوجّه
+        الانتباه إلى الذات تُضعف الأداء اللاحق؛ والتي تُوجّهه إلى
+        العمل تقوّيه. فالطول يُخبره أين هو، واللون يُخبره أين تحرّك.
+      · للمعلّم: ألوان النطاقات — لأن عمله فرزٌ وتدخّل.
 
-   ⚠️ الألوان حكمٌ على العمل لا على الطالب. تُعرض للمعلّم؛
-      وحين تُبنى شاشةُ الطالب تُراجَع قبل نقلها إليها.
+   ⚠️ عنوانُ الاتجاه يقول **واقعةً** لا خلاصة:
+      آخرُ أسبوعين مقابل السابقين أعطى +٨، وآخرُ ثلاثة أعطى −٦٫٦
+      لنفس الطالب. ورقمٌ ينقلب بتغيّر نافذةٍ نختارها ليس قياساً.
+      ⇒ يُقارَن الأسبوعُ الجاري بسابقه النشِط، وكلاهما في الرسم.
 
-   ⚠️ ولا يُعرض مفتاحُ قاعدةٍ للإنسان أبداً. «اختبار ٢٣» لغةُ
-      جدولٍ لا لغةُ معلّم: تقول أين الصفّ ولا تقول في ماذا تحسّن
-      الطالب. العنوان يأتي من 88، والرقم يبقى للتشخيص لا للعرض.
+   ⚠️ الفاصل «،» لا «·»: الصفر العربيّ «٠» نقطةٌ مرفوعة كالفاصل،
+      فـ«٩ · محاولة» تُقرأ «٩٠ محاولة».
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
 import { app, head, esc, AR, errBox, nav, BUILD, scrollTop } from './ui.js';
 
-/* حالةٌ محلّية — لا تسكن S لأنها مشتقّة من الشاشة لا من الجلسة */
+/* حالةٌ محلّية — مشتقّة من الشاشة لا من الجلسة، فلا تسكن S */
 const F = { level:null, subject:null, view:'list', search:'', opts:null };
+const M = { uid:null, forMe:false, subject:null, strand:null,
+            moreUp:false, moreDown:false, data:null };
 
 /* ═══════════ أدوات العرض ═══════════ */
 
-const pct = v => v==null ? '—' : AR(v)+'٪';
+const pct  = v => v==null ? '—' : AR(v)+'٪';
+const num  = v => v==='' ? null : Number(v);
+const empty = t => `<div class="status">${esc(t)}</div>`;
 
-/* حدود اللون في موضعٍ واحد — تُراجَع مرّةً لا في عشرة أماكن */
-function band(m){ return m==null ? 'na' : m<60 ? 'low' : m<80 ? 'mid' : 'high'; }
+/* حدود اللون في موضعٍ واحد. وفي وضع الطالب لا نطاقَ للإتقان —
+   الطولُ يُخبره أين هو، واللونُ يُترك للتغيّر وحده. */
+function band(m, judge){ return !judge ? 'flat'
+  : m==null ? 'na' : m<60 ? 'low' : m<80 ? 'mid' : 'high'; }
+
+const thinTag = t => t ? `<span class="an-thin">عيّنة صغيرة</span>` : '';
+
+function bar(m, thin, judge){
+  const w = Math.max(0, Math.min(100, Number(m)||0));
+  return `<div class="an-track"><div class="an-fill ${band(m,judge)}${thin?' thin':''}"
+            style="width:${w}%"></div></div>`;
+}
 
 /* ── الحلقة ──
-   SVG خالصٌ بلا مكتبة. والنصُّ خارجها لا داخلها، لأن الحلقة تُعكس
-   أفقياً لتسير من الأعلى **يساراً** — اتجاه التقدّم في صفحةٍ عربية —
-   والنصُّ لو كان داخلها لانعكس معها. */
-function gauge(m, thin, sub, small){
+   النصُّ خارج الـSVG لا داخله: الحلقة تُعكس أفقياً لتسير من الأعلى
+   يساراً — اتجاه التقدّم في صفحةٍ عربية — والنصُّ ينعكس معها لو دخلها. */
+function gauge(m, thin, sub, small, judge){
   const R = 52, C = 2 * Math.PI * R;
   const v = Math.max(0, Math.min(100, Number(m) || 0));
   const on = (v / 100) * C;
   return `<div class="an-gauge${small?' sm':''}">
     <svg viewBox="0 0 120 120" aria-hidden="true">
       <circle class="an-gbg" cx="60" cy="60" r="${R}"/>
-      <circle class="an-gfg ${band(m)}${thin?' thin':''}" cx="60" cy="60" r="${R}"
+      <circle class="an-gfg ${band(m,judge)}${thin?' thin':''}" cx="60" cy="60" r="${R}"
               stroke-dasharray="${on.toFixed(1)} ${(C-on).toFixed(1)}"
               transform="rotate(-90 60 60)"/>
     </svg>
-    <div class="an-gt">
-      <div class="an-gn ${band(m)}">${pct(m)}</div>
-      ${sub ? `<div class="an-gs">${esc(sub)}</div>` : ''}
-    </div>
+    <div class="an-gt"><div class="an-gn ${band(m,judge)}">${pct(m)}</div>
+      ${sub?`<div class="an-gs">${esc(sub)}</div>`:''}</div>
   </div>`;
 }
 
-function bar(m, thin){
-  const w = Math.max(0, Math.min(100, Number(m)||0));
-  return `<div class="an-track"><div class="an-fill ${band(m)}${thin?' thin':''}"
-            style="width:${w}%"></div></div>`;
+/* ── الخطّ الزمنيّ: إتقانٌ خطّاً وجهدٌ أعمدةً ──
+   ⚠️ الأسبوع الفارغ لا يُوصَل بما بعده. وصلُه يرسم تعلّماً لم يقع.
+   ⚠️ والزمن يسير من اليمين إلى اليسار — اتجاه القراءة. */
+function spark(tr){
+  const W=320, H=118, L=8, R=8, T=10, B=26;
+  const pts = tr || [];
+  if(pts.length < 2) return '';
+  const maxE = Math.max(1, ...pts.map(p=>p.answered||0));
+  const n = pts.length;
+  /* معكوس: أقدمُ نقطةٍ يميناً */
+  const x = i => W - R - (i * (W-L-R) / (n-1));
+  const y = m => (H-B) - (Math.max(0,Math.min(100,m))/100) * (H-B-T);
+
+  const bars = pts.map((p,i)=>{
+    const h = ((p.answered||0)/maxE) * 30;
+    return h<1 ? '' : `<rect class="an-sb" x="${(x(i)-5).toFixed(1)}" y="${(H-B-h).toFixed(1)}"
+                        width="10" height="${h.toFixed(1)}" rx="2"/>`;
+  }).join("");
+
+  /* قطعٌ بين كل نقطتين نشِطتين متجاورتين — وتنقطع عند الفراغ */
+  let segs = '';
+  for(let i=0;i<n-1;i++){
+    const a=pts[i], b=pts[i+1];
+    if(a.mastery==null || b.mastery==null) continue;
+    segs += `<line class="an-sl" x1="${x(i).toFixed(1)}" y1="${y(a.mastery).toFixed(1)}"
+              x2="${x(i+1).toFixed(1)}" y2="${y(b.mastery).toFixed(1)}"/>`;
+  }
+  const dots = pts.map((p,i)=> p.mastery==null ? '' :
+    `<circle class="an-sd${i===n-1?' last':''}" cx="${x(i).toFixed(1)}"
+       cy="${y(p.mastery).toFixed(1)}" r="${i===n-1?4.5:3.2}"/>`).join("");
+
+  const d = s => { const [,m,dd] = s.split('-'); return AR(+dd)+'/'+AR(+m); };
+  return `<svg class="an-spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"
+            role="img" aria-label="الأداء الأسبوعي">
+      <line class="an-sx" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>
+      ${bars}${segs}${dots}
+      <text class="an-st" x="${W-R}" y="${H-9}" text-anchor="end">${d(pts[0].from)}</text>
+      <text class="an-st" x="${L}" y="${H-9}" text-anchor="start">${d(pts[n-1].from)}</text>
+    </svg>`;
 }
 
-/* عيّنةٌ صغيرة: تُعلَن ولا تُخفى — والقيمة تبقى ظاهرة */
-const thinTag = t => t ? `<span class="an-thin">عيّنة صغيرة</span>` : '';
+/* عنوانُ الاتجاه — واقعةٌ تُرى في الرسم، لا خلاصةُ نافذةٍ مختارة */
+function trendLine(tr, forMe){
+  const act = (tr||[]).filter(p=>p.mastery!=null);
+  const you = forMe ? 'ك' : 'ه';
+  if(!act.length) return forMe
+    ? 'ابدأ — كلُّ محاولةٍ تضيف نقطةً إلى خطّك.'
+    : 'لا محاولات مسجَّلة بعد.';
+  const last = act[act.length-1], prev = act[act.length-2];
+  const live = (tr||[]).length && tr[tr.length-1].mastery != null;
+  if(!live){
+    const gap = (tr||[]).length - 1 - (tr||[]).map(p=>p.mastery!=null).lastIndexOf(true);
+    return `لا إجاباتٍ هذا الأسبوع — آخرُ نشاط${you} قبل ${AR(gap)} أسبوعاً.`;
+  }
+  const bodyNow = `هذا الأسبوع ${pct(last.mastery)} من ${AR(last.answered)} إجابة`;
+  if(!prev) return `${bodyNow} — وهي بداية${you}.`;
+  const dv = Math.round((last.mastery - prev.mastery)*10)/10;
+  if(dv === 0) return `${bodyNow} — كالأسبوع النشِط السابق تماماً.`;
+  return `${bodyNow} — ${dv>0?'أعلى':'أقلّ'} من الأسبوع النشِط السابق بـ${AR(Math.abs(dv))} نقطة.`;
+}
 
-const empty = t => `<div class="status">${esc(t)}</div>`;
+
+/* ═══════════ ① شاشة الطالب ═══════════ */
+
+export async function loadMyPerformance(){
+  nav('perf');
+  M.uid = null; M.forMe = true;
+  M.subject = null; M.strand = null; M.moreUp = false; M.moreDown = false;
+  await drawPerformance("أدائي", "اتجاهُك، وما تحسّن، وما يستحقّ عودة");
+}
+
+/* ═══════════ ② بطاقة الطالب — للمعلّم والمدير ═══════════ */
+
+export async function openStudentCard(uid){
+  M.uid = uid; M.forMe = false;
+  M.subject = null; M.strand = null; M.moreUp = false; M.moreDown = false;
+  await drawPerformance("بطاقة الطالب", null, true);
+}
 
 
-/* ═══════════ ① القائمة واللوحة ═══════════ */
+/* ═══════════ المُصيِّر المشترك ═══════════ */
+
+async function drawPerformance(title, sub, back){
+  app.innerHTML = `<div class="status">جارٍ التحميل…</div>`;
+  const { data, error } = await api.studentPerformance(M.uid, M.subject, M.strand);
+  const crumb = back ? `<div class="crumb" id="bk">← تحليل الأداء</div>` : '';
+  const bind  = () => { const b = document.getElementById('bk'); if(b) b.onclick = loadStudents; };
+
+  if(error){ app.innerHTML = crumb + errBox(error,'الأداء'); bind(); return; }
+  M.data = data || {};
+  const d = M.data, st = d.student, o = d.overall || {}, fl = d.filter || {};
+  head(title, sub ?? (st?.name || ''));
+
+  if(!st){ app.innerHTML = crumb + empty("لا بيانات — أو ليس ضمن طلابك"); bind(); return; }
+
+  const judge = !M.forMe;
+  const qs    = d.quizzes || [];
+  const subs  = d.subjects || [];
+
+  /* الفرعُ يُخفى ما لم يوجد فرعان فأكثر: فلترٌ بخيارٍ واحد يُقرأ عطلاً */
+  const cur    = subs.find(s => String(s.subject_id) === String(M.subject));
+  const strOpt = (cur?.strands || []).filter(x => x.strand_id != null);
+  const showStr = M.subject && strOpt.length > 1;
+
+  /* ما تحسّن · ما يستحقّ عودة — ترشيحان من قائمةٍ واحدة، فلا تفترقان */
+  const up   = qs.filter(x => x.gain != null).sort((a,b)=> b.gain - a.gain);
+  const down = qs.filter(x => x.mastery != null && x.mastery < x.pass)
+                 .sort((a,b)=> a.mastery - b.mastery);
+
+  const gainTag = g => `<span class="an-n ${g>0?'high':g<0?'low':'mid'}">
+      ${g>0?'▲':g<0?'▼':'='} ${AR(Math.abs(g))}</span>`;
+
+  const quizRow = (x, mode) => `
+    <div class="an-row static">
+      <div class="an-h">
+        <span class="qz-t">${esc(x.title)}</span>
+        ${mode==='gain' ? gainTag(x.gain)
+                        : `<span class="an-n ${band(x.mastery,judge)}">${pct(x.mastery)}</span>`}
+      </div>
+      ${mode==='gain' ? '' : bar(x.mastery, x.answered<10, judge)}
+      <div class="qz-m">${x.lesson?esc(x.lesson)+'، ':''}${
+        x.attempts>1 ? `${AR(x.attempts)} محاولات، من ${pct(x.first)} إلى ${pct(x.mastery)}`
+                     : `محاولةٌ واحدة، ${AR(x.answered)} إجابة`}${
+        mode==='need' ? `، عتبةُ النجاح ${pct(x.pass)}` : ''}</div>
+    </div>`;
+
+  const section = (ttl, arr, mode, more, key, note) => !arr.length ? '' : `
+    <h2 class="sec">${esc(ttl)}</h2>
+    ${note ? `<div class="warnbox">${note}</div>` : ''}
+    ${arr.slice(0, more ? arr.length : 10).map(x => quizRow(x, mode)).join("")}
+    ${arr.length > 10 && !more
+      ? `<button class="an-more" data-more="${key}">عرض المزيد (${AR(arr.length-10)})</button>` : ''}`;
+
+  const selBox = () => {
+    const opts = subs.map(s => `<option value="${s.subject_id}"
+        ${String(M.subject)===String(s.subject_id)?'selected':''}>${esc(s.name)}</option>`).join("");
+    return `<div class="an-bar">
+      <select id="mSubject" class="an-sel"><option value="">كلّ المواد</option>${opts}</select>
+      ${showStr ? `<select id="mStrand" class="an-sel">
+          <option value="">كلّ الفروع</option>
+          ${strOpt.map(x=>`<option value="${x.strand_id}"
+             ${String(M.strand)===String(x.strand_id)?'selected':''}>${esc(x.name)}</option>`).join("")}
+        </select>` : ''}
+    </div>`;
+  };
+
+  app.innerHTML = `
+    ${crumb}
+
+    <div class="card an-top">
+      <div class="an-tl">
+        <div class="an-head">${esc(trendLine(d.trend, M.forMe))}</div>
+        ${spark(d.trend) || `<div class="qz-m">الخطُّ يظهر بعد أسبوعين من النشاط.</div>`}
+        <div class="an-foot">الأعمدةُ عددُ الإجابات في الأسبوع. والنسبةُ الأسبوعية
+          تتحرّك بما دُرس فيه أيضاً، لا بالاجتهاد وحده.</div>
+      </div>
+      <div class="an-tr">
+        ${gauge(o.mastery, false, fl.subject ? 'إتقان المادة' : 'إتقان عام', false, judge)}
+        <div class="qz-m an-cen">${
+          fl.subject ? esc(fl.subject) + (fl.strand ? '، '+esc(fl.strand) : '')
+                     : `${AR(o.subjects||0)} مادة، ${AR(o.answered||0)} إجابة`}</div>
+      </div>
+    </div>
+
+    ${selBox()}
+
+    ${M.subject
+      ? (qs.length
+          ? `<h2 class="sec">اختبارات ${esc(fl.strand || fl.subject || '')}</h2>
+             ${qs.map(x => quizRow(x, 'plain')).join("")}`
+          : empty("لا محاولات ضمن هذا الاختيار"))
+      : `
+        ${section('ما تحسّن', up, 'gain', M.moreUp, 'up',
+            'هذا وحده يقيس <b>ما فعله التعليم</b>: الفرق بين المحاولة الأولى وأحدثها.')}
+        ${section('يستحقّ عودة', down, 'need', M.moreDown, 'down',
+            'دون عتبةِ النجاح التي حدّدها معلّمُ الاختبار. <b>ابدأ من أعلى القائمة.</b>')}
+        ${subs.length ? `<h2 class="sec">المواد — الأضعف أوّلاً</h2>
+          ${subs.map(s => `
+            <div class="an-row" data-s="${s.subject_id}">
+              <div class="an-h"><span class="qz-t">${esc(s.name)}</span>
+                <span class="an-n ${band(s.mastery,judge)}">${pct(s.mastery)}</span></div>
+              ${bar(s.mastery, s.thin, judge)}
+              <div class="qz-m">${AR(s.quizzes)} اختباراً، ${AR(s.answered)} إجابة ${thinTag(s.thin)}</div>
+            </div>`).join("")}` : empty("لا محاولات مصحَّحة بعد")}`}
+
+    <p class="hint">الإتقان = إجاباتٌ صحيحة ÷ إجابات مُصحَّحة، من أحدث محاولةٍ
+      لكلّ اختبار · نسخة الواجهة ${BUILD}</p>`;
+
+  bind();
+  const redraw = () => drawPerformance(title, sub, back);
+  const s1 = document.getElementById('mSubject');
+  if(s1) s1.onchange = e => { M.subject = num(e.target.value); M.strand = null; redraw(); };
+  const s2 = document.getElementById('mStrand');
+  if(s2) s2.onchange = e => { M.strand = num(e.target.value); redraw(); };
+  app.querySelectorAll('[data-more]').forEach(b => b.onclick = () => {
+    if(b.dataset.more==='up') M.moreUp = true; else M.moreDown = true; redraw();
+  });
+  app.querySelectorAll('[data-s]').forEach(el => el.onclick = () => {
+    M.subject = Number(el.dataset.s); M.strand = null; redraw();
+  });
+  scrollTop();
+}
+
+
+/* ═══════════ ③ قائمة الطلاب واللوحة — للمعلّم والمدير ═══════════ */
 
 export async function loadStudents(){
   nav('students');
   head("تحليل الأداء", "الأضعف أوّلاً — الترتيب توجيه");
   app.innerHTML = `<div class="status">جارٍ التحميل…</div>`;
 
-  /* الفلاتر تُبنى من الموجود لا من الجداول: استدعاءٌ واحد بلا فلتر
-     يُعيد by_subject وby_level، فلا يظهر خيارٌ بلا بيانات خلفه. */
+  /* الفلاتر تُبنى من الموجود لا من الجداول: فلا يظهر خيارٌ بلا بيانات خلفه */
   if(!F.opts){
     const { data, error } = await api.cohortPerformance(null, null);
     if(error){ app.innerHTML = errBox(error,'لوحة الأداء'); return; }
@@ -113,7 +315,6 @@ export async function loadStudents(){
     <div id="anBody"><div class="status">جارٍ التحميل…</div></div>
     <p class="hint">نسخة الواجهة ${BUILD}</p>`;
 
-  const num = v => v==='' ? null : Number(v);
   document.getElementById('flLevel').onchange   = e => { F.level   = num(e.target.value); F.opts=null; loadStudents(); };
   document.getElementById('flSubject').onchange = e => { F.subject = num(e.target.value); render(); };
   document.getElementById('flSearch').oninput   = e => { F.search  = e.target.value; if(F.view==='list') render(); };
@@ -135,17 +336,13 @@ async function render(){
   else                  await renderBoard(box);
 }
 
-
-/* ── القائمة ── */
-
 async function renderList(box){
   const { data, error } = await api.studentsOverview(F.level, F.subject, F.search);
   if(error){ box.innerHTML = errBox(error,'قائمة الطلاب'); return; }
   const rows = data || [];
 
   if(!rows.length){
-    /* تمييزٌ مقصود: لا نقول «لا يوجد طلاب» — قد يكون الحاجز صلاحيةً
-       أو فلتراً أو غياب محاولات، والثلاثة تُعالَج بثلاثة أشياء. */
+    /* تمييزٌ مقصود: قد يكون الحاجز صلاحيةً أو فلتراً أو غيابَ محاولات */
     box.innerHTML = empty(F.search ? "لا اسم يطابق البحث"
                                    : "لا محاولات بعد ضمن هذا الفلتر");
     return;
@@ -155,9 +352,9 @@ async function renderList(box){
     <div class="an-row" data-u="${esc(r.user_id)}">
       <div class="an-h">
         <span class="qz-t">${esc(r.name||'طالب')}</span>
-        <span class="an-n ${band(r.mastery)}">${pct(r.mastery)}</span>
+        <span class="an-n ${band(r.mastery,true)}">${pct(r.mastery)}</span>
       </div>
-      ${bar(r.mastery, r.thin)}
+      ${bar(r.mastery, r.thin, true)}
       <div class="qz-m">
         ${r.level?esc(r.level)+'، ':''}${AR(r.subjects)} مادة، ${AR(r.attempts)} محاولة${
           r.days_silent!=null && r.days_silent>0 ? `، بلا نشاط ${AR(r.days_silent)} يوماً` : ''}
@@ -171,15 +368,10 @@ async function renderList(box){
     el.onclick = () => openStudentCard(el.dataset.u));
 }
 
-
-/* ── اللوحة ── */
-
 async function renderBoard(box){
   const { data, error } = await api.cohortPerformance(F.level, F.subject);
   if(error){ box.innerHTML = errBox(error,'لوحة الأداء'); return; }
-  const d = data || {};
-  const o = d.overall || {};
-
+  const d = data || {}, o = d.overall || {};
   if(!o.students){ box.innerHTML = empty("لا محاولات بعد ضمن هذا الفلتر"); return; }
 
   const subjName = {};
@@ -187,22 +379,19 @@ async function renderBoard(box){
 
   const line = (name, x) => `
     <div class="an-row static">
-      <div class="an-h">
-        <span class="qz-t">${esc(name)}</span>
-        <span class="an-n ${band(x.mastery)}">${pct(x.mastery)}</span>
-      </div>
-      ${bar(x.mastery, x.thin)}
+      <div class="an-h"><span class="qz-t">${esc(name)}</span>
+        <span class="an-n ${band(x.mastery,true)}">${pct(x.mastery)}</span></div>
+      ${bar(x.mastery, x.thin, true)}
       <div class="qz-m">${AR(x.students)} طالباً، ${AR(x.attempts)} محاولة</div>
       ${thinTag(x.thin)}
     </div>`;
 
   const group = (title, arr, nameOf) => !arr?.length ? '' : `
-    <h2 class="sec">${esc(title)}</h2>
-    ${arr.map(x => line(nameOf(x), x)).join("")}`;
+    <h2 class="sec">${esc(title)}</h2>${arr.map(x => line(nameOf(x), x)).join("")}`;
 
   box.innerHTML = `
     <div class="card an-sum">
-      ${gauge(o.mastery, o.thin, 'إتقان')}
+      ${gauge(o.mastery, o.thin, 'إتقان', false, true)}
       <div class="qz-m an-cen">${AR(o.students)} طالباً، ${AR(o.attempts)} محاولة</div>
       ${o.thin ? `<div class="warnbox">العيّنة أصغر من أن يُبنى عليها حكم.
          الرقم صحيحُ الحساب، والخريطةُ هنا تكشف <b>أين ينقصنا المحتوى</b>
@@ -211,101 +400,11 @@ async function renderBoard(box){
     ${group('المواد',  d.by_subject, x => x.name)}
     ${group('الصفوف',  d.by_level,   x => x.name)}
     ${(() => {
-      /* غير المصنَّف يكرّر by_subject حرفاً بحرف ⇒ يُستبعد.
-         ويُقال سببُه: الفراغ يُرى، والصمتُ لا يُرى. */
+      /* غير المصنَّف يكرّر by_subject حرفاً بحرف ⇒ يُستبعد، ويُقال سببُه */
       const tagged = (d.by_strand||[]).filter(x => x.strand_id != null);
       if(tagged.length) return group('الفروع', tagged, x =>
         (subjName[x.subject_id] ? subjName[x.subject_id]+' — ' : '') + x.name);
       return `<h2 class="sec">الفروع</h2>
         <div class="status">لم تُصنَّف الدروس بفروع بعد — التصنيف يفتح هذا التقسيم.</div>`;
     })()}`;
-}
-
-
-/* ═══════════ ② بطاقة الطالب ═══════════ */
-
-export async function openStudentCard(uid){
-  app.innerHTML = `<div class="status">جارٍ الفتح…</div>`;
-  const { data, error } = await api.studentPerformance(uid || null);
-
-  if(error){
-    app.innerHTML = `<div class="crumb" id="bk">← تحليل الأداء</div>${errBox(error,'بطاقة الطالب')}`;
-    document.getElementById('bk').onclick = loadStudents; return;
-  }
-
-  const d = data || {}, st = d.student, o = d.overall || {};
-  head("بطاقة الطالب", st?.name || '');
-
-  if(!st){
-    app.innerHTML = `<div class="crumb" id="bk">← تحليل الأداء</div>
-      ${empty("لا بيانات لهذا الطالب — أو ليس ضمن طلابك")}`;
-    document.getElementById('bk').onclick = loadStudents; return;
-  }
-
-  const g = d.growth || [];
-
-  /* 🎓 فرعٌ واحد غير مصنَّف يكرّر رقمَ المادة حرفاً بحرف.
-     وتقسيمٌ لا يقسّم شيئاً ضجيجٌ يُعلّم القارئَ تجاهلَ التفاصيل. */
-  const strandsHtml = ss => {
-    if(!ss?.length) return '';
-    if(ss.length === 1 && ss[0].strand_id == null) return '';
-    return `
-    <div class="an-strands"><div class="an-srh">الفروع داخل المادة</div>
-    ${ss.map(x => `
-      <div class="an-sr">
-        <div class="an-h">
-          <span>${esc(x.name)}</span>
-          <span class="an-n ${band(x.mastery)}">${pct(x.mastery)}</span>
-        </div>
-        ${bar(x.mastery, x.thin)}
-        <div class="qz-m">${AR(x.quizzes)} اختباراً، ${AR(x.answered)} إجابة ${thinTag(x.thin)}</div>
-      </div>`).join("")}</div>`;
-  };
-
-  /* 🎓 الحلقة صغيرةٌ هنا عمداً: في البطاقة الرقمُ سياقٌ وأثرُ
-     الإعادة متن. وفي اللوحة ينعكس الأمر فتكبر. */
-  app.innerHTML = `
-    <div class="crumb" id="bk">← تحليل الأداء</div>
-
-    <div class="card an-sum an-side">
-      ${gauge(o.mastery, false, 'إتقان', true)}
-      <div>
-        <div class="qz-t">${esc(st.name||'')}</div>
-        <div class="qz-m">${st.level?esc(st.level)+'، ':''}${AR(o.subjects||0)} مادة،
-          ${AR(o.answered||0)} إجابة</div>
-      </div>
-    </div>
-
-    ${g.length ? `
-      <h2 class="sec">أثر الإعادة</h2>
-      <div class="warnbox">هذا وحده يقيس <b>ما فعله التعليم</b> لا ما يعرفه الطالب:
-        الفرق بين محاولته الأولى وأحدثها بعد العلاج.</div>
-      ${g.map(x => `
-        <div class="an-row static">
-          <div class="an-h">
-            <span class="qz-t">${esc(x.title || ('اختبار '+x.quiz_id))}</span>
-            <span class="an-n ${x.gain>0?'high':x.gain<0?'low':'mid'}">
-              ${x.gain>0?'▲':x.gain<0?'▼':'='} ${AR(Math.abs(x.gain))}</span>
-          </div>
-          <div class="qz-m">${x.lesson?esc(x.lesson)+'، ':''}${AR(x.attempts)} محاولات،
-            من ${pct(x.first)} إلى ${pct(x.last)}</div>
-        </div>`).join("")}` : ''}
-
-    <h2 class="sec">المواد — الأضعف أوّلاً</h2>
-    ${(d.subjects||[]).length ? (d.subjects||[]).map(s => `
-      <div class="an-row static">
-        <div class="an-h">
-          <span class="qz-t">${esc(s.name)}</span>
-          <span class="an-n ${band(s.mastery)}">${pct(s.mastery)}</span>
-        </div>
-        ${bar(s.mastery, s.thin)}
-        <div class="qz-m">${AR(s.quizzes)} اختباراً، ${AR(s.answered)} إجابة ${thinTag(s.thin)}</div>
-        ${strandsHtml(s.strands)}
-      </div>`).join("") : empty("لا محاولات مصحَّحة بعد")}
-
-    <p class="hint">الإتقان = إجاباتٌ صحيحة ÷ إجابات مُصحَّحة، من أحدث محاولةٍ
-      لكلّ اختبار · نسخة الواجهة ${BUILD}</p>`;
-
-  document.getElementById('bk').onclick = loadStudents;
-  scrollTop();
 }
