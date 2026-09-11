@@ -834,3 +834,46 @@ body.gate .wrap{max-width:1000px}
 .an-chart canvas{display:block}
 
 @media (max-width:560px){ .an-chart{height:200px} }
+
+/* ═══ الأداء — b49 ═══ */
+
+/* حلقتان متجاورتان: الإتقان جودةٌ والإنجاز تغطية — رقمان لا بديلان */
+.an-two{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+.an-one{text-align:center;max-width:150px}
+.an-note{font-size:.72rem;color:var(--text-muted);line-height:1.5;margin-top:2px}
+
+/* الاندفاع: تنبيهٌ عن العمل لا حكمٌ على الطالب — ولهذا warn لا danger */
+.an-rush{background:var(--warn-soft);border:1px solid var(--warn-line);
+         color:var(--warn-text);border-radius:var(--r);padding:12px 15px;
+         margin:10px 0;line-height:1.75;font-size:.92rem}
+
+/* الانحدار عن الذروة */
+.an-drop{margin-top:6px;font-size:.84rem;color:var(--warn)}
+
+/* حالةُ النمط */
+.an-st{font-size:.76rem;padding:2px 10px;border-radius:99px;white-space:nowrap;
+       border:1px solid var(--line);background:var(--fill);color:var(--text-muted)}
+.an-st.persistent{background:var(--danger-soft);border-color:var(--danger-line);color:var(--danger)}
+.an-st.partial{background:var(--warn-soft);border-color:var(--warn-line);color:var(--warn)}
+.an-st.cleared{background:var(--accent-fill);border-color:var(--accent-line);color:var(--accent)}
+
+/* تفاصيل الإجابة — شريطٌ جانبيّ يقول الحكم قبل أن يُقرأ النصّ */
+.an-q{border:1px solid var(--line);border-radius:var(--r);padding:13px 15px;
+      margin-bottom:9px;background:var(--surface);box-shadow:var(--shadow);
+      border-inline-start:3px solid var(--line-strong)}
+.an-q.ok{border-inline-start-color:var(--accent-edge)}
+.an-q.no{border-inline-start-color:var(--danger-edge)}
+.an-q.na{border-inline-start-color:var(--line-strong)}
+
+.an-qh{display:flex;gap:10px;align-items:baseline}
+.an-qn{flex:0 0 auto;min-width:26px;height:26px;line-height:26px;text-align:center;
+       border-radius:8px;background:var(--fill);color:var(--text-muted);
+       font-size:.8rem;font-variant-numeric:tabular-nums}
+.an-qb{line-height:1.8}
+.an-qc{margin-top:8px;font-size:.9rem;color:var(--text-muted)}
+
+/* التشخيصُ متنٌ والإجابةُ سياق — فله أرضيةٌ ووزنٌ أظهر */
+.an-qd{margin-top:9px;padding:10px 12px;border-radius:11px;line-height:1.8;
+       background:var(--accent-soft);border:1px solid var(--accent-line)}
+.an-qr{margin-top:9px;padding:10px 12px;border-radius:11px;line-height:1.8;
+       background:var(--warn-soft);border:1px solid var(--warn-line);color:var(--warn-text)}
