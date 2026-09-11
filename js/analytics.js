@@ -167,10 +167,11 @@ async function drawChart(tr){
       pointRadius: pts.map((p,i) => i===last ? 4.5 : 3),
       pointBackgroundColor: pts.map((p,i) => i===last ? ACC : SURF),
       pointBorderColor:ACC, pointBorderWidth:2, pointHoverRadius:6,
-      datalabels:{ align:'top', offset:5, clamp:true,
-        color: (c) => c.dataIndex===last ? ACC : MUT,
-        font: (c) => ({ size: c.dataIndex===last ? 11.5 : 10,
-                        weight: c.dataIndex===last ? '700' : '600' }),
+      /* ⚠️ الأخيرةُ وحدها: قيمةٌ فوق كلّ نقطةٍ تصطدم بالخطّ الثاني،
+         والمحورُ والتلميحُ يكفيان لما عداها. */
+      datalabels:{ align:'top', offset:9, clamp:true,
+        display: c => c.dataIndex === last,
+        color: ACC, font:{ size:12, weight:'700' },
         formatter: x => x==null ? '' : AR(x)+'٪' }
     }]},
     options:{
