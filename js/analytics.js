@@ -2,48 +2,51 @@
    بيان — analytics.js
    الأداء: شاشة الطالب · بطاقة المعلّم · قائمة الطلاب · اللوحة
 
-   📐 يقرأ 85→89 و86→87 عبر api.js وحدها.
+   📐 يقرأ 89 و86/87 عبر api.js وحدها.
 
    🔒 لا شرطَ صلاحيةٍ في هذه الوحدة — ولا يُضاف.
       الدوالّ `security invoker`، وRLS هي التي تفصل:
         المعلّم ⇒ طلابه · المدير ⇒ الجميع · الطالب ⇒ نفسه.
-      ⚠️ وتصفيةٌ تُكتب هنا ستبدو أماناً وليست به.
 
-   🎓 وشاشتا الطالب والمعلّم **مُصيِّرٌ واحد بوضعين** (M.forMe):
+   🎓 شاشتا الطالب والمعلّم **مُصيِّرٌ واحد بوضعين** (M.forMe):
       ولو كُتبتا مرّتين لافترقتا يوماً، فرأى المعلّم رقماً ورأى
       الطالبُ غيرَه عن الشيء نفسه — وأيُّهما الصادق لا يُقرأ.
 
-   🎓 والفرق بين الوضعين قرارٌ تربويّ لا ذوق:
-      · للطالب: اللونُ لا يحكم على إتقانه (شريطٌ واحد بلون واحد)،
-        ويحكم على **تغيّره** وحده. التغذية الراجعة التي تُوجّه
-        الانتباه إلى الذات تُضعف الأداء اللاحق؛ والتي تُوجّهه إلى
-        العمل تقوّيه. فالطول يُخبره أين هو، واللون يُخبره أين تحرّك.
-      · للمعلّم: ألوان النطاقات — لأن عمله فرزٌ وتدخّل.
+   🎓 وفرقُ الوضعين قرارٌ تربويّ لا ذوق:
+      · للطالب: اللونُ لا يحكم على إتقانه (شريطٌ بلونٍ واحد)،
+        ويحكم على **تغيّره** وحده. الطولُ يخبره أين هو — يحتاجها؛
+        واللونُ الأحمر يخبره ما هو — لا يحتاجها.
+      · للمعلّم: ألوان النطاقات، لأن عمله فرزٌ وتدخّل.
 
-   ⚠️ عنوانُ الاتجاه يقول **واقعةً** لا خلاصة:
-      آخرُ أسبوعين مقابل السابقين أعطى +٨، وآخرُ ثلاثة أعطى −٦٫٦
-      لنفس الطالب. ورقمٌ ينقلب بتغيّر نافذةٍ نختارها ليس قياساً.
-      ⇒ يُقارَن الأسبوعُ الجاري بسابقه النشِط، وكلاهما في الرسم.
+   ⚠️ **الفلتر يُبنى ممّا كان قبل الفلترة لا ممّا بقي بعدها** (b47).
+      كانت قائمةُ المواد تُبنى من الاستجابة المُصفّاة، فإذا اختار
+      الطالبُ مادةً عادت الاستجابةُ بمادةٍ واحدة — فابتلع الفلترُ
+      خياراتِه وصار بابُه يُغلق خلفه. ⇒ M.opts تُملأ مرّةً بلا فلتر.
 
-   ⚠️ الفاصل «،» لا «·»: الصفر العربيّ «٠» نقطةٌ مرفوعة كالفاصل،
-      فـ«٩ · محاولة» تُقرأ «٩٠ محاولة».
+   ⚠️ التاريخ باسم الشهر لا بـ«يوم/شهر»: الأرقامُ العربية والخطُّ
+      المائل نصٌّ ثنائيُّ الاتجاه، فترتيبُه على الشاشة ليس ترتيبَه
+      في المصدر. «١٠ أغسطس» لا تحتمل قلباً.
+
+   ⚠️ الفاصل «،» لا «·»: الصفر العربيّ «٠» نقطةٌ مرفوعة كالفاصل.
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
 import { app, head, esc, AR, errBox, nav, BUILD, scrollTop } from './ui.js';
 
-/* حالةٌ محلّية — مشتقّة من الشاشة لا من الجلسة، فلا تسكن S */
 const F = { level:null, subject:null, view:'list', search:'', opts:null };
 const M = { uid:null, forMe:false, subject:null, strand:null,
-            moreUp:false, moreDown:false, data:null };
+            moreUp:false, moreDown:false, opts:null, base:null };
+
+const MON = ['يناير','فبراير','مارس','أبريل','مايو','يونيو',
+             'يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
 
 /* ═══════════ أدوات العرض ═══════════ */
 
-const pct  = v => v==null ? '—' : AR(v)+'٪';
-const num  = v => v==='' ? null : Number(v);
+const pct   = v => v==null ? '—' : AR(v)+'٪';
+const num   = v => v==='' ? null : Number(v);
 const empty = t => `<div class="status">${esc(t)}</div>`;
+const dayMon = s => { const [,m,d] = s.split('-'); return AR(+d)+' '+MON[+m-1]; };
 
-/* حدود اللون في موضعٍ واحد. وفي وضع الطالب لا نطاقَ للإتقان —
-   الطولُ يُخبره أين هو، واللونُ يُترك للتغيّر وحده. */
+/* حدود اللون في موضعٍ واحد. وفي وضع الطالب لا نطاقَ للإتقان. */
 function band(m, judge){ return !judge ? 'flat'
   : m==null ? 'na' : m<60 ? 'low' : m<80 ? 'mid' : 'high'; }
 
@@ -56,8 +59,8 @@ function bar(m, thin, judge){
 }
 
 /* ── الحلقة ──
-   النصُّ خارج الـSVG لا داخله: الحلقة تُعكس أفقياً لتسير من الأعلى
-   يساراً — اتجاه التقدّم في صفحةٍ عربية — والنصُّ ينعكس معها لو دخلها. */
+   النصُّ خارج الـSVG: الحلقة تُعكس أفقياً لتسير من الأعلى يساراً —
+   اتجاه التقدّم في صفحةٍ عربية — والنصُّ ينعكس معها لو دخلها. */
 function gauge(m, thin, sub, small, judge){
   const R = 52, C = 2 * Math.PI * R;
   const v = Math.max(0, Math.min(100, Number(m) || 0));
@@ -74,65 +77,91 @@ function gauge(m, thin, sub, small, judge){
   </div>`;
 }
 
-/* ── الخطّ الزمنيّ: إتقانٌ خطّاً وجهدٌ أعمدةً ──
-   ⚠️ الأسبوع الفارغ لا يُوصَل بما بعده. وصلُه يرسم تعلّماً لم يقع.
-   ⚠️ والزمن يسير من اليمين إلى اليسار — اتجاه القراءة. */
+/* ── الخطّ الزمنيّ ──
+   ⚠️ لا preserveAspectRatio="none": التمديدُ غيرُ المتناسب يُسمّن
+      الخطوطَ أفقياً ويُنحّفها رأسياً، وهو سببُ المظهر الرخيص كلِّه.
+   ⚠️ والأسبوعُ الفارغ لا يُوصَل بما بعده: وصلُه يرسم تعلّماً لم يقع.
+   ⚠️ ومحورُ القيم يمينَ الرسم لا يسارَه — لأن الزمن يبدأ من اليمين. */
 function spark(tr){
-  const W=320, H=118, L=8, R=8, T=10, B=26;
   const pts = tr || [];
   if(pts.length < 2) return '';
-  const maxE = Math.max(1, ...pts.map(p=>p.answered||0));
   const n = pts.length;
-  /* معكوس: أقدمُ نقطةٍ يميناً */
-  const x = i => W - R - (i * (W-L-R) / (n-1));
-  const y = m => (H-B) - (Math.max(0,Math.min(100,m))/100) * (H-B-T);
+  const W = 360, H = 152, PR = 36, PL = 12, T = 20, B = 30;
+  const base = H - B;
+  const maxE = Math.max(1, ...pts.map(p => p.answered || 0));
+  const x = i => (W - PR) - (i * (W - PR - PL) / (n - 1));
+  const y = m => base - (Math.max(0, Math.min(100, m)) / 100) * (base - T);
 
-  const bars = pts.map((p,i)=>{
-    const h = ((p.answered||0)/maxE) * 30;
-    return h<1 ? '' : `<rect class="an-sb" x="${(x(i)-5).toFixed(1)}" y="${(H-B-h).toFixed(1)}"
-                        width="10" height="${h.toFixed(1)}" rx="2"/>`;
+  /* شبكةٌ خفيفة: العينُ تحتاج مسطرةً لتقرأ ارتفاعاً */
+  const grid = [0, 50, 100].map(v => `
+    <line class="an-sg" x1="${PL}" y1="${y(v).toFixed(1)}" x2="${W-PR}" y2="${y(v).toFixed(1)}"/>
+    <text class="an-sgt" x="${W-PR+6}" y="${(y(v)+3.5).toFixed(1)}">${AR(v)}</text>`).join("");
+
+  /* الجهد: أعمدةٌ خلف الخطّ — تُقرأ ولا تزاحم */
+  const bars = pts.map((p,i) => {
+    const h = ((p.answered||0) / maxE) * 38;
+    return h < 1.5 ? '' : `<rect class="an-sb" x="${(x(i)-6).toFixed(1)}"
+        y="${(base-h).toFixed(1)}" width="12" height="${h.toFixed(1)}" rx="3"/>`;
   }).join("");
 
-  /* قطعٌ بين كل نقطتين نشِطتين متجاورتين — وتنقطع عند الفراغ */
-  let segs = '';
-  for(let i=0;i<n-1;i++){
-    const a=pts[i], b=pts[i+1];
-    if(a.mastery==null || b.mastery==null) continue;
-    segs += `<line class="an-sl" x1="${x(i).toFixed(1)}" y1="${y(a.mastery).toFixed(1)}"
-              x2="${x(i+1).toFixed(1)}" y2="${y(b.mastery).toFixed(1)}"/>`;
-  }
-  const dots = pts.map((p,i)=> p.mastery==null ? '' :
-    `<circle class="an-sd${i===n-1?' last':''}" cx="${x(i).toFixed(1)}"
-       cy="${y(p.mastery).toFixed(1)}" r="${i===n-1?4.5:3.2}"/>`).join("");
+  /* مقاطعُ متّصلة فقط — وما بينها فراغٌ يُرى */
+  const runs = []; let cur = [];
+  pts.forEach((p,i) => { if(p.mastery == null){ if(cur.length) runs.push(cur); cur = []; }
+                         else cur.push(i); });
+  if(cur.length) runs.push(cur);
 
-  const d = s => { const [,m,dd] = s.split('-'); return AR(+dd)+'/'+AR(+m); };
-  return `<svg class="an-spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"
-            role="img" aria-label="الأداء الأسبوعي">
-      <line class="an-sx" x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}"/>
-      ${bars}${segs}${dots}
-      <text class="an-st" x="${W-R}" y="${H-9}" text-anchor="end">${d(pts[0].from)}</text>
-      <text class="an-st" x="${L}" y="${H-9}" text-anchor="start">${d(pts[n-1].from)}</text>
+  const areas = runs.filter(r => r.length > 1).map(r => {
+    const d = r.map((i,k) => `${k?'L':'M'}${x(i).toFixed(1)},${y(pts[i].mastery).toFixed(1)}`).join('')
+            + `L${x(r[r.length-1]).toFixed(1)},${base}L${x(r[0]).toFixed(1)},${base}Z`;
+    return `<path class="an-sa" d="${d}"/>`;
+  }).join("");
+
+  const lines = runs.filter(r => r.length > 1).map(r =>
+    `<path class="an-sl" d="${r.map((i,k)=>`${k?'L':'M'}${x(i).toFixed(1)},${y(pts[i].mastery).toFixed(1)}`).join('')}"/>`
+  ).join("");
+
+  const showAll = n <= 6;
+  const marks = pts.map((p,i) => {
+    if(p.mastery == null) return '';
+    const last = i === n-1;
+    return `<circle class="an-sd${last?' last':''}" cx="${x(i).toFixed(1)}"
+              cy="${y(p.mastery).toFixed(1)}" r="${last?5:3.6}">
+              <title>${esc(dayMon(p.from))}: ${pct(p.mastery)}، ${AR(p.answered)} إجابة</title>
+            </circle>
+            ${(showAll || last) ? `<text class="an-sv${last?' last':''}" x="${x(i).toFixed(1)}"
+              y="${(y(p.mastery)-10).toFixed(1)}" text-anchor="middle">${pct(p.mastery)}</text>` : ''}`;
+  }).join("");
+
+  return `<svg class="an-spark" viewBox="0 0 ${W} ${H}" role="img"
+            aria-label="الإتقان والجهد أسبوعياً">
+      <defs><linearGradient id="anGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%"   class="an-g1"/><stop offset="100%" class="an-g2"/>
+      </linearGradient></defs>
+      ${grid}${bars}${areas}${lines}${marks}
+      <text class="an-st" x="${W-PR}" y="${H-9}" text-anchor="end">${dayMon(pts[0].from)}</text>
+      <text class="an-st" x="${PL}"   y="${H-9}" text-anchor="start">${dayMon(pts[n-1].from)}</text>
     </svg>`;
 }
 
-/* عنوانُ الاتجاه — واقعةٌ تُرى في الرسم، لا خلاصةُ نافذةٍ مختارة */
+/* عنوانُ الاتجاه — واقعةٌ تُرى في الرسم لا خلاصةُ نافذةٍ مختارة.
+   (آخرُ أسبوعين أعطى +٨ لنفس الطالب، وآخرُ ثلاثة أعطى −٦٫٦.) */
 function trendLine(tr, forMe){
-  const act = (tr||[]).filter(p=>p.mastery!=null);
+  const arr = tr || [];
+  const act = arr.filter(p => p.mastery != null);
   const you = forMe ? 'ك' : 'ه';
-  if(!act.length) return forMe
-    ? 'ابدأ — كلُّ محاولةٍ تضيف نقطةً إلى خطّك.'
-    : 'لا محاولات مسجَّلة بعد.';
-  const last = act[act.length-1], prev = act[act.length-2];
-  const live = (tr||[]).length && tr[tr.length-1].mastery != null;
-  if(!live){
-    const gap = (tr||[]).length - 1 - (tr||[]).map(p=>p.mastery!=null).lastIndexOf(true);
+  if(!act.length) return forMe ? 'ابدأ — كلُّ محاولةٍ تضيف نقطةً إلى خطّك.'
+                               : 'لا محاولات مسجَّلة بعد.';
+  if(arr.length && arr[arr.length-1].mastery == null){
+    let gap = 0;
+    for(let i = arr.length-1; i >= 0 && arr[i].mastery == null; i--) gap++;
     return `لا إجاباتٍ هذا الأسبوع — آخرُ نشاط${you} قبل ${AR(gap)} أسبوعاً.`;
   }
-  const bodyNow = `هذا الأسبوع ${pct(last.mastery)} من ${AR(last.answered)} إجابة`;
-  if(!prev) return `${bodyNow} — وهي بداية${you}.`;
-  const dv = Math.round((last.mastery - prev.mastery)*10)/10;
-  if(dv === 0) return `${bodyNow} — كالأسبوع النشِط السابق تماماً.`;
-  return `${bodyNow} — ${dv>0?'أعلى':'أقلّ'} من الأسبوع النشِط السابق بـ${AR(Math.abs(dv))} نقطة.`;
+  const last = act[act.length-1], prev = act[act.length-2];
+  const now  = `هذا الأسبوع ${pct(last.mastery)} من ${AR(last.answered)} إجابة`;
+  if(!prev) return `${now} — وهي بداية${you}.`;
+  const dv = Math.round((last.mastery - prev.mastery) * 10) / 10;
+  if(dv === 0) return `${now} — كالأسبوع النشِط السابق تماماً.`;
+  return `${now} — ${dv>0?'أعلى':'أقلّ'} من الأسبوع النشِط السابق بـ${AR(Math.abs(dv))} نقطة.`;
 }
 
 
@@ -140,16 +169,16 @@ function trendLine(tr, forMe){
 
 export async function loadMyPerformance(){
   nav('perf');
-  M.uid = null; M.forMe = true;
-  M.subject = null; M.strand = null; M.moreUp = false; M.moreDown = false;
+  Object.assign(M, { uid:null, forMe:true, subject:null, strand:null,
+                     moreUp:false, moreDown:false, opts:null, base:null });
   await drawPerformance("أدائي", "اتجاهُك، وما تحسّن، وما يستحقّ عودة");
 }
 
 /* ═══════════ ② بطاقة الطالب — للمعلّم والمدير ═══════════ */
 
 export async function openStudentCard(uid){
-  M.uid = uid; M.forMe = false;
-  M.subject = null; M.strand = null; M.moreUp = false; M.moreDown = false;
+  Object.assign(M, { uid, forMe:false, subject:null, strand:null,
+                     moreUp:false, moreDown:false, opts:null, base:null });
   await drawPerformance("بطاقة الطالب", null, true);
 }
 
@@ -158,30 +187,42 @@ export async function openStudentCard(uid){
 
 async function drawPerformance(title, sub, back){
   app.innerHTML = `<div class="status">جارٍ التحميل…</div>`;
-  const { data, error } = await api.studentPerformance(M.uid, M.subject, M.strand);
   const crumb = back ? `<div class="crumb" id="bk">← تحليل الأداء</div>` : '';
   const bind  = () => { const b = document.getElementById('bk'); if(b) b.onclick = loadStudents; };
 
-  if(error){ app.innerHTML = crumb + errBox(error,'الأداء'); bind(); return; }
-  M.data = data || {};
-  const d = M.data, st = d.student, o = d.overall || {}, fl = d.filter || {};
-  head(title, sub ?? (st?.name || ''));
+  /* ⚠️ b47 · النداء الأول بلا فلتر — ومنه وحده تُبنى القوائم.
+     ولو بُنيت من المُصفّى لأغلق الفلترُ بابَه خلف مستعمِله. */
+  if(!M.opts){
+    const first = await api.studentPerformance(M.uid, null, null);
+    if(first.error){ app.innerHTML = crumb + errBox(first.error,'الأداء'); bind(); return; }
+    M.base = first.data || {};
+    M.opts = M.base.subjects || [];
+  }
 
+  let d = M.base;
+  if(M.subject || M.strand){
+    const r = await api.studentPerformance(M.uid, M.subject, M.strand);
+    if(r.error){ app.innerHTML = crumb + errBox(r.error,'الأداء'); bind(); return; }
+    d = r.data || {};
+  }
+
+  const st = d.student, o = d.overall || {}, fl = d.filter || {};
+  head(title, sub ?? (st?.name || ''));
   if(!st){ app.innerHTML = crumb + empty("لا بيانات — أو ليس ضمن طلابك"); bind(); return; }
 
   const judge = !M.forMe;
-  const qs    = d.quizzes || [];
+  const qs    = d.quizzes  || [];
   const subs  = d.subjects || [];
 
   /* الفرعُ يُخفى ما لم يوجد فرعان فأكثر: فلترٌ بخيارٍ واحد يُقرأ عطلاً */
-  const cur    = subs.find(s => String(s.subject_id) === String(M.subject));
-  const strOpt = (cur?.strands || []).filter(x => x.strand_id != null);
+  const curOpt  = M.opts.find(s => String(s.subject_id) === String(M.subject));
+  const strOpt  = (curOpt?.strands || []).filter(x => x.strand_id != null);
   const showStr = M.subject && strOpt.length > 1;
 
-  /* ما تحسّن · ما يستحقّ عودة — ترشيحان من قائمةٍ واحدة، فلا تفترقان */
-  const up   = qs.filter(x => x.gain != null).sort((a,b)=> b.gain - a.gain);
+  /* ترشيحان من قائمةٍ واحدة، فلا تفترقان */
+  const up   = qs.filter(x => x.gain != null).sort((a,b) => b.gain - a.gain);
   const down = qs.filter(x => x.mastery != null && x.mastery < x.pass)
-                 .sort((a,b)=> a.mastery - b.mastery);
+                 .sort((a,b) => a.mastery - b.mastery);
 
   const gainTag = g => `<span class="an-n ${g>0?'high':g<0?'low':'mid'}">
       ${g>0?'▲':g<0?'▼':'='} ${AR(Math.abs(g))}</span>`;
@@ -207,18 +248,18 @@ async function drawPerformance(title, sub, back){
     ${arr.length > 10 && !more
       ? `<button class="an-more" data-more="${key}">عرض المزيد (${AR(arr.length-10)})</button>` : ''}`;
 
-  const selBox = () => {
-    const opts = subs.map(s => `<option value="${s.subject_id}"
-        ${String(M.subject)===String(s.subject_id)?'selected':''}>${esc(s.name)}</option>`).join("");
-    return `<div class="an-bar">
-      <select id="mSubject" class="an-sel"><option value="">كلّ المواد</option>${opts}</select>
-      ${showStr ? `<select id="mStrand" class="an-sel">
+  const selBox = `<div class="an-bar">
+      <select id="mSubject" class="an-sel" aria-label="اختر المادة">
+        <option value="">كلّ المواد</option>
+        ${M.opts.map(s => `<option value="${s.subject_id}"
+           ${String(M.subject)===String(s.subject_id)?'selected':''}>${esc(s.name)}</option>`).join("")}
+      </select>
+      ${showStr ? `<select id="mStrand" class="an-sel" aria-label="اختر الفرع">
           <option value="">كلّ الفروع</option>
-          ${strOpt.map(x=>`<option value="${x.strand_id}"
+          ${strOpt.map(x => `<option value="${x.strand_id}"
              ${String(M.strand)===String(x.strand_id)?'selected':''}>${esc(x.name)}</option>`).join("")}
         </select>` : ''}
     </div>`;
-  };
 
   app.innerHTML = `
     ${crumb}
@@ -238,7 +279,7 @@ async function drawPerformance(title, sub, back){
       </div>
     </div>
 
-    ${selBox()}
+    ${selBox}
 
     ${M.subject
       ? (qs.length
@@ -269,7 +310,7 @@ async function drawPerformance(title, sub, back){
   const s2 = document.getElementById('mStrand');
   if(s2) s2.onchange = e => { M.strand = num(e.target.value); redraw(); };
   app.querySelectorAll('[data-more]').forEach(b => b.onclick = () => {
-    if(b.dataset.more==='up') M.moreUp = true; else M.moreDown = true; redraw();
+    if(b.dataset.more === 'up') M.moreUp = true; else M.moreDown = true; redraw();
   });
   app.querySelectorAll('[data-s]').forEach(el => el.onclick = () => {
     M.subject = Number(el.dataset.s); M.strand = null; redraw();
@@ -285,20 +326,20 @@ export async function loadStudents(){
   head("تحليل الأداء", "الأضعف أوّلاً — الترتيب توجيه");
   app.innerHTML = `<div class="status">جارٍ التحميل…</div>`;
 
-  /* الفلاتر تُبنى من الموجود لا من الجداول: فلا يظهر خيارٌ بلا بيانات خلفه */
+  /* القوائم من النداء غير المُصفّى — نفس درس b47 */
   if(!F.opts){
     const { data, error } = await api.cohortPerformance(null, null);
     if(error){ app.innerHTML = errBox(error,'لوحة الأداء'); return; }
     F.opts = {
-      subjects: (data?.by_subject||[]).map(x=>[x.subject_id, x.name]),
-      levels:   (data?.by_level  ||[]).map(x=>[x.level_id,   x.name])
+      subjects: (data?.by_subject||[]).map(x => [x.subject_id, x.name]),
+      levels:   (data?.by_level  ||[]).map(x => [x.level_id,   x.name])
     };
   }
 
   const sel = (id, cur, list, all) => `
     <select id="${id}" class="an-sel">
       <option value="">${esc(all)}</option>
-      ${list.map(([v,n])=>`<option value="${v}" ${String(cur)===String(v)?'selected':''}>${esc(n)}</option>`).join("")}
+      ${list.map(([v,n]) => `<option value="${v}" ${String(cur)===String(v)?'selected':''}>${esc(n)}</option>`).join("")}
     </select>`;
 
   app.innerHTML = `
@@ -315,12 +356,12 @@ export async function loadStudents(){
     <div id="anBody"><div class="status">جارٍ التحميل…</div></div>
     <p class="hint">نسخة الواجهة ${BUILD}</p>`;
 
-  document.getElementById('flLevel').onchange   = e => { F.level   = num(e.target.value); F.opts=null; loadStudents(); };
+  document.getElementById('flLevel').onchange   = e => { F.level = num(e.target.value); render(); };
   document.getElementById('flSubject').onchange = e => { F.subject = num(e.target.value); render(); };
-  document.getElementById('flSearch').oninput   = e => { F.search  = e.target.value; if(F.view==='list') render(); };
+  document.getElementById('flSearch').oninput   = e => { F.search = e.target.value; if(F.view==='list') render(); };
   app.querySelectorAll('.an-tab').forEach(b => b.onclick = () => {
     F.view = b.dataset.v;
-    app.querySelectorAll('.an-tab').forEach(x=>x.classList.toggle('on', x===b));
+    app.querySelectorAll('.an-tab').forEach(x => x.classList.toggle('on', x===b));
     render();
   });
 
@@ -342,7 +383,7 @@ async function renderList(box){
   const rows = data || [];
 
   if(!rows.length){
-    /* تمييزٌ مقصود: قد يكون الحاجز صلاحيةً أو فلتراً أو غيابَ محاولات */
+    /* قد يكون الحاجز صلاحيةً أو فلتراً أو غيابَ محاولات — ثلاثةٌ لا تُخلط */
     box.innerHTML = empty(F.search ? "لا اسم يطابق البحث"
                                    : "لا محاولات بعد ضمن هذا الفلتر");
     return;
