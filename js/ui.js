@@ -203,7 +203,8 @@ const ROUTES = {};
 export function registerRoutes(map){ Object.assign(ROUTES, map); }
 
 const DEST = {
-  student: [['subjects','المواد'], ['feedback','ملاحظاتي'], ['chat','الرسائل']],
+  student: [['subjects','المواد'], ['perf','الأداء'], ['feedback','ملاحظاتي'],
+            ['chat','الرسائل']],
   teacher: [['grade','التصحيح'],   ['students','الأداء'],   ['inbox','الرسائل'],
             ['mySubjects','موادّي'], ['editor','التأليف']],
   admin:   [['requests','الطلبات'], ['students','الأداء'],  ['editor','التأليف'],
