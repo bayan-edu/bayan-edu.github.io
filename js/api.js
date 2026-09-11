@@ -337,3 +337,8 @@ export const studentsOverview = (levelId, subjectId, search) =>
                                 p_subject_id: subjectId || null,
                                 p_search:     search    || null,
                                 p_limit:      100 });
+export const studentDx = (uid, subjectId) =>
+  db.rpc('student_dx', { p_student: uid || null, p_subject: subjectId || null });
+
+export const quizDetail = (quizId, uid) =>
+  db.rpc('quiz_detail', { p_quiz: quizId, p_student: uid || null });
