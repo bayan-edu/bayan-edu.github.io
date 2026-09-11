@@ -741,13 +741,40 @@ body.gate .wrap{max-width:1000px}
              border-radius:99px;background:var(--fill);font-variant-numeric:tabular-nums}
 
 .an-sum{text-align:start}
-.an-big{font-size:2.4rem;font-weight:700;line-height:1.2;
-        font-variant-numeric:tabular-nums}
-.an-big.high{color:var(--accent)} .an-big.mid{color:var(--warn)}
-.an-big.low{color:var(--danger)}  .an-big.na{color:var(--text-muted)}
 
 /* الفروع تفصيلٌ داخل المادة — تُزاح لتُقرأ تابعةً لا نظيرة */
 .an-strands{margin-top:11px;padding-inline-start:13px;
             border-inline-start:2px solid var(--line)}
 .an-sr{margin-bottom:9px}
 .an-sr:last-child{margin-bottom:0}
+
+/* ═══ الحلقة — b44 ═══
+   SVG بلا مكتبة. والقياس من font-size ليكبر مع السِمة لا بأرقامٍ مثبّتة. */
+
+.an-gauge{position:relative;width:172px;height:172px;margin:6px auto 10px}
+.an-gauge.sm{width:92px;height:92px;margin:0}
+.an-gauge svg{width:100%;height:100%;display:block;
+              /* تسير من الأعلى يساراً — اتجاه التقدّم في صفحةٍ عربية */
+              transform:scaleX(-1)}
+
+.an-gbg{fill:none;stroke:var(--fill-strong);stroke-width:11}
+.an-gfg{fill:none;stroke-width:11;stroke-linecap:round;
+        transition:stroke-dasharray .7s ease}
+.an-gfg.high{stroke:var(--accent-edge)} .an-gfg.mid{stroke:var(--warn-edge)}
+.an-gfg.low{stroke:var(--danger-edge)}  .an-gfg.na{stroke:var(--line-strong)}
+/* العيّنة الصغيرة تبهت ولا تُخفى */
+.an-gfg.thin{opacity:.42}
+
+.an-gt{position:absolute;inset:0;display:flex;flex-direction:column;
+       align-items:center;justify-content:center;gap:2px;pointer-events:none}
+.an-gn{font-size:2.1rem;font-weight:700;line-height:1;
+       font-variant-numeric:tabular-nums}
+.an-gauge.sm .an-gn{font-size:1.15rem}
+.an-gn.high{color:var(--accent)} .an-gn.mid{color:var(--warn)}
+.an-gn.low{color:var(--danger)}  .an-gn.na{color:var(--text-muted)}
+.an-gs{font-size:.82rem;color:var(--text-muted)}
+.an-gauge.sm .an-gs{font-size:.7rem}
+
+.an-cen{text-align:center}
+/* رأس البطاقة: الحلقة إلى جانب الاسم لا فوقه — الرقم سياقٌ لا عنوان */
+.an-side{display:flex;align-items:center;gap:15px;text-align:start}
