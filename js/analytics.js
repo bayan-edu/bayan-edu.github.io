@@ -1,6 +1,6 @@
 /* ══════════════════════════════════════════════════════════
    بيان — analytics.js
-   تتبّع الأداء: قائمة الطلاب · بطاقة الطالب · لوحة الأداء
+   تحليل الأداء: قائمة الطلاب · بطاقة الطالب · اللوحة
 
    📐 يقرأ ثلاث دوالّ (85 · 86 · 87) عبر api.js وحدها.
 
@@ -11,9 +11,15 @@
 
    🎓 ترتيب الشاشة قرارٌ تربويّ لا ذوق:
       · الأضعف أوّلاً في كل قائمة — الترتيبُ نفسه توجيه.
-      · الرقم العام صغيرٌ في الرأس: يُصنّف ولا يدلّ على فعل.
       · أثرُ الإعادة متنٌ لا حاشية — هو الرقم الوحيد الذي
         يصف التعليمَ لا الطالب.
+      · الحلقةُ كبيرةٌ في اللوحة (الرقمُ هو موضوع الشاشة)،
+        وصغيرةٌ في بطاقة الطالب (الرقمُ سياقٌ وأثرُ الإعادة متن).
+
+   ⚠️ الفاصل «،» لا «·» — عمداً وفي كلّ سطر.
+      الصفر العربيّ «٠» نقطةٌ مرفوعة، والفاصل «·» نقطةٌ مرفوعة.
+      فـ«٩ · محاولة» تُقرأ «٩٠ محاولة». حرفان بشكلٍ واحد،
+      والخطأ صامتٌ لأن النصّ سليمٌ في المصدر ومقلوبٌ في العين.
 
    ⚠️ الألوان حكمٌ على العمل لا على الطالب. تُعرض للمعلّم؛
       وحين تُبنى شاشةُ الطالب تُراجَع قبل نقلها إليها.
@@ -31,6 +37,28 @@ const pct = v => v==null ? '—' : AR(v)+'٪';
 /* حدود اللون في موضعٍ واحد — تُراجَع مرّةً لا في عشرة أماكن */
 function band(m){ return m==null ? 'na' : m<60 ? 'low' : m<80 ? 'mid' : 'high'; }
 
+/* ── الحلقة ──
+   SVG خالصٌ بلا مكتبة. والنصُّ خارجها لا داخلها، لأن الحلقة تُعكس
+   أفقياً لتسير من الأعلى **يساراً** — اتجاه التقدّم في صفحةٍ عربية —
+   والنصُّ لو كان داخلها لانعكس معها. */
+function gauge(m, thin, sub, small){
+  const R = 52, C = 2 * Math.PI * R;
+  const v = Math.max(0, Math.min(100, Number(m) || 0));
+  const on = (v / 100) * C;
+  return `<div class="an-gauge${small?' sm':''}">
+    <svg viewBox="0 0 120 120" aria-hidden="true">
+      <circle class="an-gbg" cx="60" cy="60" r="${R}"/>
+      <circle class="an-gfg ${band(m)}${thin?' thin':''}" cx="60" cy="60" r="${R}"
+              stroke-dasharray="${on.toFixed(1)} ${(C-on).toFixed(1)}"
+              transform="rotate(-90 60 60)"/>
+    </svg>
+    <div class="an-gt">
+      <div class="an-gn ${band(m)}">${pct(m)}</div>
+      ${sub ? `<div class="an-gs">${esc(sub)}</div>` : ''}
+    </div>
+  </div>`;
+}
+
 function bar(m, thin){
   const w = Math.max(0, Math.min(100, Number(m)||0));
   return `<div class="an-track"><div class="an-fill ${band(m)}${thin?' thin':''}"
@@ -43,11 +71,11 @@ const thinTag = t => t ? `<span class="an-thin">عيّنة صغيرة</span>` : 
 const empty = t => `<div class="status">${esc(t)}</div>`;
 
 
-/* ═══════════ ① قائمة الطلاب ولوحة الأداء ═══════════ */
+/* ═══════════ ① القائمة واللوحة ═══════════ */
 
 export async function loadStudents(){
   nav('students');
-  head("الطلاب", "الأضعف أوّلاً — الترتيب توجيه");
+  head("تحليل الأداء", "الأضعف أوّلاً — الترتيب توجيه");
   app.innerHTML = `<div class="status">جارٍ التحميل…</div>`;
 
   /* الفلاتر تُبنى من الموجود لا من الجداول: استدعاءٌ واحد بلا فلتر
@@ -127,8 +155,8 @@ async function renderList(box){
       </div>
       ${bar(r.mastery, r.thin)}
       <div class="qz-m">
-        ${r.level?esc(r.level)+' · ':''}${AR(r.subjects)} مادة · ${AR(r.attempts)} محاولة
-        ${r.days_silent!=null && r.days_silent>0 ? ` · بلا نشاط ${AR(r.days_silent)} يوماً` : ''}
+        ${r.level?esc(r.level)+'، ':''}${AR(r.subjects)} مادة، ${AR(r.attempts)} محاولة${
+          r.days_silent!=null && r.days_silent>0 ? `، بلا نشاط ${AR(r.days_silent)} يوماً` : ''}
       </div>
       ${r.dx_top ? `<div class="an-dx">أكثر أخطائه: ${esc(r.dx_top.name||r.dx_top.code)}
                      <span class="an-c">${AR(r.dx_top.n)}</span></div>` : ''}
@@ -153,14 +181,14 @@ async function renderBoard(box){
   const subjName = {};
   (d.by_subject||[]).forEach(x => subjName[x.subject_id] = x.name);
 
-  const line = (name, x, extra='') => `
-    <div class="an-row">
+  const line = (name, x) => `
+    <div class="an-row static">
       <div class="an-h">
         <span class="qz-t">${esc(name)}</span>
         <span class="an-n ${band(x.mastery)}">${pct(x.mastery)}</span>
       </div>
       ${bar(x.mastery, x.thin)}
-      <div class="qz-m">${AR(x.students)} طالباً · ${AR(x.attempts)} محاولة${extra}</div>
+      <div class="qz-m">${AR(x.students)} طالباً، ${AR(x.attempts)} محاولة</div>
       ${thinTag(x.thin)}
     </div>`;
 
@@ -170,8 +198,8 @@ async function renderBoard(box){
 
   box.innerHTML = `
     <div class="card an-sum">
-      <div class="an-big ${band(o.mastery)}">${pct(o.mastery)}</div>
-      <div class="qz-m">${AR(o.students)} طالباً · ${AR(o.attempts)} محاولة</div>
+      ${gauge(o.mastery, o.thin, 'إتقان')}
+      <div class="qz-m an-cen">${AR(o.students)} طالباً، ${AR(o.attempts)} محاولة</div>
       ${o.thin ? `<div class="warnbox">العيّنة أصغر من أن يُبنى عليها حكم.
          الرقم صحيحُ الحساب، والخريطةُ هنا تكشف <b>أين ينقصنا المحتوى</b>
          أكثر مما تقيس أداءً.</div>` : ''}
@@ -190,7 +218,7 @@ export async function openStudentCard(uid){
   const { data, error } = await api.studentPerformance(uid || null);
 
   if(error){
-    app.innerHTML = `<div class="crumb" id="bk">← الطلاب</div>${errBox(error,'بطاقة الطالب')}`;
+    app.innerHTML = `<div class="crumb" id="bk">← تحليل الأداء</div>${errBox(error,'بطاقة الطالب')}`;
     document.getElementById('bk').onclick = loadStudents; return;
   }
 
@@ -198,13 +226,11 @@ export async function openStudentCard(uid){
   head("بطاقة الطالب", st?.name || '');
 
   if(!st){
-    app.innerHTML = `<div class="crumb" id="bk">← الطلاب</div>
+    app.innerHTML = `<div class="crumb" id="bk">← تحليل الأداء</div>
       ${empty("لا بيانات لهذا الطالب — أو ليس ضمن طلابك")}`;
     document.getElementById('bk').onclick = loadStudents; return;
   }
 
-  /* 🎓 الترتيب: أثرُ الإعادة أوّلاً لأنه يقيس التعليم؛ ثم المواد
-     بالأضعف؛ والرقم العام في الرأس صغيراً — يُصنّف ولا يدلّ. */
   const g = d.growth || [];
 
   const strandsHtml = ss => !ss?.length ? '' : `
@@ -215,19 +241,21 @@ export async function openStudentCard(uid){
           <span class="an-n ${band(x.mastery)}">${pct(x.mastery)}</span>
         </div>
         ${bar(x.mastery, x.thin)}
-        <div class="qz-m">${AR(x.quizzes)} اختباراً · ${AR(x.answered)} إجابة ${thinTag(x.thin)}</div>
+        <div class="qz-m">${AR(x.quizzes)} اختباراً، ${AR(x.answered)} إجابة ${thinTag(x.thin)}</div>
       </div>`).join("")}</div>`;
 
+  /* 🎓 الحلقة صغيرةٌ هنا عمداً: في البطاقة الرقمُ سياقٌ وأثرُ
+     الإعادة متن. وفي اللوحة ينعكس الأمر فتكبر. */
   app.innerHTML = `
-    <div class="crumb" id="bk">← الطلاب</div>
+    <div class="crumb" id="bk">← تحليل الأداء</div>
 
-    <div class="card an-sum">
-      <div class="an-h">
-        <span class="qz-t">${esc(st.name||'')}</span>
-        <span class="an-n ${band(o.mastery)}">${pct(o.mastery)}</span>
+    <div class="card an-sum an-side">
+      ${gauge(o.mastery, false, 'إتقان', true)}
+      <div>
+        <div class="qz-t">${esc(st.name||'')}</div>
+        <div class="qz-m">${st.level?esc(st.level)+'، ':''}${AR(o.subjects||0)} مادة،
+          ${AR(o.answered||0)} إجابة</div>
       </div>
-      <div class="qz-m">${st.level?esc(st.level)+' · ':''}${AR(o.subjects||0)} مادة ·
-        ${AR(o.answered||0)} إجابة</div>
     </div>
 
     ${g.length ? `
@@ -235,14 +263,13 @@ export async function openStudentCard(uid){
       <div class="warnbox">هذا وحده يقيس <b>ما فعله التعليم</b> لا ما يعرفه الطالب:
         الفرق بين محاولته الأولى وأحدثها بعد العلاج.</div>
       ${g.map(x => `
-        <div class="an-row">
+        <div class="an-row static">
           <div class="an-h">
             <span class="qz-t">اختبار ${AR(x.quiz_id)}</span>
             <span class="an-n ${x.gain>0?'high':x.gain<0?'low':'mid'}">
               ${x.gain>0?'▲':x.gain<0?'▼':'='} ${AR(Math.abs(x.gain))}</span>
           </div>
-          <div class="qz-m">${AR(x.attempts)} محاولات ·
-            من ${pct(x.first)} إلى ${pct(x.last)}</div>
+          <div class="qz-m">${AR(x.attempts)} محاولات، من ${pct(x.first)} إلى ${pct(x.last)}</div>
         </div>`).join("")}` : ''}
 
     <h2 class="sec">المواد — الأضعف أوّلاً</h2>
@@ -253,12 +280,12 @@ export async function openStudentCard(uid){
           <span class="an-n ${band(s.mastery)}">${pct(s.mastery)}</span>
         </div>
         ${bar(s.mastery, s.thin)}
-        <div class="qz-m">${AR(s.quizzes)} اختباراً · ${AR(s.answered)} إجابة ${thinTag(s.thin)}</div>
+        <div class="qz-m">${AR(s.quizzes)} اختباراً، ${AR(s.answered)} إجابة ${thinTag(s.thin)}</div>
         ${strandsHtml(s.strands)}
       </div>`).join("") : empty("لا محاولات مصحَّحة بعد")}
 
     <p class="hint">الإتقان = إجاباتٌ صحيحة ÷ إجابات مُصحَّحة، من أحدث محاولةٍ
-      لكل اختبار · نسخة الواجهة ${BUILD}</p>`;
+      لكلّ اختبار · نسخة الواجهة ${BUILD}</p>`;
 
   document.getElementById('bk').onclick = loadStudents;
   scrollTop();
