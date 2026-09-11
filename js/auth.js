@@ -11,7 +11,7 @@ import { app, bar, head, toast, esc, AR, errBox, nav, registerRoutes, mathBoot }
 import { loadList, loadFeedback, loadChat } from './student.js';
 import { loadTeacher, loadInbox, loadMySubjects } from './teacher.js';
 import { openEditor } from './editor.js';
-import { loadStudents } from './analytics.js';
+import { loadStudents, loadMyPerformance } from './analytics.js';
 
 /* ═══════════ ① البوابة ═══════════ */
 
@@ -416,6 +416,7 @@ export function start(){
   // خريطة الوجهات — الموضع الوحيد الذي يربط الشريط بالشاشات
   registerRoutes({
     subjects:   loadList,
+    perf:       loadMyPerformance,
     feedback:   loadFeedback,
     chat:       loadChat,
     grade:      loadTeacher,
