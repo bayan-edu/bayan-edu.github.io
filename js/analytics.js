@@ -207,20 +207,21 @@ async function drawChart(tr){
       data: pts.map(p => p.answered || 0),
       backgroundColor: FILL, borderRadius:4,
       barPercentage:.62, categoryPercentage:.78,
-      /* ⚠️ anchor:'end' + align:'end' هو اصطلاح الأعمدة الرأسية.
-         و`align:'top'` تُحسب بالنسبة إلى **الخانة** لا إلى العمود،
-         فينزاح الرقمُ جانباً ويبدو تابعاً لعمودٍ ليس عمودَه.
-         🎓 والطويلُ يحمل رقمه داخله والقصيرُ فوقه: رقمٌ فوق عمودٍ
-            قصير يطفو في فراغٍ فلا يُنسب إلى شيء. */
+      /* 🔴 `clamp:true` كان يقسر الرقمَ داخل مساحة الرسم. ومساحةُ
+         هذه اللوحة ≈ ٥٠px بعد الحشو، فالعمودُ الطويل يملؤها ولا
+         يبقى فوقه موضع ⇒ يُدفع الرقمُ إلى الأسفل فوق التواريخ.
+         ⇒ clamp:false، ومساحةٌ أوسع في CSS (an-cvol).
+         🎓 والطويلُ يحمل رقمه **داخله** (align:'start' من رأسه)،
+            والقصيرُ **فوقه** — فرقمٌ فوق عمودٍ قصير يطفو في فراغ. */
       datalabels:{
-        anchor:'end', clamp:true, offset:4,
-        align: c => (c.dataset.data[c.dataIndex] || 0) / maxE > .3 ? 'start' : 'end',
-        color: MUT, font:{ size:10.5, weight:'600' },
+        anchor:'end', clamp:false, offset:5,
+        align: c => (c.dataset.data[c.dataIndex] || 0) / maxE > .28 ? 'start' : 'end',
+        color: MUT, font:{ size:10.5, weight:'700' },
         formatter: x => x ? AR(x) : '' }
     }]},
     options:{
       responsive:true, maintainAspectRatio:false,
-      layout:{ padding:{ top:22, left:6 } },
+      layout:{ padding:{ top:18, left:6 } },
       plugins:{ legend:{ display:false },
         tooltip:{ ...tip, callbacks:{
           label: c => AR(c.parsed.y) + ' إجابة' } } },
