@@ -323,8 +323,10 @@ export async function uploadMedia(key, file){
    ⚠️ الثلاث `security invoker`: RLS هي التي تفصل المعلّم عن المدير
       عن الطالب. فلا تُمرَّر هنا معرّفات «للتصفية» ظنّاً أنها حماية. */
 
-export const studentPerformance = uid =>
-  db.rpc('student_performance', { p_student: uid || null });
+export const studentPerformance = (uid, subjectId, strandId) =>
+  db.rpc('student_performance', { p_student: uid       || null,
+                                  p_subject: subjectId || null,
+                                  p_strand:  strandId  || null });
 
 export const cohortPerformance = (levelId, subjectId) =>
   db.rpc('cohort_performance', { p_level_id:   levelId   || null,
