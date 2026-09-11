@@ -132,6 +132,7 @@ async function drawChart(tr){
         FILL = v('--fill-strong'), SURF = v('--surface-2'), TXT = v('--text');
 
   const labels = pts.map(p => dayMon(p.from));
+  const maxE   = Math.max(1, ...pts.map(p => p.answered || 0));
   const last   = pts.length - 1;
 
   if(_chart) _chart.destroy();
@@ -206,12 +207,20 @@ async function drawChart(tr){
       data: pts.map(p => p.answered || 0),
       backgroundColor: FILL, borderRadius:4,
       barPercentage:.62, categoryPercentage:.78,
-      datalabels:{ anchor:'end', align:'top', offset:2, color:MUT,
-        font:{ size:10 }, formatter: x => x ? AR(x) : '' }
+      /* ⚠️ anchor:'end' + align:'end' هو اصطلاح الأعمدة الرأسية.
+         و`align:'top'` تُحسب بالنسبة إلى **الخانة** لا إلى العمود،
+         فينزاح الرقمُ جانباً ويبدو تابعاً لعمودٍ ليس عمودَه.
+         🎓 والطويلُ يحمل رقمه داخله والقصيرُ فوقه: رقمٌ فوق عمودٍ
+            قصير يطفو في فراغٍ فلا يُنسب إلى شيء. */
+      datalabels:{
+        anchor:'end', clamp:true, offset:4,
+        align: c => (c.dataset.data[c.dataIndex] || 0) / maxE > .3 ? 'start' : 'end',
+        color: MUT, font:{ size:10.5, weight:'600' },
+        formatter: x => x ? AR(x) : '' }
     }]},
     options:{
       responsive:true, maintainAspectRatio:false,
-      layout:{ padding:{ top:16, left:6 } },
+      layout:{ padding:{ top:22, left:6 } },
       plugins:{ legend:{ display:false },
         tooltip:{ ...tip, callbacks:{
           label: c => AR(c.parsed.y) + ' إجابة' } } },
