@@ -7,7 +7,7 @@ import { S } from './state.js';
 import { mediaUrl, isManaged } from './media.js';
 
 /* ── بصمة النسخة — لمعرفة أي شيفرة يشغّلها المتصفح فعلاً ── */
-export const BUILD = "b43";
+export const BUILD = "b44";
 
 /* ── مراسي الصفحة ── */
 export const app = document.getElementById("app");
@@ -204,9 +204,9 @@ export function registerRoutes(map){ Object.assign(ROUTES, map); }
 
 const DEST = {
   student: [['subjects','المواد'], ['feedback','ملاحظاتي'], ['chat','الرسائل']],
-  teacher: [['grade','التصحيح'],   ['students','الطلاب'],   ['inbox','الرسائل'],
+  teacher: [['grade','التصحيح'],   ['students','الأداء'],   ['inbox','الرسائل'],
             ['mySubjects','موادّي'], ['editor','التأليف']],
-  admin:   [['requests','الطلبات'], ['students','الطلاب'],  ['editor','التأليف'],
+  admin:   [['requests','الطلبات'], ['students','الأداء'],  ['editor','التأليف'],
             ['grade','التصحيح'],    ['inbox','الرسائل'],     ['mySubjects','موادّي']]
 };
 
