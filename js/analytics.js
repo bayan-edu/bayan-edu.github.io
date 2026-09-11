@@ -27,6 +27,12 @@
       المائل نصٌّ ثنائيُّ الاتجاه، فترتيبُه على الشاشة ليس ترتيبَه
       في المصدر. «١٠ أغسطس» لا تحتمل قلباً.
 
+   📦 الرسم بـChart.js من CDN — كما تُستورَد supabase-js، فليس نمطاً
+      جديداً. وكلُّ ألوانه تُقرأ من رموز base.css لحظةَ الرسم، ومراقبٌ
+      على data-theme يُعيد بناءه عند تبديل السِمة.
+      ⚠️ وأصناف CSS كلُّها جديدة (an-chart…) عمداً: نسخةٌ سابقة من
+         الأنماط لا تقدر أن تكسر ما لا تعرف اسمه.
+
    ⚠️ الفاصل «،» لا «·»: الصفر العربيّ «٠» نقطةٌ مرفوعة كالفاصل.
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
@@ -77,71 +83,105 @@ function gauge(m, thin, sub, small, judge){
   </div>`;
 }
 
-/* ── الخطّ الزمنيّ ──
-   ⚠️ لا preserveAspectRatio="none": التمديدُ غيرُ المتناسب يُسمّن
-      الخطوطَ أفقياً ويُنحّفها رأسياً، وهو سببُ المظهر الرخيص كلِّه.
-   ⚠️ والأسبوعُ الفارغ لا يُوصَل بما بعده: وصلُه يرسم تعلّماً لم يقع.
-   ⚠️ ومحورُ القيم يمينَ الرسم لا يسارَه — لأن الزمن يبدأ من اليمين. */
-function spark(tr){
-  const pts = tr || [];
-  if(pts.length < 2) return '';
-  const n = pts.length;
-  const W = 360, H = 152, PR = 36, PL = 12, T = 20, B = 30;
-  const base = H - B;
-  const maxE = Math.max(1, ...pts.map(p => p.answered || 0));
-  const x = i => (W - PR) - (i * (W - PR - PL) / (n - 1));
-  const y = m => base - (Math.max(0, Math.min(100, m)) / 100) * (base - T);
-
-  /* شبكةٌ خفيفة: العينُ تحتاج مسطرةً لتقرأ ارتفاعاً */
-  const grid = [0, 50, 100].map(v => `
-    <line class="an-sg" x1="${PL}" y1="${y(v).toFixed(1)}" x2="${W-PR}" y2="${y(v).toFixed(1)}"/>
-    <text class="an-sgt" x="${W-PR+6}" y="${(y(v)+3.5).toFixed(1)}">${AR(v)}</text>`).join("");
-
-  /* الجهد: أعمدةٌ خلف الخطّ — تُقرأ ولا تزاحم */
-  const bars = pts.map((p,i) => {
-    const h = ((p.answered||0) / maxE) * 38;
-    return h < 1.5 ? '' : `<rect class="an-sb" x="${(x(i)-6).toFixed(1)}"
-        y="${(base-h).toFixed(1)}" width="12" height="${h.toFixed(1)}" rx="3"/>`;
-  }).join("");
-
-  /* مقاطعُ متّصلة فقط — وما بينها فراغٌ يُرى */
-  const runs = []; let cur = [];
-  pts.forEach((p,i) => { if(p.mastery == null){ if(cur.length) runs.push(cur); cur = []; }
-                         else cur.push(i); });
-  if(cur.length) runs.push(cur);
-
-  const areas = runs.filter(r => r.length > 1).map(r => {
-    const d = r.map((i,k) => `${k?'L':'M'}${x(i).toFixed(1)},${y(pts[i].mastery).toFixed(1)}`).join('')
-            + `L${x(r[r.length-1]).toFixed(1)},${base}L${x(r[0]).toFixed(1)},${base}Z`;
-    return `<path class="an-sa" d="${d}"/>`;
-  }).join("");
-
-  const lines = runs.filter(r => r.length > 1).map(r =>
-    `<path class="an-sl" d="${r.map((i,k)=>`${k?'L':'M'}${x(i).toFixed(1)},${y(pts[i].mastery).toFixed(1)}`).join('')}"/>`
-  ).join("");
-
-  const showAll = n <= 6;
-  const marks = pts.map((p,i) => {
-    if(p.mastery == null) return '';
-    const last = i === n-1;
-    return `<circle class="an-sd${last?' last':''}" cx="${x(i).toFixed(1)}"
-              cy="${y(p.mastery).toFixed(1)}" r="${last?5:3.6}">
-              <title>${esc(dayMon(p.from))}: ${pct(p.mastery)}، ${AR(p.answered)} إجابة</title>
-            </circle>
-            ${(showAll || last) ? `<text class="an-sv${last?' last':''}" x="${x(i).toFixed(1)}"
-              y="${(y(p.mastery)-10).toFixed(1)}" text-anchor="middle">${pct(p.mastery)}</text>` : ''}`;
-  }).join("");
-
-  return `<svg class="an-spark" viewBox="0 0 ${W} ${H}" role="img"
-            aria-label="الإتقان والجهد أسبوعياً">
-      <defs><linearGradient id="anGrad" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%"   class="an-g1"/><stop offset="100%" class="an-g2"/>
-      </linearGradient></defs>
-      ${grid}${bars}${areas}${lines}${marks}
-      <text class="an-st" x="${W-PR}" y="${H-9}" text-anchor="end">${dayMon(pts[0].from)}</text>
-      <text class="an-st" x="${PL}"   y="${H-9}" text-anchor="start">${dayMon(pts[n-1].from)}</text>
-    </svg>`;
+/* ── الرسم الزمنيّ: Chart.js ──
+   تُحمَّل مرّةً عند أوّل رسمٍ لا عند تحميل الوحدة: شاشةُ الطالب قد
+   لا تُفتح في الجلسة كلِّها، فلا تُدفع كلفتُها سلفاً. */
+let _C = null, _obs = false;
+async function ensureChart(){
+  if(_C) return _C;
+  const [a, b] = await Promise.all([
+    import('https://cdn.jsdelivr.net/npm/chart.js@4.4.3/auto/+esm'),
+    import('https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/+esm')
+  ]);
+  _C = a.default; _C.register(b.default);
+  _C.defaults.font.family = getComputedStyle(document.body).fontFamily;
+  return _C;
 }
+
+let _chart = null;
+
+async function drawChart(tr){
+  const cv = document.getElementById('anChart');
+  const pts = tr || [];
+  if(!cv || pts.length < 2) return;
+
+  let C;
+  try { C = await ensureChart(); }
+  catch(e){ cv.closest('.an-chart').innerHTML =
+      `<div class="qz-m">تعذّر تحميل مكتبة الرسم — تحقّق من الاتصال.</div>`; return; }
+
+  const css = getComputedStyle(document.documentElement);
+  const v   = k => css.getPropertyValue(k).trim();
+  const ACC = v('--accent'), MUT = v('--text-muted'), LN = v('--line'),
+        FILL = v('--fill-strong'), SURF = v('--surface-2');
+
+  const ctx  = cv.getContext('2d');
+  const grad = ctx.createLinearGradient(0, 0, 0, cv.clientHeight || 220);
+  grad.addColorStop(0, ACC + '55');
+  grad.addColorStop(1, ACC + '00');
+
+  if(_chart) _chart.destroy();
+  _chart = new C(ctx, {
+    data: {
+      labels: pts.map(p => dayMon(p.from)),
+      datasets: [
+        { type:'bar', label:'إجابات', yAxisID:'y1', order:2,
+          data: pts.map(p => p.answered || 0),
+          backgroundColor: FILL, borderRadius:4, barPercentage:.5,
+          categoryPercentage:.7, datalabels:{ display:false } },
+        { type:'line', label:'إتقان', yAxisID:'y', order:1,
+          data: pts.map(p => p.mastery),
+          /* ⚠️ الأسبوع الفارغ لا يُوصَل بما بعده: وصلُه يرسم تعلّماً لم يقع */
+          spanGaps:false, tension:.34, borderWidth:2.8, borderColor:ACC,
+          fill:true, backgroundColor:grad,
+          pointRadius: pts.map((p,i) => i===pts.length-1 ? 6 : 4),
+          pointBackgroundColor: pts.map((p,i) => i===pts.length-1 ? ACC : SURF),
+          pointBorderColor: ACC, pointBorderWidth:2.6, pointHoverRadius:7,
+          datalabels:{ align:'top', offset:6, color:MUT, clamp:true,
+            font:{ size:11, weight:'600' },
+            formatter: x => x==null ? '' : AR(x)+'٪' } }
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      layout:{ padding:{ top:18 } },
+      interaction:{ mode:'index', intersect:false },
+      plugins:{
+        legend:{ display:false },
+        tooltip:{ rtl:true, textDirection:'rtl', displayColors:false,
+          backgroundColor:SURF, titleColor:v('--text'), bodyColor:MUT,
+          borderColor:LN, borderWidth:1, padding:10, cornerRadius:9,
+          callbacks:{
+            label: c => c.dataset.yAxisID === 'y'
+              ? (c.parsed.y==null ? 'لا نشاط' : 'الإتقان ' + AR(c.parsed.y) + '٪')
+              : AR(c.parsed.y) + ' إجابة' } }
+      },
+      scales:{
+        /* ⚠️ reverse: الزمن يسير من اليمين إلى اليسار — اتجاه القراءة */
+        x:{ reverse:true, grid:{ display:false },
+            ticks:{ color:MUT, font:{ size:11 }, maxRotation:0, autoSkipPadding:14 } },
+        y:{ position:'right', min:0, max:100,
+            grid:{ color:LN, drawTicks:false },
+            border:{ display:false },
+            ticks:{ color:MUT, font:{ size:10 }, stepSize:25, padding:8,
+                    callback: x => AR(x) } },
+        y1:{ position:'left', min:0, grid:{ display:false },
+             border:{ display:false },
+             ticks:{ color:MUT, font:{ size:10 }, padding:6, maxTicksLimit:4,
+                     callback: x => AR(x) },
+             title:{ display:true, text:'إجابات', color:MUT, font:{ size:10 } } }
+      }
+    }
+  });
+
+  /* السِمة تتبدّل ⇒ الرسم يُعاد: ألوانه مقروءةٌ لحظةَ البناء لا حيّة */
+  if(!_obs){
+    _obs = true;
+    new MutationObserver(() => { if(document.getElementById('anChart')) drawChart(_lastTrend); })
+      .observe(document.documentElement, { attributes:true, attributeFilter:['data-theme'] });
+  }
+}
+let _lastTrend = null;
 
 /* عنوانُ الاتجاه — واقعةٌ تُرى في الرسم لا خلاصةُ نافذةٍ مختارة.
    (آخرُ أسبوعين أعطى +٨ لنفس الطالب، وآخرُ ثلاثة أعطى −٦٫٦.) */
@@ -267,7 +307,9 @@ async function drawPerformance(title, sub, back){
     <div class="card an-top">
       <div class="an-tl">
         <div class="an-head">${esc(trendLine(d.trend, M.forMe))}</div>
-        ${spark(d.trend) || `<div class="qz-m">الخطُّ يظهر بعد أسبوعين من النشاط.</div>`}
+        ${(d.trend||[]).length > 1
+          ? `<div class="an-chart"><canvas id="anChart"></canvas></div>`
+          : `<div class="qz-m">الخطُّ يظهر بعد أسبوعين من النشاط.</div>`}
         <div class="an-foot">الأعمدةُ عددُ الإجابات في الأسبوع. والنسبةُ الأسبوعية
           تتحرّك بما دُرس فيه أيضاً، لا بالاجتهاد وحده.</div>
       </div>
@@ -304,6 +346,8 @@ async function drawPerformance(title, sub, back){
       لكلّ اختبار · نسخة الواجهة ${BUILD}</p>`;
 
   bind();
+  _lastTrend = d.trend || [];
+  drawChart(_lastTrend);
   const redraw = () => drawPerformance(title, sub, back);
   const s1 = document.getElementById('mSubject');
   if(s1) s1.onchange = e => { M.subject = num(e.target.value); M.strand = null; redraw(); };
