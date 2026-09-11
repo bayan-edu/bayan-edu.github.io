@@ -790,7 +790,8 @@ body.gate .wrap{max-width:1000px}
 .an-chart{width:100%;margin:6px 0 2px}
 .an-clab{font-size:.76rem;color:var(--text-muted);margin:10px 0 2px;font-weight:600}
 .an-cmain{position:relative;width:100%;height:186px}
-.an-cvol{position:relative;width:100%;height:96px}
+/* كان: height:96px — ومساحةٌ بهذا الضيق لا تتّسع لعمودٍ ورقمه */
+.an-cvol{position:relative;width:100%;height:126px}
 .an-cmain canvas,.an-cvol canvas{display:block}
 
 /* ── الاندفاع: تنبيهٌ عن العمل لا حكمٌ على الطالب ⇒ warn لا danger ── */
@@ -828,7 +829,7 @@ body.gate .wrap{max-width:1000px}
   .an-top{gap:8px}
   .an-tr{flex:1 1 100%}
   .an-cmain{height:168px}
-  .an-cvol{height:86px}
+  .an-cvol{height:112px}
   .an-gauge{width:140px;height:140px}
   .an-one{width:120px}
 }
