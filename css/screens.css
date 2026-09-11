@@ -756,28 +756,7 @@ body.gate .wrap{max-width:1000px}
    بلا preserveAspectRatio="none": التمديدُ غيرُ المتناسب كان يُسمّن
    الخطوطَ أفقياً ويُنحّفها رأسياً — وهو سببُ المظهر الرخيص كلِّه. */
 
-.an-spark{width:100%;height:auto;display:block;margin:2px 0 4px;overflow:visible}
-
-/* شبكةٌ خفيفة: العينُ تحتاج مسطرةً لتقرأ ارتفاعاً */
-.an-sg{stroke:var(--line);stroke-width:1;stroke-dasharray:2 4}
-.an-sgt{fill:var(--text-muted);font-size:10px;font-weight:500}
-
-/* الجهد: أعمدةٌ تُقرأ ولا تزاحم */
-.an-sb{fill:var(--fill-strong)}
-
-/* الإتقان: مساحةٌ متدرّجة ثم خطٌّ فوقها */
-.an-sa{fill:url(#anGrad)}
-.an-g1{stop-color:var(--accent);stop-opacity:.22}
-.an-g2{stop-color:var(--accent);stop-opacity:0}
-.an-sl{fill:none;stroke:var(--accent);stroke-width:2.6;
-       stroke-linecap:round;stroke-linejoin:round}
-
 /* النقطة: قلبٌ من لون السطح — تُرى فوق المساحة لا تذوب فيها */
-.an-sd{fill:var(--surface-2);stroke:var(--accent);stroke-width:2.4}
-.an-sd.last{fill:var(--accent);stroke:var(--surface-2);stroke-width:3}
-
-.an-sv{fill:var(--text-muted);font-size:10.5px;font-weight:600}
-.an-sv.last{fill:var(--accent);font-size:12px;font-weight:700}
 
 .an-st{fill:var(--text-muted);font-size:11px}
 
@@ -847,3 +826,11 @@ body.gate .wrap{max-width:1000px}
 .an-cen{text-align:center}
 /* رأس البطاقة: الحلقة إلى جانب الاسم لا فوقه — الرقم سياقٌ لا عنوان */
 .an-side{display:flex;align-items:center;gap:15px;text-align:start}
+
+/* ═══ الرسم — b48 · Chart.js ═══
+   ارتفاعٌ ثابت للحاوية: اللوحة تحتاج مقاساً تُحسب عليه، و
+   maintainAspectRatio:false يتركه للـCSS. */
+.an-chart{position:relative;height:232px;width:100%;margin:4px 0 2px}
+.an-chart canvas{display:block}
+
+@media (max-width:560px){ .an-chart{height:200px} }
