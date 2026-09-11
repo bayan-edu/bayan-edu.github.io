@@ -23,6 +23,10 @@
 
    ⚠️ الألوان حكمٌ على العمل لا على الطالب. تُعرض للمعلّم؛
       وحين تُبنى شاشةُ الطالب تُراجَع قبل نقلها إليها.
+
+   ⚠️ ولا يُعرض مفتاحُ قاعدةٍ للإنسان أبداً. «اختبار ٢٣» لغةُ
+      جدولٍ لا لغةُ معلّم: تقول أين الصفّ ولا تقول في ماذا تحسّن
+      الطالب. العنوان يأتي من 88، والرقم يبقى للتشخيص لا للعرض.
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
 import { app, head, esc, AR, errBox, nav, BUILD, scrollTop } from './ui.js';
@@ -206,8 +210,15 @@ async function renderBoard(box){
     </div>
     ${group('المواد',  d.by_subject, x => x.name)}
     ${group('الصفوف',  d.by_level,   x => x.name)}
-    ${group('الفروع',  d.by_strand,  x =>
-        (subjName[x.subject_id] ? subjName[x.subject_id]+' — ' : '') + x.name)}`;
+    ${(() => {
+      /* غير المصنَّف يكرّر by_subject حرفاً بحرف ⇒ يُستبعد.
+         ويُقال سببُه: الفراغ يُرى، والصمتُ لا يُرى. */
+      const tagged = (d.by_strand||[]).filter(x => x.strand_id != null);
+      if(tagged.length) return group('الفروع', tagged, x =>
+        (subjName[x.subject_id] ? subjName[x.subject_id]+' — ' : '') + x.name);
+      return `<h2 class="sec">الفروع</h2>
+        <div class="status">لم تُصنَّف الدروس بفروع بعد — التصنيف يفتح هذا التقسيم.</div>`;
+    })()}`;
 }
 
 
@@ -233,8 +244,14 @@ export async function openStudentCard(uid){
 
   const g = d.growth || [];
 
-  const strandsHtml = ss => !ss?.length ? '' : `
-    <div class="an-strands">${ss.map(x => `
+  /* 🎓 فرعٌ واحد غير مصنَّف يكرّر رقمَ المادة حرفاً بحرف.
+     وتقسيمٌ لا يقسّم شيئاً ضجيجٌ يُعلّم القارئَ تجاهلَ التفاصيل. */
+  const strandsHtml = ss => {
+    if(!ss?.length) return '';
+    if(ss.length === 1 && ss[0].strand_id == null) return '';
+    return `
+    <div class="an-strands"><div class="an-srh">الفروع داخل المادة</div>
+    ${ss.map(x => `
       <div class="an-sr">
         <div class="an-h">
           <span>${esc(x.name)}</span>
@@ -243,6 +260,7 @@ export async function openStudentCard(uid){
         ${bar(x.mastery, x.thin)}
         <div class="qz-m">${AR(x.quizzes)} اختباراً، ${AR(x.answered)} إجابة ${thinTag(x.thin)}</div>
       </div>`).join("")}</div>`;
+  };
 
   /* 🎓 الحلقة صغيرةٌ هنا عمداً: في البطاقة الرقمُ سياقٌ وأثرُ
      الإعادة متن. وفي اللوحة ينعكس الأمر فتكبر. */
@@ -265,11 +283,12 @@ export async function openStudentCard(uid){
       ${g.map(x => `
         <div class="an-row static">
           <div class="an-h">
-            <span class="qz-t">اختبار ${AR(x.quiz_id)}</span>
+            <span class="qz-t">${esc(x.title || ('اختبار '+x.quiz_id))}</span>
             <span class="an-n ${x.gain>0?'high':x.gain<0?'low':'mid'}">
               ${x.gain>0?'▲':x.gain<0?'▼':'='} ${AR(Math.abs(x.gain))}</span>
           </div>
-          <div class="qz-m">${AR(x.attempts)} محاولات، من ${pct(x.first)} إلى ${pct(x.last)}</div>
+          <div class="qz-m">${x.lesson?esc(x.lesson)+'، ':''}${AR(x.attempts)} محاولات،
+            من ${pct(x.first)} إلى ${pct(x.last)}</div>
         </div>`).join("")}` : ''}
 
     <h2 class="sec">المواد — الأضعف أوّلاً</h2>
