@@ -27,6 +27,11 @@
       المائل نصٌّ ثنائيُّ الاتجاه، فترتيبُه على الشاشة ليس ترتيبَه
       في المصدر. «١٠ أغسطس» لا تحتمل قلباً.
 
+   🎓 والاندفاعُ يُعلن قبل كلّ رقم (93): إجابةٌ خاطئةٌ في أقلّ من
+      خمس ثوانٍ ليست خطأً في الفهم بل نقرةٌ بلا قراءة. ومن كان
+      ثلثُ إجاباته كذلك، لا يرفعه شرحٌ ولا مراجعة — يرفعه أن يقرأ.
+      ⇒ فتتصدّر الشاشةَ حين تكثر، ولا تُدفن تحت نِسَبٍ لا تصفه.
+
    📦 الرسم بـChart.js من CDN — كما تُستورَد supabase-js، فليس نمطاً
       جديداً. وكلُّ ألوانه تُقرأ من رموز base.css لحظةَ الرسم، ومراقبٌ
       على data-theme يُعيد بناءه عند تبديل السِمة.
@@ -98,78 +103,124 @@ async function ensureChart(){
   return _C;
 }
 
-let _chart = null;
+let _chart = null, _vol = null;
+
+/* ⚠️ لوحتان لا لوحةٌ بمقياسين.
+   كان الإتقانُ يميناً (٠–١٠٠) والجهدُ يساراً (٠–١٥٠) في رسمٍ واحد،
+   فصار ارتفاعُ العمود وارتفاعُ النقطة لا علاقةَ بينهما — والعينُ
+   تقارنهما لأنهما في إطارٍ واحد، فتقرأ علاقةً لا وجودَ لها.
+   ⇒ مقياسٌ واحد لكلّ لوحة، ومحورُ زمنٍ مشترك بينهما.
+   ⚠️ ومحاذاتُهما مضبوطةٌ بـafterFit: عرضُ عمود القيم مثبَّتٌ في
+      الاثنتين، وإلّا انزاح الأسبوعُ عن عموده بمقدار عرضِ الأرقام. */
+const AXW = 38;
 
 async function drawChart(tr){
   const cv = document.getElementById('anChart');
+  const bv = document.getElementById('anVol');
   const pts = tr || [];
-  if(!cv || pts.length < 2) return;
+  if(!cv || !bv || pts.length < 2) return;
 
   let C;
   try { C = await ensureChart(); }
-  catch(e){ cv.closest('.an-chart').innerHTML =
-      `<div class="qz-m">تعذّر تحميل مكتبة الرسم — تحقّق من الاتصال.</div>`; return; }
+  catch(e){ const box = cv.closest('.an-chart');
+    if(box) box.innerHTML = `<div class="qz-m">تعذّر تحميل مكتبة الرسم — تحقّق من الاتصال.</div>`;
+    return; }
 
   const css = getComputedStyle(document.documentElement);
   const v   = k => css.getPropertyValue(k).trim();
   const ACC = v('--accent'), MUT = v('--text-muted'), LN = v('--line'),
-        FILL = v('--fill-strong'), SURF = v('--surface-2');
+        FILL = v('--fill-strong'), SURF = v('--surface-2'), TXT = v('--text');
 
-  const ctx  = cv.getContext('2d');
-  const grad = ctx.createLinearGradient(0, 0, 0, cv.clientHeight || 220);
-  grad.addColorStop(0, ACC + '55');
-  grad.addColorStop(1, ACC + '00');
+  const labels = pts.map(p => dayMon(p.from));
+  const last   = pts.length - 1;
 
   if(_chart) _chart.destroy();
+  if(_vol)   _vol.destroy();
+
+  const ctx  = cv.getContext('2d');
+  const grad = ctx.createLinearGradient(0, 0, 0, cv.clientHeight || 176);
+  grad.addColorStop(0, ACC + '4D');
+  grad.addColorStop(1, ACC + '00');
+
+  const tip = {
+    rtl:true, textDirection:'rtl', displayColors:false, backgroundColor:SURF,
+    titleColor:TXT, bodyColor:MUT, borderColor:LN, borderWidth:1,
+    padding:10, cornerRadius:9
+  };
+
+  /* ① الإتقانُ والإنجاز — كلاهما نسبةٌ مئوية، فمحورٌ واحد يسعهما.
+     (وهذا ما حلّ مشكلة المقياسين: الجهدُ عددٌ فنُقل إلى لوحته.) */
   _chart = new C(ctx, {
-    data: {
-      labels: pts.map(p => dayMon(p.from)),
-      datasets: [
-        { type:'bar', label:'إجابات', yAxisID:'y1', order:2,
-          data: pts.map(p => p.answered || 0),
-          backgroundColor: FILL, borderRadius:4, barPercentage:.5,
-          categoryPercentage:.7, datalabels:{ display:false } },
-        { type:'line', label:'إتقان', yAxisID:'y', order:1,
-          data: pts.map(p => p.mastery),
-          /* ⚠️ الأسبوع الفارغ لا يُوصَل بما بعده: وصلُه يرسم تعلّماً لم يقع */
-          spanGaps:false, tension:.34, borderWidth:2.8, borderColor:ACC,
-          fill:true, backgroundColor:grad,
-          pointRadius: pts.map((p,i) => i===pts.length-1 ? 6 : 4),
-          pointBackgroundColor: pts.map((p,i) => i===pts.length-1 ? ACC : SURF),
-          pointBorderColor: ACC, pointBorderWidth:2.6, pointHoverRadius:7,
-          datalabels:{ align:'top', offset:6, color:MUT, clamp:true,
-            font:{ size:11, weight:'600' },
-            formatter: x => x==null ? '' : AR(x)+'٪' } }
-      ]
-    },
-    options: {
+    type:'line',
+    data:{ labels, datasets:[
+    { label:'الإنجاز — ما قطعتَه من دروس صفّك',
+      data: pts.map(p => p.done),
+      spanGaps:true, tension:.2, borderWidth:2, borderColor:MUT,
+      borderDash:[5,4], fill:false, pointRadius:0, pointHoverRadius:4,
+      datalabels:{ display:false } },
+    {
+      label:'الإتقان — في الاختبارات التي أنجزتَها',
+      data: pts.map(p => p.mastery),
+      /* ⚠️ الأسبوع الفارغ لا يُوصَل بما بعده: وصلُه يرسم تعلّماً لم يقع */
+      spanGaps:false, tension:.35, borderWidth:2.6, borderColor:ACC,
+      fill:true, backgroundColor:grad,
+      pointRadius: pts.map((p,i) => i===last ? 4.5 : 3),
+      pointBackgroundColor: pts.map((p,i) => i===last ? ACC : SURF),
+      pointBorderColor:ACC, pointBorderWidth:2, pointHoverRadius:6,
+      datalabels:{ align:'top', offset:5, clamp:true,
+        color: (c) => c.dataIndex===last ? ACC : MUT,
+        font: (c) => ({ size: c.dataIndex===last ? 11.5 : 10,
+                        weight: c.dataIndex===last ? '700' : '600' }),
+        formatter: x => x==null ? '' : AR(x)+'٪' }
+    }]},
+    options:{
       responsive:true, maintainAspectRatio:false,
-      layout:{ padding:{ top:18 } },
+      layout:{ padding:{ top:20, left:6 } },
       interaction:{ mode:'index', intersect:false },
       plugins:{
-        legend:{ display:false },
-        tooltip:{ rtl:true, textDirection:'rtl', displayColors:false,
-          backgroundColor:SURF, titleColor:v('--text'), bodyColor:MUT,
-          borderColor:LN, borderWidth:1, padding:10, cornerRadius:9,
-          callbacks:{
-            label: c => c.dataset.yAxisID === 'y'
-              ? (c.parsed.y==null ? 'لا نشاط' : 'الإتقان ' + AR(c.parsed.y) + '٪')
-              : AR(c.parsed.y) + ' إجابة' } }
-      },
+        /* وسيلةُ إيضاحٍ لازمة الآن: خطّان لا يُفرَّق بينهما بالشكل وحده */
+        legend:{ display:true, position:'top', align:'end', rtl:true,
+          labels:{ color:MUT, boxWidth:22, boxHeight:2, usePointStyle:false,
+                   font:{ size:10.5 }, padding:12 } },
+        tooltip:{ ...tip, callbacks:{
+          label: c => c.parsed.y==null ? 'لا نشاط هذا الأسبوع'
+                    : (c.datasetIndex===0 ? 'الإنجاز ' : 'الإتقان ')
+                      + AR(c.parsed.y) + '٪' } } },
       scales:{
-        /* ⚠️ reverse: الزمن يسير من اليمين إلى اليسار — اتجاه القراءة */
-        x:{ reverse:true, grid:{ display:false },
-            ticks:{ color:MUT, font:{ size:11 }, maxRotation:0, autoSkipPadding:14 } },
+        x:{ reverse:true, grid:{ display:false }, border:{ display:false },
+            ticks:{ display:false } },
         y:{ position:'right', min:0, max:100,
-            grid:{ color:LN, drawTicks:false },
-            border:{ display:false },
-            ticks:{ color:MUT, font:{ size:10 }, stepSize:25, padding:8,
-                    callback: x => AR(x) } },
-        y1:{ position:'left', min:0, grid:{ display:false },
-             border:{ display:false },
-             ticks:{ color:MUT, font:{ size:10 }, padding:6, maxTicksLimit:4,
-                     callback: x => AR(x) },
-             title:{ display:true, text:'إجابات', color:MUT, font:{ size:10 } } }
+            grid:{ color:LN, drawTicks:false }, border:{ display:false },
+            afterFit: sc => { sc.width = AXW; },
+            ticks:{ color:MUT, font:{ size:10 }, stepSize:25, padding:6,
+                    callback: x => AR(x)+'٪' } }
+      }
+    }
+  });
+
+  /* ② الجهد — أعمدةٌ بأرقامها، بلا محورٍ ثانٍ يُقارَن به */
+  _vol = new C(bv.getContext('2d'), {
+    type:'bar',
+    data:{ labels, datasets:[{
+      data: pts.map(p => p.answered || 0),
+      backgroundColor: FILL, borderRadius:4,
+      barPercentage:.62, categoryPercentage:.78,
+      datalabels:{ anchor:'end', align:'top', offset:2, color:MUT,
+        font:{ size:10 }, formatter: x => x ? AR(x) : '' }
+    }]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      layout:{ padding:{ top:16, left:6 } },
+      plugins:{ legend:{ display:false },
+        tooltip:{ ...tip, callbacks:{
+          label: c => AR(c.parsed.y) + ' إجابة' } } },
+      scales:{
+        x:{ reverse:true, grid:{ display:false }, border:{ color:LN },
+            ticks:{ color:MUT, font:{ size:11 }, maxRotation:0, autoSkipPadding:10 } },
+        /* محورٌ مخفيٌّ بعرضٍ مطابق — يحاذي اللوحتين ولا يعرض مقياساً ثانياً */
+        y:{ position:'right', min:0, display:true, grid:{ display:false },
+            border:{ display:false }, ticks:{ display:false },
+            afterFit: sc => { sc.width = AXW; } }
       }
     }
   });
@@ -182,6 +233,64 @@ async function drawChart(tr){
   }
 }
 let _lastTrend = null;
+
+/* ── رسمُ محاولاتِ اختبارٍ واحد ──
+   خطُّ عتبةِ النجاح معه: رقمٌ بلا مرجعٍ لا يُقرأ، و«٤٢٪» تختلف
+   تماماً حين تكون العتبةُ ٦٥ عنها حين تكون ٣٥. */
+let _qchart = null;
+
+async function drawQuizChart(atts, pass){
+  const cv = document.getElementById('anQChart');
+  if(!cv || !(atts||[]).length) return;
+  let C; try { C = await ensureChart(); } catch(e){ return; }
+
+  const css = getComputedStyle(document.documentElement);
+  const v = k => css.getPropertyValue(k).trim();
+  const ACC = v('--accent'), MUT = v('--text-muted'), LN = v('--line'),
+        SURF = v('--surface-2'), TXT = v('--text');
+
+  const best = Math.max(...atts.map(a => a.mastery ?? 0));
+  if(_qchart) _qchart.destroy();
+
+  _qchart = new C(cv.getContext('2d'), {
+    type:'line',
+    data:{
+      labels: atts.map(a => 'محاولة ' + AR(a.no)),
+      datasets:[
+        { label:'عتبة النجاح', data: atts.map(() => pass),
+          borderColor:MUT, borderDash:[5,4], borderWidth:1.6,
+          pointRadius:0, fill:false, datalabels:{ display:false } },
+        { label:'الإتقان', data: atts.map(a => a.mastery),
+          borderColor:ACC, borderWidth:2.8, tension:.3, fill:false,
+          /* الذروةُ تُعلَّم: `gain` وحده يخفي انحداراً عنها */
+          pointRadius: atts.map(a => a.mastery===best ? 6 : 4),
+          pointBackgroundColor: atts.map(a => a.mastery===best ? ACC : SURF),
+          pointBorderColor:ACC, pointBorderWidth:2.4, pointHoverRadius:7,
+          datalabels:{ align:'top', offset:6, color:MUT, font:{ size:10.5, weight:'600' },
+            formatter: x => x==null ? '' : AR(x)+'٪' } }
+      ]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      layout:{ padding:{ top:20, left:6 } },
+      interaction:{ mode:'index', intersect:false },
+      plugins:{ legend:{ display:false },
+        tooltip:{ rtl:true, textDirection:'rtl', displayColors:false,
+          backgroundColor:SURF, titleColor:TXT, bodyColor:MUT,
+          borderColor:LN, borderWidth:1, padding:10, cornerRadius:9,
+          callbacks:{ label: c => c.datasetIndex===0 ? 'عتبة النجاح ' + AR(pass) + '٪'
+                                                     : 'الإتقان ' + AR(c.parsed.y) + '٪' } } },
+      scales:{
+        x:{ reverse:false, grid:{ display:false }, border:{ color:LN },
+            ticks:{ color:MUT, font:{ size:11 }, maxRotation:0 } },
+        y:{ position:'right', min:0, max:100, grid:{ color:LN, drawTicks:false },
+            border:{ display:false }, afterFit: sc => { sc.width = AXW; },
+            ticks:{ color:MUT, font:{ size:10 }, stepSize:25, padding:6,
+                    callback: x => AR(x)+'٪' } }
+      }
+    }
+  });
+}
+
 
 /* عنوانُ الاتجاه — واقعةٌ تُرى في الرسم لا خلاصةُ نافذةٍ مختارة.
    (آخرُ أسبوعين أعطى +٨ لنفس الطالب، وآخرُ ثلاثة أعطى −٦٫٦.) */
@@ -245,6 +354,8 @@ async function drawPerformance(title, sub, back){
     if(r.error){ app.innerHTML = crumb + errBox(r.error,'الأداء'); bind(); return; }
     d = r.data || {};
   }
+  const dxr = await api.studentDx(M.uid, M.subject);
+  const dx  = dxr.error ? { rush:{}, patterns:[] } : (dxr.data || {});
 
   const st = d.student, o = d.overall || {}, fl = d.filter || {};
   head(title, sub ?? (st?.name || ''));
@@ -253,6 +364,20 @@ async function drawPerformance(title, sub, back){
   const judge = !M.forMe;
   const qs    = d.quizzes  || [];
   const subs  = d.subjects || [];
+  const cp    = d.completion || {};
+  const you   = M.forMe;
+
+  /* 🎓 الاندفاع يتصدّر حين يكثر: من كان ثلثُ إجاباته نقراً بلا قراءة
+     لا يرفعه شرحٌ ولا مراجعة — يرفعه أن يقرأ. ودفنُه تحت نِسَبٍ لا
+     تصفه يجعل الشاشةَ كلَّها تشخّص ما ليس موجوداً. */
+  const rushBox = r => (!r || !r.gradable || (r.pct||0) < 20) ? '' : `
+    <div class="an-rush">
+      <b>${AR(r.rushed)} من ${AR(r.gradable)} إجابة (${AR(r.pct)}٪)</b>
+      ${you ? `أجبتَها في أقلّ من ${AR(r.threshold)} ثوانٍ — وهي أسرعُ من قراءة السؤال.
+        اقرأ الجذعَ مرّتين قبل أن تختار: هذا وحده قد يرفع نتيجتك أكثر من أيّ مراجعة.`
+            : `دون ${AR(r.threshold)} ثوانٍ وخاطئة. وأنماطُ الخطأ أدناه محسوبةٌ
+        <b>بعد استبعادها</b> — فهي لا تصف تصوّراً خاطئاً بل نقراً.`}
+    </div>`;
 
   /* الفرعُ يُخفى ما لم يوجد فرعان فأكثر: فلترٌ بخيارٍ واحد يُقرأ عطلاً */
   const curOpt  = M.opts.find(s => String(s.subject_id) === String(M.subject));
@@ -268,7 +393,7 @@ async function drawPerformance(title, sub, back){
       ${g>0?'▲':g<0?'▼':'='} ${AR(Math.abs(g))}</span>`;
 
   const quizRow = (x, mode) => `
-    <div class="an-row static">
+    <div class="an-row" data-q="${x.quiz_id}">
       <div class="an-h">
         <span class="qz-t">${esc(x.title)}</span>
         ${mode==='gain' ? gainTag(x.gain)
@@ -279,6 +404,10 @@ async function drawPerformance(title, sub, back){
         x.attempts>1 ? `${AR(x.attempts)} محاولات، من ${pct(x.first)} إلى ${pct(x.mastery)}`
                      : `محاولةٌ واحدة، ${AR(x.answered)} إجابة`}${
         mode==='need' ? `، عتبةُ النجاح ${pct(x.pass)}` : ''}</div>
+      ${/* 🎓 الذروةُ تُقال حين يكون الحاضرُ دونها: gain وحده يخفي انحداراً */''}
+      ${x.since_best != null && x.since_best < -2
+        ? `<div class="an-drop">بلغ ${pct(x.best)} في المحاولة ${AR(x.best_no)}،
+             ثمّ نزل ${AR(Math.abs(x.since_best))} نقطة</div>` : ''}
     </div>`;
 
   const section = (ttl, arr, mode, more, key, note) => !arr.length ? '' : `
@@ -307,21 +436,37 @@ async function drawPerformance(title, sub, back){
     <div class="card an-top">
       <div class="an-tl">
         <div class="an-head">${esc(trendLine(d.trend, M.forMe))}</div>
-        ${(d.trend||[]).length > 1
-          ? `<div class="an-chart"><canvas id="anChart"></canvas></div>`
-          : `<div class="qz-m">الخطُّ يظهر بعد أسبوعين من النشاط.</div>`}
-        <div class="an-foot">الأعمدةُ عددُ الإجابات في الأسبوع. والنسبةُ الأسبوعية
-          تتحرّك بما دُرس فيه أيضاً، لا بالاجتهاد وحده.</div>
+        ${(d.trend||[]).length > 1 ? `
+          <div class="an-chart">
+            <div class="an-clab">الإتقان الأسبوعيّ</div>
+            <div class="an-cmain"><canvas id="anChart"></canvas></div>
+            <div class="an-clab">عددُ الإجابات في الأسبوع</div>
+            <div class="an-cvol"><canvas id="anVol"></canvas></div>
+          </div>` : `<div class="qz-m">الرسمُ يظهر بعد أسبوعين من النشاط.</div>`}
+        <div class="an-foot">النسبةُ الأسبوعية تتحرّك بما دُرس في الأسبوع أيضاً،
+          لا بالاجتهاد وحده — ولهذا يُعرض الجهدُ معها.</div>
       </div>
       <div class="an-tr">
-        ${gauge(o.mastery, false, fl.subject ? 'إتقان المادة' : 'إتقان عام', false, judge)}
-        <div class="qz-m an-cen">${
-          fl.subject ? esc(fl.subject) + (fl.strand ? '، '+esc(fl.strand) : '')
-                     : `${AR(o.subjects||0)} مادة، ${AR(o.answered||0)} إجابة`}</div>
+        <div class="an-two">
+          <div class="an-one">
+            ${gauge(o.mastery, false, 'إتقان', true, judge)}
+            <div class="an-note">في الاختبارات التي أُنجزت</div>
+          </div>
+          <div class="an-one">
+            ${gauge(cp.pct, false, 'إنجاز', true, false)}
+            <div class="an-note">${cp.required
+              ? `${AR(cp.done)} من ${AR(cp.required)} ${fl.subject?'في هذه المادة':'من دروس صفّه'}`
+              : 'لا دروسَ منشورةً مطلوبة'}</div>
+          </div>
+        </div>
       </div>
     </div>
 
     ${selBox}
+
+    ${rushBox(dx.rush)}
+
+    ${dxSection(dx.patterns, you)}
 
     ${M.subject
       ? (qs.length
@@ -359,7 +504,125 @@ async function drawPerformance(title, sub, back){
   app.querySelectorAll('[data-s]').forEach(el => el.onclick = () => {
     M.subject = Number(el.dataset.s); M.strand = null; redraw();
   });
+  app.querySelectorAll('[data-q]').forEach(el => el.onclick = () =>
+    openQuiz(Number(el.dataset.q), title, sub, back));
   scrollTop();
+}
+
+
+/* ═══════════ أنماطُ الخطأ ═══════════
+   🎓 الترتيب يختلف بالقارئ لا بالبيانات:
+     · للطالب: ما زال أوّلاً — دليلٌ أن جهده أثمر، ثم ما يحتاج عودة.
+       وصدرُ الشاشة ليس موضعَ إخفاقه.
+     · للمعلّم: المستعصي أوّلاً — عملُه فرزٌ وتدخّل.
+   ⚠️ و`untested` لا يُعرض حكماً: اختبارٌ بمحاولةٍ واحدة لم يُختبر
+      علاجُه أصلاً، فوسمُه إخفاقاً حكمٌ على دواءٍ لم يُعطَ. */
+const DXS = {
+  persistent:['يحتاج عودة','لم يزل بعد الإعادة'],
+  partial:   ['في الطريق','زال في بعضٍ وبقي في بعض'],
+  cleared:   ['زال','لم يعد يظهر بعد الإعادة'],
+  untested:  ['لم يُختبر','ظهر ولم تُعَد اختباراتُه']
+};
+
+function dxSection(pats, forMe){
+  const p = pats || [];
+  if(!p.length) return '';
+  const order = forMe ? ['cleared','persistent','partial','untested']
+                      : ['persistent','partial','cleared','untested'];
+  const head  = forMe
+    ? 'أنماطُ أخطائك — والترتيبُ يبدأ بما تجاوزتَه'
+    : 'أنماطُ الخطأ — المستعصي أوّلاً';
+
+  const rows = order.flatMap(st => p.filter(x => x.state === st).map(x => `
+    <div class="an-row static">
+      <div class="an-h">
+        <span class="qz-t">${esc(x.note || x.name || x.code || '—')}</span>
+        <span class="an-st ${x.state}">${DXS[x.state][0]}</span>
+      </div>
+      <div class="qz-m">
+        ${x.name ? `<b>${esc(x.name)}</b>${x.code?' · '+esc(x.code):''}، ` : ''}
+        ظهر في ${AR(x.quizzes)} اختباراً${
+          x.retried ? `، أُعيد منها ${AR(x.retried)} وزال في ${AR(x.cleared)}`
+                    : '، ولم يُعَد أيٌّ منها بعد'}
+      </div>
+      ${x.remedy ? `<div class="an-dx">${esc(x.remedy)}</div>` : ''}
+    </div>`));
+
+  return `<h2 class="sec">${head}</h2>${rows.join("")}`;
+}
+
+
+
+/* ═══════════ شاشةُ اختبارٍ واحد ═══════════
+   🔑 التشخيصُ متنٌ والإجابةُ سياق — ولا مفتاحَ البتّة (91).
+      لو رأى الطالبُ الصوابَ متى شاء ثمّ أعاد، لقاست الإعادةُ
+      الذاكرةَ لا التعلّم، وفرغ أثمنُ رقمٍ في المنصة. */
+async function openQuiz(quizId, backTitle, backSub, backHas){
+  app.innerHTML = `<div class="status">جارٍ الفتح…</div>`;
+  const { data, error } = await api.quizDetail(quizId, M.uid);
+  const crumb = `<div class="crumb" id="bq">← ${M.forMe ? 'أدائي' : 'بطاقة الطالب'}</div>`;
+  const back  = () => drawPerformance(backTitle, backSub, backHas);
+
+  if(error){ app.innerHTML = crumb + errBox(error,'تفاصيل الاختبار');
+             document.getElementById('bq').onclick = back; return; }
+
+  const d = data || {}, qz = d.quiz || {}, atts = d.attempts || [];
+  head(qz.title || 'اختبار', qz.lesson || '');
+  const judge = !M.forMe;
+  const last  = atts.length ? atts[atts.length-1] : null;
+
+  const ansRow = a => `
+    <div class="an-q ${a.is_correct===true?'ok':a.is_correct===false?'no':'na'}">
+      <div class="an-qh">
+        <span class="an-qn">${AR(a.position)}</span>
+        <span class="an-qb">${esc(a.body || '')}</span>
+      </div>
+      ${a.chosen  ? `<div class="an-qc">اخترتَ: ${esc(a.chosen)}</div>` : ''}
+      ${a.written ? `<div class="an-qc">كتبتَ: ${esc(a.written)}</div>` : ''}
+      ${a.rushed
+        ? `<div class="an-qr">أُجيب في ${AR(a.seconds)} ثانية — أسرعُ من قراءة السؤال،
+             فلا تشخيصَ له.</div>`
+        : (a.note ? `<div class="an-qd">${esc(a.note)}</div>` : '')}
+      ${a.name ? `<div class="qz-m">${esc(a.name)}${a.code?' · '+esc(a.code):''}</div>` : ''}
+      ${a.remedy ? `<div class="an-dx">${esc(a.remedy)}</div>` : ''}
+    </div>`;
+
+  app.innerHTML = `
+    ${crumb}
+    ${atts.length > 1 ? `
+      <div class="card">
+        <div class="an-clab">الدرجة في كلّ محاولة</div>
+        <div class="an-cmain"><canvas id="anQChart"></canvas></div>
+      </div>` : last ? `
+      <div class="card an-sum">
+        ${gauge(last.mastery, false, 'إتقان', false, judge)}
+        <div class="qz-m an-cen">محاولةٌ واحدة، ${AR(last.answered)} إجابة،
+          عتبةُ النجاح ${pct(qz.pass)}</div>
+      </div>` : ''}
+
+    ${d.rush ? rushLine(d.rush, M.forMe) : ''}
+
+    ${!d.revealed
+      ? `<div class="warnbox">هذا الاختبار لا تُعرض مراجعتُه — قرارٌ اتّخذه
+           مؤلّفه، ومحطّاتُ تحديد المستوى كلُّها كذلك.</div>`
+      : `<h2 class="sec">تفاصيل آخر محاولة</h2>
+         <div class="an-foot">الصوابُ من الخطأ والتشخيص — <b>بلا الإجابة الصحيحة</b>،
+           لتبقى الإعادةُ قياساً لفهمك لا لذاكرتك.</div>
+         ${(d.answers||[]).map(ansRow).join("") || empty("لا إجابات")}`}
+
+    <p class="hint">نسخة الواجهة ${BUILD}</p>`;
+
+  document.getElementById('bq').onclick = back;
+  if(atts.length > 1) drawQuizChart(atts, qz.pass || 65);
+  scrollTop();
+}
+
+function rushLine(r, forMe){
+  if(!r || !r.gradable || !r.rushed) return '';
+  return `<div class="an-rush">
+    <b>${AR(r.rushed)} من ${AR(r.gradable)}</b> ${forMe
+      ? `من إجاباتك هنا كانت في أقلّ من ${AR(r.threshold)} ثوانٍ.`
+      : `من إجاباته دون ${AR(r.threshold)} ثوانٍ وخاطئة.`}</div>`;
 }
 
 
