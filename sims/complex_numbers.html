@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>محاكي الأعداد المركّبة</title>
+<style>
+  :root{
+    --bg:#EDE9DF; --surface:#fff; --divider:#DCD6C6; --fill-soft:#F8F6F0;
+    --text:#2C2C2A; --text-muted:#5F5E5A;
+    --accent:#0F6E56; --accent-700:#0b5443; --accent-soft:#E9F5F0; --accent-fill:#D5EDE3;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:var(--bg);color:var(--text);
+       font-family:'Segoe UI',Tahoma,Arial,sans-serif;
+       font-size:14px;line-height:1.6}
+  h2{margin:0 0 8px;font-size:15px;font-weight:700}
+  .hdr{display:flex;align-items:baseline;justify-content:space-between;gap:12px;
+       flex-wrap:wrap;padding:14px 18px;border-bottom:2px solid var(--divider)}
+  .hdr b{font-size:17px}
+  .hdr .lvl{font-size:11px;letter-spacing:.05em;color:var(--accent-700);font-weight:700}
+  .done-note{font-size:11px;color:var(--accent-700);font-weight:700;display:none}
+  .done-note.show{display:inline}
+
+  .grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr)}
+  @media(max-width:720px){ .grid{grid-template-columns:1fr} }
+
+  .left{border-left:2px solid var(--divider);padding:18px 18px 26px}
+  @media(max-width:720px){ .left{border-left:0;border-bottom:2px solid var(--divider)} }
+  .right{padding:18px 18px 26px}
+
+  .panelhead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:4px}
+  .step-n{font-size:11px;color:var(--text-muted)}
+  .lead{margin:0 0 12px;font-size:12px;line-height:1.7;color:var(--text-muted)}
+
+  .plane-wrap{position:relative}
+  svg{width:100%;height:auto;display:block;background:#fff;border:1px solid var(--divider)}
+  .zlabel{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;
+    font-weight:700;font-size:12px;color:var(--accent);background:#fff;padding:1px 5px;
+    pointer-events:none}
+  .tick{position:absolute;font-size:10px;color:var(--text-muted);white-space:nowrap;pointer-events:none}
+  .tick.corner{font-size:10px;font-weight:700;background:#fff;padding:1px 4px}
+
+  .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+    border:1px solid var(--divider);border-top:0}
+  .stats>div{padding:10px 12px;border-left:1px solid var(--divider)}
+  .stats>div:last-child{border-left:0}
+  .stats span{font-size:10px;color:var(--text-muted);display:block}
+  .stats b{font-weight:700;font-size:19px}
+  .stats .ang{color:var(--accent-700);font-size:14px}
+
+  .repr{margin-top:14px;padding:12px 14px;background:var(--surface);
+    border-right:2px solid var(--accent)}
+  .repr-h{font-size:11px;font-weight:700;color:var(--accent-700);margin-bottom:6px}
+  .repr div{font-size:15px;line-height:2}
+
+  .op-title{font-weight:700;font-size:17px;color:var(--accent-700);margin-bottom:8px}
+  .op-formula{font-size:14px;padding:8px 10px;background:#fff;border:1px solid var(--divider);margin-bottom:10px}
+  .op-body{margin:0 0 10px;font-size:13px;line-height:1.8}
+  .op-geo{padding:8px 10px;border-right:2px solid var(--accent-fill);background:var(--surface);font-size:12px}
+  hr{border:0;border-top:2px solid var(--divider);margin:18px 0}
+
+  .btn{display:block;width:100%;text-align:right;font-family:inherit;font-size:13px;
+    padding:10px 14px;min-height:42px;border-radius:8px;border:1px solid var(--divider);
+    background:var(--fill-soft);color:var(--text);cursor:pointer;margin-bottom:8px}
+  .btn:hover{border-color:var(--accent);color:var(--accent-700)}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn.primary:hover{color:#fff;opacity:.92}
+  .btn b{margin-inline-end:8px}
+
+  .custom{margin-top:4px;padding:12px 14px;background:var(--surface);
+    display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end}
+  .custom.hidden{display:none}
+  .custom label{font-size:11px;display:flex;flex-direction:column;gap:4px}
+  .custom input{direction:ltr;font-size:14px;padding:6px 8px;border:1px solid var(--divider);
+    border-radius:6px;font-family:inherit}
+  .custom .btn{width:auto;margin-bottom:0}
+
+  .lbl{font-size:11px;font-weight:700;color:var(--text-muted);display:block;margin:16px 0 8px}
+  .row{display:flex;flex-wrap:wrap;gap:7px}
+  .row .btn{width:auto;white-space:nowrap;margin-bottom:0}
+  .row .btn.ghost{background:transparent}
+
+  .history{margin-top:14px;padding-top:12px;border-top:2px solid var(--divider)}
+  .hstep{display:flex;align-items:baseline;gap:10px;padding:7px 0;
+    border-bottom:1px solid var(--divider)}
+  .hstep .n{font-size:11px;color:var(--accent-700);min-width:20px}
+  .hstep .lb{font-size:13px;flex:1}
+  .hstep .z{font-size:14px;font-weight:700;white-space:nowrap}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div><b>محاكي الأعداد التخيلية والمركبة</b> <span class="done-note" id="doneNote">✅ سُجّل استكشافك</span></div>
+  <span class="lvl">المستوى المركب (Argand diagram)</span>
+</div>
+
+<div class="grid">
+  <section class="left">
+    <div class="panelhead">
+      <h2>أين نحن الآن؟</h2>
+      <span class="step-n">الخطوة <span id="stepCount"></span></span>
+    </div>
+    <p class="lead">السهم الأحمر هو العدد المركّب. نهايته هي موضع العدد على اللوحة.</p>
+
+    <div class="plane-wrap">
+      <svg viewBox="0 0 100 100">
+        <g stroke="#201e1d" stroke-opacity="0.1" stroke-width="0.25">
+          <line x1="2" y1="0" x2="2" y2="100"></line><line x1="10" y1="0" x2="10" y2="100"></line>
+          <line x1="18" y1="0" x2="18" y2="100"></line><line x1="26" y1="0" x2="26" y2="100"></line>
+          <line x1="34" y1="0" x2="34" y2="100"></line><line x1="42" y1="0" x2="42" y2="100"></line>
+          <line x1="58" y1="0" x2="58" y2="100"></line><line x1="66" y1="0" x2="66" y2="100"></line>
+          <line x1="74" y1="0" x2="74" y2="100"></line><line x1="82" y1="0" x2="82" y2="100"></line>
+          <line x1="90" y1="0" x2="90" y2="100"></line><line x1="98" y1="0" x2="98" y2="100"></line>
+          <line x1="0" y1="2" x2="100" y2="2"></line><line x1="0" y1="10" x2="100" y2="10"></line>
+          <line x1="0" y1="18" x2="100" y2="18"></line><line x1="0" y1="26" x2="100" y2="26"></line>
+          <line x1="0" y1="34" x2="100" y2="34"></line><line x1="0" y1="42" x2="100" y2="42"></line>
+          <line x1="0" y1="58" x2="100" y2="58"></line><line x1="0" y1="66" x2="100" y2="66"></line>
+          <line x1="0" y1="74" x2="100" y2="74"></line><line x1="0" y1="82" x2="100" y2="82"></line>
+          <line x1="0" y1="90" x2="100" y2="90"></line><line x1="0" y1="98" x2="100" y2="98"></line>
+        </g>
+        <circle id="modCircle" cx="50" cy="50" r="0" fill="none" stroke="#ec3013"
+          stroke-opacity="0.3" stroke-width="0.3" stroke-dasharray="2 1.6"></circle>
+        <line x1="0" y1="50" x2="100" y2="50" stroke="#201e1d" stroke-width="0.7"></line>
+        <line x1="50" y1="0" x2="50" y2="100" stroke="#201e1d" stroke-width="0.7"></line>
+        <g id="trailGroup" stroke="#201e1d" stroke-opacity="0.16" stroke-width="0.5"></g>
+        <path id="arcPath" d="" fill="none" stroke="#ec3013" stroke-width="0.5"></path>
+        <g stroke="#ec3013" stroke-opacity="0.45" stroke-width="0.35" stroke-dasharray="1.4 1.2">
+          <line id="projX" x1="0" y1="0" x2="0" y2="50"></line>
+          <line id="projY" x1="0" y1="0" x2="50" y2="0"></line>
+        </g>
+        <line id="arrow" x1="50" y1="50" x2="50" y2="50" stroke="#ec3013" stroke-width="1.1"></line>
+        <circle id="point" cx="50" cy="50" r="1.7" fill="#ec3013"></circle>
+      </svg>
+      <div class="zlabel" id="zLabelBox"></div>
+      <div class="tick" id="tick2"  style="left:66.2%;top:53.5%;transform:translateX(-50%)"></div>
+      <div class="tick" id="tick4"  style="left:82.2%;top:53.5%;transform:translateX(-50%)"></div>
+      <div class="tick" id="tickM2" style="left:34.2%;top:53.5%;transform:translateX(-50%)"></div>
+      <div class="tick" id="tickM4" style="left:18.2%;top:53.5%;transform:translateX(-50%)"></div>
+      <div class="tick" id="tick2i" style="left:52%;top:34%;transform:translateY(-50%)"></div>
+      <div class="tick" id="tick4i" style="left:52%;top:18%;transform:translateY(-50%)"></div>
+      <div class="tick" id="tickM2i" style="left:52%;top:66%;transform:translateY(-50%)"></div>
+      <div class="tick" id="tickM4i" style="left:52%;top:82%;transform:translateY(-50%)"></div>
+      <div class="tick corner" style="left:8px;top:6px">المحور التخيلي</div>
+      <div class="tick corner" style="right:8px;bottom:6px">المحور الحقيقي</div>
+    </div>
+
+    <div class="stats">
+      <div><span>الجزء الحقيقي</span><b id="xText"></b></div>
+      <div><span>الجزء التخيلي</span><b id="yText"></b></div>
+      <div><span>طول السهم والزاوية</span><b id="rText"></b> <span class="ang" id="angleText"></span></div>
+    </div>
+
+    <div class="repr">
+      <div class="repr-h">صورة العدد الآن</div>
+      <div id="lineCartesian"></div>
+      <div id="linePolar"></div>
+      <div id="lineConj"></div>
+    </div>
+  </section>
+
+  <section class="right">
+    <h2>ما الذي حدث؟</h2>
+    <div class="op-title" id="opTitle"></div>
+    <div class="op-formula" id="opFormula"></div>
+    <p class="op-body" id="opBody"></p>
+    <div class="op-geo"><b>على الرسم: </b><span id="opGeometry"></span></div>
+
+    <hr>
+    <h2>ماذا نجرّب الآن؟</h2>
+    <p class="lead">اختر خطوة واحدة وشاهد أثرها على السهم.</p>
+
+    <button class="btn primary" id="btnMulI"><b>الخيار (أ)</b> اضرب العدد في الوحدة التخيلية — ماذا يحدث للسهم؟</button>
+    <button class="btn" id="btnPolar"><b>الخيار (ب)</b> صِف العدد بالطول والزاوية بدل الإحداثيين</button>
+    <button class="btn" id="btnCustom"><b>الخيار (ج)</b> جرّب عددًا من عندك</button>
+
+    <div class="custom hidden" id="customBox">
+      <label>الجزء الحقيقي <input type="number" step="1" id="cxInput" value="2"></label>
+      <label>الجزء التخيلي <input type="number" step="1" id="cyInput" value="3"></label>
+      <button class="btn primary" id="btnApplyCustom">ارسمه</button>
+    </div>
+
+    <span class="lbl">خطوات إضافية</span>
+    <div class="row">
+      <button class="btn small" id="btnConj">المرافق</button>
+      <button class="btn small" id="btnNegate">الضرب في سالب واحد</button>
+      <button class="btn small" id="btnAddOne">أضف واحدًا صحيحًا</button>
+      <button class="btn small" id="btnAddI">أضف وحدة تخيلية</button>
+      <button class="btn small ghost" id="btnReset">من البداية</button>
+    </div>
+
+    <div class="history">
+      <span class="lbl">ما فعلناه حتى الآن</span>
+      <div id="stepsList"></div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  /* ── الرموز والتنسيق العربي ── */
+  var S = { z:'ع', i:'ت', x:'س', y:'ص', cos:'جتا', sin:'جا', th:'هـ', r:'ل', conj:'ع'+'\u0305' };
+  var AR_D = '٠١٢٣٤٥٦٧٨٩';
+  function digits(s){ return String(s).replace(/[0-9]/g, function(d){ return AR_D[+d]; }).replace(/\./g,'٫'); }
+  function round(v){ return Math.abs(v) < 1e-10 ? 0 : Math.round(v*1000)/1000; }
+  function num(v){
+    var r = round(v);
+    var n = Number.isInteger(r) ? String(r) : String(Math.round(r*100)/100);
+    return digits(n.replace('-','−'));
+  }
+  function fmtZ(x,y){
+    var a = round(x), b = round(y);
+    if(b === 0) return num(a);
+    var im = Math.abs(b) === 1 ? S.i : num(Math.abs(b)) + ' ' + S.i;
+    if(a === 0) return (b < 0 ? '−' : '') + im;
+    return num(a) + (b < 0 ? ' − ' : ' + ') + im;
+  }
+
+  var INITIAL_X = 3, INITIAL_Y = 2;
+
+  /* عتبة إرسال إشارة الإنجاز — عدد العمليات المُجرَّاة (لا نقطة البداية).
+     رقمٌ قابلٌ للتعديل بحرّية: قرارٌ تربويّ يخصّ هذا المحاكي وحده،
+     لا شيء مركزيّ يعتمد عليه. */
+  var STEPS_FOR_DONE = 2;
+
+  function initialOp(){
+    return {
+      title:'البداية: ما هو العدد المركّب؟',
+      formula: S.i+'² = −'+digits('1')+'   ،   '+S.z+' = '+S.x+' + '+S.y+' '+S.i,
+      body:'لا يوجد عدد حقيقي مربّعه يساوي سالب واحد. لذلك اتفق الرياضيون على عدد جديد اسمه الوحدة التخيلية (imaginary unit) ورمزه '+S.i+'، وخاصيته الوحيدة أنّ مربّعه يساوي سالب واحد. وعندما نجمع عددًا حقيقيًا مع مضاعف لهذه الوحدة نحصل على عدد مركّب (complex number) مثل '+fmtZ(INITIAL_X,INITIAL_Y)+'.',
+      geometry:'الأعداد الحقيقية تسكن خطًا واحدًا، أما الأعداد المركبة فتحتاج لوحة كاملة. نتحرك أفقيًا بمقدار الجزء الحقيقي، ثم رأسيًا بمقدار الجزء التخيلي، فنصل إلى نقطة العدد ونرسم إليها سهمًا من نقطة الأصل.'
+    };
+  }
+
+  var state = {
+    x: INITIAL_X, y: INITIAL_Y, trail: [],
+    steps: [{ n:1, label:'نقطة البداية', z: fmtZ(INITIAL_X, INITIAL_Y) }],
+    op: initialOp(), customOpen: false
+  };
+  var signaled = false;
+
+  function apply(label, fn, opFn){
+    var cur = state;
+    var next = fn(cur.x, cur.y);
+    var nx = round(next[0]), ny = round(next[1]);
+    state = {
+      x: nx, y: ny,
+      trail: cur.trail.concat([{x:cur.x, y:cur.y}]).slice(-6),
+      steps: cur.steps.concat([{ n: cur.steps.length+1, label: label, z: fmtZ(nx, ny) }]).slice(-8),
+      op: opFn(cur.x, cur.y, [nx, ny]),
+      customOpen: cur.customOpen
+    };
+    render();
+    checkDone();
+  }
+
+  function checkDone(){
+    if(signaled) return;
+    if(state.steps.length - 1 >= STEPS_FOR_DONE){
+      signaled = true;
+      document.getElementById('doneNote').classList.add('show');
+      /* ── العقد الوحيد المطلوب من أي محاكٍ في «بيان» ──
+         رسالةٌ واحدة، حين نقرّر أنّ الاستكشاف كافٍ ليُحتسب تعلّماً. */
+      try{ window.parent.postMessage({ bayanSim:'done' }, '*'); }catch(e){}
+    }
+  }
+
+  /* ── العمليات الثماني ── */
+  function mulI(){
+    apply('الضرب في الوحدة التخيلية', function(a,b){ return [-b, a]; }, function(a,b,n){
+      return {
+        title: 'الضرب في '+S.i+' يدير السهم ربع دورة',
+        formula: S.i+' × ('+fmtZ(a,b)+') = '+fmtZ(n[0],n[1]),
+        body: 'نفكّ الضرب كالمعتاد: '+S.i+'('+S.x+' + '+S.y+' '+S.i+') = '+S.x+' '+S.i+' + '+S.y+' '+S.i+'²، وبما أنّ '+S.i+'² = −'+digits('1')+' تصبح النتيجة −'+S.y+' + '+S.x+' '+S.i+'. أي أنّ الجزأين تبادلا مكانيهما مع تغيّر إشارة أحدهما.',
+        geometry: 'طول السهم لم يتغيّر إطلاقًا، والذي تغيّر هو اتجاهه فقط: دار '+digits('90')+'° عكس عقارب الساعة. وإذا كرّرت الضغط أربع مرات عاد السهم إلى مكانه الأول.'
+      };
+    });
+  }
+  function negate(){
+    apply('الضرب في سالب واحد', function(a,b){ return [-a,-b]; }, function(a,b,n){
+      return {
+        title: 'الضرب في سالب واحد يقلب السهم',
+        formula: '−('+fmtZ(a,b)+') = '+fmtZ(n[0],n[1]),
+        body: 'تنقلب إشارة الجزأين معًا. لاحظ أنّ هذه العملية هي نفسها الضرب في '+S.i+' مرتين متتاليتين، لأنّ '+S.i+' × '+S.i+' = −'+digits('1')+'.',
+        geometry: 'نصف دورة كاملة حول نقطة الأصل: السهم يشير الآن إلى الجهة المقابلة تمامًا، وطوله كما هو.'
+      };
+    });
+  }
+  function conj(){
+    apply('المرافق', function(a,b){ return [a,-b]; }, function(a,b,n){
+      return {
+        title: 'المرافق (conjugate): انعكاس تحت المحور الأفقي',
+        formula: S.conj+' = '+fmtZ(n[0],n[1])+'   ،   '+S.z+' × '+S.conj+' = '+num(a*a+b*b),
+        body: 'مرافق العدد نحصل عليه بتغيير إشارة الجزء التخيلي وحده. وأهم خاصية له أنّ حاصل ضرب العدد في مرافقه يكون دائمًا عددًا حقيقيًا موجبًا، لأنّ الحدّين المتوسطين يحذف أحدهما الآخر. لهذا نستعمل المرافق عند القسمة، لنتخلّص من الوحدة التخيلية في المقام.',
+        geometry: 'صورة السهم في مرآة موضوعة على المحور الحقيقي: الطول ثابت والزاوية نفسها لكن إلى الجهة الأخرى.'
+      };
+    });
+  }
+  function addOne(){
+    apply('إضافة واحد صحيح', function(a,b){ return [a+1,b]; }, function(a,b,n){
+      return {
+        title: 'الجمع إزاحة، لا دوران',
+        formula: '('+fmtZ(a,b)+') + '+digits('1')+' = '+fmtZ(n[0],n[1]),
+        body: 'عند الجمع نجمع الجزء الحقيقي مع الحقيقي والتخيلي مع التخيلي، تمامًا كما نجمع الحدود المتشابهة في الجبر. فإضافة واحد صحيح تغيّر الجزء الحقيقي وحده.',
+        geometry: 'تحرّك رأس السهم خطوة واحدة إلى اليمين دون أن يرتفع أو ينخفض.'
+      };
+    });
+  }
+  function addI(){
+    apply('إضافة وحدة تخيلية', function(a,b){ return [a,b+1]; }, function(a,b,n){
+      return {
+        title: 'إضافة '+S.i+' ترفع النقطة لأعلى',
+        formula: '('+fmtZ(a,b)+') + '+S.i+' = '+fmtZ(n[0],n[1]),
+        body: 'الجزء التخيلي وحده هو الذي زاد بمقدار واحد، والجزء الحقيقي لم يمسّه شيء. قارن هذه العملية بالضرب في '+S.i+': الجمع ينقل، والضرب يدير.',
+        geometry: 'صعد رأس السهم خطوة واحدة إلى أعلى في اتجاه المحور التخيلي.'
+      };
+    });
+  }
+  function showPolar(){
+    apply('الطول والزاوية', function(a,b){ return [a,b]; }, function(a,b){
+      var rr = Math.hypot(a,b), dd = Math.atan2(b,a)*180/Math.PI;
+      return {
+        title: 'وصف آخر للعدد نفسه: الطول والزاوية',
+        formula: '|'+S.z+'| = '+num(rr)+'   ،   '+S.th+' = '+num(dd)+'°',
+        body: 'بدل أن نقول «تحرّك أفقيًا ثم رأسيًا»، يمكننا أن نقول «اتجه بزاوية معيّنة وامشِ مسافة معيّنة». المسافة من نقطة الأصل تسمّى المقياس (modulus) ونحسبها بنظرية فيثاغورس، والزاوية مع المحور الحقيقي تسمّى السعة (argument). هذه تسمّى الصورة القطبية (polar form) ونكتبها: '+S.z+' = '+num(rr)+' ('+S.cos+' '+S.th+' + '+S.i+' '+S.sin+' '+S.th+').',
+        geometry: 'الدائرة المنقّطة الحمراء هي مجموعة كل الأعداد التي لها الطول نفسه، والقوس الصغير عند المركز هو الزاوية. الوصفان يشيران إلى النقطة نفسها بالضبط.'
+      };
+    });
+  }
+  function applyCustom(){
+    var nx = parseFloat(document.getElementById('cxInput').value) || 0;
+    var ny = parseFloat(document.getElementById('cyInput').value) || 0;
+    apply('عدد من اختيارك', function(){ return [nx, ny]; }, function(){
+      return {
+        title: 'عدد من اختيارك',
+        formula: S.z+' = '+fmtZ(nx,ny),
+        body: 'كل عدد مركّب يتحدّد برقمين فقط: مقدار التحرك الأفقي (الجزء الحقيقي) ومقدار التحرك الرأسي (الجزء التخيلي). إذا كان الجزء التخيلي صفرًا عاد العدد حقيقيًا عاديًا على المحور الأفقي، وإذا كان الجزء الحقيقي صفرًا وقع العدد على المحور الرأسي تمامًا.',
+        geometry: 'انتقل رأس السهم إلى النقطة التي جزؤها الحقيقي '+num(nx)+' وجزؤها التخيلي '+num(ny)+'.'
+      };
+    });
+  }
+  function reset(){
+    state = { x: INITIAL_X, y: INITIAL_Y, trail: [],
+      steps: [{ n:1, label:'نقطة البداية', z: fmtZ(INITIAL_X, INITIAL_Y) }],
+      op: initialOp(), customOpen: state.customOpen };
+    render();
+  }
+
+  /* ── العرض: يُعاد حساب كل شيء من state فقط، لا حالة مخفيّة في DOM ── */
+  var SCALE = 8, ARC_R = 13;
+  var SVG_NS = 'http://www.w3.org/2000/svg';
+
+  function render(){
+    var x = state.x, y = state.y;
+    var r = Math.hypot(x,y), th = Math.atan2(y,x), deg = th*180/Math.PI;
+    var px = 50 + x*SCALE, py = 50 - y*SCALE;
+    var ux = r > 0.001 ? x/r : 1, uy = r > 0.001 ? y/r : 0;
+
+    document.getElementById('point').setAttribute('cx', px.toFixed(2));
+    document.getElementById('point').setAttribute('cy', py.toFixed(2));
+    document.getElementById('arrow').setAttribute('x2', px.toFixed(2));
+    document.getElementById('arrow').setAttribute('y2', py.toFixed(2));
+    document.getElementById('projX').setAttribute('x1', px.toFixed(2));
+    document.getElementById('projX').setAttribute('y1', py.toFixed(2));
+    document.getElementById('projX').setAttribute('x2', px.toFixed(2));
+    document.getElementById('projY').setAttribute('x1', px.toFixed(2));
+    document.getElementById('projY').setAttribute('y1', py.toFixed(2));
+    document.getElementById('projY').setAttribute('y2', py.toFixed(2));
+    document.getElementById('modCircle').setAttribute('r', (r*SCALE).toFixed(2));
+
+    var arcPath = '';
+    if(r > 0.001 && Math.abs(th) > 0.02){
+      var ex = 50 + ARC_R*Math.cos(th), ey = 50 - ARC_R*Math.sin(th);
+      arcPath = 'M ' + (50+ARC_R) + ' 50 A ' + ARC_R + ' ' + ARC_R + ' 0 0 ' +
+                (th > 0 ? 0 : 1) + ' ' + ex.toFixed(2) + ' ' + ey.toFixed(2);
+    }
+    document.getElementById('arcPath').setAttribute('d', arcPath);
+
+    var tg = document.getElementById('trailGroup');
+    tg.innerHTML = '';
+    state.trail.forEach(function(t){
+      var tpx = (50 + t.x*SCALE).toFixed(2), tpy = (50 - t.y*SCALE).toFixed(2);
+      var ln = document.createElementNS(SVG_NS,'line');
+      ln.setAttribute('x1','50'); ln.setAttribute('y1','50');
+      ln.setAttribute('x2',tpx); ln.setAttribute('y2',tpy);
+      var c = document.createElementNS(SVG_NS,'circle');
+      c.setAttribute('cx',tpx); c.setAttribute('cy',tpy); c.setAttribute('r','0.9');
+      c.setAttribute('fill','#201e1d'); c.setAttribute('fill-opacity','0.28');
+      tg.appendChild(ln); tg.appendChild(c);
+    });
+
+    var lbl = document.getElementById('zLabelBox');
+    lbl.style.left = (px + ux*6).toFixed(2) + '%';
+    lbl.style.top  = (py - uy*6).toFixed(2) + '%';
+    lbl.textContent = S.z + ' = ' + fmtZ(x,y);
+
+    document.getElementById('xText').textContent = num(x);
+    document.getElementById('yText').textContent = num(y) + ' ' + S.i;
+    document.getElementById('rText').textContent = num(r);
+    document.getElementById('angleText').textContent = '∠ ' + num(deg) + '°';
+
+    document.getElementById('lineCartesian').textContent = S.z + ' = ' + fmtZ(x,y);
+    document.getElementById('linePolar').textContent = '|'+S.z+'| = '+num(r)+'   ،   '+S.th+' = '+num(deg)+'°';
+    document.getElementById('lineConj').textContent = 'المرافق: ' + S.conj + ' = ' + fmtZ(x,-y);
+
+    var op = state.op;
+    document.getElementById('opTitle').textContent = op.title;
+    document.getElementById('opFormula').textContent = op.formula;
+    document.getElementById('opBody').textContent = op.body;
+    document.getElementById('opGeometry').textContent = op.geometry;
+
+    document.getElementById('stepCount').textContent = digits(String(state.steps.length));
+    var list = document.getElementById('stepsList');
+    list.innerHTML = '';
+    state.steps.slice().reverse().forEach(function(s){
+      var row = document.createElement('div');
+      row.className = 'hstep';
+      row.innerHTML = '<span class="n">'+digits(String(s.n))+'</span>'+
+                      '<span class="lb"></span><span class="z"></span>';
+      row.querySelector('.lb').textContent = s.label;
+      row.querySelector('.z').textContent = s.z;
+      list.appendChild(row);
+    });
+
+    /* أعداد المحاور الثابتة — لا تعتمد على الحالة، تُكتب مرّة واحدة فقط
+       (لا داعي لتكرارها في كل استدعاء، لكن تكرارها غير مكلف) */
+    document.getElementById('tick2').textContent  = digits('2');
+    document.getElementById('tick4').textContent  = digits('4');
+    document.getElementById('tickM2').textContent = '−'+digits('2');
+    document.getElementById('tickM4').textContent = '−'+digits('4');
+    document.getElementById('tick2i').textContent  = digits('2')+S.i;
+    document.getElementById('tick4i').textContent  = digits('4')+S.i;
+    document.getElementById('tickM2i').textContent = '−'+digits('2')+S.i;
+    document.getElementById('tickM4i').textContent = '−'+digits('4')+S.i;
+  }
+
+  /* ── ربط الأزرار ── */
+  document.getElementById('btnMulI').onclick = mulI;
+  document.getElementById('btnPolar').onclick = showPolar;
+  document.getElementById('btnConj').onclick = conj;
+  document.getElementById('btnNegate').onclick = negate;
+  document.getElementById('btnAddOne').onclick = addOne;
+  document.getElementById('btnAddI').onclick = addI;
+  document.getElementById('btnReset').onclick = reset;
+  document.getElementById('btnApplyCustom').onclick = applyCustom;
+  document.getElementById('btnCustom').onclick = function(){
+    state.customOpen = !state.customOpen;
+    document.getElementById('customBox').classList.toggle('hidden', !state.customOpen);
+  };
+
+  render();
+})();
+</script>
+</body>
+</html>
