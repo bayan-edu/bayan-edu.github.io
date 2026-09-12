@@ -11,6 +11,7 @@ import { app, head, toast, esc, AR, ICONS, KINDS, bubble, errBox, nav,
          scrollTop, scrollBottom } from './ui.js';
 import { startQuiz } from './quiz.js';
 import { mediaUrl, isManaged } from './media.js';
+import { isSim, openSim } from './simulations.js';
 
 /* ═══════════ ① المواد ═══════════ */
 
@@ -256,10 +257,6 @@ function canEmbed(i){
   return isManaged(i.url) || AUD_RX.test(i.url);
 }
 
-/* محاكاةٌ برابط ⇒ تُضمَّن في مكانها، لا تُفتح في تبويب.
-   بخلاف الصوت لا حاجة لفحص الصيغة — كل رابط simulation يُضمَّن. */
-const isSim = i => i.kind === 'simulation' && !!i.url;
-
 export function openLesson(l){
   S.lesson = l;
   nav('subjects');
@@ -307,7 +304,7 @@ export async function openItem(i){
   if(canEmbed(i)) return toggleAudio(i);
 
   /* محاكاةٌ ⇒ تُفتح في مكانها بإطارٍ معزول، لا في تبويب. */
-  if(isSim(i)) return toggleSim(i);
+  if(isSim(i)) return openSim(i);
 
   if(i.url){
     window.open(i.url,'_blank','noopener');
@@ -389,82 +386,6 @@ function toggleAudio(i){
     r = (r + 1) % RATES.length;
     au.playbackRate = RATES[r];
     e.target.textContent = "السرعة " + AR(String(RATES[r].toFixed(2))).replace(".","٫") + "×";
-  };
-}
-
-/* ── المحاكاة التفاعلية ──
-   ثلاث حاجات تعليمية تُملي التصميم — بنفس منطق مشغّل الصوت أعلاه:
-     ① تُضمَّن في مكانها لا في تبويب — السياق جزءٌ من الفهم
-     ② عزلٌ كامل: sandbox="allow-scripts" بلا allow-same-origin ⇒
-        أصلٌ معزول (opaque origin)، لا وصول لجلسة الطالب ولا localStorage
-        حتى لو كان ملف المحاكي على نفس نطاق بيان
-     ③ الإنجاز لا يُسجَّل عند الفتح — «فتحَ» ليست «تعلّم» (كما في onended).
-        بل عند رسالةٍ صريحة من داخل المحاكي نفسه:
-
-          window.parent.postMessage({ bayanSim:'done' }, '*')
-
-        هذا هو العقد الوحيد المطلوب من أي محاكٍ يُبنى لاحقاً. بلا هذا
-        السطر، يبقى العنصر "▶ مفتوح" ولا يصير "✅ منجَز" أبداً — سلوكٌ
-        آمن لا كاذب، لا عطلٌ يُصلَح. */
-
-let curSim = null;   // { id, win } — المحاكاة المفتوحة الآن؛ تُطابَق بها الرسالة الواردة
-
-window.addEventListener('message', e => {
-  if(!curSim || e.source !== curSim.win) return;   // ⚠️ المطابقة بالمصدر لا بالأصل:
-                                                    // الإطار المعزول أصله فارغٌ دائماً
-  if(!e.data || e.data.bayanSim !== 'done') return;
-  finishSim(curSim.id);
-});
-
-async function finishSim(itemId){
-  const item = (S.lesson?.items || []).find(v => v.id === itemId);
-  if(item?.status === 'completed') return;
-
-  const note = document.querySelector(`#slot-${itemId} .sim-note`);
-  const { error } = await api.markItemCompleted(itemId);
-  if(error){ if(note) note.textContent = "لم يُسجَّل — تحقّق من الاتصال"; return; }
-
-  if(item) item.status = 'completed';
-  const s = document.querySelector(`[data-s="${itemId}"]`);
-  if(s) s.textContent = '✅';
-  if(note) note.textContent = "أُنجزت المحاكاة ✅";
-}
-
-function toggleSim(i){
-  const slot = document.getElementById("slot-"+i.id);
-  if(!slot) return;
-
-  /* نقرةٌ ثانية تطوي — وتُبطل مطابقة أي رسالةٍ متأخّرة من إطارٍ أُغلق */
-  if(slot.firstChild){
-    slot.innerHTML = "";
-    if(curSim?.id === i.id) curSim = null;
-    return;
-  }
-
-  if(!i.url){ toast("تعذّر الوصول إلى المحاكاة"); return; }
-
-  api.markItemOpened(i.id);
-
-  slot.innerHTML = `
-    <div class="sim">
-      <div class="sim-bar">
-        <span class="sim-note"></span>
-        <button class="sim-b" data-a="full">⛶ ملء الشاشة</button>
-      </div>
-      <iframe class="sim-f" sandbox="allow-scripts"></iframe>
-    </div>`;
-
-  const box   = slot.querySelector(".sim");
-  const frame = slot.querySelector(".sim-f");
-
-  /* ⚠️ الرابط يُسنَد خاصيةً لا يُدرَج في HTML — كالصوت أعلاه بالضبط
-     ولنفس السبب: علامة اقتباسٍ في رابطٍ قديم تكسر الوسم. */
-  frame.src = i.url;
-  curSim = { id: i.id, win: frame.contentWindow };
-
-  slot.querySelector('[data-a="full"]').onclick = e => {
-    const on = box.classList.toggle("full");
-    e.target.textContent = on ? "✕ إغلاق" : "⛶ ملء الشاشة";
   };
 }
 
