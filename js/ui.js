@@ -7,7 +7,7 @@ import { S } from './state.js';
 import { mediaUrl, isManaged } from './media.js';
 
 /* ── بصمة النسخة — لمعرفة أي شيفرة يشغّلها المتصفح فعلاً ── */
-export const BUILD = "b55";
+export const BUILD = "b56";
 
 /* ── مراسي الصفحة ── */
 export const app = document.getElementById("app");
@@ -66,12 +66,22 @@ export const optLabel = (o, i) =>
   (o?.label && String(o.label).trim())
   || (dirOf(o?.body) === 'rtl' ? (L[i] || '') : (L_EN[i] || ''));
 
-export const ICONS = { pdf:'📄', video:'🎬', audio:'🎧', image:'🗺️', link:'🔗',
-                       text:'📃', quiz:'📝', recording:'🎤' };
+/* 🔑 مصدرها الحقيقي item_kinds في القاعدة (13_item_kinds.sql) — هذه نسخةٌ
+   ثابتة لواجهة الطالب لتفادي نداء شبكةٍ إضافي عند فتح كل درس. أُبقيت
+   يدوية عمداً حتى الآن، فإن أُضيف نمطٌ سادس عشر يوماً ولم يُحدَّث هنا،
+   يظهر بأيقونة '•' — لا يكسر شيئاً، لكنه صامتٌ وجب أن يُرى:
+   الإصلاح الجذريّ (قراءةٌ من item_kinds مباشرة) مؤجَّلٌ لا مقرَّر. */
+export const ICONS = { pdf:'📄', video:'🎬', audio:'🎧', image:'🖼️', link:'🔗',
+                       text:'📃', quiz:'📝', recording:'🎤',
+                       mindmap:'🧠', infographic:'📊', slides:'🖥️',
+                       worksheet:'📋', simulation:'⚗️' };
 
 export const KINDS = { pdf:'ملف للقراءة', video:'شرح مرئي', audio:'مقطع صوتي',
                        image:'صورة', link:'مرجع خارجي', text:'نص',
-                       quiz:'اختبار تشخيصي', recording:'تسجيل صوتي' };
+                       quiz:'اختبار تشخيصي', recording:'تسجيل صوتي',
+                       mindmap:'خريطة ذهنية', infographic:'إنفوجرافيك',
+                       slides:'شرائح عرض', worksheet:'ورقة عمل',
+                       simulation:'محاكاة تفاعلية' };
 
 /* ── تحويلات نصية ── */
 export const esc  = s => String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;");
