@@ -514,6 +514,8 @@ async function drawPerformance(title, sub, back){
             'هذا وحده يقيس <b>ما فعله التعليم</b>: الفرق بين المحاولة الأولى وأحدثها.')}
         ${section('يستحقّ عودة', down, 'need', M.moreDown, 'down',
             'دون عتبةِ النجاح التي حدّدها معلّمُ الاختبار. <b>ابدأ من أعلى القائمة.</b>')}
+
+        ${nextSection(d.next || [], d.locked || [], you)}
         ${subs.length ? `<h2 class="sec">المواد — الأضعف أوّلاً</h2>
           ${subs.map(s => `
             <div class="an-row" data-s="${s.subject_id}">
@@ -601,6 +603,37 @@ function dxSection(pats, forMe){
   return `<h2 class="sec">${head}</h2>${rows.join("")}${
     hidden ? `<div class="qz-m an-cen">و${AR(hidden)} ${hidden===1?'نمطٌ':'أنماطٍ'} أخرى
       لم تُكتب لها صياغةٌ تشرحها لك بعد.</div>` : ''}`;
+}
+
+
+/* ═══════════ القادم ═══════════
+   🎓 لا تُعرض «كلُّ ما تبقّى» — بل الجبهةُ وحدها.
+      حين تبلغ الدروسُ المئات، درسٌ مقفلٌ خلف سلسلةٍ لم تُستوفَ لا
+      يختلف اليوم عن درسٍ لم يُخلق بعد. فعرضُ عنوانه ليس معلومةً
+      بل ضجيجٌ يُعلّم القارئَ تخطّي القسم كلِّه.
+   🔑 وعددُ `next` محدودٌ بعدد السلاسل المفتوحة الآن لا بحجم المنهج
+      — ولهذا لا يحتاج ترقيمَ صفحاتٍ ولا «عرض المزيد».
+   ⚠️ والمقفلُ يُقال عدداً **مع سببه**: «يُفتح بإتمام ما قبله».
+      رقمٌ بلا سببٍ يُقرأ حجباً، وبسببه يُقرأ طريقاً. */
+function nextSection(nx, lk, forMe){
+  if(!nx.length && !lk.length) return '';
+  const waiting = lk.reduce((a, x) => a + (x.count || 0), 0);
+  const him = forMe ? 'لك' : 'له';
+
+  return `
+    <h2 class="sec">القادم — مفتوحٌ ${him} الآن</h2>
+    ${nx.length ? nx.map(x => `
+      <div class="an-row static">
+        <div class="an-h"><span class="qz-t">${esc(x.title || 'اختبار')}</span></div>
+        <div class="qz-m">${[x.subject, x.lesson].filter(Boolean).map(esc).join('، ')}</div>
+      </div>`).join("")
+      : `<div class="status">${forMe
+          ? 'لا شيء مفتوحٌ الآن — أتممتَ كلَّ ما فُتح لك.'
+          : 'لا شيء مفتوحٌ له الآن — أتمّ كلَّ ما فُتح له.'}</div>`}
+    ${waiting ? `<div class="qz-m an-cen">
+      وينتظر خلفها ${AR(waiting)} ${waiting === 1 ? 'اختبار' : 'اختباراً'}،
+      يُفتح كلٌّ منها بإتمام ما قبله —
+      ${lk.map(x => `${esc(x.subject || '—')} ${AR(x.count)}`).join('، ')}.</div>` : ''}`;
 }
 
 
