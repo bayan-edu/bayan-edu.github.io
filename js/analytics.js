@@ -103,6 +103,37 @@ async function ensureChart(){
   return _C;
 }
 
+/* ── مُلحَقُ أرقام الأعمدة ──
+   🎓 حين يُقاوم إعدادٌ ثلاثَ محاولات، فالمشكلةُ في التفاوض معه لا في
+      قيمته. وهذه خمسةَ عشرَ سطراً تقرأ رأسَ العمود (bar.y) وقاعدتَه
+      (bar.base) وتكتب النصّ في موضعٍ محسوب — بلا anchor ولا clamp.
+   · العمودُ الطويل يحمل رقمه داخله قرب رأسه.
+   · والقصيرُ فوقه — فرقمٌ فوق عمودٍ قصير يطفو في فراغٍ فلا يُنسب. */
+function barValues(color){
+  return {
+    id:'barValues',
+    afterDatasetsDraw(chart){
+      const ds = chart.data.datasets[0];
+      const meta = chart.getDatasetMeta(0);
+      if(!meta || !meta.data) return;
+      const ctx = chart.ctx;
+      ctx.save();
+      ctx.font = '700 10.5px ' + getComputedStyle(document.body).fontFamily;
+      ctx.fillStyle = color;
+      ctx.textAlign = 'center';
+      meta.data.forEach((bar, i) => {
+        const v = ds.data[i];
+        if(!v) return;
+        const h = Math.abs(bar.base - bar.y);   // ارتفاعُ العمود بالبكسل
+        const inside = h > 30;
+        ctx.textBaseline = inside ? 'top' : 'bottom';
+        ctx.fillText(AR(v), bar.x, inside ? bar.y + 7 : bar.y - 7);
+      });
+      ctx.restore();
+    }
+  };
+}
+
 let _chart = null, _vol = null;
 
 /* ⚠️ لوحتان لا لوحةٌ بمقياسين.
@@ -207,18 +238,12 @@ async function drawChart(tr){
       data: pts.map(p => p.answered || 0),
       backgroundColor: FILL, borderRadius:4,
       barPercentage:.62, categoryPercentage:.78,
-      /* 🔴 `clamp:true` كان يقسر الرقمَ داخل مساحة الرسم. ومساحةُ
-         هذه اللوحة ≈ ٥٠px بعد الحشو، فالعمودُ الطويل يملؤها ولا
-         يبقى فوقه موضع ⇒ يُدفع الرقمُ إلى الأسفل فوق التواريخ.
-         ⇒ clamp:false، ومساحةٌ أوسع في CSS (an-cvol).
-         🎓 والطويلُ يحمل رقمه **داخله** (align:'start' من رأسه)،
-            والقصيرُ **فوقه** — فرقمٌ فوق عمودٍ قصير يطفو في فراغ. */
-      datalabels:{
-        anchor:'end', clamp:false, offset:5,
-        align: c => (c.dataset.data[c.dataIndex] || 0) / maxE > .28 ? 'start' : 'end',
-        color: MUT, font:{ size:10.5, weight:'700' },
-        formatter: x => x ? AR(x) : '' }
+      /* 🔴 أرقامُ الأعمدة لا تُترك لـdatalabels — ثلاثُ محاولاتٍ
+         مع anchor/align/clamp انتهت بالرقم فوق سطر التواريخ.
+         ⇒ يرسمها المُلحَقُ أدناه من إحداثيّات العمود نفسه. */
+      datalabels:{ display:false }
     }]},
+    plugins:[ barValues(MUT) ],
     options:{
       responsive:true, maintainAspectRatio:false,
       layout:{ padding:{ top:18, left:6 } },
