@@ -43,6 +43,13 @@
 import * as api from './api.js';
 import { app, head, esc, AR, errBox, nav, BUILD, scrollTop } from './ui.js';
 
+/* 🔑 ختمُ هذه الوحدة وحدها.
+   BUILD تسكن ui.js، فالرقمُ المعروض يشهد لها لا لهذا الملفّ — وقد
+   شخّصنا في هذه الجلسة ثلاثَ مرّات منطقاً سليماً وسببُ العطل ملفٌّ
+   لم يصل. ⇒ حين يختلف الختمان يُعلَن الاختلاف في الشاشة.
+   ⚠️ ويُرفع مع BUILD في كلّ نسخة — وإلّا صار إنذاراً كاذباً يُتجاهل. */
+const MOD = "b55";
+
 const F = { level:null, subject:null, view:'list', search:'', opts:null };
 const M = { uid:null, forMe:false, subject:null, strand:null,
             moreUp:false, moreDown:false, opts:null, base:null };
@@ -55,6 +62,10 @@ const MON = ['يناير','فبراير','مارس','أبريل','مايو','ي�
 const pct   = v => v==null ? '—' : AR(v)+'٪';
 const num   = v => v==='' ? null : Number(v);
 const empty = t => `<div class="status">${esc(t)}</div>`;
+
+/* يصمت حين يتّفق الختمان، ويُنذر حين يفترقان */
+const stamp = () => MOD === BUILD ? ''
+  : ` <b style="color:var(--danger)">⚠ التحليلات ${MOD}</b>`;
 const dayMon = s => { const [,m,d] = s.split('-'); return AR(+d)+' '+MON[+m-1]; };
 
 /* حدود اللون في موضعٍ واحد. وفي وضع الطالب لا نطاقَ للإتقان. */
@@ -526,7 +537,7 @@ async function drawPerformance(title, sub, back){
             </div>`).join("")}` : empty("لا محاولات مصحَّحة بعد")}`}
 
     <p class="hint">الإتقان = إجاباتٌ صحيحة ÷ إجابات مُصحَّحة، من أحدث محاولةٍ
-      لكلّ اختبار · نسخة الواجهة ${BUILD}</p>`;
+      لكلّ اختبار · نسخة الواجهة ${BUILD}${stamp()}</p>`;
 
   bind();
   _lastTrend = d.trend || [];
@@ -695,7 +706,7 @@ async function openQuiz(quizId, backTitle, backSub, backHas){
            لتبقى الإعادةُ قياساً لفهمك لا لذاكرتك.</div>
          ${(d.answers||[]).map(ansRow).join("") || empty("لا إجابات")}`}
 
-    <p class="hint">نسخة الواجهة ${BUILD}</p>`;
+    <p class="hint">نسخة الواجهة ${BUILD}${stamp()}</p>`;
 
   document.getElementById('bq').onclick = back;
   if(atts.length > 1) drawQuizChart(atts, qz.pass || 65);
@@ -746,7 +757,7 @@ export async function loadStudents(){
       <button class="an-tab ${F.view==='board'?'on':''}" data-v="board">اللوحة</button>
     </div>
     <div id="anBody"><div class="status">جارٍ التحميل…</div></div>
-    <p class="hint">نسخة الواجهة ${BUILD}</p>`;
+    <p class="hint">نسخة الواجهة ${BUILD}${stamp()}</p>`;
 
   document.getElementById('flLevel').onchange   = e => { F.level = num(e.target.value); render(); };
   document.getElementById('flSubject').onchange = e => { F.subject = num(e.target.value); render(); };
