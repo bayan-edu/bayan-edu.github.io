@@ -561,8 +561,20 @@ const DXS = {
 };
 
 function dxSection(pats, forMe){
-  const p = pats || [];
-  if(!p.length) return '';
+  const all = pats || [];
+
+  /* 🔴 نمطٌ بلا `student_note` لا يحمل للطالب شيئاً: الكودُ والاسمُ
+     محجوبان عنه (62)، فلا يبقى إلا «ظهر في اختبارين» — وهي جملةٌ
+     لا تدلّه على فعل. وعرضُها يُعلّمه أن هذا القسم بلا فائدة.
+     ⇒ يُطوى عنه **ويُعدّ**، فالفجوةُ تُرى والصمتُ لا يُرى.
+     وللمعلّم يُعرض موسوماً — لأنه هو من يملك أن يكتب النصّ. */
+  const p = forMe ? all.filter(x => x.note && String(x.note).trim()) : all;
+  const hidden = all.length - p.length;
+
+  if(!p.length) return hidden ? `<h2 class="sec">أنماطُ الأخطاء</h2>
+    <div class="status">رُصدت ${AR(hidden)} أنماط، ولم تُكتب لها صياغةٌ
+      تشرحها لك بعد.</div>` : '';
+
   const order = forMe ? ['cleared','persistent','partial','untested']
                       : ['persistent','partial','cleared','untested'];
   const head  = forMe
@@ -572,9 +584,11 @@ function dxSection(pats, forMe){
   const rows = order.flatMap(st => p.filter(x => x.state === st).map(x => `
     <div class="an-row static">
       <div class="an-h">
-        <span class="qz-t">${esc(x.note || x.name || x.code || '—')}</span>
+        <span class="qz-t">${esc(x.note || x.name || x.code || 'نمطٌ بلا تعريف')}</span>
         <span class="an-st ${x.state}">${DXS[x.state][0]}</span>
       </div>
+      ${!forMe && !(x.note && String(x.note).trim())
+        ? `<span class="an-thin">بلا صياغةٍ للطالب — لا يراه</span>` : ''}
       <div class="qz-m">
         ${x.name ? `<b>${esc(x.name)}</b>${x.code?' · '+esc(x.code):''}، ` : ''}
         ظهر في ${AR(x.quizzes)} اختباراً${
@@ -584,7 +598,9 @@ function dxSection(pats, forMe){
       ${x.remedy ? `<div class="an-dx">${esc(x.remedy)}</div>` : ''}
     </div>`));
 
-  return `<h2 class="sec">${head}</h2>${rows.join("")}`;
+  return `<h2 class="sec">${head}</h2>${rows.join("")}${
+    hidden ? `<div class="qz-m an-cen">و${AR(hidden)} ${hidden===1?'نمطٌ':'أنماطٍ'} أخرى
+      لم تُكتب لها صياغةٌ تشرحها لك بعد.</div>` : ''}`;
 }
 
 
