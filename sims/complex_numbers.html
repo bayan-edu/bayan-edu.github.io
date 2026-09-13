@@ -3,457 +3,559 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>محاكي الأعداد المركّبة</title>
+<title>مقدمة عن الأعداد المركبة — محاكاة تفاعلية</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  :root{
-    --bg:#EDE9DF; --surface:#fff; --divider:#DCD6C6; --fill-soft:#F8F6F0;
-    --text:#2C2C2A; --text-muted:#5F5E5A;
-    --accent:#0F6E56; --accent-700:#0b5443; --accent-soft:#E9F5F0; --accent-fill:#D5EDE3;
-  }
-  *{box-sizing:border-box}
-  html,body{margin:0;height:100%}
-  body{background:var(--bg);color:var(--text);
-       font-family:'Segoe UI',Tahoma,Arial,sans-serif;
-       font-size:14px;line-height:1.6}
-  h2{margin:0 0 8px;font-size:15px;font-weight:700}
-  .hdr{display:flex;align-items:baseline;justify-content:space-between;gap:12px;
-       flex-wrap:wrap;padding:14px 18px;border-bottom:2px solid var(--divider)}
-  .hdr b{font-size:17px}
-  .hdr .lvl{font-size:11px;letter-spacing:.05em;color:var(--accent-700);font-weight:700}
-  .done-note{font-size:11px;color:var(--accent-700);font-weight:700;display:none}
-  .done-note.show{display:inline}
+:root{
+  --ink:#16223a; --ink2:#54617a; --mute:#8d99ad; --faint:#aab3c2;
+  --paper:#ffffff; --wash:#f3f6fb; --line:#e2e8f1; --grid:#eaeff7;
+  --real:#265d8b; --real-soft:#e7f0f8;
+  --imag:#6828c4; --imag-soft:#f2eafd;
+  --cplx:#0a7a68; --cplx-soft:#e0f3ef;
+  --stop:#a5312a; --stop-soft:#fbeceb;
+  --r:12px;
+  --f:"IBM Plex Sans Arabic","Segoe UI",Tahoma,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:var(--f);background:var(--wash);color:var(--ink);font-size:16px;line-height:1.75;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1060px;margin:0 auto;padding:30px 20px 60px}
 
-  .grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr)}
-  @media(max-width:720px){ .grid{grid-template-columns:1fr} }
+.masthead{display:flex;align-items:center;gap:14px;padding:0 0 18px;border-bottom:1px solid var(--line);margin-bottom:26px}
+.mark{width:46px;height:46px;flex:0 0 46px;border-radius:14px;background:var(--imag-soft);color:var(--imag);
+  display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:600;line-height:1}
+.masthead h1{font-size:1.75rem;font-weight:600;margin:0;line-height:1.3}
 
-  .left{border-left:2px solid var(--divider);padding:18px 18px 26px}
-  @media(max-width:720px){ .left{border-left:0;border-bottom:2px solid var(--divider)} }
-  .right{padding:18px 18px 26px}
+.shell{display:grid;grid-template-columns:244px minmax(0,1fr);gap:24px;align-items:start}
+.rail{display:flex;flex-direction:column;gap:6px;position:sticky;top:22px}
+.tab{font-family:var(--f);font-size:.9375rem;text-align:right;cursor:pointer;position:relative;
+  display:flex;align-items:baseline;gap:11px;padding:12px 15px;background:transparent;
+  border:1px solid transparent;border-radius:var(--r);color:var(--ink2);width:100%;line-height:1.55;
+  transition:background-color .18s ease,color .18s ease}
+.tab .n{font-size:.8125rem;color:var(--faint);min-width:1.15em;transition:color .18s ease}
+.tab:hover{background:#e9eef7;color:var(--ink)}
+.tab[aria-selected="true"]{background:var(--paper);border-color:var(--line);color:var(--ink);font-weight:500;
+  box-shadow:0 1px 2px rgba(22,34,58,.05)}
+.tab[aria-selected="true"] .n{color:var(--accent,var(--imag))}
+.tab[aria-selected="true"]::before{content:"";position:absolute;inset-inline-start:0;top:14px;bottom:14px;
+  width:3px;border-radius:3px;background:var(--accent,var(--imag))}
+.tab:focus-visible{outline:2px solid var(--imag);outline-offset:2px}
+.tab:nth-child(1){--accent:var(--stop)} .tab:nth-child(2),.tab:nth-child(3){--accent:var(--imag)} .tab:nth-child(4){--accent:var(--cplx)}
 
-  .panelhead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:4px}
-  .step-n{font-size:11px;color:var(--text-muted)}
-  .lead{margin:0 0 12px;font-size:12px;line-height:1.7;color:var(--text-muted)}
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:26px 28px 24px;
+  box-shadow:0 1px 2px rgba(22,34,58,.04),0 14px 30px -24px rgba(22,34,58,.22)}
+.panel[hidden]{display:none}
+.panel h2{font-size:1.3125rem;font-weight:600;margin:0 0 .55rem;display:flex;align-items:center;gap:10px}
+.panel h2::before{content:"";width:8px;height:8px;border-radius:3px;background:var(--accent)}
+#p0{--accent:var(--stop)} #p1,#p2{--accent:var(--imag)} #p3{--accent:var(--cplx)}
+.teach{margin:0 0 20px;color:var(--ink2);max-width:72ch;font-size:1.0625rem;line-height:1.95}
+.teach b{font-weight:600;color:var(--ink)}
 
-  .plane-wrap{position:relative}
-  svg{width:100%;height:auto;display:block;background:#fff;border:1px solid var(--divider)}
-  .zlabel{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;
-    font-weight:700;font-size:12px;color:var(--accent);background:#fff;padding:1px 5px;
-    pointer-events:none}
-  .tick{position:absolute;font-size:10px;color:var(--text-muted);white-space:nowrap;pointer-events:none}
-  .tick.corner{font-size:10px;font-weight:700;background:#fff;padding:1px 4px}
+.stage{border:1px solid var(--line);border-radius:14px;padding:20px 18px 14px;background:#fdfeff;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:26px 26px;background-position:center}
+.ctrl{display:flex;align-items:center;gap:14px;margin:0 0 12px;flex-wrap:wrap}
+.ctrl label{font-size:.875rem;color:var(--ink2)}
+.ctrl input[type=range]{flex:1;min-width:180px;direction:ltr}
+.val{font-size:1.0625rem;font-weight:600;min-width:80px;text-align:center;padding:4px 12px;border-radius:8px;
+  background:var(--wash);transition:background-color .25s ease,color .25s ease}
+.val.r{color:var(--real);background:var(--real-soft)}
+.val.i{color:var(--imag);background:var(--imag-soft)}
+.val.c{color:var(--cplx);background:var(--cplx-soft)}
+svg{display:block;width:100%;height:auto;overflow:visible}
 
-  .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
-    border:1px solid var(--divider);border-top:0}
-  .stats>div{padding:10px 12px;border-left:1px solid var(--divider)}
-  .stats>div:last-child{border-left:0}
-  .stats span{font-size:10px;color:var(--text-muted);display:block}
-  .stats b{font-weight:700;font-size:19px}
-  .stats .ang{color:var(--accent-700);font-size:14px}
+input[type=range]{-webkit-appearance:none;appearance:none;height:24px;background:transparent;cursor:pointer}
+input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:#dbe3ee}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;margin-top:-8px;
+  border-radius:50%;background:var(--paper);border:2.5px solid var(--tint,var(--ink));
+  box-shadow:0 1px 3px rgba(22,34,58,.18);transition:transform .15s ease}
+input[type=range]:active::-webkit-slider-thumb{transform:scale(1.12)}
+input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:#dbe3ee}
+input[type=range]::-moz-range-thumb{width:17px;height:17px;border-radius:50%;background:var(--paper);border:2.5px solid var(--tint,var(--ink))}
+input[type=range]:focus-visible{outline:2px solid var(--tint,var(--imag));outline-offset:4px;border-radius:4px}
+.s-real{--tint:var(--real)} .s-imag{--tint:var(--imag)} .s-cplx{--tint:var(--cplx)}
 
-  .repr{margin-top:14px;padding:12px 14px;background:var(--surface);
-    border-right:2px solid var(--accent)}
-  .repr-h{font-size:11px;font-weight:700;color:var(--accent-700);margin-bottom:6px}
-  .repr div{font-size:15px;line-height:2}
+.readout{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:16px 0 0;font-size:1.0625rem}
+.step{padding:6px 13px;border-radius:999px;background:var(--wash);color:var(--ink2);font-size:.9375rem;
+  transition:background-color .25s ease,color .25s ease}
+.step.on{background:var(--imag-soft);color:var(--imag);font-weight:600}
+.step.onr{background:var(--real-soft);color:var(--real);font-weight:600}
+.step.onc{background:var(--cplx-soft);color:var(--cplx);font-weight:600}
+.arrow{color:var(--faint)}
+.note{margin:0;font-size:.9375rem;color:var(--ink2)}
 
-  .op-title{font-weight:700;font-size:17px;color:var(--accent-700);margin-bottom:8px}
-  .op-formula{font-size:14px;padding:8px 10px;background:#fff;border:1px solid var(--divider);margin-bottom:10px}
-  .op-body{margin:0 0 10px;font-size:13px;line-height:1.8}
-  .op-geo{padding:8px 10px;border-right:2px solid var(--accent-fill);background:var(--surface);font-size:12px}
-  hr{border:0;border-top:2px solid var(--divider);margin:18px 0}
+.rule{margin:22px 0 0;padding:15px 17px;border-radius:12px;background:var(--wash);
+  border-right:3px solid var(--accent);font-size:1rem}
+.rule .k{display:block;font-size:.8125rem;color:var(--mute);margin-bottom:2px}
 
-  .btn{display:block;width:100%;text-align:right;font-family:inherit;font-size:13px;
-    padding:10px 14px;min-height:42px;border-radius:8px;border:1px solid var(--divider);
-    background:var(--fill-soft);color:var(--text);cursor:pointer;margin-bottom:8px}
-  .btn:hover{border-color:var(--accent);color:var(--accent-700)}
-  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
-  .btn.primary:hover{color:#fff;opacity:.92}
-  .btn b{margin-inline-end:8px}
+.pw{display:inline-block;direction:ltr;unicode-bidi:isolate}
+.neg{unicode-bidi:isolate;direction:rtl}
 
-  .custom{margin-top:4px;padding:12px 14px;background:var(--surface);
-    display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end}
-  .custom.hidden{display:none}
-  .custom label{font-size:11px;display:flex;flex-direction:column;gap:4px}
-  .custom input{direction:ltr;font-size:14px;padding:6px 8px;border:1px solid var(--divider);
-    border-radius:6px;font-family:inherit}
-  .custom .btn{width:auto;margin-bottom:0}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:16px 0 0}
+.cell{text-align:center;padding:11px 6px;border:1px solid var(--line);border-radius:10px;background:var(--paper);
+  font-size:.875rem;color:var(--mute);transition:border-color .25s ease,background-color .25s ease,color .25s ease}
+.cell b{display:block;font-size:1.125rem;color:var(--ink);font-weight:600;margin-top:3px;transition:color .25s ease}
+.cell.on{border-color:var(--imag);background:var(--imag-soft);color:var(--imag)}
+.cell.on b{color:var(--imag)}
 
-  .lbl{font-size:11px;font-weight:700;color:var(--text-muted);display:block;margin:16px 0 8px}
-  .row{display:flex;flex-wrap:wrap;gap:7px}
-  .row .btn{width:auto;white-space:nowrap;margin-bottom:0}
-  .row .btn.ghost{background:transparent}
+.legend{display:flex;gap:18px;flex-wrap:wrap;margin:14px 0 0;font-size:.875rem;color:var(--ink2)}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.dot{width:11px;height:11px;border-radius:50%;display:inline-block}
 
-  .history{margin-top:14px;padding-top:12px;border-top:2px solid var(--divider)}
-  .hstep{display:flex;align-items:baseline;gap:10px;padding:7px 0;
-    border-bottom:1px solid var(--divider)}
-  .hstep .n{font-size:11px;color:var(--accent-700);min-width:20px}
-  .hstep .lb{font-size:13px;flex:1}
-  .hstep .z{font-size:14px;font-weight:700;white-space:nowrap}
+.btnrow{display:flex;gap:8px;margin:0 0 12px}
+.mini{font-family:var(--f);font-size:.875rem;padding:7px 15px;border:1px solid var(--line);background:var(--paper);
+  border-radius:9px;cursor:pointer;color:var(--ink);transition:background-color .15s ease,transform .1s ease}
+.mini:hover{background:var(--wash)}
+.mini:active{transform:translateY(1px)}
+.mini:focus-visible{outline:2px solid var(--imag);outline-offset:2px}
+
+.pt{transition:cx .22s cubic-bezier(.34,.8,.3,1),cy .22s cubic-bezier(.34,.8,.3,1)}
+.halo{transform-box:fill-box;transform-origin:center;opacity:0}
+.halo.go{animation:ring .55s ease-out}
+@keyframes ring{0%{opacity:.35;transform:scale(.7)}100%{opacity:0;transform:scale(2.6)}}
+#hand{transition:transform .5s cubic-bezier(.45,.05,.2,1)}
+#sweep{transition:opacity .3s ease}
+
+@media (max-width:830px){
+  .shell{grid-template-columns:1fr}
+  .rail{flex-direction:row;overflow-x:auto;position:static;padding-bottom:4px}
+  .tab{white-space:nowrap;border-color:var(--line);background:var(--paper)}
+  .panel{padding:20px 16px 18px}
+  .grid4{grid-template-columns:repeat(2,1fr)}
+}
+@media (prefers-reduced-motion:reduce){
+  .pt,#hand,#sweep,.step,.cell,.val{transition:none}
+  .halo.go{animation:none}
+}
 </style>
 </head>
 <body>
+<div class="wrap">
 
-<div class="hdr">
-  <div><b>محاكي الأعداد التخيلية والمركبة</b> <span class="done-note" id="doneNote">✅ سُجّل استكشافك</span></div>
-  <span class="lvl">المستوى المركب (Argand diagram)</span>
-</div>
+<header class="masthead">
+  <div class="mark" aria-hidden="true">ت</div>
+  <h1>مقدمة عن الأعداد المركبة</h1>
+</header>
 
-<div class="grid">
-  <section class="left">
-    <div class="panelhead">
-      <h2>أين نحن الآن؟</h2>
-      <span class="step-n">الخطوة <span id="stepCount"></span></span>
-    </div>
-    <p class="lead">السهم الأحمر هو العدد المركّب. نهايته هي موضع العدد على اللوحة.</p>
+<div class="shell">
+  <nav class="rail" role="tablist" aria-label="خطوات الدرس">
+    <button class="tab" role="tab" id="tab0" aria-controls="p0" aria-selected="true"><span class="n">١</span><span>لماذا نحتاج عددًا جديدًا؟</span></button>
+    <button class="tab" role="tab" id="tab1" aria-controls="p1" aria-selected="false"><span class="n">٢</span><span>العدد التخيلي ت</span></button>
+    <button class="tab" role="tab" id="tab2" aria-controls="p2" aria-selected="false"><span class="n">٣</span><span>قوى العدد ت</span></button>
+    <button class="tab" role="tab" id="tab3" aria-controls="p3" aria-selected="false"><span class="n">٤</span><span>العدد المركب</span></button>
+  </nav>
 
-    <div class="plane-wrap">
-      <svg viewBox="0 0 100 100">
-        <g stroke="#201e1d" stroke-opacity="0.1" stroke-width="0.25">
-          <line x1="2" y1="0" x2="2" y2="100"></line><line x1="10" y1="0" x2="10" y2="100"></line>
-          <line x1="18" y1="0" x2="18" y2="100"></line><line x1="26" y1="0" x2="26" y2="100"></line>
-          <line x1="34" y1="0" x2="34" y2="100"></line><line x1="42" y1="0" x2="42" y2="100"></line>
-          <line x1="58" y1="0" x2="58" y2="100"></line><line x1="66" y1="0" x2="66" y2="100"></line>
-          <line x1="74" y1="0" x2="74" y2="100"></line><line x1="82" y1="0" x2="82" y2="100"></line>
-          <line x1="90" y1="0" x2="90" y2="100"></line><line x1="98" y1="0" x2="98" y2="100"></line>
-          <line x1="0" y1="2" x2="100" y2="2"></line><line x1="0" y1="10" x2="100" y2="10"></line>
-          <line x1="0" y1="18" x2="100" y2="18"></line><line x1="0" y1="26" x2="100" y2="26"></line>
-          <line x1="0" y1="34" x2="100" y2="34"></line><line x1="0" y1="42" x2="100" y2="42"></line>
-          <line x1="0" y1="58" x2="100" y2="58"></line><line x1="0" y1="66" x2="100" y2="66"></line>
-          <line x1="0" y1="74" x2="100" y2="74"></line><line x1="0" y1="82" x2="100" y2="82"></line>
-          <line x1="0" y1="90" x2="100" y2="90"></line><line x1="0" y1="98" x2="100" y2="98"></line>
+  <div>
+
+  <!-- ١ -->
+  <section class="panel" id="p0" role="tabpanel" aria-labelledby="tab0">
+    <h2>لماذا نحتاج عددًا جديدًا؟</h2>
+    <p class="teach">معادلة مثل <span class="pw">س<sup>٢</sup></span> = ٩ نحلّها بسهولة، لأن ٣ و<span class="neg">−٣</span> مربعاهما ٩. لكن جرّب الآن أن تصل بالمربع إلى العدد <span class="neg">−١</span>: حرّك المزلاج وتابع النقطة وهي تسير على المنحنى. مهما اخترت عددًا حقيقيًا — موجبًا أو سالبًا أو صفرًا — فإن المنحنى يلامس الصفر ثم يصعد، ولا ينزل أبدًا إلى الشريط الأحمر. <b>المشكلة ليست في المعادلة، بل في ضيق مجموعة الأعداد الحقيقية ح</b>، فهي لا تحتوي على عدد مربعه سالب.</p>
+
+    <div class="stage">
+      <div class="ctrl">
+        <label for="xs">اختر عددًا حقيقيًا س</label>
+        <input type="range" class="s-real" id="xs" min="-30" max="30" step="1" value="17">
+        <span class="val r" id="xv">١٫٧</span>
+      </div>
+      <svg viewBox="0 0 660 300" role="img" aria-labelledby="ttl1">
+        <title id="ttl1">منحنى مربع العدد الحقيقي يبقى دائمًا فوق الصفر ولا يدخل المنطقة السالبة</title>
+        <rect x="120" y="241" width="425" height="47" rx="6" fill="#fbeceb"/>
+        <line x1="120" y1="34" x2="120" y2="34" stroke="none"/>
+        <g stroke="#c8d1de" stroke-width="1.5">
+          <line x1="120" y1="240" x2="560" y2="240"/>
+          <line x1="330" y1="30" x2="330" y2="288"/>
         </g>
-        <circle id="modCircle" cx="50" cy="50" r="0" fill="none" stroke="#ec3013"
-          stroke-opacity="0.3" stroke-width="0.3" stroke-dasharray="2 1.6"></circle>
-        <line x1="0" y1="50" x2="100" y2="50" stroke="#201e1d" stroke-width="0.7"></line>
-        <line x1="50" y1="0" x2="50" y2="100" stroke="#201e1d" stroke-width="0.7"></line>
-        <g id="trailGroup" stroke="#201e1d" stroke-opacity="0.16" stroke-width="0.5"></g>
-        <path id="arcPath" d="" fill="none" stroke="#ec3013" stroke-width="0.5"></path>
-        <g stroke="#ec3013" stroke-opacity="0.45" stroke-width="0.35" stroke-dasharray="1.4 1.2">
-          <line id="projX" x1="0" y1="0" x2="0" y2="50"></line>
-          <line id="projY" x1="0" y1="0" x2="50" y2="0"></line>
-        </g>
-        <line id="arrow" x1="50" y1="50" x2="50" y2="50" stroke="#ec3013" stroke-width="1.1"></line>
-        <circle id="point" cx="50" cy="50" r="1.7" fill="#ec3013"></circle>
+        <g id="yt" stroke="#c8d1de" stroke-width="1.5"></g>
+        <g id="yl"></g>
+        <line x1="120" y1="262" x2="545" y2="262" stroke="#a5312a" stroke-width="1.5" stroke-dasharray="6 5"/>
+        <text id="m1" x="322" y="267" text-anchor="end" font-size="13" fill="#a5312a" font-weight="600"></text>
+        <text x="420" y="282" text-anchor="middle" font-size="12" fill="#bf7d77">لا يصل إليها مربع أي عدد حقيقي</text>
+        <path id="par" d="" fill="none" stroke="#265d8b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path id="g0" d="" fill="none" stroke="#265d8b" stroke-width="1.5" stroke-dasharray="4 5" opacity=".65"/>
+        <circle id="x0" cx="330" cy="240" r="4.5" fill="#8d99ad"/>
+        <circle id="y0" cx="330" cy="240" r="4.5" fill="#265d8b"/>
+        <circle class="halo" id="h0" cx="330" cy="240" r="9" fill="#265d8b"/>
+        <circle class="pt" id="d0" cx="330" cy="240" r="8" fill="#265d8b"/>
+        <text x="575" y="245" text-anchor="middle" font-size="14" fill="#8d99ad">س</text>
+        <text id="ylab" x="330" y="22" text-anchor="middle" font-size="14" fill="#8d99ad"></text>
       </svg>
-      <div class="zlabel" id="zLabelBox"></div>
-      <div class="tick" id="tick2"  style="left:66.2%;top:53.5%;transform:translateX(-50%)"></div>
-      <div class="tick" id="tick4"  style="left:82.2%;top:53.5%;transform:translateX(-50%)"></div>
-      <div class="tick" id="tickM2" style="left:34.2%;top:53.5%;transform:translateX(-50%)"></div>
-      <div class="tick" id="tickM4" style="left:18.2%;top:53.5%;transform:translateX(-50%)"></div>
-      <div class="tick" id="tick2i" style="left:52%;top:34%;transform:translateY(-50%)"></div>
-      <div class="tick" id="tick4i" style="left:52%;top:18%;transform:translateY(-50%)"></div>
-      <div class="tick" id="tickM2i" style="left:52%;top:66%;transform:translateY(-50%)"></div>
-      <div class="tick" id="tickM4i" style="left:52%;top:82%;transform:translateY(-50%)"></div>
-      <div class="tick corner" style="left:8px;top:6px">المحور التخيلي</div>
-      <div class="tick corner" style="right:8px;bottom:6px">المحور الحقيقي</div>
+      <div class="readout">
+        <span class="step">س = <b id="r0a">١٫٧</b></span>
+        <span class="arrow">←</span>
+        <span class="step onr"><span class="pw">س<sup>٢</sup></span> = <b id="r0b">٢٫٨٩</b></span>
+        <span class="note" id="r0c">النتيجة موجبة، وما زلنا بعيدين عن <span class="neg">−١</span></span>
+      </div>
     </div>
 
-    <div class="stats">
-      <div><span>الجزء الحقيقي</span><b id="xText"></b></div>
-      <div><span>الجزء التخيلي</span><b id="yText"></b></div>
-      <div><span>طول السهم والزاوية</span><b id="rText"></b> <span class="ang" id="angleText"></span></div>
-    </div>
-
-    <div class="repr">
-      <div class="repr-h">صورة العدد الآن</div>
-      <div id="lineCartesian"></div>
-      <div id="linePolar"></div>
-      <div id="lineConj"></div>
-    </div>
+    <p class="rule"><span class="k">الخلاصة</span> مربع أي عدد حقيقي أكبر من الصفر أو يساويه، لذلك المعادلة <span class="pw">س<sup>٢</sup></span> = <span class="neg">−١</span> ليس لها حل في ح، ونحتاج إلى توسيع مجموعة الأعداد.</p>
   </section>
 
-  <section class="right">
-    <h2>ما الذي حدث؟</h2>
-    <div class="op-title" id="opTitle"></div>
-    <div class="op-formula" id="opFormula"></div>
-    <p class="op-body" id="opBody"></p>
-    <div class="op-geo"><b>على الرسم: </b><span id="opGeometry"></span></div>
+  <!-- ٢ -->
+  <section class="panel" id="p1" role="tabpanel" aria-labelledby="tab1" hidden>
+    <h2>العدد التخيلي ت</h2>
+    <p class="teach">نتفق على عدد جديد نسميه <b>ت</b>، له خاصية واحدة فقط: <span class="pw">ت<sup>٢</sup></span> = <span class="neg">−١</span>. هذا العدد لا يوجد على خط الأعداد الحقيقية، لذلك نرسم له خطًا جديدًا عموديًا عليه. انتبه للفرق بين المحورين: الأفقي مُدرَّج بالوحدة ١، والرأسي مُدرَّج بالوحدة ت. <b>و«ب» ليست اسمًا للنقطة، بل عدد حقيقي يعمل كمعامل</b> يخبرنا بعدد وحدات ت. حرّك المزلاج وتابع كيف ينتقل العدد ب من المحور الأفقي إلى المحور الرأسي بعد ضربه في ت.</p>
 
-    <hr>
-    <h2>ماذا نجرّب الآن؟</h2>
-    <p class="lead">اختر خطوة واحدة وشاهد أثرها على السهم.</p>
-
-    <button class="btn primary" id="btnMulI"><b>الخيار (أ)</b> اضرب العدد في الوحدة التخيلية — ماذا يحدث للسهم؟</button>
-    <button class="btn" id="btnPolar"><b>الخيار (ب)</b> صِف العدد بالطول والزاوية بدل الإحداثيين</button>
-    <button class="btn" id="btnCustom"><b>الخيار (ج)</b> جرّب عددًا من عندك</button>
-
-    <div class="custom hidden" id="customBox">
-      <label>الجزء الحقيقي <input type="number" step="1" id="cxInput" value="2"></label>
-      <label>الجزء التخيلي <input type="number" step="1" id="cyInput" value="3"></label>
-      <button class="btn primary" id="btnApplyCustom">ارسمه</button>
+    <div class="stage">
+      <div class="ctrl">
+        <label for="bs">المعامل ب (عدد حقيقي)</label>
+        <input type="range" class="s-imag" id="bs" min="-4" max="4" step="1" value="3">
+        <span class="val i" id="bv">٣ ت</span>
+      </div>
+      <svg viewBox="0 0 660 340" role="img" aria-labelledby="ttl2">
+        <title id="ttl2">محوران متعامدان: الأفقي للأعداد الحقيقية بالوحدة واحد، والرأسي للأعداد التخيلية بالوحدة ت</title>
+        <line x1="118" y1="170" x2="542" y2="170" stroke="#265d8b" stroke-width="1.5"/>
+        <line x1="330" y1="38" x2="330" y2="302" stroke="#6828c4" stroke-width="1.5"/>
+        <g id="rt" stroke="#a8bccf" stroke-width="1.5"></g>
+        <g id="it" stroke="#c3a4ec" stroke-width="1.5"></g>
+        <g id="rl"></g>
+        <g id="il"></g>
+        <text x="538" y="196" text-anchor="end" font-size="13" fill="#265d8b">الأعداد الحقيقية</text>
+        <text x="346" y="32" font-size="13" fill="#6828c4">الأعداد التخيلية</text>
+        <text x="322" y="190" text-anchor="end" font-size="13" fill="#8d99ad">٠</text>
+        <path id="lnk" d="" stroke="#6828c4" stroke-width="1.5" stroke-dasharray="5 5" fill="none" opacity=".8"/>
+        <text id="lnkT" font-size="13" fill="#6828c4" font-weight="600"></text>
+        <circle id="rd" cx="426" cy="170" r="6.5" fill="#fff" stroke="#265d8b" stroke-width="2.5"/>
+        <circle class="halo" id="h1" cx="330" cy="74" r="9" fill="#6828c4"/>
+        <circle class="pt" id="id" cx="330" cy="74" r="8" fill="#6828c4"/>
+      </svg>
+      <div class="readout">
+        <span class="step">ب = <b id="s1">٣</b> عدد حقيقي</span>
+        <span class="arrow">←</span>
+        <span class="step">نضربه في الوحدة ت</span>
+        <span class="arrow">←</span>
+        <span class="step on" id="s2">٣ ت عدد تخيلي بحت</span>
+      </div>
+      <div class="legend">
+        <span><i class="dot" style="background:#fff;border:2.5px solid #265d8b"></i> موضع ب على المحور الحقيقي</span>
+        <span><i class="dot" style="background:#6828c4"></i> موضع ب ت على المحور التخيلي</span>
+      </div>
     </div>
 
-    <span class="lbl">خطوات إضافية</span>
-    <div class="row">
-      <button class="btn small" id="btnConj">المرافق</button>
-      <button class="btn small" id="btnNegate">الضرب في سالب واحد</button>
-      <button class="btn small" id="btnAddOne">أضف واحدًا صحيحًا</button>
-      <button class="btn small" id="btnAddI">أضف وحدة تخيلية</button>
-      <button class="btn small ghost" id="btnReset">من البداية</button>
-    </div>
-
-    <div class="history">
-      <span class="lbl">ما فعلناه حتى الآن</span>
-      <div id="stepsList"></div>
-    </div>
+    <p class="rule"><span class="k">الخلاصة</span> كل عدد على الصورة ب ت حيث ب عدد حقيقي لا يساوي الصفر يُسمى عددًا تخيليًا بحتًا، مثل ٣ ت و<span class="neg">−٢</span> ت و ٥√ ت، ولا يمكن تمثيله على خط الأعداد الحقيقية.</p>
   </section>
+
+  <!-- ٣ -->
+  <section class="panel" id="p2" role="tabpanel" aria-labelledby="tab2" hidden>
+    <h2>قوى العدد ت</h2>
+    <p class="teach">قوى ت لا تُنتج أعدادًا جديدة مهما كبر الأُس، بل تدور في أربع قيم فقط: ت ثم <span class="neg">−١</span> ثم <span class="neg">−ت</span> ثم ١، ثم تعود من جديد. زِد الأُس خطوة واحدة وشاهد المؤشر يتحرك ربع دورة. <b>لذلك القاعدة العملية: اقسم الأُس على ٤ ولا تنظر إلا إلى الباقي</b> — الباقي وحده هو الذي يحدد القيمة.</p>
+
+    <div class="stage">
+      <div class="btnrow">
+        <button class="mini" id="prev" type="button">الأُس السابق</button>
+        <button class="mini" id="next" type="button">الأُس التالي</button>
+      </div>
+      <div class="ctrl">
+        <label for="ns">الأُس ن</label>
+        <input type="range" class="s-imag" id="ns" min="1" max="16" step="1" value="1">
+        <span class="val i" id="nv">ن = ١</span>
+      </div>
+      <svg viewBox="0 0 660 300" role="img" aria-labelledby="ttl3">
+        <title id="ttl3">عجلة دائرية تبين تكرار قوى ت كل أربع خطوات</title>
+        <circle cx="330" cy="150" r="95" fill="none" stroke="#dde4ee" stroke-width="1.5" stroke-dasharray="4 6"/>
+        <path id="sweep" d="" fill="none" stroke="#d9c4f5" stroke-width="5" stroke-linecap="round"/>
+        <g id="hand"><line x1="330" y1="150" x2="425" y2="150" stroke="#16223a" stroke-width="2.5"/><circle cx="425" cy="150" r="9" fill="#16223a"/></g>
+        <circle class="halo" id="h2" cx="425" cy="150" r="11" fill="#6828c4"/>
+        <circle cx="425" cy="150" r="7" fill="#e7f0f8" stroke="#265d8b" stroke-width="2"/>
+        <circle cx="330" cy="55" r="7" fill="#f2eafd" stroke="#6828c4" stroke-width="2"/>
+        <circle cx="235" cy="150" r="7" fill="#e7f0f8" stroke="#265d8b" stroke-width="2"/>
+        <circle cx="330" cy="245" r="7" fill="#f2eafd" stroke="#6828c4" stroke-width="2"/>
+        <circle cx="330" cy="150" r="4" fill="#16223a"/>
+        <text x="446" y="155" font-size="14" fill="#265d8b" font-weight="600">١</text>
+        <text x="330" y="36" text-anchor="middle" font-size="14" fill="#6828c4" font-weight="600">ت</text>
+        <text id="w1" x="214" y="155" font-size="14" fill="#265d8b" font-weight="600"></text>
+        <text id="wt" x="330" y="274" text-anchor="middle" font-size="14" fill="#6828c4" font-weight="600"></text>
+        <text x="330" y="108" text-anchor="middle" font-size="12" fill="#8d99ad">كل خطوة في الأُس = ربع دورة</text>
+      </svg>
+      <div class="grid4">
+        <div class="cell" data-r="1">الباقي ١<b>ت</b></div>
+        <div class="cell" data-r="2">الباقي ٢<b id="c2"></b></div>
+        <div class="cell" data-r="3">الباقي ٣<b id="c3"></b></div>
+        <div class="cell" data-r="0">الباقي ٠<b>١</b></div>
+      </div>
+      <div class="readout">
+        <span class="step on" id="e2"></span>
+        <span class="note" id="r2"></span>
+      </div>
+    </div>
+
+    <p class="rule"><span class="k">الخلاصة</span> قيمة <span class="pw">ت<sup>ن</sup></span> تعتمد على باقي قسمة ن على ٤ فقط: الباقي ١ يعطي ت، والباقي ٢ يعطي <span class="neg">−١</span>، والباقي ٣ يعطي <span class="neg">−ت</span>، والباقي ٠ يعطي ١.</p>
+  </section>
+
+  <!-- ٤ -->
+  <section class="panel" id="p3" role="tabpanel" aria-labelledby="tab3" hidden>
+    <h2>العدد المركب</h2>
+    <p class="teach">أصبح لدينا الآن محوران، ومعهما صار في إمكاننا الخروج من الخط إلى المستوى كله. أي نقطة في هذا المستوى تحتاج عددين لتحديدها: <b>أ</b> على المحور الحقيقي و<b>ب</b> على المحور التخيلي، فنكتبها على الصورة ع = أ + ب ت، ونسمي أ الجزء الحقيقي وب الجزء التخيلي. حرّك المزلاجين ولاحظ التصنيف: إذا صار ب = ٠ عادت النقطة إلى المحور الأفقي وصار العدد حقيقيًا، وهذا يعني أن كل عدد حقيقي هو أيضًا عدد مركب.</p>
+
+    <div class="stage">
+      <div class="ctrl">
+        <label for="as3">الجزء الحقيقي أ</label>
+        <input type="range" class="s-real" id="as3" min="-5" max="5" step="1" value="3">
+        <span class="val r" id="av">٣</span>
+      </div>
+      <div class="ctrl">
+        <label for="bs3">الجزء التخيلي ب</label>
+        <input type="range" class="s-imag" id="bs3" min="-4" max="4" step="1" value="2">
+        <span class="val i" id="bv3">٢</span>
+      </div>
+      <svg viewBox="0 0 660 360" role="img" aria-labelledby="ttl4">
+        <title id="ttl4">مستوى الأعداد المركبة مع نقطة تمثل العدد أ زائد ب ت</title>
+        <g id="gr" stroke="#eaeff7" stroke-width="1"></g>
+        <rect id="box" x="330" y="112" width="102" height="68" fill="#0a7a68" opacity=".07"/>
+        <line x1="148" y1="180" x2="512" y2="180" stroke="#265d8b" stroke-width="1.5"/>
+        <line x1="330" y1="36" x2="330" y2="324" stroke="#6828c4" stroke-width="1.5"/>
+        <g id="gl"></g>
+        <text x="322" y="200" text-anchor="end" font-size="13" fill="#8d99ad">٠</text>
+        <text x="508" y="206" text-anchor="end" font-size="13" fill="#265d8b">المحور الحقيقي</text>
+        <text x="346" y="30" font-size="13" fill="#6828c4">المحور التخيلي</text>
+        <path id="gx" d="" stroke="#0a7a68" stroke-width="1.5" stroke-dasharray="4 5" fill="none" opacity=".75"/>
+        <circle id="pa" cx="432" cy="180" r="5" fill="#265d8b"/>
+        <circle id="pb" cx="330" cy="112" r="5" fill="#6828c4"/>
+        <circle class="halo" id="h3" cx="432" cy="112" r="10" fill="#0a7a68"/>
+        <circle class="pt" id="pc" cx="432" cy="112" r="8.5" fill="#0a7a68"/>
+        <text id="pl" x="448" y="104" font-size="14" fill="#0a7a68" font-weight="600"></text>
+      </svg>
+      <div class="readout">
+        <span class="step onc" id="e3"></span>
+        <span class="step" id="k3">عدد مركب</span>
+        <span class="note" id="n3"></span>
+      </div>
+    </div>
+
+    <p class="rule"><span class="k">الخلاصة</span> مجموعة الأعداد المركبة ك = { أ + ب ت : أ، ب عددان حقيقيان }. إذا كان ب = ٠ كان العدد حقيقيًا، وإذا كان أ = ٠ وب لا يساوي الصفر كان العدد تخيليًا بحتًا، ولذلك فإن ح مجموعة جزئية من ك.</p>
+  </section>
+
+  </div>
+</div>
 </div>
 
 <script>
+"use strict";
+var RLI = "\u2067", PDI = "\u2069";
+function ISO(s){ return RLI + s + PDI; }
+function AR(v){
+  var s = String(v), neg = false;
+  if (s.charAt(0) === "-"){ neg = true; s = s.slice(1); }
+  s = s.replace(/[0-9]/g, function(d){ return "٠١٢٣٤٥٦٧٨٩"[d]; }).replace(/\./g, "٫");
+  return neg ? ISO("−" + s) : s;
+}
+var NEG1 = ISO("−١"), NEGT = ISO("−ت");
+var SVGNS = "http://www.w3.org/2000/svg";
+function mk(tag, attrs, text){
+  var e = document.createElementNS(SVGNS, tag);
+  for (var k in attrs) e.setAttribute(k, attrs[k]);
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+function ping(id){
+  var el = document.getElementById(id);
+  el.classList.remove("go"); void el.offsetWidth; el.classList.add("go");
+}
+
+/* التبويبات */
+var tabs = [].slice.call(document.querySelectorAll(".tab"));
+var pans = tabs.map(function(t){ return document.getElementById(t.getAttribute("aria-controls")); });
+tabs.forEach(function(t, i){
+  t.addEventListener("click", function(){ sel(i); });
+  t.addEventListener("keydown", function(ev){
+    var j = (ev.key === "ArrowDown" || ev.key === "ArrowLeft") ? i + 1
+          : (ev.key === "ArrowUp" || ev.key === "ArrowRight") ? i - 1 : -1;
+    if (j >= 0 && j < tabs.length){ ev.preventDefault(); sel(j); tabs[j].focus(); }
+  });
+});
+function sel(i){
+  tabs.forEach(function(t, k){
+    t.setAttribute("aria-selected", k === i ? "true" : "false");
+    pans[k].hidden = k !== i;
+  });
+}
+
+/* ١ : منحنى مربع العدد */
+var OX = 330, OY = 240, SX = 64, SY = 22, TOP = 40;
+document.getElementById("m1").textContent = NEG1;
+document.getElementById("ylab").textContent = "\u2066س²\u2069";
+var yt = document.getElementById("yt"), yl = document.getElementById("yl");
+[1, 4, 9].forEach(function(v){
+  yt.appendChild(mk("line", { x1: OX - 5, y1: OY - v * SY, x2: OX + 5, y2: OY - v * SY }));
+  yl.appendChild(mk("text", { x: OX - 12, y: OY - v * SY + 5, "text-anchor": "end",
+    "font-size": 13, fill: "#8d99ad" }, AR(v)));
+});
 (function(){
-  'use strict';
-
-  /* ── الرموز والتنسيق العربي ── */
-  var S = { z:'ع', i:'ت', x:'س', y:'ص', cos:'جتا', sin:'جا', th:'هـ', r:'ل', conj:'ع'+'\u0305' };
-  var AR_D = '٠١٢٣٤٥٦٧٨٩';
-  function digits(s){ return String(s).replace(/[0-9]/g, function(d){ return AR_D[+d]; }).replace(/\./g,'٫'); }
-  function round(v){ return Math.abs(v) < 1e-10 ? 0 : Math.round(v*1000)/1000; }
-  function num(v){
-    var r = round(v);
-    var n = Number.isInteger(r) ? String(r) : String(Math.round(r*100)/100);
-    return digits(n.replace('-','−'));
+  var d = "";
+  for (var t = -3.4; t <= 3.41; t += 0.08){
+    var Y = OY - t * t * SY;
+    if (Y < TOP) continue;
+    d += (d ? " L" : "M") + (OX + t * SX).toFixed(1) + " " + Y.toFixed(1);
   }
-  function fmtZ(x,y){
-    var a = round(x), b = round(y);
-    if(b === 0) return num(a);
-    var im = Math.abs(b) === 1 ? S.i : num(Math.abs(b)) + ' ' + S.i;
-    if(a === 0) return (b < 0 ? '−' : '') + im;
-    return num(a) + (b < 0 ? ' − ' : ' + ') + im;
-  }
-
-  var INITIAL_X = 3, INITIAL_Y = 2;
-
-  /* عتبة إرسال إشارة الإنجاز — عدد العمليات المُجرَّاة (لا نقطة البداية).
-     رقمٌ قابلٌ للتعديل بحرّية: قرارٌ تربويّ يخصّ هذا المحاكي وحده،
-     لا شيء مركزيّ يعتمد عليه. */
-  var STEPS_FOR_DONE = 2;
-
-  function initialOp(){
-    return {
-      title:'البداية: ما هو العدد المركّب؟',
-      formula: S.i+'² = −'+digits('1')+'   ،   '+S.z+' = '+S.x+' + '+S.y+' '+S.i,
-      body:'لا يوجد عدد حقيقي مربّعه يساوي سالب واحد. لذلك اتفق الرياضيون على عدد جديد اسمه الوحدة التخيلية (imaginary unit) ورمزه '+S.i+'، وخاصيته الوحيدة أنّ مربّعه يساوي سالب واحد. وعندما نجمع عددًا حقيقيًا مع مضاعف لهذه الوحدة نحصل على عدد مركّب (complex number) مثل '+fmtZ(INITIAL_X,INITIAL_Y)+'.',
-      geometry:'الأعداد الحقيقية تسكن خطًا واحدًا، أما الأعداد المركبة فتحتاج لوحة كاملة. نتحرك أفقيًا بمقدار الجزء الحقيقي، ثم رأسيًا بمقدار الجزء التخيلي، فنصل إلى نقطة العدد ونرسم إليها سهمًا من نقطة الأصل.'
-    };
-  }
-
-  var state = {
-    x: INITIAL_X, y: INITIAL_Y, trail: [],
-    steps: [{ n:1, label:'نقطة البداية', z: fmtZ(INITIAL_X, INITIAL_Y) }],
-    op: initialOp(), customOpen: false
-  };
-  var signaled = false;
-
-  function apply(label, fn, opFn){
-    var cur = state;
-    var next = fn(cur.x, cur.y);
-    var nx = round(next[0]), ny = round(next[1]);
-    state = {
-      x: nx, y: ny,
-      trail: cur.trail.concat([{x:cur.x, y:cur.y}]).slice(-6),
-      steps: cur.steps.concat([{ n: cur.steps.length+1, label: label, z: fmtZ(nx, ny) }]).slice(-8),
-      op: opFn(cur.x, cur.y, [nx, ny]),
-      customOpen: cur.customOpen
-    };
-    render();
-    checkDone();
-  }
-
-  function checkDone(){
-    if(signaled) return;
-    if(state.steps.length - 1 >= STEPS_FOR_DONE){
-      signaled = true;
-      document.getElementById('doneNote').classList.add('show');
-      /* ── العقد الوحيد المطلوب من أي محاكٍ في «بيان» ──
-         رسالةٌ واحدة، حين نقرّر أنّ الاستكشاف كافٍ ليُحتسب تعلّماً. */
-      try{ window.parent.postMessage({ bayanSim:'done' }, '*'); }catch(e){}
-    }
-  }
-
-  /* ── العمليات الثماني ── */
-  function mulI(){
-    apply('الضرب في الوحدة التخيلية', function(a,b){ return [-b, a]; }, function(a,b,n){
-      return {
-        title: 'الضرب في '+S.i+' يدير السهم ربع دورة',
-        formula: S.i+' × ('+fmtZ(a,b)+') = '+fmtZ(n[0],n[1]),
-        body: 'نفكّ الضرب كالمعتاد: '+S.i+'('+S.x+' + '+S.y+' '+S.i+') = '+S.x+' '+S.i+' + '+S.y+' '+S.i+'²، وبما أنّ '+S.i+'² = −'+digits('1')+' تصبح النتيجة −'+S.y+' + '+S.x+' '+S.i+'. أي أنّ الجزأين تبادلا مكانيهما مع تغيّر إشارة أحدهما.',
-        geometry: 'طول السهم لم يتغيّر إطلاقًا، والذي تغيّر هو اتجاهه فقط: دار '+digits('90')+'° عكس عقارب الساعة. وإذا كرّرت الضغط أربع مرات عاد السهم إلى مكانه الأول.'
-      };
-    });
-  }
-  function negate(){
-    apply('الضرب في سالب واحد', function(a,b){ return [-a,-b]; }, function(a,b,n){
-      return {
-        title: 'الضرب في سالب واحد يقلب السهم',
-        formula: '−('+fmtZ(a,b)+') = '+fmtZ(n[0],n[1]),
-        body: 'تنقلب إشارة الجزأين معًا. لاحظ أنّ هذه العملية هي نفسها الضرب في '+S.i+' مرتين متتاليتين، لأنّ '+S.i+' × '+S.i+' = −'+digits('1')+'.',
-        geometry: 'نصف دورة كاملة حول نقطة الأصل: السهم يشير الآن إلى الجهة المقابلة تمامًا، وطوله كما هو.'
-      };
-    });
-  }
-  function conj(){
-    apply('المرافق', function(a,b){ return [a,-b]; }, function(a,b,n){
-      return {
-        title: 'المرافق (conjugate): انعكاس تحت المحور الأفقي',
-        formula: S.conj+' = '+fmtZ(n[0],n[1])+'   ،   '+S.z+' × '+S.conj+' = '+num(a*a+b*b),
-        body: 'مرافق العدد نحصل عليه بتغيير إشارة الجزء التخيلي وحده. وأهم خاصية له أنّ حاصل ضرب العدد في مرافقه يكون دائمًا عددًا حقيقيًا موجبًا، لأنّ الحدّين المتوسطين يحذف أحدهما الآخر. لهذا نستعمل المرافق عند القسمة، لنتخلّص من الوحدة التخيلية في المقام.',
-        geometry: 'صورة السهم في مرآة موضوعة على المحور الحقيقي: الطول ثابت والزاوية نفسها لكن إلى الجهة الأخرى.'
-      };
-    });
-  }
-  function addOne(){
-    apply('إضافة واحد صحيح', function(a,b){ return [a+1,b]; }, function(a,b,n){
-      return {
-        title: 'الجمع إزاحة، لا دوران',
-        formula: '('+fmtZ(a,b)+') + '+digits('1')+' = '+fmtZ(n[0],n[1]),
-        body: 'عند الجمع نجمع الجزء الحقيقي مع الحقيقي والتخيلي مع التخيلي، تمامًا كما نجمع الحدود المتشابهة في الجبر. فإضافة واحد صحيح تغيّر الجزء الحقيقي وحده.',
-        geometry: 'تحرّك رأس السهم خطوة واحدة إلى اليمين دون أن يرتفع أو ينخفض.'
-      };
-    });
-  }
-  function addI(){
-    apply('إضافة وحدة تخيلية', function(a,b){ return [a,b+1]; }, function(a,b,n){
-      return {
-        title: 'إضافة '+S.i+' ترفع النقطة لأعلى',
-        formula: '('+fmtZ(a,b)+') + '+S.i+' = '+fmtZ(n[0],n[1]),
-        body: 'الجزء التخيلي وحده هو الذي زاد بمقدار واحد، والجزء الحقيقي لم يمسّه شيء. قارن هذه العملية بالضرب في '+S.i+': الجمع ينقل، والضرب يدير.',
-        geometry: 'صعد رأس السهم خطوة واحدة إلى أعلى في اتجاه المحور التخيلي.'
-      };
-    });
-  }
-  function showPolar(){
-    apply('الطول والزاوية', function(a,b){ return [a,b]; }, function(a,b){
-      var rr = Math.hypot(a,b), dd = Math.atan2(b,a)*180/Math.PI;
-      return {
-        title: 'وصف آخر للعدد نفسه: الطول والزاوية',
-        formula: '|'+S.z+'| = '+num(rr)+'   ،   '+S.th+' = '+num(dd)+'°',
-        body: 'بدل أن نقول «تحرّك أفقيًا ثم رأسيًا»، يمكننا أن نقول «اتجه بزاوية معيّنة وامشِ مسافة معيّنة». المسافة من نقطة الأصل تسمّى المقياس (modulus) ونحسبها بنظرية فيثاغورس، والزاوية مع المحور الحقيقي تسمّى السعة (argument). هذه تسمّى الصورة القطبية (polar form) ونكتبها: '+S.z+' = '+num(rr)+' ('+S.cos+' '+S.th+' + '+S.i+' '+S.sin+' '+S.th+').',
-        geometry: 'الدائرة المنقّطة الحمراء هي مجموعة كل الأعداد التي لها الطول نفسه، والقوس الصغير عند المركز هو الزاوية. الوصفان يشيران إلى النقطة نفسها بالضبط.'
-      };
-    });
-  }
-  function applyCustom(){
-    var nx = parseFloat(document.getElementById('cxInput').value) || 0;
-    var ny = parseFloat(document.getElementById('cyInput').value) || 0;
-    apply('عدد من اختيارك', function(){ return [nx, ny]; }, function(){
-      return {
-        title: 'عدد من اختيارك',
-        formula: S.z+' = '+fmtZ(nx,ny),
-        body: 'كل عدد مركّب يتحدّد برقمين فقط: مقدار التحرك الأفقي (الجزء الحقيقي) ومقدار التحرك الرأسي (الجزء التخيلي). إذا كان الجزء التخيلي صفرًا عاد العدد حقيقيًا عاديًا على المحور الأفقي، وإذا كان الجزء الحقيقي صفرًا وقع العدد على المحور الرأسي تمامًا.',
-        geometry: 'انتقل رأس السهم إلى النقطة التي جزؤها الحقيقي '+num(nx)+' وجزؤها التخيلي '+num(ny)+'.'
-      };
-    });
-  }
-  function reset(){
-    state = { x: INITIAL_X, y: INITIAL_Y, trail: [],
-      steps: [{ n:1, label:'نقطة البداية', z: fmtZ(INITIAL_X, INITIAL_Y) }],
-      op: initialOp(), customOpen: state.customOpen };
-    render();
-  }
-
-  /* ── العرض: يُعاد حساب كل شيء من state فقط، لا حالة مخفيّة في DOM ── */
-  var SCALE = 8, ARC_R = 13;
-  var SVG_NS = 'http://www.w3.org/2000/svg';
-
-  function render(){
-    var x = state.x, y = state.y;
-    var r = Math.hypot(x,y), th = Math.atan2(y,x), deg = th*180/Math.PI;
-    var px = 50 + x*SCALE, py = 50 - y*SCALE;
-    var ux = r > 0.001 ? x/r : 1, uy = r > 0.001 ? y/r : 0;
-
-    document.getElementById('point').setAttribute('cx', px.toFixed(2));
-    document.getElementById('point').setAttribute('cy', py.toFixed(2));
-    document.getElementById('arrow').setAttribute('x2', px.toFixed(2));
-    document.getElementById('arrow').setAttribute('y2', py.toFixed(2));
-    document.getElementById('projX').setAttribute('x1', px.toFixed(2));
-    document.getElementById('projX').setAttribute('y1', py.toFixed(2));
-    document.getElementById('projX').setAttribute('x2', px.toFixed(2));
-    document.getElementById('projY').setAttribute('x1', px.toFixed(2));
-    document.getElementById('projY').setAttribute('y1', py.toFixed(2));
-    document.getElementById('projY').setAttribute('y2', py.toFixed(2));
-    document.getElementById('modCircle').setAttribute('r', (r*SCALE).toFixed(2));
-
-    var arcPath = '';
-    if(r > 0.001 && Math.abs(th) > 0.02){
-      var ex = 50 + ARC_R*Math.cos(th), ey = 50 - ARC_R*Math.sin(th);
-      arcPath = 'M ' + (50+ARC_R) + ' 50 A ' + ARC_R + ' ' + ARC_R + ' 0 0 ' +
-                (th > 0 ? 0 : 1) + ' ' + ex.toFixed(2) + ' ' + ey.toFixed(2);
-    }
-    document.getElementById('arcPath').setAttribute('d', arcPath);
-
-    var tg = document.getElementById('trailGroup');
-    tg.innerHTML = '';
-    state.trail.forEach(function(t){
-      var tpx = (50 + t.x*SCALE).toFixed(2), tpy = (50 - t.y*SCALE).toFixed(2);
-      var ln = document.createElementNS(SVG_NS,'line');
-      ln.setAttribute('x1','50'); ln.setAttribute('y1','50');
-      ln.setAttribute('x2',tpx); ln.setAttribute('y2',tpy);
-      var c = document.createElementNS(SVG_NS,'circle');
-      c.setAttribute('cx',tpx); c.setAttribute('cy',tpy); c.setAttribute('r','0.9');
-      c.setAttribute('fill','#201e1d'); c.setAttribute('fill-opacity','0.28');
-      tg.appendChild(ln); tg.appendChild(c);
-    });
-
-    var lbl = document.getElementById('zLabelBox');
-    lbl.style.left = (px + ux*6).toFixed(2) + '%';
-    lbl.style.top  = (py - uy*6).toFixed(2) + '%';
-    lbl.textContent = S.z + ' = ' + fmtZ(x,y);
-
-    document.getElementById('xText').textContent = num(x);
-    document.getElementById('yText').textContent = num(y) + ' ' + S.i;
-    document.getElementById('rText').textContent = num(r);
-    document.getElementById('angleText').textContent = '∠ ' + num(deg) + '°';
-
-    document.getElementById('lineCartesian').textContent = S.z + ' = ' + fmtZ(x,y);
-    document.getElementById('linePolar').textContent = '|'+S.z+'| = '+num(r)+'   ،   '+S.th+' = '+num(deg)+'°';
-    document.getElementById('lineConj').textContent = 'المرافق: ' + S.conj + ' = ' + fmtZ(x,-y);
-
-    var op = state.op;
-    document.getElementById('opTitle').textContent = op.title;
-    document.getElementById('opFormula').textContent = op.formula;
-    document.getElementById('opBody').textContent = op.body;
-    document.getElementById('opGeometry').textContent = op.geometry;
-
-    document.getElementById('stepCount').textContent = digits(String(state.steps.length));
-    var list = document.getElementById('stepsList');
-    list.innerHTML = '';
-    state.steps.slice().reverse().forEach(function(s){
-      var row = document.createElement('div');
-      row.className = 'hstep';
-      row.innerHTML = '<span class="n">'+digits(String(s.n))+'</span>'+
-                      '<span class="lb"></span><span class="z"></span>';
-      row.querySelector('.lb').textContent = s.label;
-      row.querySelector('.z').textContent = s.z;
-      list.appendChild(row);
-    });
-
-    /* أعداد المحاور الثابتة — لا تعتمد على الحالة، تُكتب مرّة واحدة فقط
-       (لا داعي لتكرارها في كل استدعاء، لكن تكرارها غير مكلف) */
-    document.getElementById('tick2').textContent  = digits('2');
-    document.getElementById('tick4').textContent  = digits('4');
-    document.getElementById('tickM2').textContent = '−'+digits('2');
-    document.getElementById('tickM4').textContent = '−'+digits('4');
-    document.getElementById('tick2i').textContent  = digits('2')+S.i;
-    document.getElementById('tick4i').textContent  = digits('4')+S.i;
-    document.getElementById('tickM2i').textContent = '−'+digits('2')+S.i;
-    document.getElementById('tickM4i').textContent = '−'+digits('4')+S.i;
-  }
-
-  /* ── ربط الأزرار ── */
-  document.getElementById('btnMulI').onclick = mulI;
-  document.getElementById('btnPolar').onclick = showPolar;
-  document.getElementById('btnConj').onclick = conj;
-  document.getElementById('btnNegate').onclick = negate;
-  document.getElementById('btnAddOne').onclick = addOne;
-  document.getElementById('btnAddI').onclick = addI;
-  document.getElementById('btnReset').onclick = reset;
-  document.getElementById('btnApplyCustom').onclick = applyCustom;
-  document.getElementById('btnCustom').onclick = function(){
-    state.customOpen = !state.customOpen;
-    document.getElementById('customBox').classList.toggle('hidden', !state.customOpen);
-  };
-
-  render();
+  document.getElementById("par").setAttribute("d", d);
 })();
+var xs = document.getElementById("xs"), lastSq = null;
+function up0(){
+  var x = xs.value / 10, sq = x * x, X = OX + x * SX, Y = OY - sq * SY;
+  document.getElementById("xv").textContent = AR(x.toFixed(1));
+  document.getElementById("r0a").textContent = AR(x.toFixed(1));
+  document.getElementById("r0b").textContent = AR(sq.toFixed(2));
+  document.getElementById("d0").setAttribute("cx", X.toFixed(1));
+  document.getElementById("d0").setAttribute("cy", Y.toFixed(1));
+  document.getElementById("x0").setAttribute("cx", X.toFixed(1));
+  document.getElementById("y0").setAttribute("cy", Y.toFixed(1));
+  document.getElementById("h0").setAttribute("cx", X.toFixed(1));
+  document.getElementById("h0").setAttribute("cy", Y.toFixed(1));
+  document.getElementById("g0").setAttribute("d",
+    "M" + X.toFixed(1) + " " + OY + " L" + X.toFixed(1) + " " + Y.toFixed(1) + " L" + OX + " " + Y.toFixed(1));
+  var msg = document.getElementById("r0c");
+  if (sq === 0) msg.textContent = "أصغر قيمة ممكنة هي الصفر، ولا شيء تحتها";
+  else if (sq < 0.5) msg.innerHTML = 'اقتربنا من الصفر، لكن النتيجة ما زالت موجبة';
+  else msg.innerHTML = 'النتيجة موجبة، وما زلنا بعيدين عن <span class="neg">−١</span>';
+  if (lastSq !== null && Math.abs(sq - lastSq) > 0.9) ping("h0");
+  lastSq = sq;
+}
+xs.addEventListener("input", up0);
+
+/* ٢ : العدد التخيلي ت */
+var U = 32, AX = 330, AY = 170;
+var rt = document.getElementById("rt"), it = document.getElementById("it"),
+    rl = document.getElementById("rl"), il = document.getElementById("il");
+for (var k = -6; k <= 6; k++){
+  if (!k) continue;
+  rt.appendChild(mk("line", { x1: AX + k * U, y1: AY - 5, x2: AX + k * U, y2: AY + 5 }));
+  if (Math.abs(k) <= 5)
+    rl.appendChild(mk("text", { x: AX + k * U, y: AY + 24, "text-anchor": "middle",
+      "font-size": 13, fill: "#8d99ad", "data-r": k }, AR(k)));
+}
+for (var k2 = -4; k2 <= 4; k2++){
+  if (!k2) continue;
+  it.appendChild(mk("line", { x1: AX - 5, y1: AY - k2 * U, x2: AX + 5, y2: AY - k2 * U }));
+  il.appendChild(mk("text", {
+    x: k2 > 0 ? AX - 14 : AX + 14, y: AY - k2 * U + 5,
+    "text-anchor": k2 > 0 ? "end" : "start",
+    "font-size": 13, fill: "#8d99ad", "data-i": k2
+  }, (Math.abs(k2) === 1 ? (k2 > 0 ? "ت" : NEGT) : AR(k2) + " ت")));
+}
+var bs = document.getElementById("bs"), lastB = null;
+function lab(b){ return b === 0 ? "٠" : (Math.abs(b) === 1 ? (b > 0 ? "ت" : NEGT) : AR(b) + " ت"); }
+function up1(){
+  var b = +bs.value, x = AX + b * U, y = AY - b * U;
+  document.getElementById("bv").textContent = lab(b);
+  document.getElementById("rd").setAttribute("cx", x);
+  document.getElementById("id").setAttribute("cy", y);
+  document.getElementById("h1").setAttribute("cy", y);
+  var ln = document.getElementById("lnk"), lt = document.getElementById("lnkT");
+  if (b === 0){ ln.setAttribute("d", ""); lt.textContent = ""; }
+  else {
+    ln.setAttribute("d", "M" + x + " " + AY + " L" + x + " " + y + " L" + AX + " " + y);
+    lt.textContent = "× ت";
+    lt.setAttribute("x", b > 0 ? x + 12 : x - 12);
+    lt.setAttribute("y", b > 0 ? y - 10 : y + 22);
+    lt.setAttribute("text-anchor", b > 0 ? "start" : "end");
+  }
+  [].forEach.call(rl.children, function(t){
+    var on = +t.getAttribute("data-r") === b && b !== 0;
+    t.setAttribute("fill", on ? "#265d8b" : "#8d99ad");
+    t.setAttribute("font-weight", on ? "600" : "400");
+  });
+  [].forEach.call(il.children, function(t){
+    var on = +t.getAttribute("data-i") === b;
+    t.setAttribute("fill", on ? "#6828c4" : "#8d99ad");
+    t.setAttribute("font-weight", on ? "600" : "400");
+  });
+  document.getElementById("s1").textContent = AR(b);
+  document.getElementById("s2").textContent = b === 0
+    ? "٠ × ت = ٠ وهو عدد حقيقي" : lab(b) + " عدد تخيلي بحت";
+  if (lastB !== null && b !== lastB) ping("h1");
+  lastB = b;
+}
+bs.addEventListener("input", up1);
+
+/* ٣ : قوى ت */
+var ns = document.getElementById("ns");
+var SUP = ["⁰","¹","²","³","⁴","⁵","⁶","⁷","⁸","⁹"];
+var VAL = ["١", "ت", NEG1, NEGT];
+document.getElementById("w1").textContent = NEG1;
+document.getElementById("wt").textContent = NEGT;
+document.getElementById("c2").textContent = NEG1;
+document.getElementById("c3").textContent = NEGT;
+function sup(n){ return String(n).split("").map(function(c){ return SUP[+c]; }).join(""); }
+var lastR = null;
+function up2(){
+  var n = +ns.value, r = n % 4, q = (n - r) / 4;
+  document.getElementById("nv").textContent = "ن = " + AR(n);
+  document.getElementById("hand").setAttribute("transform", "rotate(" + (-90 * n) + " 330 150)");
+  var a = -Math.PI / 2 * r, ex = 330 + 95 * Math.cos(a), ey = 150 + 95 * Math.sin(a);
+  document.getElementById("sweep").setAttribute("d", r === 0 ? "" :
+    "M425 150 A95 95 0 " + (r === 3 ? 1 : 0) + " 0 " + ex.toFixed(1) + " " + ey.toFixed(1));
+  document.getElementById("e2").innerHTML =
+    '<span class="pw">ت<sup>' + sup(n) + '</sup></span> = ' + VAL[r];
+  document.getElementById("r2").textContent =
+    AR(n) + " = ٤ × " + AR(q) + " + " + AR(r) + " ، الباقي " + AR(r);
+  [].forEach.call(document.querySelectorAll(".cell"), function(c){
+    c.classList.toggle("on", +c.getAttribute("data-r") === r);
+  });
+  var h2 = document.getElementById("h2");
+  h2.setAttribute("cx", ex.toFixed(1)); h2.setAttribute("cy", ey.toFixed(1));
+  if (lastR !== null && r !== lastR) ping("h2");
+  lastR = r;
+}
+ns.addEventListener("input", up2);
+document.getElementById("next").addEventListener("click", function(){ ns.value = Math.min(16, +ns.value + 1); up2(); });
+document.getElementById("prev").addEventListener("click", function(){ ns.value = Math.max(1, +ns.value - 1); up2(); });
+
+/* ٤ : العدد المركب */
+var V = 34, CX = 330, CY = 180, gr = document.getElementById("gr"), gl = document.getElementById("gl");
+for (var i = -5; i <= 5; i++)
+  gr.appendChild(mk("line", { x1: CX + i * V, y1: CY - 4 * V, x2: CX + i * V, y2: CY + 4 * V }));
+for (var j = -4; j <= 4; j++)
+  gr.appendChild(mk("line", { x1: CX - 5 * V, y1: CY - j * V, x2: CX + 5 * V, y2: CY - j * V }));
+for (var a2 = -5; a2 <= 5; a2++)
+  if (a2) gl.appendChild(mk("text", { x: CX + a2 * V, y: CY + 22, "text-anchor": "middle",
+    "font-size": 12, fill: "#aab3c2" }, AR(a2)));
+for (var b2 = -4; b2 <= 4; b2++)
+  if (b2) gl.appendChild(mk("text", { x: CX - 12, y: CY - b2 * V + 4, "text-anchor": "end",
+    "font-size": 12, fill: "#aab3c2" }, (Math.abs(b2) === 1 ? (b2 > 0 ? "ت" : NEGT) : AR(b2) + " ت")));
+
+var as3 = document.getElementById("as3"), bs3 = document.getElementById("bs3"), lastK = null;
+function form(a, b){
+  if (b === 0) return AR(a);
+  var m = Math.abs(b), c = m === 1 ? "" : AR(m) + " ";
+  if (a === 0) return b < 0 ? (m === 1 ? NEGT : ISO("−" + AR(m)) + " ت") : c + "ت";
+  return AR(a) + (b < 0 ? " − " : " + ") + c + "ت";
+}
+function up3(){
+  var a = +as3.value, b = +bs3.value, x = CX + a * V, y = CY - b * V;
+  document.getElementById("av").textContent = AR(a);
+  document.getElementById("bv3").textContent = AR(b);
+  ["pa"].forEach(function(id){ document.getElementById(id).setAttribute("cx", x); });
+  document.getElementById("pb").setAttribute("cy", y);
+  ["pc", "h3"].forEach(function(id){
+    document.getElementById(id).setAttribute("cx", x);
+    document.getElementById(id).setAttribute("cy", y);
+  });
+  var bx = document.getElementById("box");
+  bx.setAttribute("x", Math.min(CX, x)); bx.setAttribute("y", Math.min(CY, y));
+  bx.setAttribute("width", Math.abs(x - CX)); bx.setAttribute("height", Math.abs(y - CY));
+  document.getElementById("gx").setAttribute("d",
+    "M" + x + " " + CY + " L" + x + " " + y + " L" + CX + " " + y);
+  var pl = document.getElementById("pl");
+  pl.textContent = form(a, b);
+  pl.setAttribute("x", a >= 3 ? x - 14 : x + 14);
+  pl.setAttribute("text-anchor", a >= 3 ? "end" : "start");
+  pl.setAttribute("y", b <= -3 ? y + 26 : y - 15);
+  document.getElementById("e3").textContent = "ع = " + form(a, b);
+  var kind = b === 0 ? "عدد حقيقي" : (a === 0 ? "عدد تخيلي بحت" : "عدد مركب");
+  document.getElementById("k3").textContent = kind;
+  document.getElementById("n3").textContent =
+    b === 0 ? "الجزء التخيلي يساوي صفرًا، فالنقطة على المحور الحقيقي"
+            : (a === 0 ? "الجزء الحقيقي يساوي صفرًا، فالنقطة على المحور التخيلي"
+                       : "الجزء الحقيقي " + AR(a) + " والجزء التخيلي " + AR(b));
+  if (lastK !== null && kind !== lastK) ping("h3");
+  lastK = kind;
+}
+as3.addEventListener("input", up3);
+bs3.addEventListener("input", up3);
+
+up0(); up1(); up2(); up3();
 </script>
 </body>
 </html>
