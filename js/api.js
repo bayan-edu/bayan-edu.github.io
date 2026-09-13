@@ -196,7 +196,8 @@ export const saveLesson = o => db.rpc('save_lesson', {
   p_position:  o.position ?? 0,
   p_requires:  o.requires ?? null,
   p_pass_mark: o.passMark ?? 65,
-  p_published: o.published ?? false });
+  p_published: o.published ?? false,
+  p_strand:    o.strand ?? null });
 
 // محرّر الأسئلة — نقيض get_quiz: يُعيد المفاتيح والتشخيص للمؤلّف
 export const quizForEdit      = id => db.rpc('quiz_for_edit',      { p_quiz: id });
@@ -283,6 +284,16 @@ export const saveUnit = o => db.rpc('save_unit', {
   p_id: o.id ?? null, p_course: o.course,
   p_title: o.title, p_position: o.position ?? 0 });
 
+/* ═══════════ ⑪ الفروع ═══════════ */
+export const listStrands  = sid => db.rpc('list_strands',  { p_subject: sid });
+export const deleteStrand = id  => db.rpc('delete_strand', { p_id: id });
+export const saveStrand = o => db.rpc('save_strand', {
+  p_id:      o.id      ?? null,
+  p_subject: o.subject ?? null,
+  p_parent:  o.parent  ?? null,
+  p_code:    o.code,
+  p_name:    o.name,
+  p_sort:    o.sort ?? 0 });
 
 /* ═══════════ ⑩ الإدارة ═══════════ */
 
