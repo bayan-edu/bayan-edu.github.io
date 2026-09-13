@@ -479,7 +479,7 @@ function renderResult(){
       <div style="flex:1">
         <span dir="${dirOf(o.body)}" style="display:block">${fmt(o.body)}</span>
         <span class="jd-m">${mark}</span>
-        ${show ? `<span class="jd-dx">${esc(txt)}</span>` : ''}
+        ${show ? `<span class="jd-dx">${fmt(txt)}</span>` : ''}
       </div></div>`;
   }).join("");
   };
@@ -514,19 +514,18 @@ function renderResult(){
       ? `<div class="line" dir="auto">إجابتك: <b dir="auto">${
              esc((x.given||[]).filter(v=>v.trim()).join('  ·  ')) || '— لم تُجب —'}</b></div>
          ${x.is_correct?'':`<div class="line" dir="auto">المقبول: <b dir="auto">${
-             esc((x.accept||[]).map(s=>s.join(' / ')).join('  ·  ')) || '—'}</b></div>`}`
-      : `<div class="line" dir="auto">إجابتك: <b>${c?esc(c._l+') '+c.body):'— لم تُجب —'}</b></div>
+             fmt((x.accept||[]).map(s=>s.join(' / ')).join('  ·  ')) || '—'}</b></div>`}`
+      : `<div class="line" dir="auto">إجابتك: <b>${c?fmt(c._l+') '+c.body):'— لم تُجب —'}</b></div>
          ${x.is_correct?'':`<div class="line" dir="auto">الصحيحة: <b>${
-             k?esc(k._l+') '+k.body):'—'}</b></div>`}`;
-
+             k?fmt(k._l+') '+k.body):'—'}</b></div>`}`;
     return `<div class="rev ${x.is_correct?'ok':'no'}">
       <span class="tag ${x.is_correct?'ok':'no'}">${x.is_correct?'صحيحة':'خاطئة'}</span>
       <div class="rev-q" dir="auto">${AR(i+1)}. ${fmt(x.body)}</div>
       ${answer}
       ${x.is_correct?'':`
                           <div class="trap"><strong>تشخيص الخطأ:</strong>
-          ${esc(x.explanation||'').replace(/\n/g,"<br>")}
-                      ${!msq && (x.note || x.remedy)?`<div style="margin-top:8px;opacity:.9">🎯 ${esc(x.note || x.remedy)}</div>`:''}</div>
+          ${fmt(x.explanation||'')}
+                      ${!msq && (x.note || x.remedy)?`<div style="margin-top:8px;opacity:.9">🎯 ${fmt(x.note || x.remedy)}</div>`:''}</div>
         ${x.remedial?`<div class="remedy"><strong>راجع قبل الإعادة</strong>
           <a href="${esc(x.remedial.url||'#')}" target="_blank" rel="noopener"
              style="color:var(--accent)">${ICONS[x.remedial.kind]||'📎'} ${esc(x.remedial.title)}</a></div>`:''}`}
@@ -558,7 +557,7 @@ function renderResult(){
           ? `في السؤالين ${ns[0]} و${ns[1]}`
           : `في الأسئلة ${ns.slice(0,-1).join(' و')} و${ns.at(-1)}`;
         return `<div class="rc-row"><div class="rc-where">تكرّر لديك ${lbl}:</div>
-                <div class="rc-note">${esc(txt)}</div></div>`;
+                     <div class="rc-note">${fmt(txt)}</div></div>`;
       });
 
     return rows.length
@@ -569,7 +568,7 @@ function renderResult(){
     <div class="rev">
       <div class="rev-q" dir="auto">${fmt(x.body)}</div>
       <div class="line" dir="auto">إجابتك: <b>${x.essay?esc(x.essay).replace(/\n/g,"<br>"):'— لم تُكتب —'}</b></div>
-      <div class="model"><strong>الإجابة النموذجية — قارن بنفسك</strong>${esc(x.model||'').replace(/\n/g,"<br>")}</div>
+      <div class="model"><strong>الإجابة النموذجية — قارن بنفسك</strong>${fmt(x.model||'')}</div>
     </div>`).join("");
 
   app.innerHTML = `
