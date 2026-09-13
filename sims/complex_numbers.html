@@ -354,6 +354,15 @@ function ping(id){
   el.classList.remove("go"); void el.offsetWidth; el.classList.add("go");
 }
 
+  /* العقد الوحيد المطلوب من أي محاكٍ في «بيان» — إشارةٌ واحدة حين نُقرّر
+   أنّ الاستكشاف كافٍ: زيارة التبويبات الأربعة + تحريك مزلاجٍ واحد على الأقل. */
+var signaled = false, visited = {0:true}, moved = false;
+function checkDone(){
+  if (signaled || Object.keys(visited).length < 4 || !moved) return;
+  signaled = true;
+  try{ window.parent.postMessage({ bayanSim:'done' }, '*'); }catch(e){}
+}
+  
 /* التبويبات */
 var tabs = [].slice.call(document.querySelectorAll(".tab"));
 var pans = tabs.map(function(t){ return document.getElementById(t.getAttribute("aria-controls")); });
@@ -370,6 +379,8 @@ function sel(i){
     t.setAttribute("aria-selected", k === i ? "true" : "false");
     pans[k].hidden = k !== i;
   });
+    visited[i] = true;
+  checkDone();
 }
 
 /* ١ : منحنى مربع العدد */
@@ -412,7 +423,7 @@ function up0(){
   if (lastSq !== null && Math.abs(sq - lastSq) > 0.9) ping("h0");
   lastSq = sq;
 }
-xs.addEventListener("input", up0);
+xs.addEventListener("input", function(){ moved = true; up0(); checkDone(); });
 
 /* ٢ : العدد التخيلي ت */
 var U = 32, AX = 330, AY = 170;
@@ -467,7 +478,7 @@ function up1(){
   if (lastB !== null && b !== lastB) ping("h1");
   lastB = b;
 }
-bs.addEventListener("input", up1);
+bs.addEventListener("input", function(){ moved = true; up1(); checkDone(); }); 
 
 /* ٣ : قوى ت */
 var ns = document.getElementById("ns");
@@ -498,7 +509,7 @@ function up2(){
   if (lastR !== null && r !== lastR) ping("h2");
   lastR = r;
 }
-ns.addEventListener("input", up2);
+ns.addEventListener("input", function(){ moved = true; up2(); checkDone(); }); 
 document.getElementById("next").addEventListener("click", function(){ ns.value = Math.min(16, +ns.value + 1); up2(); });
 document.getElementById("prev").addEventListener("click", function(){ ns.value = Math.max(1, +ns.value - 1); up2(); });
 
@@ -552,9 +563,8 @@ function up3(){
   if (lastK !== null && kind !== lastK) ping("h3");
   lastK = kind;
 }
-as3.addEventListener("input", up3);
-bs3.addEventListener("input", up3);
-
+as3.addEventListener("input", function(){ moved = true; up3(); checkDone(); }); 
+bs3.addEventListener("input", function(){ moved = true; up3(); checkDone(); });
 up0(); up1(); up2(); up3();
 </script>
 </body>
