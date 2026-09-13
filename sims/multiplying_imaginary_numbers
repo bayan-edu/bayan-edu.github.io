@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>محاكي الأعداد المركّبة — دورة قوى ت</title>
+<style>
+  :root{
+    --bg:#EDE9DF; --surface:#fff; --divider:#DCD6C6; --soft:#F8F6F0;
+    --text:#2C2C2A; --muted:#5F5E5A;
+    --accent:#0F6E56; --accent-700:#0B5443; --accent-soft:#E9F5F0;
+    --vec:#EC3013; --warn:#9A5B14; --warn-soft:#FBF1E0;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--text);
+       font-family:'Segoe UI',Tahoma,Arial,sans-serif;
+       font-size:14px;line-height:1.7;-webkit-text-size-adjust:100%}
+
+  .hdr{display:flex;align-items:baseline;justify-content:space-between;gap:12px;
+       flex-wrap:wrap;padding:14px 18px;border-bottom:1px solid var(--divider)}
+  .hdr .ttl{font-size:17px;font-weight:700}
+  .hdr .lvl{font-size:11px;color:var(--accent-700);font-weight:700}
+  .done-note{font-size:11px;color:var(--accent-700);font-weight:700;display:none;margin-inline-start:6px}
+  .done-note.show{display:inline}
+
+  .grid{display:grid;grid-template-columns:minmax(0,1.02fr) minmax(0,1fr);
+        gap:16px;padding:16px;max-width:1180px;margin:0 auto;align-items:start}
+  @media(max-width:860px){ .grid{grid-template-columns:1fr;padding:12px;gap:12px} }
+
+  .card{background:var(--surface);border:1px solid var(--divider);border-radius:12px;
+        padding:14px 16px;margin-bottom:14px}
+  .card:last-child{margin-bottom:0}
+  .card.plane-card{padding:12px}
+  .card-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+          font-size:12px;font-weight:700;color:var(--accent-700);margin-bottom:9px}
+  .card-h .sub{font-weight:400;color:var(--muted)}
+  .lead{margin:0 0 10px;font-size:12px;color:var(--muted)}
+
+  /* ── اللوحة ── */
+  .plane-wrap{position:relative}
+  svg.plane{width:100%;height:auto;display:block;background:#fff;border-radius:8px;
+            touch-action:none;cursor:crosshair}
+  svg.plane:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .flabel{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;
+          font-size:12px;font-weight:700;background:#fff;padding:1px 5px;
+          border-radius:4px;pointer-events:none}
+  .flabel.z{color:var(--vec)}
+  .flabel.g{color:var(--accent);font-weight:600;font-size:11px}
+  .flabel.g.miss{color:var(--warn)}
+  .axname{position:absolute;font-size:10px;color:var(--muted);background:#fff;
+          padding:1px 4px;pointer-events:none}
+
+  .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:10px;
+         border:1px solid var(--divider);border-radius:8px;overflow:hidden}
+  .stats>div{padding:8px 10px;border-left:1px solid var(--divider)}
+  .stats>div:last-child{border-left:0}
+  .stats span{font-size:10px;color:var(--muted);display:block}
+  .stats b{font-weight:700;font-size:17px}
+  .stats b#raText{font-size:15px}
+  @media(max-width:430px){
+    .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .stats>div:nth-child(2){border-left:0}
+    .stats>div:nth-child(3){grid-column:1/-1;border-top:1px solid var(--divider)}
+  }
+
+  /* ── شريط الدورة ── */
+  .chips{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+  @media(max-width:400px){ .chips{grid-template-columns:repeat(2,minmax(0,1fr))} }
+  .chip{border:1px solid var(--divider);border-radius:8px;padding:7px 4px;text-align:center;
+        background:var(--soft)}
+  .chip.on{border-color:var(--accent);background:var(--accent-soft)}
+  .chip .ch-l{display:block;font-size:11px;color:var(--muted)}
+  .chip.on .ch-l{color:var(--accent-700)}
+  .chip .ch-v{display:block;font-size:14px;font-weight:700;margin-top:2px}
+  .chip.dim .ch-v{color:#B9B4A6}
+  .cap{margin:9px 0 0;font-size:11.5px;color:var(--muted)}
+  .cap b{color:var(--accent-700)}
+
+  /* ── النشاط ── */
+  .act-q{margin:0 0 10px;font-size:13.5px}
+  .guessrow{display:flex;align-items:baseline;gap:8px;padding:8px 10px;background:var(--soft);
+            border-radius:8px;margin-bottom:9px}
+  .guessrow .k{font-size:11px;color:var(--muted)}
+  .guessrow b{font-size:15px}
+  .guessrow b.empty{color:#B9B4A6;font-weight:400;font-size:12px}
+
+  .verdict{border-radius:8px;padding:10px 12px;font-size:13px;margin-bottom:10px;
+           border:1px solid var(--divider)}
+  .verdict.ok{background:var(--accent-soft);border-color:#BFE0D3}
+  .verdict.no{background:var(--warn-soft);border-color:#EBD9B8}
+  .verdict .vh{display:block;font-weight:700;margin-bottom:2px}
+  .verdict.ok .vh{color:var(--accent-700)}
+  .verdict.no .vh{color:var(--warn)}
+  .verdict .ans{display:block;margin-top:5px;font-size:13px}
+
+  /* ── الشرح ── */
+  .op-title{font-weight:700;font-size:15px;color:var(--accent-700);margin-bottom:8px}
+  .fline{font-size:14px;padding:7px 10px;background:var(--soft);border-radius:7px;margin-bottom:6px}
+  .op-body{margin:8px 0 9px;font-size:13px}
+  .op-geo{padding:8px 10px;border-right:2px solid var(--accent);background:var(--accent-soft);
+          border-radius:0 7px 7px 0;font-size:12.5px}
+
+  /* ── الأزرار ── */
+  .btn{font-family:inherit;font-size:13px;padding:9px 14px;min-height:40px;border-radius:8px;
+       border:1px solid var(--divider);background:var(--soft);color:var(--text);cursor:pointer}
+  .btn:hover{border-color:var(--accent);color:var(--accent-700)}
+  .btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn.primary:hover{color:#fff;opacity:.92}
+  .btn:disabled{opacity:.45;cursor:not-allowed;border-color:var(--divider);color:var(--muted)}
+  .btn.primary:disabled{opacity:1;background:#CFCABB;border-color:#CFCABB;color:#fff;cursor:not-allowed}
+  .btn.wide{width:100%}
+  .btn.sm{font-size:12px;padding:7px 11px;min-height:34px}
+  .btn.ghost{background:transparent}
+  .row{display:flex;flex-wrap:wrap;gap:7px}
+
+  .custom{margin-top:9px;display:grid;grid-template-columns:1fr 1fr auto;gap:9px;align-items:end}
+  .custom label{font-size:11px;display:flex;flex-direction:column;gap:4px;color:var(--muted)}
+  .custom input{direction:ltr;font-size:14px;padding:7px 8px;border:1px solid var(--divider);
+                border-radius:7px;font-family:inherit;width:100%}
+
+  /* ── السجل ── */
+  .hstep{display:flex;align-items:baseline;gap:9px;padding:6px 0;border-bottom:1px solid var(--divider)}
+  .hstep:last-child{border-bottom:0}
+  .hstep .n{font-size:11px;color:var(--muted);min-width:16px}
+  .hstep .lb{font-size:12.5px;flex:1}
+  .hstep .mk{font-size:12px}
+  .hstep .mk.ok{color:var(--accent)}
+  .hstep .mk.no{color:var(--warn)}
+  .hstep .z{font-size:13.5px;font-weight:700;white-space:nowrap}
+
+  .hidden{display:none !important}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="ttl">محاكي الأعداد التخيلية والمركّبة<span class="done-note" id="doneNote">✅ سُجّل استكشافك</span></div>
+  <span class="lvl">لوحة أرجاند · دورة قوى ت</span>
+</header>
+
+<main class="grid">
+
+  <!-- ══ اللوحة ══ -->
+  <section>
+    <div class="card plane-card">
+      <div class="card-h">
+        <span>اللوحة المركّبة</span>
+        <span class="sub">الخطوة <b id="stepCount"></b></span>
+      </div>
+      <p class="lead" id="planeHint"></p>
+
+      <div class="plane-wrap">
+        <svg id="plane" class="plane" viewBox="0 0 100 100" tabindex="0"
+             role="application" aria-label="لوحة أرجاند: اسحب لوضع توقّعك">
+          <g id="gridG" stroke="#2C2C2A" stroke-opacity="0.07" stroke-width="0.25"></g>
+          <circle id="modCircle" cx="50" cy="50" r="0" fill="none" stroke="#EC3013"
+                  stroke-opacity="0.22" stroke-width="0.3" stroke-dasharray="2 1.6"></circle>
+          <line x1="3" y1="50" x2="97" y2="50" stroke="#2C2C2A" stroke-width="0.5"></line>
+          <line x1="50" y1="3" x2="50" y2="97" stroke="#2C2C2A" stroke-width="0.5"></line>
+          <g id="ticksG" fill="#5F5E5A" font-size="2.7" text-anchor="middle"></g>
+          <g id="trailG"></g>
+          <path id="arcPath" d="" fill="none" stroke="#EC3013" stroke-opacity="0.5" stroke-width="0.4"></path>
+          <g id="projG" stroke="#EC3013" stroke-opacity="0.3" stroke-width="0.3" stroke-dasharray="1.4 1.2">
+            <line id="projX"></line><line id="projY"></line>
+          </g>
+          <g id="guessG" class="hidden">
+            <line id="gLine" x1="50" y1="50" stroke="#0F6E56" stroke-width="0.55" stroke-dasharray="2 1.5"></line>
+            <circle id="gDot" r="2" fill="#fff" stroke="#0F6E56" stroke-width="0.8"></circle>
+          </g>
+          <line id="arrow" x1="50" y1="50" x2="50" y2="50" stroke="#EC3013" stroke-width="0.95"></line>
+          <polygon id="head" fill="#EC3013" points=""></polygon>
+          <circle id="point" cx="50" cy="50" r="1.4" fill="#EC3013"></circle>
+        </svg>
+        <div class="flabel z" id="zLabel"></div>
+        <div class="flabel g hidden" id="gLabel">توقّعك</div>
+        <div class="axname" style="left:8px;top:6px">المحور التخيلي</div>
+        <div class="axname" style="right:8px;bottom:6px">المحور الحقيقي</div>
+      </div>
+
+      <div class="stats">
+        <div><span>الجزء الحقيقي</span><b id="xText"></b></div>
+        <div><span>الجزء التخيلي</span><b id="yText"></b></div>
+        <div><span>الطول والزاوية</span><b id="raText"></b></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ لوحة العمل ══ -->
+  <section>
+
+    <div class="card">
+      <div class="card-h">
+        <span>دورة قوى الوحدة التخيلية</span>
+        <span class="sub" id="cycleNote"></span>
+      </div>
+      <div class="chips" id="chips"></div>
+      <p class="cap">القيم تنكشف كلّما تحقّقت من توقّعك. تذكّر: <b>ت⁰ = ١</b> ، <b>ت¹ = ت</b> ، <b>ت² = −١</b> ، <b>ت³ = −ت</b>.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><span id="actTag"></span></div>
+      <p class="act-q" id="actQ"></p>
+
+      <div id="askZone">
+        <div class="guessrow">
+          <span class="k">توقّعك</span><b id="guessVal"></b>
+        </div>
+        <div class="row">
+          <button class="btn primary" id="btnCheck">تحقّق</button>
+          <button class="btn ghost sm" id="btnClear">امسح التوقّع</button>
+        </div>
+      </div>
+
+      <div id="revealZone" class="hidden">
+        <div class="verdict" id="verdict"></div>
+        <button class="btn primary wide" id="btnNext"></button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><span>الشرح</span></div>
+      <div class="op-title" id="opTitle"></div>
+      <div id="opLines"></div>
+      <p class="op-body" id="opBody"></p>
+      <div class="op-geo"><b>على اللوحة: </b><span id="opGeo"></span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><span>خطوات أخرى</span><span class="sub">تبدأ دورة جديدة من الناتج</span></div>
+      <div class="row">
+        <button class="btn sm" id="btnConj">المرافق</button>
+        <button class="btn sm" id="btnNegate">الضرب في −١</button>
+        <button class="btn sm" id="btnAddOne">أضف ١</button>
+        <button class="btn sm" id="btnAddI">أضف ت</button>
+        <button class="btn sm" id="btnCustom">عدد من عندك</button>
+        <button class="btn sm ghost" id="btnReset">من البداية</button>
+      </div>
+      <div class="custom hidden" id="customBox">
+        <label>الجزء الحقيقي <input type="number" step="1" min="-5" max="5" id="cxInput" value="2"></label>
+        <label>الجزء التخيلي <input type="number" step="1" min="-5" max="5" id="cyInput" value="3"></label>
+        <button class="btn primary sm" id="btnApplyCustom">ارسمه</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><span>ما فعلناه</span></div>
+      <div id="stepsList"></div>
+    </div>
+
+  </section>
+</main>
+
+<script>
+(function(){
+  'use strict';
+
+  /* ══ الرموز والتنسيق العربي ══ */
+  var S = { z:'ع', i:'ت', x:'س', y:'ص', conj:'ع\u0305' };
+  var SUP = ['⁰','¹','²','³'];
+  var AR_D = '٠١٢٣٤٥٦٧٨٩';
+
+  function digits(s){ return String(s).replace(/[0-9]/g,function(d){return AR_D[+d];}).replace(/\./g,'٫'); }
+  function round(v){ return Math.abs(v) < 1e-10 ? 0 : Math.round(v*1000)/1000; }
+  function num(v){
+    var r = round(v);
+    var n = Number.isInteger(r) ? String(r) : String(Math.round(r*100)/100);
+    return digits(n.replace('-','−'));
+  }
+  function fmtZ(x,y){
+    var a = round(x), b = round(y);
+    if(b === 0) return num(a);
+    var im = Math.abs(b) === 1 ? S.i : num(Math.abs(b)) + ' ' + S.i;
+    if(a === 0) return (b < 0 ? '−' : '') + im;
+    return num(a) + (b < 0 ? ' − ' : ' + ') + im;
+  }
+
+  /* ══ ثوابت ══ */
+  var INITIAL = {x:3, y:2};
+  var SCALE = 8, ARC_R = 12, LIMIT = 6, TOL = 0.3;
+
+  /* عتبة إرسال إشارة الإنجاز — عدد العمليات المُجرَّاة (لا نقطة البداية).
+     رقمٌ قابلٌ للتعديل بحرّية: قرارٌ تربويّ يخصّ هذا المحاكي وحده،
+     لا شيء مركزيّ يعتمد عليه. */
+  var STEPS_FOR_DONE = 2;
+
+  var REDUCED = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+  /* ══ الحالة ══ */
+  function initialOp(){
+    return {
+      title:'ما هو العدد المركّب؟',
+      lines:[ S.i+'² = −'+digits('1'), S.z+' = '+S.x+' + '+S.y+' '+S.i+' = '+fmtZ(INITIAL.x,INITIAL.y) ],
+      body:'لا يوجد عدد حقيقي مربّعه سالب واحد، فاتّفق الرياضيون على وحدة جديدة رمزها '+S.i+'، خاصّيتها الوحيدة أنّ مربّعها يساوي سالب واحد. وحين نجمع عددًا حقيقيًا مع مضاعف لهذه الوحدة يظهر العدد المركّب.',
+      geo:'الأعداد الحقيقية يكفيها مستقيم واحد، أمّا المركّبة فتحتاج لوحة كاملة: نتحرّك أفقيًا بمقدار الجزء الحقيقي، ثم رأسيًا بمقدار الجزء التخيلي، ونرسم سهمًا من نقطة الأصل إلى النقطة.'
+    };
+  }
+
+  var state, view, signaled = false, animId = null, dragging = false;
+
+  function freshState(){
+    return {
+      base:{x:INITIAL.x, y:INITIAL.y},
+      cur:{x:INITIAL.x, y:INITIAL.y},
+      n:0, guess:null, phase:'ask', verdict:null, trail:[],
+      steps:[{n:1, label:'نقطة البداية', z:fmtZ(INITIAL.x,INITIAL.y), mark:null}],
+      op: initialOp(), customOpen:false
+    };
+  }
+
+  function rotBase(k){
+    var x = state.base.x, y = state.base.y, m = ((k%4)+4)%4;
+    for(var j=0;j<m;j++){ var t=x; x=-y; y=t; }
+    return {x:round(x), y:round(y)};
+  }
+  function clampU(v){ return Math.max(-LIMIT, Math.min(LIMIT, v)); }
+  function push(arr, item, keep){ return arr.concat([item]).slice(-keep); }
+
+  /* ══ العمليات ══ */
+  function mulOp(a,b,nx,ny,n){
+    var done = (n % 4 === 0);
+    return {
+      title:'الضرب في '+S.i+' يدير السهم ربع دورة',
+      lines:[
+        S.i+' ('+S.x+' + '+S.y+' '+S.i+') = '+S.x+' '+S.i+' + '+S.y+' '+S.i+'² = −'+S.y+' + '+S.x+' '+S.i,
+        S.i+' × ('+fmtZ(a,b)+') = '+fmtZ(nx,ny)
+      ],
+      body:'نفكّ القوسين كما في الجبر المعتاد، ثم نستبدل '+S.i+'² بسالب واحد، فيتحوّل الحدّ الثاني إلى جزء حقيقي بإشارة معاكسة. النتيجة: الجزء التخيلي القديم صار جزءًا حقيقيًا سالبًا، والجزء الحقيقي القديم صار جزءًا تخيليًا.',
+      geo: done
+        ? 'أربع ضربات في '+S.i+' تساوي دورة كاملة (٣٦٠°)، فعاد السهم إلى موضعه الأول بالضبط. وهذا معنى '+S.i+'⁴ = ('+S.i+'²)² = (−'+digits('1')+')² = '+digits('1')+'.'
+        : 'الطول لم يتغيّر لأنّ طول '+S.i+' يساوي واحدًا، والذي تغيّر هو الاتجاه فقط: زادت الزاوية ٩٠° عكس عقارب الساعة حول نقطة الأصل.'
+    };
+  }
+
+  function feedback(ok, g, ans, a, b){
+    if(Math.hypot(a,b) < 1e-9) return 'الصفر يبقى في مكانه مهما ضربناه، فلا دوران هنا.';
+    if(ok) return 'ضبطت الموضع: الطول كما هو، والسهم دار ربع دورة عكس عقارب الساعة.';
+    var near = function(p,q){ return Math.hypot(g.x-p, g.y-q) <= TOL; };
+    if(near(b,-a))  return 'دوران ربع دورة، لكن مع عقارب الساعة — هذا ناتج الضرب في −'+S.i+'. الضرب في '+S.i+' يدير في الاتجاه المعاكس.';
+    if(near(-a,-b)) return 'هذا موضع الضرب في '+S.i+'² أي في سالب واحد: دورتان لا دورة واحدة.';
+    if(near(a,-b))  return 'هذا هو المرافق، وهو انعكاس على المحور الحقيقي لا دوران حول نقطة الأصل.';
+    if(near(a,b))   return 'التوقّع لم يتحرّك عن العدد نفسه، والضرب في '+S.i+' لا بدّ أن يغيّر الاتجاه.';
+    var rg = Math.hypot(g.x,g.y), ra = Math.hypot(ans.x,ans.y);
+    var dth = Math.atan2(g.y,g.x) - Math.atan2(ans.y,ans.x);
+    while(dth > Math.PI) dth -= 2*Math.PI;
+    while(dth < -Math.PI) dth += 2*Math.PI;
+    if(Math.abs(rg-ra) <= 0.4) return 'الطول صحيح، وبقي الاتجاه: ربع دورة كاملة عكس عقارب الساعة.';
+    if(Math.abs(dth) <= 0.25)  return 'الاتجاه صحيح، لكن الضرب في '+S.i+' لا يغيّر الطول أبدًا لأنّ طول '+S.i+' يساوي واحدًا.';
+    return 'قارن الدائرة المفرغة (توقّعك) بالسهم على اللوحة: الطول نفسه، والزاوية أكبر بمقدار ٩٠°.';
+  }
+
+  function doCheck(){
+    if(state.phase !== 'ask' || !state.guess) return;
+    var a = state.cur.x, b = state.cur.y;
+    var ans = {x: round(-b), y: round(a)};
+    var g = state.guess;
+    var ok = Math.hypot(g.x-ans.x, g.y-ans.y) <= TOL || Math.hypot(a,b) < 1e-9;
+
+    state.trail = push(state.trail, {x:a, y:b}, 5);
+    state.cur = ans;
+    state.n += 1;
+    state.verdict = { ok:ok, msg:feedback(ok,g,ans,a,b), ans:fmtZ(ans.x,ans.y) };
+    state.op = mulOp(a,b,ans.x,ans.y,state.n);
+    state.steps = push(state.steps,
+      {n:state.steps.length+1, label:'الضرب في '+S.i+' ← '+S.i+SUP[state.n%4]+' '+S.z,
+       z:fmtZ(ans.x,ans.y), mark: ok?'ok':'no'}, 8);
+    state.phase = 'revealed';
+
+    animateTo(ans.x, ans.y, 'rot');
+    render();
+    checkDone();
+  }
+
+  function nextQuestion(){
+    state.phase = 'ask';
+    state.guess = null;
+    state.verdict = null;
+    render();
+    document.getElementById('plane').focus({preventScroll:true});
+  }
+
+  function applyTool(label, fn, opFn, mode){
+    var a = state.cur.x, b = state.cur.y;
+    var r = fn(a,b);
+    var nx = round(r[0]), ny = round(r[1]);
+    state.trail = push(state.trail, {x:a, y:b}, 5);
+    state.cur = {x:nx, y:ny};
+    state.base = {x:nx, y:ny};
+    state.n = 0;
+    state.phase = 'ask'; state.guess = null; state.verdict = null;
+    state.op = opFn(a,b,nx,ny);
+    state.steps = push(state.steps, {n:state.steps.length+1, label:label, z:fmtZ(nx,ny), mark:null}, 8);
+    animateTo(nx, ny, mode||'lin');
+    render();
+    checkDone();
+  }
+
+  function conj(){
+    applyTool('المرافق', function(a,b){ return [a,-b]; }, function(a,b,nx,ny){
+      return {
+        title:'المرافق: انعكاس على المحور الحقيقي',
+        lines:[ S.conj+' = '+fmtZ(nx,ny), S.z+' × '+S.conj+' = '+num(a*a+b*b)+' = |'+S.z+'|²' ],
+        body:'نغيّر إشارة الجزء التخيلي وحده. وحاصل ضرب العدد في مرافقه عدد حقيقي غير سالب يساوي مربّع الطول، لأنّ الحدّين المتوسطين يحذف أحدهما الآخر؛ ولهذا نضرب في المرافق للتخلّص من الوحدة التخيلية في المقام عند القسمة.',
+        geo:'صورة السهم في مرآة موضوعة على المحور الحقيقي: الطول نفسه والزاوية بإشارة معاكسة.'
+      };
+    });
+  }
+  function negate(){
+    applyTool('الضرب في −'+digits('1'), function(a,b){ return [-a,-b]; }, function(a,b,nx,ny){
+      return {
+        title:'الضرب في سالب واحد = ضربتان في '+S.i,
+        lines:[ '−('+fmtZ(a,b)+') = '+fmtZ(nx,ny), S.i+' × '+S.i+' = '+S.i+'² = −'+digits('1') ],
+        body:'تنقلب إشارة الجزأين معًا. وبما أنّ '+S.i+' مضروبة في نفسها تساوي سالب واحد، فإنّ هذه العملية هي بالضبط ضربتان متتاليتان في '+S.i+'.',
+        geo:'نصف دورة (١٨٠°) حول نقطة الأصل: السهم يشير إلى الجهة المقابلة، وطوله ثابت.'
+      };
+    }, 'rot180');
+  }
+  function addOne(){
+    applyTool('أضف '+digits('1'), function(a,b){ return [a+1,b]; }, function(a,b,nx,ny){
+      return {
+        title:'الجمع إزاحة، لا دوران',
+        lines:[ '('+fmtZ(a,b)+') + '+digits('1')+' = '+fmtZ(nx,ny) ],
+        body:'نجمع الحقيقي مع الحقيقي والتخيلي مع التخيلي، كما نجمع الحدود المتشابهة في الجبر. فإضافة واحد صحيح تغيّر الجزء الحقيقي وحده.',
+        geo:'تحرّك رأس السهم خطوة واحدة إلى اليمين دون أن يرتفع أو ينخفض، وتغيّر طوله وزاويته تبعًا لذلك.'
+      };
+    });
+  }
+  function addI(){
+    applyTool('أضف '+S.i, function(a,b){ return [a,b+1]; }, function(a,b,nx,ny){
+      return {
+        title:'إضافة '+S.i+' ترفع النقطة لأعلى',
+        lines:[ '('+fmtZ(a,b)+') + '+S.i+' = '+fmtZ(nx,ny) ],
+        body:'الجزء التخيلي وحده زاد بمقدار واحد. قارن هذا بالضرب في '+S.i+': الجمع ينقل النقطة، والضرب يديرها.',
+        geo:'صعد رأس السهم خطوة واحدة في اتجاه المحور التخيلي.'
+      };
+    });
+  }
+  function applyCustom(){
+    var cx = Math.round(parseFloat(document.getElementById('cxInput').value) || 0);
+    var cy = Math.round(parseFloat(document.getElementById('cyInput').value) || 0);
+    cx = Math.max(-5, Math.min(5, cx)); cy = Math.max(-5, Math.min(5, cy));
+    document.getElementById('cxInput').value = cx;
+    document.getElementById('cyInput').value = cy;
+    applyTool('عدد من اختيارك', function(){ return [cx,cy]; }, function(a,b,nx,ny){
+      return {
+        title:'عدد من اختيارك',
+        lines:[ S.z+' = '+fmtZ(nx,ny) ],
+        body:'كل عدد مركّب يتحدّد برقمين فقط: مقدار التحرّك الأفقي والمقدار الرأسي. فإذا كان الجزء التخيلي صفرًا عاد العدد حقيقيًا على المحور الأفقي، وإذا كان الجزء الحقيقي صفرًا وقع العدد على المحور الرأسي.',
+        geo:'انتقل رأس السهم إلى النقطة التي جزؤها الحقيقي '+num(nx)+' وجزؤها التخيلي '+num(ny)+'.'
+      };
+    });
+  }
+  function reset(){
+    var open = state.customOpen;
+    state = freshState();
+    state.customOpen = open;
+    view = {x:state.cur.x, y:state.cur.y};
+    render();
+  }
+
+  function checkDone(){
+    if(signaled) return;
+    if(state.steps.length - 1 >= STEPS_FOR_DONE){
+      signaled = true;
+      document.getElementById('doneNote').classList.add('show');
+      /* ── العقد الوحيد المطلوب من أي محاكٍ في «بيان» ──
+         رسالةٌ واحدة، حين نقرّر أنّ الاستكشاف كافٍ ليُحتسب تعلّماً. */
+      try{ window.parent.postMessage({ bayanSim:'done' }, '*'); }catch(e){}
+    }
+  }
+
+  /* ══ الحركة ══ */
+  function animateTo(tx, ty, mode){
+    if(animId){ cancelAnimationFrame(animId); animId = null; }
+    if(REDUCED){ view.x = tx; view.y = ty; renderPlane(); return; }
+    var sx = view.x, sy = view.y;
+    var r0 = Math.hypot(sx,sy), r1 = Math.hypot(tx,ty);
+    var a0 = Math.atan2(sy,sx), a1;
+    if(mode === 'rot')        a1 = a0 + Math.PI/2;
+    else if(mode === 'rot180') a1 = a0 + Math.PI;
+    var t0 = performance.now(), dur = 520;
+    function frame(t){
+      var p = Math.min(1,(t-t0)/dur);
+      var e = p < 0.5 ? 4*p*p*p : 1 - Math.pow(-2*p+2,3)/2;
+      if(mode === 'rot' || mode === 'rot180'){
+        var a = a0 + (a1-a0)*e, r = r0 + (r1-r0)*e;
+        view.x = r*Math.cos(a); view.y = r*Math.sin(a);
+      } else {
+        view.x = sx + (tx-sx)*e; view.y = sy + (ty-sy)*e;
+      }
+      renderPlane();
+      if(p < 1){ animId = requestAnimationFrame(frame); }
+      else { animId = null; view.x = tx; view.y = ty; renderPlane(); }
+    }
+    animId = requestAnimationFrame(frame);
+  }
+
+  /* ══ العرض ══ */
+  var SVG_NS = 'http://www.w3.org/2000/svg';
+  function P(x){ return 50 + x*SCALE; }
+  function Q(y){ return 50 - y*SCALE; }
+  function el(id){ return document.getElementById(id); }
+
+  function buildStatic(){
+    var g = el('gridG');
+    for(var k=-6;k<=6;k++){
+      if(k === 0) continue;
+      var v = document.createElementNS(SVG_NS,'line');
+      v.setAttribute('x1',P(k)); v.setAttribute('y1','3'); v.setAttribute('x2',P(k)); v.setAttribute('y2','97');
+      var h = document.createElementNS(SVG_NS,'line');
+      h.setAttribute('x1','3'); h.setAttribute('y1',Q(k)); h.setAttribute('x2','97'); h.setAttribute('y2',Q(k));
+      g.appendChild(v); g.appendChild(h);
+    }
+    var t = el('ticksG');
+    [-4,-2,2,4].forEach(function(v){
+      var a = document.createElementNS(SVG_NS,'text');
+      a.setAttribute('x',P(v)); a.setAttribute('y','54.6');
+      a.textContent = (v<0?'−':'') + digits(Math.abs(v));
+      var b = document.createElementNS(SVG_NS,'text');
+      b.setAttribute('x','53.6'); b.setAttribute('y',Q(v)+1);
+      b.textContent = (v<0?'−':'') + digits(Math.abs(v)) + S.i;
+      t.appendChild(a); t.appendChild(b);
+    });
+  }
+
+  function renderPlane(){
+    var vx = view.x, vy = view.y;
+    var px = P(vx), py = Q(vy);
+    var dx = px-50, dy = py-50, len = Math.hypot(dx,dy);
+
+    el('point').setAttribute('cx', px.toFixed(2));
+    el('point').setAttribute('cy', py.toFixed(2));
+    el('modCircle').setAttribute('r', (Math.hypot(vx,vy)*SCALE).toFixed(2));
+
+    if(len > 1.2){
+      var HL = 3.2, HW = 1.5;
+      var ux = dx/len, uy = dy/len;
+      var bx = px - HL*ux, by = py - HL*uy;
+      el('arrow').setAttribute('x2', bx.toFixed(2));
+      el('arrow').setAttribute('y2', by.toFixed(2));
+      el('head').setAttribute('points',
+        px.toFixed(2)+','+py.toFixed(2)+' '+
+        (bx - HW*uy).toFixed(2)+','+(by + HW*ux).toFixed(2)+' '+
+        (bx + HW*uy).toFixed(2)+','+(by - HW*ux).toFixed(2));
+      el('head').style.display = '';
+    } else {
+      el('arrow').setAttribute('x2', px.toFixed(2));
+      el('arrow').setAttribute('y2', py.toFixed(2));
+      el('head').style.display = 'none';
+    }
+
+    el('projX').setAttribute('x1', px.toFixed(2)); el('projX').setAttribute('y1', py.toFixed(2));
+    el('projX').setAttribute('x2', px.toFixed(2)); el('projX').setAttribute('y2', '50');
+    el('projY').setAttribute('x1', px.toFixed(2)); el('projY').setAttribute('y1', py.toFixed(2));
+    el('projY').setAttribute('x2', '50');          el('projY').setAttribute('y2', py.toFixed(2));
+
+    var th = Math.atan2(vy,vx), arc = '';
+    if(Math.hypot(vx,vy) > 0.05 && Math.abs(th) > 0.03){
+      arc = 'M '+(50+ARC_R)+' 50 A '+ARC_R+' '+ARC_R+' 0 0 '+(th>0?0:1)+' '+
+            (50+ARC_R*Math.cos(th)).toFixed(2)+' '+(50-ARC_R*Math.sin(th)).toFixed(2);
+    }
+    el('arcPath').setAttribute('d', arc);
+
+    var tg = el('trailG'); tg.textContent = '';
+    state.trail.forEach(function(t){
+      var c = document.createElementNS(SVG_NS,'circle');
+      c.setAttribute('cx', P(t.x).toFixed(2)); c.setAttribute('cy', Q(t.y).toFixed(2));
+      c.setAttribute('r','0.85'); c.setAttribute('fill','#2C2C2A'); c.setAttribute('fill-opacity','0.22');
+      tg.appendChild(c);
+    });
+
+    var lbl = el('zLabel');
+    var uxl = len > 0.5 ? dx/len : 1, uyl = len > 0.5 ? dy/len : -1;
+    lbl.style.left = Math.max(6, Math.min(94, px + uxl*6)) + '%';
+    lbl.style.top  = Math.max(6, Math.min(94, py + uyl*6)) + '%';
+    lbl.textContent = S.z+' = '+fmtZ(state.cur.x, state.cur.y);
+
+    var gG = el('guessG'), gL = el('gLabel');
+    if(state.guess){
+      var gx = P(state.guess.x), gy = Q(state.guess.y);
+      var miss = state.phase === 'revealed' && state.verdict && !state.verdict.ok;
+      var col = miss ? '#9A5B14' : '#0F6E56';
+      gG.classList.remove('hidden');
+      el('gLine').setAttribute('x2', gx.toFixed(2)); el('gLine').setAttribute('y2', gy.toFixed(2));
+      el('gLine').setAttribute('stroke', col);
+      el('gDot').setAttribute('cx', gx.toFixed(2)); el('gDot').setAttribute('cy', gy.toFixed(2));
+      el('gDot').setAttribute('stroke', col);
+      var hideLbl = state.phase === 'revealed' && state.verdict && state.verdict.ok;
+      gL.classList.toggle('hidden', hideLbl);
+      gL.classList.toggle('miss', !!miss);
+      var gd = Math.hypot(gx-50, gy-50) || 1;
+      gL.style.left = Math.max(8, Math.min(92, gx - (gx-50)/gd*6)) + '%';
+      gL.style.top  = Math.max(8, Math.min(92, gy - (gy-50)/gd*6)) + '%';
+      gL.textContent = 'توقّعك: '+fmtZ(state.guess.x, state.guess.y);
+    } else {
+      gG.classList.add('hidden');
+      gL.classList.add('hidden');
+    }
+
+    el('plane').style.cursor = state.phase === 'ask' ? 'crosshair' : 'default';
+  }
+
+  function renderPanels(){
+    var cx = state.cur.x, cy = state.cur.y;
+    var r = Math.hypot(cx,cy), deg = Math.atan2(cy,cx)*180/Math.PI;
+    el('xText').textContent = num(cx);
+    el('yText').textContent = num(cy)+' '+S.i;
+    el('raText').textContent = num(r)+'  ∠ '+num(deg)+'°';
+    el('stepCount').textContent = digits(String(state.steps.length));
+
+    /* شريط الدورة */
+    var chips = el('chips'); chips.textContent = '';
+    var act = ((state.n % 4) + 4) % 4;
+    for(var k=0;k<4;k++){
+      var v = rotBase(k), shown = state.n >= k;
+      var c = document.createElement('div');
+      c.className = 'chip' + (k===act?' on':'') + (shown?'':' dim');
+      var l = document.createElement('span'); l.className='ch-l'; l.textContent = S.i+SUP[k]+' '+S.z;
+      var b = document.createElement('b'); b.className='ch-v'; b.textContent = shown ? fmtZ(v.x,v.y) : '؟';
+      c.appendChild(l); c.appendChild(b); chips.appendChild(c);
+    }
+    el('cycleNote').textContent = state.n >= 4 ? 'اكتملت الدورة: '+S.i+'⁴ = '+digits('1') : '';
+
+    /* النشاط */
+    var ask = state.phase === 'ask';
+    el('askZone').classList.toggle('hidden', !ask);
+    el('revealZone').classList.toggle('hidden', ask);
+    el('actTag').textContent = ask ? 'توقّع قبل أن ترى' : 'نتيجة توقّعك';
+    el('planeHint').textContent = ask
+      ? 'اسحب داخل اللوحة (أو استخدم أسهم لوحة المفاتيح) لتضع توقّعك، فتظهر دائرة مفرغة عند أقرب نقطة في الشبكة.'
+      : 'السهم الأحمر عند الناتج الصحيح، والدائرة المفرغة عند الموضع الذي توقّعته.';
+
+    if(ask){
+      el('actQ').textContent = 'العدد الآن ' + S.z + ' = ' + fmtZ(cx,cy) +
+        '. أين يقع ناتج ضربه في ' + S.i + '، أي ' + S.i + SUP[(state.n+1)%4] + ' ' + S.z + '؟';
+      var gv = el('guessVal');
+      if(state.guess){ gv.textContent = fmtZ(state.guess.x, state.guess.y); gv.className = ''; }
+      else { gv.textContent = 'ضع توقّعك على اللوحة'; gv.className = 'empty'; }
+      el('btnCheck').disabled = !state.guess;
+    } else {
+      var v = state.verdict;
+      el('actQ').textContent = 'سألنا: أين يقع ناتج الضرب في ' + S.i + '؟';
+      var box = el('verdict');
+      box.className = 'verdict ' + (v.ok ? 'ok' : 'no');
+      box.textContent = '';
+      var h = document.createElement('span'); h.className='vh';
+      h.textContent = v.ok ? '✓ توقّع صحيح' : '✗ ليس بعد';
+      var m = document.createElement('span'); m.textContent = v.msg;
+      var a = document.createElement('span'); a.className='ans';
+      a.textContent = 'الناتج: ' + S.i + SUP[state.n%4] + ' ' + S.z + ' = ' + v.ans;
+      box.appendChild(h); box.appendChild(m); box.appendChild(a);
+      el('btnNext').textContent = state.n >= 4
+        ? 'واصل الدوران: اضرب في ' + S.i + ' مرّة أخرى'
+        : 'اضرب في ' + S.i + ' مرّة أخرى';
+    }
+
+    /* الشرح */
+    var op = state.op;
+    el('opTitle').textContent = op.title;
+    var lines = el('opLines'); lines.textContent = '';
+    op.lines.forEach(function(t){
+      var d = document.createElement('div'); d.className='fline'; d.textContent = t; lines.appendChild(d);
+    });
+    el('opBody').textContent = op.body;
+    el('opGeo').textContent = op.geo;
+
+    /* السجل */
+    var list = el('stepsList'); list.textContent = '';
+    state.steps.slice().reverse().forEach(function(s){
+      var row = document.createElement('div'); row.className = 'hstep';
+      var n = document.createElement('span'); n.className='n'; n.textContent = digits(String(s.n));
+      var lb = document.createElement('span'); lb.className='lb'; lb.textContent = s.label;
+      var mk = document.createElement('span'); mk.className = 'mk ' + (s.mark||'');
+      mk.textContent = s.mark === 'ok' ? '✓' : (s.mark === 'no' ? '✗' : '');
+      var z = document.createElement('span'); z.className='z'; z.textContent = s.z;
+      row.appendChild(n); row.appendChild(lb); row.appendChild(mk); row.appendChild(z);
+      list.appendChild(row);
+    });
+
+    el('btnAddOne').disabled = Math.abs(cx+1) > LIMIT;
+    el('btnAddI').disabled  = Math.abs(cy+1) > LIMIT;
+    el('customBox').classList.toggle('hidden', !state.customOpen);
+  }
+
+  function render(){ renderPlane(); renderPanels(); }
+
+  /* ══ السحب ══ */
+  var plane = el('plane');
+  function setGuess(ev){
+    if(state.phase !== 'ask') return;
+    var rect = plane.getBoundingClientRect();
+    var vx = (ev.clientX - rect.left)/rect.width*100;
+    var vy = (ev.clientY - rect.top)/rect.height*100;
+    state.guess = {
+      x: clampU(Math.round((vx-50)/SCALE)),
+      y: clampU(Math.round((50-vy)/SCALE))
+    };
+    renderPlane();
+    var gv = el('guessVal');
+    gv.textContent = fmtZ(state.guess.x, state.guess.y); gv.className = '';
+    el('btnCheck').disabled = false;
+  }
+  plane.addEventListener('pointerdown', function(ev){
+    if(state.phase !== 'ask') return;
+    dragging = true;
+    try{ plane.setPointerCapture(ev.pointerId); }catch(e){}
+    setGuess(ev); ev.preventDefault();
+  });
+  plane.addEventListener('pointermove', function(ev){ if(dragging) setGuess(ev); });
+  ['pointerup','pointercancel'].forEach(function(t){
+    plane.addEventListener(t, function(ev){
+      dragging = false;
+      try{ plane.releasePointerCapture(ev.pointerId); }catch(e){}
+    });
+  });
+  plane.addEventListener('keydown', function(ev){
+    if(state.phase !== 'ask'){
+      if(ev.key === 'Enter'){ nextQuestion(); ev.preventDefault(); }
+      return;
+    }
+    var step = {ArrowRight:[1,0], ArrowLeft:[-1,0], ArrowUp:[0,1], ArrowDown:[0,-1]}[ev.key];
+    if(step){
+      var g = state.guess || {x:state.cur.x, y:state.cur.y};
+      state.guess = { x: clampU(g.x+step[0]), y: clampU(g.y+step[1]) };
+      render(); ev.preventDefault();
+    } else if(ev.key === 'Enter'){ doCheck(); ev.preventDefault(); }
+  });
+
+  /* ══ الأزرار ══ */
+  el('btnCheck').onclick = doCheck;
+  el('btnNext').onclick  = nextQuestion;
+  el('btnClear').onclick = function(){ state.guess = null; render(); };
+  el('btnConj').onclick   = conj;
+  el('btnNegate').onclick = negate;
+  el('btnAddOne').onclick = addOne;
+  el('btnAddI').onclick   = addI;
+  el('btnReset').onclick  = reset;
+  el('btnApplyCustom').onclick = applyCustom;
+  el('btnCustom').onclick = function(){
+    state.customOpen = !state.customOpen;
+    el('customBox').classList.toggle('hidden', !state.customOpen);
+  };
+
+  /* ══ الإقلاع ══ */
+  state = freshState();
+  view = {x:state.cur.x, y:state.cur.y};
+  buildStatic();
+  render();
+})();
+</script>
+</body>
+</html>
