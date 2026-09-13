@@ -531,6 +531,7 @@ export async function editLesson(course, lesson){
   const { data: all } = await api.authorLessons(course.id);
   const others = (all || []).filter(l => !lesson || l.id !== lesson.id);
   const units  = (course.units || []).slice().sort((a,b) => a.position - b.position);
+  const strands = await strandsOf(course.subject_id);    
 
   app.innerHTML = `
     <div class="crumb" id="bk">← دروس المقرَّر</div>
@@ -557,7 +558,11 @@ export async function editLesson(course, lesson){
           ${units.map(u => `<option value="${u.id}"
             ${String(lesson?.unit_id) === String(u.id) ? 'selected' : ''}>${esc(u.title)}</option>`).join("")}
         </select>
-
+        ${strands.length ? `
+        <label class="fl" style="margin-top:16px">فرع المادة</label>
+        ${strandSelect(strands, lesson?.strand?.id)}
+        <p class="small">موضعُ هذا الدرس في خريطة المادة — به يقرأ الطالب
+         «بلاغة ٤١٪» بدل «العربية ٦٢٪». وشرطُ النشر.</p>` : ''}
         <label class="fl" style="margin-top:16px">ملخّص <span style="opacity:.6">(اختياري)</span></label>
         <textarea id="su" style="min-height:80px"
           placeholder="سطر أو سطران يظهران للطالب قبل دخول الدرس">${esc(lesson?.summary || '')}</textarea>
@@ -611,6 +616,7 @@ export async function editLesson(course, lesson){
       requires: v("rq") ? Number(v("rq")) : null,
       passMark: Number(v("pm")) || 65,
       published: document.getElementById("pu").checked
+     strand:   v("st") ? Number(v("st")) : null
     });
 
     if(error){ toast(error.message); return; }
@@ -618,6 +624,7 @@ export async function editLesson(course, lesson){
 
     toast(isNew ? "أُنشئ الدرس" : "حُفظ");
     S.tree = null;                      // عدّاد الدروس تغيّر
+    clearStrands(course.subject_id);    // 🆕 عدّاد دروس الفرع تغيّر
     const t2 = await tree();
     openCourse(byId(t2.courses, course.id));
   };
