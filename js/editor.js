@@ -13,6 +13,7 @@ import { S } from './state.js';
 import { app, head, toast, esc, AR, errBox, nav, setWide, scrollTop } from './ui.js';
 import { openQuiz } from './editor_quiz.js';
 import { openItems } from './editor_items.js';
+import { openStrands, strandsOf, strandSelect, clearStrands } from './editor_strands.js';
 
 /* شجرة التأليف تُحمَّل مرة وتُخزَّن — لا تتغيّر أثناء الجلسة */
 async function tree(){
@@ -432,6 +433,7 @@ export async function openCourse(course){
 
   const { data, error } = await api.authorLessons(course.id);
   const lessons = data || [];
+  const strands = await strandsOf(course.subject_id);
 
   /* التجميع بالوحدة — والوحدات من الشجرة لا من الدروس،
      فتظهر الوحدة الفارغة أيضاً */
@@ -447,6 +449,8 @@ export async function openCourse(course){
           <span class="chip">${AR(l.official_items)} مصدراً</span>
           ${l.extras ? `<span class="chip">+${AR(l.extras)} إضافي</span>` : ''}
           <span class="chip ${l.has_quiz ? 'g' : ''}">${l.has_quiz ? '📝 اختبار' : '⚠️ بلا اختبار'}</span>
+          ${l.strand ? `<span class="chip">🌿 ${esc(l.strand.name)}</span>`
+            : (strands.length ? `<span class="chip warn">🌿 بلا فرع</span>` : '')}
         </div>
       </div>
       <button class="it-b wide" data-it="${l.id}">📦 المصادر (${AR(l.official_items)})</button>
@@ -467,6 +471,8 @@ export async function openCourse(course){
     ${course.curate ? `<div class="nav" style="margin-bottom:16px">
         <button class="btn primary" id="new">＋ درس جديد</button>
         <button class="btn ghost"   id="nu">＋ وحدة</button>
+        <button class="btn ghost"   id="nst">🌿 فروع المادة</button>
+      </div>` : `<div class="warnbox">لديك صلاحية إضافة مصادر …</div>`}
       </div>` : `<div class="warnbox">لديك صلاحية إضافة مصادر إلى الدروس القائمة —
         وإنشاء الدروس لفريق الإشراف.</div>`}
 
@@ -482,6 +488,8 @@ export async function openCourse(course){
   if(nb) nb.onclick = () => editLesson(course, null);
   const nu = document.getElementById("nu");
   if(nu) nu.onclick = () => newUnit(course);
+  const ns = document.getElementById("nst");
+  if(ns) ns.onclick = () => openStrands(course, s);
   app.querySelectorAll(".ed-row").forEach(el =>
     el.onclick = () => editLesson(course, lessons.find(x => String(x.id) === el.dataset.l)));
   app.querySelectorAll("[data-q]").forEach(el => el.onclick = e => {
