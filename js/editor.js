@@ -614,8 +614,8 @@ export async function editLesson(course, lesson){
       position: Number(v("po")) || 0,
       requires: v("rq") ? Number(v("rq")) : null,
       passMark: Number(v("pm")) || 65,
-      published: document.getElementById("pu").checked
-     strand:   v("st") ? Number(v("st")) : null
+      published: document.getElementById("pu").checked,
+      strand:   v("st") ? Number(v("st")) : null
     });
 
     if(error){ toast(error.message); return; }
