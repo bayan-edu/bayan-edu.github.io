@@ -131,7 +131,8 @@ export async function openTools(){
     <button class="btn ghost" id="bk2">← رجوع إلى التأليف</button></div>
     <div class="status">جارٍ التحميل…</div>`;
   const { data, error } = await api.listTools();
-  if(error){ app.innerHTML = errBox(error.message, 'أدوات القياس'); return; }
+  /* 🔧 errBox يقرأ error.message — فتمريرُ النصّ يُنتج «خطأ غير معروف» */
+  if(error){ app.innerHTML = errBox(error, 'أدوات القياس'); return; }
   const tools = data || [];
 
   const stationRow = st => `
@@ -229,7 +230,6 @@ async function newStation(tools){
           <input id="ns_no" type="number" min="1" value="1"></div>
         <div style="flex:1"><label class="fl">الدقائق</label>
           <input id="ns_min" type="number" min="1" value="12"></div>
-            </div>
       </div>
 
       <label class="fl" style="margin-top:14px">دور المحطّة في التوجيه</label>
@@ -277,13 +277,13 @@ export async function openRoutes(tool){
   app.innerHTML = `<div class="status">جارٍ التحميل…</div>`;
 
   const { data, error } = await api.toolRoutes(tool);
-  if(error){ app.innerHTML = errBox(error.message, 'التوجيه'); return; }
+  if(error){ app.innerHTML = errBox(error, 'التوجيه'); return; }
   const T = data, R = T.readiness || {};
   const st = T.stations || [], lv = T.levels || [];
 
   const KIND = { routing:'توجيه', panel:'قياس', boundary:'حدّ', productive:'إنتاج' };
 
-  const routeRow = (r, s) => `
+  const routeRow = r => `
     <div class="rt" data-r="${r.id}">
       <span class="rt-n">${AR(r.min)}–${AR(r.max)}</span>
       <span class="rt-a">${r.verdict === 'next'
@@ -320,7 +320,7 @@ export async function openRoutes(tool){
                   style="margin-inline-start:auto;padding:5px 12px;font-size:.85em">＋ مسار</button>
         </div>
         ${(s.routes || []).length
-          ? `<div class="rt-list">${s.routes.map(r => routeRow(r, s)).join("")}</div>`
+          ? `<div class="rt-list">${s.routes.map(routeRow).join("")}</div>`
           : `<div class="eq-hint" style="display:block;padding:10px 3px">
                ${s.kind === 'productive' ? 'محطّة إنتاج — لا توجيه لها'
                                          : '⚠️ لا مسارَ يغادر هذه المحطّة'}</div>`}
@@ -441,6 +441,9 @@ export async function openCourse(course){
   const group = uid => lessons.filter(l =>
     String(l.unit_id ?? '') === String(uid ?? ''));
 
+  /* 🌿 والشارة آخر الشارات عمداً: الثلاث قبلها تقول «أيصلح للنشر؟»
+     والفرع رابعُ شروطه — فمن يمسح الصفّ يقرأ نواقصه دفعةً واحدة.
+     ولا تظهر «بلا فرع» في مادةٍ بلا فروع: إنذارٌ لا فعلَ بعده ضجيج. */
   const row = l => `<div class="ed-row" data-l="${l.id}">
       <div style="flex:1;min-width:0">
         <div class="ed-t">${esc(l.title)}</div>
@@ -450,7 +453,7 @@ export async function openCourse(course){
           ${l.extras ? `<span class="chip">+${AR(l.extras)} إضافي</span>` : ''}
           <span class="chip ${l.has_quiz ? 'g' : ''}">${l.has_quiz ? '📝 اختبار' : '⚠️ بلا اختبار'}</span>
           ${l.strand ? `<span class="chip">🌿 ${esc(l.strand.name)}</span>`
-            : (strands.length ? `<span class="chip warn">🌿 بلا فرع</span>` : '')}
+            : (strands.length ? `<span class="chip w">🌿 بلا فرع</span>` : '')}
         </div>
       </div>
       <button class="it-b wide" data-it="${l.id}">📦 المصادر (${AR(l.official_items)})</button>
@@ -471,7 +474,7 @@ export async function openCourse(course){
     ${course.curate ? `<div class="nav" style="margin-bottom:16px">
         <button class="btn primary" id="new">＋ درس جديد</button>
         <button class="btn ghost"   id="nu">＋ وحدة</button>
-        <button class="btn ghost"   id="nst">🌿 فروع المادة</button>
+        ${s.id ? `<button class="btn ghost" id="nst">🌿 فروع المادة</button>` : ''}
       </div>` : `<div class="warnbox">لديك صلاحية إضافة مصادر إلى الدروس القائمة —
         وإنشاء الدروس لفريق الإشراف.</div>`}
 
@@ -530,7 +533,7 @@ export async function editLesson(course, lesson){
   const { data: all } = await api.authorLessons(course.id);
   const others = (all || []).filter(l => !lesson || l.id !== lesson.id);
   const units  = (course.units || []).slice().sort((a,b) => a.position - b.position);
-  const strands = await strandsOf(course.subject_id);    
+  const strands = await strandsOf(course.subject_id);
 
   app.innerHTML = `
     <div class="crumb" id="bk">← دروس المقرَّر</div>
@@ -557,11 +560,13 @@ export async function editLesson(course, lesson){
           ${units.map(u => `<option value="${u.id}"
             ${String(lesson?.unit_id) === String(u.id) ? 'selected' : ''}>${esc(u.title)}</option>`).join("")}
         </select>
+
         ${strands.length ? `
         <label class="fl" style="margin-top:16px">فرع المادة</label>
         ${strandSelect(strands, lesson?.strand?.id)}
         <p class="small">موضعُ هذا الدرس في خريطة المادة — به يقرأ الطالب
-         «بلاغة ٤١٪» بدل «العربية ٦٢٪». وشرطُ النشر.</p>` : ''}
+          «بلاغة ٤١٪» بدل «العربية ٦٢٪». وشرطُ النشر.</p>` : ''}
+
         <label class="fl" style="margin-top:16px">ملخّص <span style="opacity:.6">(اختياري)</span></label>
         <textarea id="su" style="min-height:80px"
           placeholder="سطر أو سطران يظهران للطالب قبل دخول الدرس">${esc(lesson?.summary || '')}</textarea>
@@ -606,16 +611,16 @@ export async function editLesson(course, lesson){
     if(!ti){ toast("عنوان الدرس مطلوب"); return; }
 
     const { data, error } = await api.saveLesson({
-      id:       lesson?.id ?? null,
-      course:   course.id,
-      title:    ti,
-      unitId:   v("un") ? Number(v("un")) : null,
-      summary:  v("su") || null,
-      position: Number(v("po")) || 0,
-      requires: v("rq") ? Number(v("rq")) : null,
-      passMark: Number(v("pm")) || 65,
+      id:        lesson?.id ?? null,
+      course:    course.id,
+      title:     ti,
+      unitId:    v("un") ? Number(v("un")) : null,
+      summary:   v("su") || null,
+      position:  Number(v("po")) || 0,
+      requires:  v("rq") ? Number(v("rq")) : null,
+      passMark:  Number(v("pm")) || 65,
       published: document.getElementById("pu").checked,
-      strand:   v("st") ? Number(v("st")) : null
+      strand:    v("st") ? Number(v("st")) : null
     });
 
     if(error){ toast(error.message); return; }
@@ -623,7 +628,7 @@ export async function editLesson(course, lesson){
 
     toast(isNew ? "أُنشئ الدرس" : "حُفظ");
     S.tree = null;                      // عدّاد الدروس تغيّر
-    clearStrands(course.subject_id);    // 🆕 عدّاد دروس الفرع تغيّر
+    clearStrands(course.subject_id);    // 🌿 عدّاد دروس الفرع تغيّر
     const t2 = await tree();
     openCourse(byId(t2.courses, course.id));
   };
