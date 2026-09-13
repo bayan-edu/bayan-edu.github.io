@@ -41,7 +41,7 @@
    ⚠️ الفاصل «،» لا «·»: الصفر العربيّ «٠» نقطةٌ مرفوعة كالفاصل.
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
-import { app, head, esc, AR, errBox, nav, BUILD, scrollTop } from './ui.js';
+import { app, head, esc, fmt, AR, errBox, nav, BUILD, scrollTop } from './ui.js';
 
 /* 🔑 ختمُ هذه الوحدة وحدها.
    BUILD تسكن ui.js، فالرقمُ المعروض يشهد لها لا لهذا الملفّ — وقد
@@ -597,7 +597,7 @@ function dxSection(pats, forMe){
   const rows = order.flatMap(st => p.filter(x => x.state === st).map(x => `
     <div class="an-row static">
       <div class="an-h">
-        <span class="qz-t">${esc(x.note || x.name || x.code || 'نمطٌ بلا تعريف')}</span>
+         <span class="qz-t">${fmt(x.note || x.name || x.code || 'نمطٌ بلا تعريف')}</span>
         <span class="an-st ${x.state}">${DXS[x.state][0]}</span>
       </div>
       ${!forMe && !(x.note && String(x.note).trim())
@@ -608,7 +608,7 @@ function dxSection(pats, forMe){
           x.retried ? `، أُعيد منها ${AR(x.retried)} وزال في ${AR(x.cleared)}`
                     : '، ولم يُعَد أيٌّ منها بعد'}
       </div>
-      ${x.remedy ? `<div class="an-dx">${esc(x.remedy)}</div>` : ''}
+       ${x.remedy ? `<div class="an-dx">${fmt(x.remedy)}</div>` : ''}
     </div>`));
 
   return `<h2 class="sec">${head}</h2>${rows.join("")}${
@@ -671,16 +671,16 @@ async function openQuiz(quizId, backTitle, backSub, backHas){
     <div class="an-q ${a.is_correct===true?'ok':a.is_correct===false?'no':'na'}">
       <div class="an-qh">
         <span class="an-qn">${AR(a.position)}</span>
-        <span class="an-qb">${esc(a.body || '')}</span>
+        <span class="an-qb">${fmt(a.body || '')}</span>
       </div>
-      ${a.chosen  ? `<div class="an-qc">اخترتَ: ${esc(a.chosen)}</div>` : ''}
+      ${a.chosen  ? `<div class="an-qc">اخترتَ: ${fmt(a.chosen)}</div>` : ''}
       ${a.written ? `<div class="an-qc">كتبتَ: ${esc(a.written)}</div>` : ''}
       ${a.rushed
         ? `<div class="an-qr">أُجيب في ${AR(a.seconds)} ثانية — أسرعُ من قراءة السؤال،
              فلا تشخيصَ له.</div>`
-        : (a.note ? `<div class="an-qd">${esc(a.note)}</div>` : '')}
+        : (a.note ? `<div class="an-qd">${fmt(a.note)}</div>` : '')}
       ${a.name ? `<div class="qz-m">${esc(a.name)}${a.code?' · '+esc(a.code):''}</div>` : ''}
-      ${a.remedy ? `<div class="an-dx">${esc(a.remedy)}</div>` : ''}
+      ${a.remedy ? `<div class="an-dx">${fmt(a.remedy)}</div>` : ''}
     </div>`;
 
   app.innerHTML = `
