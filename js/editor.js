@@ -472,7 +472,6 @@ export async function openCourse(course){
         <button class="btn primary" id="new">＋ درس جديد</button>
         <button class="btn ghost"   id="nu">＋ وحدة</button>
         <button class="btn ghost"   id="nst">🌿 فروع المادة</button>
-      </div>` : `<div class="warnbox">لديك صلاحية إضافة مصادر …</div>`}
       </div>` : `<div class="warnbox">لديك صلاحية إضافة مصادر إلى الدروس القائمة —
         وإنشاء الدروس لفريق الإشراف.</div>`}
 
