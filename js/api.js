@@ -284,6 +284,18 @@ export const saveUnit = o => db.rpc('save_unit', {
   p_id: o.id ?? null, p_course: o.course,
   p_title: o.title, p_position: o.position ?? 0 });
 
+/* cards — البطاقات: المجموعة تتبع (مادة · صفّ) لا مقرَّراً */
+export const subjectDecks = sid => db.rpc('subject_decks', { p_subject: sid });
+export const deckCards    = did => db.rpc('deck_cards',    { p_deck: did });
+export const deleteCard   = id  => db.rpc('delete_card',   { p_id: id });
+export const deleteDeck   = id  => db.rpc('delete_deck',   { p_id: id });
+export const saveCards    = (did, rows) =>
+  db.rpc('save_cards', { p_deck: did, p_rows: rows });
+export const saveDeck = o => db.rpc('save_deck', {
+  p_id: o.id ?? null, p_title: o.title,
+  p_subject: o.subject ?? null, p_level: o.level ?? null,
+  p_lesson: o.lesson ?? null, p_position: o.position ?? 0 });
+
 /* ═══════════ ⑪ الفروع ═══════════ */
 export const listStrands  = sid => db.rpc('list_strands',  { p_subject: sid });
 export const deleteStrand = id  => db.rpc('delete_strand', { p_id: id });
