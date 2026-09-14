@@ -849,3 +849,29 @@ body.gate .wrap{max-width:1000px}
   .an-gauge{width:140px;height:140px}
   .an-one{width:120px}
 }
+/* ── البطاقات: القلب ثلاثيّ الأبعاد ── */
+.bf-wrap{max-width:340px;margin:0 auto}
+.bf-top{display:flex;justify-content:flex-end;margin-bottom:10px}
+.bf-stage{perspective:1200px;transition:opacity .18s ease,transform .18s ease}
+.bf-stage.bf-out{opacity:0;transform:translateY(5px)}
+.bf-card{position:relative;height:400px;transform-style:preserve-3d;
+         transition:transform .5s cubic-bezier(.4,.15,.2,1)}
+.bf-card.flipped{transform:rotateY(180deg)}
+.bf-face{position:absolute;inset:0;display:flex;flex-direction:column;
+         background:var(--surface);border:1px solid var(--line);border-radius:20px;
+         box-shadow:var(--shadow);padding:20px 18px;overflow-y:auto;
+         backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.bf-back{transform:rotateY(180deg)}
+.bf-prompt{color:var(--text-muted);font-size:var(--fs-meta);text-align:center;margin-bottom:14px}
+.bf-front-q{font-size:var(--fs-q);font-weight:700;text-align:center;line-height:1.7}
+.bf-recall{margin-top:auto;padding-top:14px}
+.bf-term{font-size:.95rem;font-weight:700;margin-bottom:10px}
+.bf-label{font-size:.72rem;color:var(--text-muted);margin-bottom:3px}
+.bf-mine{background:var(--fill-soft);border-radius:9px;padding:8px 10px;margin-bottom:9px;
+         font-size:var(--fs-meta);color:var(--text-muted)}
+.bf-answer{font-size:var(--fs-read);line-height:1.8}
+.bf-divider{height:1px;background:var(--line);opacity:.6;margin:13px 0}
+.bf-note{font-size:var(--fs-meta);color:var(--text-muted);line-height:1.7}
+.bf-btn-row{margin-top:auto;padding-top:14px;display:flex;gap:7px}
+.bf-btn-row .btn{flex:1;font-size:.82rem;padding:10px 4px}
+@media(max-width:560px){.bf-card{height:370px}}
