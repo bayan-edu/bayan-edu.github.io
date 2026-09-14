@@ -364,54 +364,111 @@ function cardForm(c){
 
 
 /* ═══════════ ⑥ معاينة بعين الطالب ═══════════ */
+/*
+   قلبٌ ثلاثيّ الأبعاد حقيقيّ لا استبدال محتوى: الوجهان يشغلان
+   الصندوق نفسه (position:absolute كلاهما) فلا يختلف ارتفاعُ
+   البطاقة بين الحالتين — وهذا أثرٌ جانبيّ للتقنية الصحيحة، لا
+   قياسٌ يُضبط بيد.
+
+   والتخفيف ليس خياراً جديداً: base.css يحمل قاعدةً واحدة —
+      @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+   وهي ثابتُ المنصّة (مصدرٌ واحد لا يُكرَّر). فكلُّ ما هنا من
+   transition يخضع لها تلقائياً. والاستثناء الوحيد الذي يحتاج
+   فرعاً في الشيفرة: انتقال البطاقة إلى التالية يعتمد على حدث
+   transitionend — وحين تُعطَّل الانتقالات، الحدث لا يقع أبداً،
+   فيتجمّد الانتقال. ⇒ يُفحَص matchMedia ويُنفَّذ التبديل فوراً
+   حين تكون الحركة مخفَّضة.
+*/
 
 function preview(){
-  let i = 0, shown = false;
+  let i = 0;
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  const draw = () => {
+  app.innerHTML = `
+    <div class="crumb" id="bk">← ${esc(cur.title)}</div>
+    <div class="warnbox" style="margin-bottom:14px">👁 معاينة — لا يُحفظ
+      منها تقدير، ولا تدخل جدولة أحد. النصّ الذي تكتبه في حقل
+      الاسترجاع لا يُخزَّن هنا أيضاً.</div>
+
+    <div class="bf-wrap">
+      <div class="bf-top"><span class="chip" id="bfIx"></span></div>
+      <div class="bf-stage" id="bfStage">
+        <div class="bf-card" id="bfCard">
+          <div class="bf-face bf-front" id="bfFront"></div>
+          <div class="bf-face bf-back"  id="bfBack"></div>
+        </div>
+      </div>
+    </div>`;
+
+  document.getElementById('bk').onclick = () => openDeck(cur);
+
+  const stage = document.getElementById('bfStage');
+  const cardEl = document.getElementById('bfCard');
+  const front = document.getElementById('bfFront');
+  const back  = document.getElementById('bfBack');
+
+  /* يُبنى الوجه الأول فقط عند الرسم — والثاني عند الكشف، لأنه
+     يحتاج قيمة حقل الاسترجاع لحظة الضغط لا قبلها */
+  function paint(){
     const c = C[i];
     const gap = /\{\{\s*\}\}/.test(c.front);
-    app.innerHTML = `
-      <div class="crumb" id="bk">← ${esc(cur.title)}</div>
-      <div class="warnbox" style="margin-bottom:14px">👁 معاينة — لا يُحفظ
-        منها تقدير، ولا تدخل جدولة أحد.</div>
+    cardEl.classList.remove('flipped');
+    document.getElementById('bfIx').textContent = `${AR(i+1)} / ${AR(C.length)}`;
 
-      <div class="card" style="max-width:340px;margin:0 auto;min-height:330px;
-                               display:flex;flex-direction:column">
-        <div class="ed-m" style="justify-content:space-between">
-          <span class="chip">${AR(i+1)} / ${AR(C.length)}</span>
-          ${shown && c.audio ? '<span class="chip">🔊 نُطق</span>' : ''}
-        </div>
-
-        <div style="flex:1;display:flex;flex-direction:column;
-                    justify-content:center;padding:18px 4px">
-          ${shown ? `
-            <div class="ed-t" style="margin-bottom:12px">${esc(c.front)}</div>
-            <div style="font-size:var(--fs-read);line-height:1.8">${esc(c.back)}</div>
-            ${c.note ? `<div class="ed-empty" style="padding-top:10px">${esc(c.note)}</div>` : ''}`
-          : `
-            <div class="ed-empty" style="text-align:center;padding:0 0 12px">
-              ${gap ? 'ما الكلمة الناقصة؟' : 'ما معناها؟'}</div>
-            <div style="font-size:var(--fs-q);font-weight:700;text-align:center;
-                        line-height:1.7">${esc(c.front).replace(/\{\{\s*\}\}/g,
-                        '<span style="opacity:.45">______</span>')}</div>`}
-        </div>
-
-        ${shown ? `<div class="nav">
-            <button class="btn" data-g="1">لم أتذكّرها</button>
-            <button class="btn" data-g="2">بصعوبة</button>
-            <button class="btn" data-g="3">بسهولة</button>
-          </div>`
-        : `<button class="btn primary" id="sh" style="width:100%">أظهِر</button>`}
+    front.innerHTML = `
+      <div class="bf-prompt">${gap ? 'ما الكلمة الناقصة؟' : 'ما معناها؟'}</div>
+      <div class="bf-front-q">${esc(c.front).replace(/\{\{\s*\}\}/g,
+        '<span style="opacity:.45">______</span>')}</div>
+      <div class="bf-recall">
+        <textarea id="bfDraft" placeholder="${gap ? 'اكتب الكلمة…' : 'اكتب ما تعرفه…'}"
+                  style="min-height:56px"></textarea>
+        <button class="btn primary" id="bfShow" style="width:100%;margin-top:10px">أظهِر</button>
       </div>`;
 
-    document.getElementById('bk').onclick = () => openDeck(cur);
-    const sh = document.getElementById('sh');
-    if(sh) sh.onclick = () => { shown = true; draw(); };
-    app.querySelectorAll('[data-g]').forEach(b => b.onclick = () => {
-      i = (i + 1) % C.length; shown = false; draw();
-    });
-  };
+    document.getElementById('bfShow').onclick = () => reveal(c);
+    back.innerHTML = '';   // يُبنى عند الكشف
+  }
 
-  draw(); scrollTop();
+  function reveal(c){
+    const draft = document.getElementById('bfDraft').value.trim();
+
+    back.innerHTML = `
+      ${c.audio ? `<div style="display:flex;justify-content:flex-end;margin-bottom:6px">
+          <span class="chip">🔊 نُطق</span></div>` : ''}
+      <div class="bf-term">${esc(c.front)}</div>
+
+      ${draft ? `
+        <div class="bf-label">كتبتَ</div>
+        <div class="bf-mine">${esc(draft)}</div>
+        <div class="bf-label">الصواب</div>
+        <div class="bf-answer">${esc(c.back)}</div>`
+      : `<div class="bf-answer">${esc(c.back)}</div>`}
+
+      ${c.note ? `<div class="bf-divider"></div>
+        <div class="bf-label">مثال</div>
+        <div class="bf-note">${esc(c.note)}</div>` : ''}
+
+      <div class="bf-btn-row">
+        <button class="btn" data-g="1">لم أتذكّرها</button>
+        <button class="btn" data-g="2">بصعوبة</button>
+        <button class="btn" data-g="3">بسهولة</button>
+      </div>`;
+
+    back.querySelectorAll('[data-g]').forEach(b => b.onclick = next);
+    cardEl.classList.add('flipped');   // القلب الفعليّ — تحوّل، لا استبدال
+  }
+
+  function next(){
+    const advance = () => { i = (i + 1) % C.length; paint(); };
+
+    if(reduceMotion){ advance(); return; }   // 🔑 transitionend لن يقع بلا حركة
+
+    stage.classList.add('bf-out');
+    stage.addEventListener('transitionend', () => {
+      advance();
+      stage.classList.remove('bf-out');
+    }, { once: true });
+  }
+
+  paint(); scrollTop();
 }
