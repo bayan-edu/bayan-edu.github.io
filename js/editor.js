@@ -13,6 +13,7 @@ import { S } from './state.js';
 import { app, head, toast, esc, AR, errBox, nav, setWide, scrollTop } from './ui.js';
 import { openQuiz } from './editor_quiz.js';
 import { openItems } from './editor_items.js';
+import { openCards } from './editor_cards.js';
 import { openStrands, strandsOf, strandSelect, clearStrands } from './editor_strands.js';
 
 /* شجرة التأليف تُحمَّل مرة وتُخزَّن — لا تتغيّر أثناء الجلسة */
@@ -473,6 +474,7 @@ export async function openCourse(course){
     ${errBox(error, 'دروس المقرَّر')}
     ${course.curate ? `<div class="nav" style="margin-bottom:16px">
         <button class="btn primary" id="new">＋ درس جديد</button>
+        <button class="btn" id="cards">💡 البطاقات</button>
         <button class="btn ghost"   id="nu">＋ وحدة</button>
         ${s.id ? `<button class="btn ghost" id="nst">🌿 فروع المادة</button>` : ''}
       </div>` : `<div class="warnbox">لديك صلاحية إضافة مصادر إلى الدروس القائمة —
@@ -490,6 +492,8 @@ export async function openCourse(course){
   if(nb) nb.onclick = () => editLesson(course, null);
   const nu = document.getElementById("nu");
   if(nu) nu.onclick = () => newUnit(course);
+  const cb = document.getElementById("cards");
+  if(cb) cb.onclick = () => openCards(course);
   const ns = document.getElementById("nst");
   if(ns) ns.onclick = () => openStrands(course, s);
   app.querySelectorAll(".ed-row").forEach(el =>
