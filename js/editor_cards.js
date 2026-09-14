@@ -365,24 +365,22 @@ function cardForm(c){
 
 /* ═══════════ ⑥ معاينة بعين الطالب ═══════════ */
 /*
-   قلبٌ ثلاثيّ الأبعاد حقيقيّ لا استبدال محتوى: الوجهان يشغلان
-   الصندوق نفسه (position:absolute كلاهما) فلا يختلف ارتفاعُ
-   البطاقة بين الحالتين — وهذا أثرٌ جانبيّ للتقنية الصحيحة، لا
-   قياسٌ يُضبط بيد.
+   القلب باللمس لا بزرّ: نقرةٌ على جسم البطاقة تقلبها، ونقرةٌ أخرى
+   تعيدها — في الاتجاهين. وزرّ «أظهِر» سقط لأن فعله صار هو فعلَ
+   البطاقة نفسها؛ بقي أثرُه في زرٍّ نصّيّ خفيّ (bf-hint) لمن يستعمل
+   لوحة المفاتيح أو قارئ الشاشة، فلا يُفقَد الوصول حين يُفقَد الزرّ.
 
-   والتخفيف ليس خياراً جديداً: base.css يحمل قاعدةً واحدة —
-      @media(prefers-reduced-motion:reduce){*{transition:none!important}}
-   وهي ثابتُ المنصّة (مصدرٌ واحد لا يُكرَّر). فكلُّ ما هنا من
-   transition يخضع لها تلقائياً. والاستثناء الوحيد الذي يحتاج
-   فرعاً في الشيفرة: انتقال البطاقة إلى التالية يعتمد على حدث
-   transitionend — وحين تُعطَّل الانتقالات، الحدث لا يقع أبداً،
-   فيتجمّد الانتقال. ⇒ يُفحَص matchMedia ويُنفَّذ التبديل فوراً
-   حين تكون الحركة مخفَّضة.
+   🔑 ولا تُعاد كتابة DOM الوجه الأول عند القلب — فقط صفٌّ (class)
+      يتبدّل على الصندوق الخارجيّ. ولهذا ما يُكتب في حقل الاسترجاع
+      يبقى كما هو عبر القلبتين: المتصفح لا يفقد نصّ حقلٍ لم يُعَد بناؤه.
+
+   والتخفيف يبقى كما شُرح آخر مرّة: قاعدة base.css الواحدة تعطّل كل
+   transition تلقائياً، وتبقى نقطة الحذر نفسها عند next() — الانتقال
+   بين البطاقتين يعتمد على transitionend الذي لا يقع بلا حركة.
 */
 
 function preview(){
   let i = 0;
-  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   app.innerHTML = `
     <div class="crumb" id="bk">← ${esc(cur.title)}</div>
@@ -406,9 +404,8 @@ function preview(){
   const cardEl = document.getElementById('bfCard');
   const front = document.getElementById('bfFront');
   const back  = document.getElementById('bfBack');
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  /* يُبنى الوجه الأول فقط عند الرسم — والثاني عند الكشف، لأنه
-     يحتاج قيمة حقل الاسترجاع لحظة الضغط لا قبلها */
   function paint(){
     const c = C[i];
     const gap = /\{\{\s*\}\}/.test(c.front);
@@ -422,14 +419,14 @@ function preview(){
       <div class="bf-recall">
         <textarea id="bfDraft" placeholder="${gap ? 'اكتب الكلمة…' : 'اكتب ما تعرفه…'}"
                   style="min-height:56px"></textarea>
-        <button class="btn primary" id="bfShow" style="width:100%;margin-top:10px">أظهِر</button>
+        <button class="bf-hint" data-flip="1">اضغط لرؤية الإجابة</button>
       </div>`;
 
-    document.getElementById('bfShow').onclick = () => reveal(c);
-    back.innerHTML = '';   // يُبنى عند الكشف
+    back.innerHTML = '';   // يُبنى عند أوّل قلبٍ إلى الخلف
   }
 
-  function reveal(c){
+  function buildBack(){
+    const c = C[i];
     const draft = document.getElementById('bfDraft').value.trim();
 
     back.innerHTML = `
@@ -448,20 +445,35 @@ function preview(){
         <div class="bf-label">مثال</div>
         <div class="bf-note">${esc(c.note)}</div>` : ''}
 
+      <button class="bf-hint" data-flip="1">اضغط للعودة للسؤال</button>
       <div class="bf-btn-row">
         <button class="btn" data-g="1">لم أتذكّرها</button>
         <button class="btn" data-g="2">بصعوبة</button>
         <button class="btn" data-g="3">بسهولة</button>
       </div>`;
 
-    back.querySelectorAll('[data-g]').forEach(b => b.onclick = next);
-    cardEl.classList.add('flipped');   // القلب الفعليّ — تحوّل، لا استبدال
+    back.querySelector('[data-flip]').onclick = e => { e.stopPropagation(); toggle(); };
+    back.querySelectorAll('[data-g]').forEach(b => b.onclick = e => { e.stopPropagation(); next(); });
   }
+
+  function toggle(){
+    if(cardEl.classList.contains('flipped')){
+      cardEl.classList.remove('flipped');           // عودةٌ بلا إعادة بناء — النصّ محفوظ في حقله
+    } else {
+      buildBack();                                  // كلُّ تقدّمٍ يُبنى من آخر ما كُتب في الحقل
+      cardEl.classList.add('flipped');
+    }
+  }
+
+  /* النقر على جسم البطاقة يقلب — إلا من داخل حقلٍ أو زرّ، فلهما فعلُهما */
+  cardEl.addEventListener('click', e => {
+    if(e.target.closest('textarea, .bf-btn-row')) return;
+    toggle();
+  });
 
   function next(){
     const advance = () => { i = (i + 1) % C.length; paint(); };
-
-    if(reduceMotion){ advance(); return; }   // 🔑 transitionend لن يقع بلا حركة
+    if(reduceMotion){ advance(); return; }   // transitionend لن يقع بلا حركة
 
     stage.classList.add('bf-out');
     stage.addEventListener('transitionend', () => {
