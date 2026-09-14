@@ -875,3 +875,8 @@ body.gate .wrap{max-width:1000px}
 .bf-btn-row{margin-top:auto;padding-top:14px;display:flex;gap:7px}
 .bf-btn-row .btn{flex:1;font-size:.82rem;padding:10px 4px}
 @media(max-width:560px){.bf-card{height:370px}}
+.bf-card{cursor:pointer}
+.bf-face textarea{cursor:text}
+.bf-hint{background:none;border:0;color:var(--text-muted);font-size:.78rem;
+         padding:8px 0 2px;cursor:pointer;width:100%;text-align:center}
+.bf-hint:hover{color:var(--accent)}
