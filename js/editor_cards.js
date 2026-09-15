@@ -432,8 +432,12 @@ function preview(){
     const gap = /\{\{\s*\}\}/.test(c.front);
     cardEl.classList.remove('flipped');
 
+    /* 🔑 لا عنوان للمصطلح المجرَّد: «ما معناها؟» تتكرّر في كل بطاقة
+       فتبلى وتصير مشتّتاً، وتُعلّم العين أن تتجاوز أعلى البطاقة.
+       وتبقى لبطاقات الفراغ وحدها — هناك تحمل معلومةً لأن الفراغ وسط
+       جملةٍ قد يُقرأ نصّاً ناقصاً لا سؤالاً. وما لا يتكرّر لا يبلى. */
     front.innerHTML = `
-      <div class="bf-prompt">${gap ? 'ما الكلمة الناقصة؟' : 'ما معناها؟'}</div>
+      ${gap ? '<div class="bf-prompt">ما الكلمة الناقصة؟</div>' : ''}
       <div class="bf-front-q" id="bfQ">${esc(c.front).replace(/\{\{\s*\}\}/g,
         '<span style="opacity:.45">______</span>')}</div>
       <div class="bf-recall">
