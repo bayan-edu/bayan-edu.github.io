@@ -851,11 +851,21 @@ body.gate .wrap{max-width:1000px}
 }
 /* ── البطاقات: القلب ثلاثيّ الأبعاد ── */
 .bf-wrap{max-width:340px;margin:0 auto}
-.bf-top{display:flex;justify-content:flex-end;margin-bottom:10px}
+.bf-top{display:none}                    /* الرقم سقط؛ يبقى السطر توثيقاً لا يُحذف الصنف نفسه */
 .bf-stage{perspective:1200px;transition:opacity .18s ease,transform .18s ease}
 .bf-stage.bf-out{opacity:0;transform:translateY(5px)}
-.bf-card{position:relative;height:400px;transform-style:preserve-3d;
-         transition:transform .5s cubic-bezier(.4,.15,.2,1)}
+.bf-card{
+  position:relative;
+  height:min(400px, 78dvh);
+  transform-style:preserve-3d;
+  transition:transform .5s cubic-bezier(.4,.15,.2,1)
+}
+@media(max-width:560px){
+  .bf-card{height:min(370px, 74dvh)}
+}
+@media(orientation:landscape) and (max-height:480px){
+  .bf-card{height:min(320px, 70dvh)}   /* جوالٌ مستلقٍ: الرقم الأصغر بين الاثنين يفوز دائماً */
+}
 .bf-card.flipped{transform:rotateY(180deg)}
 .bf-face{position:absolute;inset:0;display:flex;flex-direction:column;
          background:var(--surface);border:1px solid var(--line);border-radius:20px;
@@ -877,6 +887,12 @@ body.gate .wrap{max-width:1000px}
 @media(max-width:560px){.bf-card{height:370px}}
 .bf-card{cursor:pointer}
 .bf-face textarea{cursor:text}
-.bf-hint{background:none;border:0;color:var(--text-muted);font-size:.78rem;
-         padding:8px 0 2px;cursor:pointer;width:100%;text-align:center}
-.bf-hint:hover{color:var(--accent)}
+.bf-hint{
+  position:absolute; width:1px; height:1px; margin:-1px; padding:0;
+  overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;
+}
+.bf-hint:focus{
+  position:static; width:auto; height:auto; margin:0; padding:8px 0 2px;
+  overflow:visible; clip:auto; white-space:normal;
+  background:none; color:var(--accent); font-size:.78rem; cursor:pointer;
+}
