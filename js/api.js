@@ -300,6 +300,14 @@ export const saveDeck = o => db.rpc('save_deck', {
   p_id: o.id ?? null, p_title: o.title,
   p_subject: o.subject ?? null, p_level: o.level ?? null,
   p_lesson: o.lesson ?? null, p_position: o.position ?? 0 });
+export const saveMyNote     = (id, note) => db.rpc('save_my_note', { p_card: id, p_note: note });
+export const dueCards       = (sid, limit, fresh) =>
+  db.rpc('due_cards', { p_subject: sid, p_limit: limit ?? 30, p_new: fresh ?? 6 });
+export const dueCounts      = () => db.rpc('due_counts');
+export const addMyCard      = o => db.rpc('add_my_card', {
+  p_subject: o.subject, p_front: o.front, p_level: o.level ?? null, p_back: o.back ?? null });
+export const subscribeCards = ids => db.rpc('subscribe_cards', { p_card_ids: ids });
+export const browseDeck     = id  => db.rpc('browse_deck',     { p_deck: id });
 
 /* ═══════════ ⑪ الفروع ═══════════ */
 export const listStrands  = sid => db.rpc('list_strands',  { p_subject: sid });
