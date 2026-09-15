@@ -858,13 +858,13 @@ body.gate .wrap{max-width:1000px}
 
 /* مفتاح «حركة أقل» — checkbox حقيقيّ مخفيّ، والمرسوم غلافٌ فوقه */
 .bf-bar{display:flex;justify-content:flex-end;margin-bottom:10px}
-.bf-toggle{display:inline-flex;align-items:center;gap:8px;cursor:pointer;
-           font-size:.78rem;color:var(--text-muted)}
+.bf-toggle{display:inline-flex;flex-direction:row-reverse;align-items:center;
+           gap:8px;cursor:pointer;font-size:.78rem;color:var(--text-muted)}
 .bf-toggle input{position:absolute;opacity:0;width:0;height:0}
 .bf-track{width:34px;height:19px;border-radius:999px;background:var(--fill);
           border:1px solid var(--line);position:relative;flex:0 0 auto;
           transition:background .18s,border-color .18s}
-.bf-knob{position:absolute;top:2px;inset-inline-end:2px;width:13px;height:13px;
+.bf-knob{position:absolute;top:2px;inset-inline-start:2px;width:13px;height:13px;
          border-radius:50%;background:var(--text-muted);
          transition:transform .18s,background .18s}
 .bf-toggle input:checked + .bf-track{background:var(--accent-fill);border-color:var(--accent-edge)}
