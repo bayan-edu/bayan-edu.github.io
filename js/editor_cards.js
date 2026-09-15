@@ -450,12 +450,16 @@ function preview(){
     const c = C[i];
     const draft = document.getElementById('bfDraft').value.trim();
 
+    /* 🔑 المصطلح لا يُكتب مع شرحه: من نسيه يجده أمامه فيقرأ ويمضي،
+       فتصير البطاقة قراءةً لا استرجاعاً — وهو وهمُ المعرفة بعينه.
+       ومن أراده فالقلب الرجوعيّ يعيده إليه، وتلك محاولةٌ ثانية لا تذكير.
+       والاستثناء: من كتب شيئاً يحتاج المقارَن به لحكمه الذاتيّ. */
     back.innerHTML = `
       ${c.audio ? `<div style="display:flex;justify-content:flex-end;margin-bottom:6px">
           <span class="chip">🔊 نُطق</span></div>` : ''}
-      <div class="bf-term">${esc(c.front)}</div>
 
       ${draft ? `
+        <div class="bf-term">${esc(c.front)}</div>
         <div class="bf-label">كتبتَ</div>
         <div class="bf-mine">${esc(draft)}</div>
         <div class="bf-label">الصواب</div>
