@@ -908,6 +908,8 @@ body.gate .wrap{max-width:1000px}
 /* صفٌّ واحد يعطّل القلب والانتقال معاً */
 .bf-wrap.calm .bf-card,
 .bf-wrap.calm .bf-stage{transition:none}
-
+.bf-front-q[dir="ltr"], .bf-answer[dir="ltr"],
+.bf-note[dir="ltr"], .bf-term[dir="ltr"]{text-align:left}
+.bf-front-q[dir="rtl"]{text-align:center}
 @media(max-width:560px){.bf-card{height:min(370px,74dvh)}}
 @media(orientation:landscape) and (max-height:480px){.bf-card{height:min(320px,70dvh)}}
