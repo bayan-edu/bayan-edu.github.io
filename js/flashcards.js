@@ -136,7 +136,7 @@ function openSession(subject){
       front.innerHTML = `
         ${c.entry === 'dx' ? '<div class="ed-m"><span class="chip">📍 من إجابةٍ سابقة</span></div>' : ''}
         ${gap ? '<div class="bf-prompt">ما الكلمة الناقصة؟</div>' : ''}
-        <div class="bf-front-q" id="bfQ" dir="${dirOf(c.front, c.lang)}"
+        <div class="bf-front-q" id="bfQ" dir="${dirOf(c.front)}"
           >${esc(c.front).replace(/\{\{\s*\}\}/g, '<span style="opacity:.45">______</span>')}</div>
         <div class="bf-recall">
           <textarea id="bfDraft" dir="auto"
@@ -163,16 +163,16 @@ function openSession(subject){
           <div class="bf-note" style="margin-bottom:12px">${esc(c.dx_note)}</div>` : ''}
 
         ${compare ? `
-          <div class="bf-term" dir="${dirOf(c.front, c.lang)}">${esc(c.front)}</div>
+          <div class="bf-term" dir="${dirOf(c.front)}">${esc(c.front)}</div>
           <div class="bf-label">${draft ? 'كتبتَ' : 'طريقتك في تذكّرها'}</div>
           <div class="bf-mine" dir="auto">${esc(draft || c.my_note)}</div>
           <div class="bf-label">الصواب</div>
-          <div class="bf-answer" id="bfAns" dir="${dirOf(c.back, c.lang)}">${esc(c.back)}</div>`
-        : `<div class="bf-answer" id="bfAns" dir="${dirOf(c.back, c.lang)}">${esc(c.back)}</div>`}
+          <div class="bf-answer" id="bfAns" dir="${dirOf(c.back)}">${esc(c.back)}</div>`
+        : `<div class="bf-answer" id="bfAns" dir="${dirOf(c.back)}">${esc(c.back)}</div>`}
 
         ${c.note ? `<div class="bf-divider"></div>
           <div class="bf-label">مثال</div>
-          <div class="bf-note" dir="${dirOf(c.note, c.lang)}">${esc(c.note)}</div>` : ''}
+          <div class="bf-note" dir="${dirOf(c.note)}">${esc(c.note)}</div>` : ''}
 
         <button class="bf-hint" data-flip="1">اضغط للعودة للسؤال</button>
         <div class="bf-btn-row">
@@ -220,7 +220,7 @@ function openSession(subject){
           <div class="bf-wrap">
             <div class="card" style="padding:20px 18px">
               <div class="bf-label" style="margin-bottom:4px">تعود اليوم</div>
-              <div style="font-weight:700;margin-bottom:14px" dir="${dirOf(c.front, c.lang)}"
+              <div style="font-weight:700;margin-bottom:14px" dir="${dirOf(c.front)}"
                 >${esc(c.front)}</div>
               <div class="bf-label" style="margin-bottom:4px">كيف تتذكّرها؟ اكتب بطريقتك</div>
               <textarea id="mn" dir="auto" style="min-height:64px"
@@ -357,8 +357,8 @@ function openBrowseDeck(subject, deck){
         <input type="checkbox" data-c="${c.id}" ${c.mine ? 'checked disabled' : ''}
                style="margin-inline-end:10px">
         <div style="flex:1;min-width:0">
-          <div class="ed-t" dir="${dirOf(c.front, c.lang)}">${esc(c.front)}</div>
-          <div class="ed-m" style="color:var(--text-muted)" dir="${dirOf(c.back, c.lang)}"
+          <div class="ed-t" dir="${dirOf(c.front)}">${esc(c.front)}</div>
+          <div class="ed-m" style="color:var(--text-muted)" dir="${dirOf(c.back)}"
             >${esc(c.back)}</div>
         </div>
         ${c.mine ? '<span class="chip g">عندك</span>' : ''}
