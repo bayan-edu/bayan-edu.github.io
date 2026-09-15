@@ -19,6 +19,15 @@ import * as api from './api.js';
 import { app, head, toast, esc, AR, errBox, nav, setWide, scrollTop } from './ui.js';
 import { openCourse } from './editor.js';
 
+/* اتجاهُ كل كتلةٍ من محتواها لا من الصفحة: بطاقةٌ واحدة قد تحمل
+   مصطلحاً إنجليزياً وشرحاً عربياً. وlang قيمةٌ ابتدائية، وأوّلُ حرفٍ
+   قويّ في النصّ يعلوها — فهو أصدقُ من وسمٍ قد يُترك على 'ar' سهواً. */
+function dirOf(text, lang){
+  const m = String(text || '').match(/[\u0600-\u06FF\u0750-\u077F]|[A-Za-z]/);
+  if(m) return /[A-Za-z]/.test(m[0]) ? 'ltr' : 'rtl';
+  return lang && lang !== 'ar' ? 'ltr' : 'rtl';
+}
+
 let ctx = null;   // { course, lessons }
 let D   = [];     // المجموعات
 let cur = null;   // المجموعة المفتوحة
@@ -167,11 +176,12 @@ function renderCards(){
   const row = c => `
     <div class="ed-row" data-c="${c.id}">
       <div style="flex:0 0 34%;min-width:0">
-        <div class="ed-t">${esc(c.front)}</div>
+        <div class="ed-t" dir="${dirOf(c.front, c.lang)}">${esc(c.front)}</div>
         ${c.audio ? '<div class="ed-m"><span class="chip">🔊 نُطق</span></div>' : ''}
       </div>
       <div style="flex:1;min-width:0;color:var(--text-muted);
-                  font-size:var(--fs-meta);line-height:1.6">${esc(c.back)}</div>
+                  font-size:var(--fs-meta);line-height:1.6"
+           dir="${dirOf(c.back, c.lang)}">${esc(c.back)}</div>
       <button class="it-b wide" data-ed="${c.id}">✏️</button>
       <button class="it-b" data-rm="${c.id}">🗑</button>
     </div>`;
@@ -463,10 +473,12 @@ function preview(){
        جملةٍ قد يُقرأ نصّاً ناقصاً لا سؤالاً. وما لا يتكرّر لا يبلى. */
     front.innerHTML = `
       ${gap ? '<div class="bf-prompt">ما الكلمة الناقصة؟</div>' : ''}
-      <div class="bf-front-q" id="bfQ">${esc(c.front).replace(/\{\{\s*\}\}/g,
+      <div class="bf-front-q" id="bfQ" dir="${dirOf(c.front, c.lang)}"
+        >${esc(c.front).replace(/\{\{\s*\}\}/g,
         '<span style="opacity:.45">______</span>')}</div>
       <div class="bf-recall">
-        <textarea id="bfDraft" placeholder="${gap ? 'اكتب الكلمة…' : 'اكتب ما تعرفه…'}"
+        <textarea id="bfDraft" dir="auto"
+                  placeholder="${gap ? 'اكتب الكلمة…' : 'اكتب ما تعرفه…'}"
                   style="min-height:56px"></textarea>
         <button class="bf-hint" data-flip="1">اضغط لرؤية الإجابة</button>
       </div>`;
@@ -488,16 +500,16 @@ function preview(){
           <span class="chip">🔊 نُطق</span></div>` : ''}
 
       ${draft ? `
-        <div class="bf-term">${esc(c.front)}</div>
+        <div class="bf-term" dir="${dirOf(c.front, c.lang)}">${esc(c.front)}</div>
         <div class="bf-label">كتبتَ</div>
-        <div class="bf-mine">${esc(draft)}</div>
+        <div class="bf-mine" dir="auto">${esc(draft)}</div>
         <div class="bf-label">الصواب</div>
-        <div class="bf-answer" id="bfAns">${esc(c.back)}</div>`
-      : `<div class="bf-answer" id="bfAns">${esc(c.back)}</div>`}
+        <div class="bf-answer" id="bfAns" dir="${dirOf(c.back, c.lang)}">${esc(c.back)}</div>`
+      : `<div class="bf-answer" id="bfAns" dir="${dirOf(c.back, c.lang)}">${esc(c.back)}</div>`}
 
       ${c.note ? `<div class="bf-divider"></div>
         <div class="bf-label">مثال</div>
-        <div class="bf-note">${esc(c.note)}</div>` : ''}
+        <div class="bf-note" dir="${dirOf(c.note, c.lang)}">${esc(c.note)}</div>` : ''}
 
       <button class="bf-hint" data-flip="1">اضغط للعودة للسؤال</button>
       <div class="bf-btn-row">
