@@ -365,22 +365,19 @@ function cardForm(c){
 
 /* ═══════════ ⑥ معاينة بعين الطالب ═══════════ */
 /*
-   القلب باللمس لا بزرّ: نقرةٌ على جسم البطاقة تقلبها، ونقرةٌ أخرى
-   تعيدها — في الاتجاهين. وزرّ «أظهِر» سقط لأن فعله صار هو فعلَ
-   البطاقة نفسها؛ بقي أثرُه في زرٍّ نصّيّ خفيّ (bf-hint) لمن يستعمل
-   لوحة المفاتيح أو قارئ الشاشة، فلا يُفقَد الوصول حين يُفقَد الزرّ.
+   ④ الارتفاع min(px, dvh) لا رقمٌ ثابت — فبطاقةٌ ٤٠٠px على جوالٍ
+      مستلقٍ (ارتفاعُه أحياناً ٣٧٥px فقط) تفيض عن الشاشة كلّها.
+      وdvh تقرأ المساحة الرأسية الحقيقية المتاحة فعلاً، لا نافذة
+      المتصفّح الكاملة التي قد يحجب شريطُ العنوان جزءاً منها.
 
-   🔑 ولا تُعاد كتابة DOM الوجه الأول عند القلب — فقط صفٌّ (class)
-      يتبدّل على الصندوق الخارجيّ. ولهذا ما يُكتب في حقل الاسترجاع
-      يبقى كما هو عبر القلبتين: المتصفح لا يفقد نصّ حقلٍ لم يُعَد بناؤه.
-
-   والتخفيف يبقى كما شُرح آخر مرّة: قاعدة base.css الواحدة تعطّل كل
-   transition تلقائياً، وتبقى نقطة الحذر نفسها عند next() — الانتقال
-   بين البطاقتين يعتمد على transitionend الذي لا يقع بلا حركة.
+   ⑤ وإعادة القياس تلحق تدوير الشاشة: النصّ الذي انكمش عند البناء
+      لا يعود ليكبر تلقائياً إن اتّسعت المساحة، ولا يتقلّص أكثر إن
+      ضاقت — إلا بإعادة تشغيل shrink() صراحةً. ⇒ سجلٌّ خفيف
+      (fitters) يُعاد تطبيقه عند كل resize بتهدئةٍ ١٢٠ مللي ثانية.
 */
 
 function preview(){
-  let i = 0;
+  let i = 0, fitters = [], resizeT;
 
   app.innerHTML = `
     <div class="crumb" id="bk">← ${esc(cur.title)}</div>
@@ -389,7 +386,6 @@ function preview(){
       الاسترجاع لا يُخزَّن هنا أيضاً.</div>
 
     <div class="bf-wrap">
-      <div class="bf-top"><span class="chip" id="bfIx"></span></div>
       <div class="bf-stage" id="bfStage">
         <div class="bf-card" id="bfCard">
           <div class="bf-face bf-front" id="bfFront"></div>
@@ -398,31 +394,55 @@ function preview(){
       </div>
     </div>`;
 
-  document.getElementById('bk').onclick = () => openDeck(cur);
-
   const stage = document.getElementById('bfStage');
   const cardEl = document.getElementById('bfCard');
   const front = document.getElementById('bfFront');
   const back  = document.getElementById('bfBack');
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  function shrink(face, target, basePx, minPx){
+    let px = basePx;
+    target.style.fontSize = px + 'px';
+    while(face.scrollHeight > face.clientHeight + 1 && px > minPx){
+      px -= 0.6; target.style.fontSize = px + 'px';
+    }
+  }
+  function registerFit(face, target, basePx, minPx){
+    fitters = fitters.filter(f => f.face !== face);
+    shrink(face, target, basePx, minPx);
+    fitters.push({ face, target, basePx, minPx });
+  }
+  function onResize(){
+    clearTimeout(resizeT);
+    resizeT = setTimeout(() => {
+      fitters = fitters.filter(f => document.contains(f.target));
+      fitters.forEach(f => shrink(f.face, f.target, f.basePx, f.minPx));
+    }, 120);
+  }
+  window.addEventListener('resize', onResize);
+
+  document.getElementById('bk').onclick = () => {
+    window.removeEventListener('resize', onResize);   // لا تتراكم المستمعات عبر فتحاتٍ متكرّرة
+    openDeck(cur);
+  };
+
   function paint(){
     const c = C[i];
     const gap = /\{\{\s*\}\}/.test(c.front);
     cardEl.classList.remove('flipped');
-    document.getElementById('bfIx').textContent = `${AR(i+1)} / ${AR(C.length)}`;
 
     front.innerHTML = `
       <div class="bf-prompt">${gap ? 'ما الكلمة الناقصة؟' : 'ما معناها؟'}</div>
-      <div class="bf-front-q">${esc(c.front).replace(/\{\{\s*\}\}/g,
+      <div class="bf-front-q" id="bfQ">${esc(c.front).replace(/\{\{\s*\}\}/g,
         '<span style="opacity:.45">______</span>')}</div>
       <div class="bf-recall">
         <textarea id="bfDraft" placeholder="${gap ? 'اكتب الكلمة…' : 'اكتب ما تعرفه…'}"
                   style="min-height:56px"></textarea>
         <button class="bf-hint" data-flip="1">اضغط لرؤية الإجابة</button>
       </div>`;
+    registerFit(front, document.getElementById('bfQ'), 18.9, 15);
 
-    back.innerHTML = '';   // يُبنى عند أوّل قلبٍ إلى الخلف
+    back.innerHTML = '';
   }
 
   function buildBack(){
@@ -438,8 +458,8 @@ function preview(){
         <div class="bf-label">كتبتَ</div>
         <div class="bf-mine">${esc(draft)}</div>
         <div class="bf-label">الصواب</div>
-        <div class="bf-answer">${esc(c.back)}</div>`
-      : `<div class="bf-answer">${esc(c.back)}</div>`}
+        <div class="bf-answer" id="bfAns">${esc(c.back)}</div>`
+      : `<div class="bf-answer" id="bfAns">${esc(c.back)}</div>`}
 
       ${c.note ? `<div class="bf-divider"></div>
         <div class="bf-label">مثال</div>
@@ -452,20 +472,21 @@ function preview(){
         <button class="btn" data-g="3">بسهولة</button>
       </div>`;
 
+    registerFit(back, document.getElementById('bfAns'), 16.8, 13);
+
     back.querySelector('[data-flip]').onclick = e => { e.stopPropagation(); toggle(); };
     back.querySelectorAll('[data-g]').forEach(b => b.onclick = e => { e.stopPropagation(); next(); });
   }
 
   function toggle(){
     if(cardEl.classList.contains('flipped')){
-      cardEl.classList.remove('flipped');           // عودةٌ بلا إعادة بناء — النصّ محفوظ في حقله
+      cardEl.classList.remove('flipped');
     } else {
-      buildBack();                                  // كلُّ تقدّمٍ يُبنى من آخر ما كُتب في الحقل
+      buildBack();
       cardEl.classList.add('flipped');
     }
   }
 
-  /* النقر على جسم البطاقة يقلب — إلا من داخل حقلٍ أو زرّ، فلهما فعلُهما */
   cardEl.addEventListener('click', e => {
     if(e.target.closest('textarea, .bf-btn-row')) return;
     toggle();
@@ -473,7 +494,7 @@ function preview(){
 
   function next(){
     const advance = () => { i = (i + 1) % C.length; paint(); };
-    if(reduceMotion){ advance(); return; }   // transitionend لن يقع بلا حركة
+    if(reduceMotion){ advance(); return; }
 
     stage.classList.add('bf-out');
     stage.addEventListener('transitionend', () => {
