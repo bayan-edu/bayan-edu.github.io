@@ -87,7 +87,6 @@ export const KINDS = { pdf:'ملف للقراءة', video:'شرح مرئي', aud
 export const esc  = s => String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;");
 export const AR   = n => String(n).replace(/[0-9]/g, d => "٠١٢٣٤٥٦٧٨٩"[+d]);
 export const mmss = s => { const m=Math.floor(s/60), x=s%60; return m+":"+(x<10?"0":"")+x; };
-export const mmss = s => { const m=Math.floor(s/60), x=s%60; return m+":"+(x<10?"0":"")+x; };
 
 /* اتجاهُ كتلة نصٍّ من محتواها لا من الصفحة — بطاقةٌ واحدة قد تحمل
    مصطلحاً إنجليزياً وشرحاً عربياً. مصدرٌ واحد يستعمله editor_cards.js
