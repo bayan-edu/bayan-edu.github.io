@@ -12,6 +12,7 @@ import { loadList, loadFeedback, loadChat } from './student.js';
 import { loadTeacher, loadInbox, loadMySubjects } from './teacher.js';
 import { openEditor } from './editor.js';
 import { loadStudents, loadMyPerformance } from './analytics.js';
+import { loadFlashcards } from './flashcards.js';
 
 /* ═══════════ ① البوابة ═══════════ */
 
@@ -416,6 +417,7 @@ export function start(){
   // خريطة الوجهات — الموضع الوحيد الذي يربط الشريط بالشاشات
   registerRoutes({
     subjects:   loadList,
+    cards:      loadFlashcards,
     perf:       loadMyPerformance,
     feedback:   loadFeedback,
     chat:       loadChat,
