@@ -291,6 +291,11 @@ export const deleteCard   = id  => db.rpc('delete_card',   { p_id: id });
 export const deleteDeck   = id  => db.rpc('delete_deck',   { p_id: id });
 export const saveCards    = (did, rows) =>
   db.rpc('save_cards', { p_deck: did, p_rows: rows });
+export const saveCard = o => db.rpc('save_card', {
+  p_id: o.id ?? null, p_deck: o.deck ?? null,
+  p_front: o.front, p_back: o.back,
+  p_note: o.note ?? null, p_audio: o.audio ?? null,
+  p_image: o.image ?? null, p_lang: o.lang ?? 'ar' });
 export const saveDeck = o => db.rpc('save_deck', {
   p_id: o.id ?? null, p_title: o.title,
   p_subject: o.subject ?? null, p_level: o.level ?? null,
