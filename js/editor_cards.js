@@ -167,12 +167,12 @@ function renderCards(){
   const row = c => `
     <div class="ed-row" data-c="${c.id}">
       <div style="flex:0 0 34%;min-width:0">
-        <div class="ed-t" dir="${dirOf(c.front, c.lang)}">${esc(c.front)}</div>
+        <div class="ed-t" dir="${dirOf(c.front)}">${esc(c.front)}</div>
         ${c.audio ? '<div class="ed-m"><span class="chip">🔊 نُطق</span></div>' : ''}
       </div>
       <div style="flex:1;min-width:0;color:var(--text-muted);
                   font-size:var(--fs-meta);line-height:1.6"
-           dir="${dirOf(c.back, c.lang)}">${esc(c.back)}</div>
+           dir="${dirOf(c.back)}">${esc(c.back)}</div>
       <button class="it-b wide" data-ed="${c.id}">✏️</button>
       <button class="it-b" data-rm="${c.id}">🗑</button>
     </div>`;
@@ -457,7 +457,7 @@ function preview(){
        جملةٍ قد يُقرأ نصّاً ناقصاً لا سؤالاً. وما لا يتكرّر لا يبلى. */
     front.innerHTML = `
       ${gap ? '<div class="bf-prompt">ما الكلمة الناقصة؟</div>' : ''}
-      <div class="bf-front-q" id="bfQ" dir="${dirOf(c.front, c.lang)}"
+      <div class="bf-front-q" id="bfQ" dir="${dirOf(c.front)}"
         >${esc(c.front).replace(/\{\{\s*\}\}/g,
         '<span style="opacity:.45">______</span>')}</div>
       <div class="bf-recall">
@@ -484,16 +484,16 @@ function preview(){
           <span class="chip">🔊 نُطق</span></div>` : ''}
 
       ${draft ? `
-        <div class="bf-term" dir="${dirOf(c.front, c.lang)}">${esc(c.front)}</div>
+        <div class="bf-term" dir="${dirOf(c.front)}">${esc(c.front)}</div>
         <div class="bf-label">كتبتَ</div>
         <div class="bf-mine" dir="auto">${esc(draft)}</div>
         <div class="bf-label">الصواب</div>
-        <div class="bf-answer" id="bfAns" dir="${dirOf(c.back, c.lang)}">${esc(c.back)}</div>`
-      : `<div class="bf-answer" id="bfAns" dir="${dirOf(c.back, c.lang)}">${esc(c.back)}</div>`}
+        <div class="bf-answer" id="bfAns" dir="${dirOf(c.back)}">${esc(c.back)}</div>`
+      : `<div class="bf-answer" id="bfAns" dir="${dirOf(c.back)}">${esc(c.back)}</div>`}
 
       ${c.note ? `<div class="bf-divider"></div>
         <div class="bf-label">مثال</div>
-        <div class="bf-note" dir="${dirOf(c.note, c.lang)}">${esc(c.note)}</div>` : ''}
+        <div class="bf-note" dir="${dirOf(c.note)}">${esc(c.note)}</div>` : ''}
 
       <button class="bf-hint" data-flip="1">اضغط للعودة للسؤال</button>
       <div class="bf-btn-row">
