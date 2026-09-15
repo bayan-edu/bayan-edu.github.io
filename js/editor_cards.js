@@ -16,17 +16,8 @@
       يُلصق بمفتاحه كما في بقية الشاشات (ثابت ②).
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
-import { app, head, toast, esc, AR, errBox, nav, setWide, scrollTop } from './ui.js';
+import { app, head, toast, esc, AR, errBox, nav, setWide, scrollTop, dirOf, shrinkFont } from './ui.js';
 import { openCourse } from './editor.js';
-
-/* اتجاهُ كل كتلةٍ من محتواها لا من الصفحة: بطاقةٌ واحدة قد تحمل
-   مصطلحاً إنجليزياً وشرحاً عربياً. وlang قيمةٌ ابتدائية، وأوّلُ حرفٍ
-   قويّ في النصّ يعلوها — فهو أصدقُ من وسمٍ قد يُترك على 'ar' سهواً. */
-function dirOf(text, lang){
-  const m = String(text || '').match(/[\u0600-\u06FF\u0750-\u077F]|[A-Za-z]/);
-  if(m) return /[A-Za-z]/.test(m[0]) ? 'ltr' : 'rtl';
-  return lang && lang !== 'ar' ? 'ltr' : 'rtl';
-}
 
 let ctx = null;   // { course, lessons }
 let D   = [];     // المجموعات
@@ -436,23 +427,16 @@ function preview(){
     applyCalm();
   };
 
-  function shrink(face, target, basePx, minPx){
-    let px = basePx;
-    target.style.fontSize = px + 'px';
-    while(face.scrollHeight > face.clientHeight + 1 && px > minPx){
-      px -= 0.6; target.style.fontSize = px + 'px';
-    }
-  }
   function registerFit(face, target, basePx, minPx){
     fitters = fitters.filter(f => f.face !== face);
-    shrink(face, target, basePx, minPx);
+    shrinkFont(face, target, basePx, minPx);
     fitters.push({ face, target, basePx, minPx });
   }
   function onResize(){
     clearTimeout(resizeT);
     resizeT = setTimeout(() => {
       fitters = fitters.filter(f => document.contains(f.target));
-      fitters.forEach(f => shrink(f.face, f.target, f.basePx, f.minPx));
+      fitters.forEach(f => shrinkFont(f.face, f.target, f.basePx, f.minPx));
     }, 120);
   }
   window.addEventListener('resize', onResize);
