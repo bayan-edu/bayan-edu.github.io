@@ -87,6 +87,24 @@ export const KINDS = { pdf:'ملف للقراءة', video:'شرح مرئي', aud
 export const esc  = s => String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;");
 export const AR   = n => String(n).replace(/[0-9]/g, d => "٠١٢٣٤٥٦٧٨٩"[+d]);
 export const mmss = s => { const m=Math.floor(s/60), x=s%60; return m+":"+(x<10?"0":"")+x; };
+export const mmss = s => { const m=Math.floor(s/60), x=s%60; return m+":"+(x<10?"0":"")+x; };
+
+/* اتجاهُ كتلة نصٍّ من محتواها لا من الصفحة — بطاقةٌ واحدة قد تحمل
+   مصطلحاً إنجليزياً وشرحاً عربياً. مصدرٌ واحد يستعمله editor_cards.js
+   وflashcards.js معاً، فلا تسكن هذه المنطق في موضعين. */
+export function dirOf(text, lang){
+  const m = String(text || '').match(/[\u0600-\u06FF\u0750-\u077F]|[A-Za-z]/);
+  if(m) return /[A-Za-z]/.test(m[0]) ? 'ltr' : 'rtl';
+  return lang && lang !== 'ar' ? 'ltr' : 'rtl';
+}
+
+export function shrinkFont(face, target, basePx, minPx){
+  let px = basePx;
+  target.style.fontSize = px + 'px';
+  while(face.scrollHeight > face.clientHeight + 1 && px > minPx){
+    px -= 0.6; target.style.fontSize = px + 'px';
+  }
+}
 
 /* ── الترويسة ── */
 export function head(t, s, hero){
@@ -213,8 +231,8 @@ const ROUTES = {};
 export function registerRoutes(map){ Object.assign(ROUTES, map); }
 
 const DEST = {
-  student: [['subjects','المواد'], ['perf','الأداء'], ['feedback','ملاحظاتي'],
-            ['chat','الرسائل']],
+  student: [['subjects','المواد'], ['cards','تذكّرها'], ['perf','الأداء'],
+            ['feedback','ملاحظاتي'], ['chat','الرسائل']],
   teacher: [['grade','التصحيح'],   ['students','الأداء'],   ['inbox','الرسائل'],
             ['mySubjects','موادّي'], ['editor','التأليف']],
   admin:   [['requests','الطلبات'], ['students','الأداء'],  ['editor','التأليف'],
