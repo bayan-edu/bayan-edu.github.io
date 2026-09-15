@@ -349,13 +349,14 @@ function cardForm(c){
     const back  = document.getElementById('bk2').value.trim();
     if(!front || !back) return toast('الوجه والمعنى لازمان', false);
 
-    /* save_cards هي منفذ الكتابة الوحيد — والبطاقة الواحدة لصقةٌ من سطر */
-    const { error } = await api.saveCards(cur.id, [{
-      front, back,
+    /* save_card بالهُويّة لا بمطابقة front — تعديل الصياغة لا يُنشئ
+       صفّاً آخر. أمّا save_cards (اللصق الجماعي) فتبقى لغرضها هي. */
+    const { error } = await api.saveCard({
+      id: c?.id ?? null, deck: cur.id, front, back,
       note:  document.getElementById('nt').value.trim() || null,
       audio: document.getElementById('au').value.trim() || null,
       image: document.getElementById('im').value.trim() || null,
-      lang: 'ar' }]);
+      lang: 'ar' });
     if(error) return toast(error.message, false);
     toast('حُفظت'); openDeck(cur);
   };
