@@ -380,6 +380,13 @@ function cardForm(c){
 function preview(){
   let i = 0, fitters = [], resizeT;
 
+  /* مفتاحٌ صريح لا يُغني عنه إعدادُ النظام: ذاك يقول ما يريده المستخدم
+     دائماً، وهذا ما يريده الآن. ⇒ إعداد النظام قيمةٌ ابتدائية، والاختيار
+     اليدويّ يعلوها ويُحفظ — كما تفعل سِمة المنصّة. */
+  const sysReduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let calm = localStorage.getItem('bf-calm');
+  calm = calm === null ? sysReduce : calm === '1';
+
   app.innerHTML = `
     <div class="crumb" id="bk">← ${esc(cur.title)}</div>
     <div class="warnbox" style="margin-bottom:14px">👁 معاينة — لا يُحفظ
@@ -387,6 +394,13 @@ function preview(){
       الاسترجاع لا يُخزَّن هنا أيضاً.</div>
 
     <div class="bf-wrap">
+      <div class="bf-bar">
+        <label class="bf-toggle">
+          <input type="checkbox" id="bfCalm" ${calm ? 'checked' : ''}>
+          <span class="bf-track"><span class="bf-knob"></span></span>
+          <span class="bf-toggle-t">حركة أقل</span>
+        </label>
+      </div>
       <div class="bf-stage" id="bfStage">
         <div class="bf-card" id="bfCard">
           <div class="bf-face bf-front" id="bfFront"></div>
@@ -399,7 +413,18 @@ function preview(){
   const cardEl = document.getElementById('bfCard');
   const front = document.getElementById('bfFront');
   const back  = document.getElementById('bfBack');
-  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* صفٌّ واحد على الحاوية يعطّل القلب والانتقال معاً — فمن طلب حركةً
+     أقلّ لا يريد انزلاقاً عند كل تقدّم أيضاً */
+  const applyCalm = () => document.querySelector('.bf-wrap')
+                             .classList.toggle('calm', calm);
+  applyCalm();
+
+  document.getElementById('bfCalm').onchange = e => {
+    calm = e.target.checked;
+    localStorage.setItem('bf-calm', calm ? '1' : '0');
+    applyCalm();
+  };
 
   function shrink(face, target, basePx, minPx){
     let px = basePx;
@@ -503,7 +528,11 @@ function preview(){
 
   function next(){
     const advance = () => { i = (i + 1) % C.length; paint(); };
-    if(reduceMotion){ advance(); return; }
+
+    /* 🔴 تُقرأ calm **لحظة الضغط** لا عند فتح الشاشة: المستخدم قد يبدّل
+       المفتاح في منتصف الجلسة. ولو التُقطت مرّةً واحدة، لانتظرنا
+       transitionend لا يقع أبداً بعد التفعيل — فيتجمّد الانتقال بصمت. */
+    if(calm){ advance(); return; }
 
     stage.classList.add('bf-out');
     stage.addEventListener('transitionend', () => {
