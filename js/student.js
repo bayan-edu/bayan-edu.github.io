@@ -12,7 +12,7 @@ import { app, head, toast, esc, AR, ICONS, KINDS, bubble, errBox, nav,
 import { startQuiz } from './quiz.js';
 import { mediaUrl, isManaged } from './media.js';
 import { isSim, openSim } from './simulations.js';
-import { loadFlashcards } from './flashcards.js';
+import { openLessonDeck } from './flashcards.js';
 
 /* ═══════════ ① المواد ═══════════ */
 
