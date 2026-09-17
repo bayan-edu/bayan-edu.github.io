@@ -313,6 +313,8 @@ export const saveGameScore = (sid, pairs, mistakes, seconds) =>
   db.rpc('save_game_score', { p_subject: sid, p_pairs: pairs,
                               p_mistakes: mistakes, p_seconds: seconds });
 export const gameBoard = (sid, pairs) => db.rpc('game_board', { p_subject: sid, p_pairs: pairs });
+export const practiceCards = (sid, limit) =>
+  db.rpc('practice_cards', { p_subject: sid, p_limit: limit ?? 12 });
 
 /* ═══════════ ⑪ الفروع ═══════════ */
 export const listStrands  = sid => db.rpc('list_strands',  { p_subject: sid });
