@@ -2,27 +2,30 @@
    بيان — card_game_match.js  ·  تحدّي المطابقة
 
    🔑 **مفصولةٌ بالآليّة لا بالمادة.** «مصطلح ← مثاله» تعمل في
-      الكيمياء والنحو والإنجليزية كما تعمل في البلاغة. والعنوان
-      والألقاب تُمرَّر، والشيفرة واحدة. وما يحسم أيّ مادةٍ تراها
-      **البيانات لا الشيفرة**: البطاقة تدخل إن كان لها مثال.
+      الكيمياء والنحو والإنجليزية كما تعمل في البلاغة.
+
+   🌐 **ولغةُ الواجهة تتبع البطاقات لا اسم المادة.** بطاقاتٌ
+      إنجليزية ⇒ اللعبة إنجليزيةٌ كلُّها: العنوان والألقاب والأرقام
+      واتجاه الصفحة. ⇒ **انغماسٌ كامل** — والطالب لا يخرج من اللغة
+      التي يتعلّمها ليقرأ زرّاً.
+      والقرار من `lang` في البطاقة، فإن غابت فمن أوّل حرفٍ قويّ
+      (dirOf). ⇒ مقرَّرٌ إنجليزيّ يُدرَّس في مدرسةٍ عربية تراه
+      إنجليزياً بلا إعدادٍ يُضبط — البيانات تقرّر لا الشيفرة.
 
    ┌──────── التصميم: نوعان لا شبكةٌ موحَّدة ────────┐
-   │ المصطلح كلمتان، والمثال بيتُ شعرٍ أحياناً. وحشرُهما في      │
-   │ مربّعاتٍ متساوية يُنتج مثالاً لا يُقرأ ومصطلحاً يسبح في فراغ.│
+   │ المصطلح كلمتان، والمثال جملةٌ كاملة. وحشرُهما في مربّعاتٍ    │
+   │ متساوية يُنتج مثالاً لا يُقرأ ومصطلحاً يسبح في فراغ.         │
    │ ⇒ **المصطلح خَتمٌ** مضغوط في صفّ، **والمثال سطرٌ** عريض     │
-   │   يُقرأ. والبنية تقول القاعدة بلا تعليمات: ختمٌ يُطابَق بسطر.│
-   │                                                             │
-   │ ولحظةُ المطابقة هي الجرأة الوحيدة: الختم **يُغرَس في فراغ** │
-   │ المثال فتكتمل الجملة أمام عينيه. ولا يختفي الاثنان —         │
-   │ **يُرى الاقتران**، وهو ما جاء الطالب لأجله.                  │
+   │   يُقرأ. والبنية تقول القاعدة بلا تعليمات.                   │
+   │ ولحظةُ المطابقة هي الجرأة الوحيدة: الختم يُغرَس في الفراغ    │
+   │ فتكتمل الجملة — **يُرى الاقتران**، لا يختفي الطرفان.         │
    └─────────────────────────────────────────────────────────────┘
 
    ثوابتُها:
    ① تمرينٌ لا مقياس: لا review_card ولا تشخيص ولا جدولة.
    ② ⛔ لا عدّ تنازليّ — الدرع يعاقب التخمين، والعدّاد يعاقب التفكير.
    ③ الدقّة أولاً ثمّ السرعة، كما ترتّب اللوحة في 104.
-   ④ لا مكتبة صوت: نغماتٌ من Web Audio. والمنصّة تُوطّن MathJax
-      ولا تعتمد CDN — فلا تُستقدم مكتبةٌ لصفّارة.
+   ④ لا مكتبة صوت: نغماتٌ من Web Audio.
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
 import { app, esc, AR, toast, scrollTop, dirOf } from './ui.js';
@@ -30,12 +33,72 @@ import { app, esc, AR, toast, scrollTop, dirOf } from './ui.js';
 const SHIELDS   = 3;
 const PER_ROUND = 5;
 
-const TITLES = [
-  { t: 'أمير البيان',  i: '👑' },   // بلا خدش · ودون وسيط الجولة
-  { t: 'فارس الكلمة',  i: '🛡️' },   // بلا خدش
-  { t: 'بليغ العصر',   i: '⚔️' },   // خدش أو خدشان
-  { t: 'فارس متدرّب',  i: '🏹' }    // ولا أحد خارج الفرسان
-];
+
+/* ═══════════ اللغتان ═══════════ */
+
+/* سلّمٌ واحد بأربع مراتب — والأسماء تنتمي إلى عالمِ لغتها لا تُترجَم
+   حرفياً: «أمير البيان» صورةٌ عربية، و«Word Master» صورةٌ إنجليزية. */
+const L = {
+  ar: {
+    dir: 'rtl',
+    title:  s => 'فرسان ' + s,
+    sound:  'الصوت',
+    need:   'تحتاج أربع بطاقاتٍ لها أمثلة',
+    broke:  'انكسرت الدروع الثلاثة',
+    confused: 'التبس عليك',
+    board:  n => `لوحة الأسبوع · ${AR(n)} لاعب`,
+    first:  'كن أوّل من يسجّل',
+    streak: n => `أطول سلسلة ${AR(n)}`,
+    again:  'مرّةً أخرى',
+    out:    'عودة',
+    failed: m => `تعذّر حفظ النتيجة: ${m}`,
+    sec:    n => `${AR(n)} ث`,
+    num:    AR,
+    toPrince: 'أسرعُ قليلاً وتبلغ الإمارة',
+    toKnight: 'بلا خدشٍ وتبلغ الفروسية',
+    scratch: n => n === 0 ? 'بلا خدش' : n === 1 ? 'خدشٌ واحد'
+                : n === 2 ? 'خدشان'   : `${AR(n)} خدوش`,
+    ranks: [
+      { t: 'أمير البيان', i: '👑' },
+      { t: 'فارس الكلمة', i: '🛡️' },
+      { t: 'بليغ العصر',  i: '⚔️' },
+      { t: 'فارس متدرّب', i: '🏹' }
+    ]
+  },
+  en: {
+    dir: 'ltr',
+    title:  s => s + ' Duel',
+    sound:  'Sound',
+    need:   'You need four cards with examples',
+    broke:  'All three shields broken',
+    confused: 'You mixed these up',
+    board:  n => `This week · ${n} players`,
+    first:  'Be the first on the board',
+    streak: n => `Longest streak ${n}`,
+    again:  'Play again',
+    out:    'Back',
+    failed: m => `Could not save your score: ${m}`,
+    sec:    n => `${n}s`,
+    num:    n => String(n),
+    toPrince: 'A little faster and the crown is yours',
+    toKnight: 'Finish unscratched to earn your shield',
+    scratch: n => n === 0 ? 'Unscratched' : n === 1 ? '1 scratch' : `${n} scratches`,
+    ranks: [
+      { t: 'Word Master',  i: '👑' },
+      { t: 'Wordsmith',    i: '🛡️' },
+      { t: 'Rising Reader',i: '⚔️' },
+      { t: 'Apprentice',   i: '🏹' }
+    ]
+  }
+};
+
+/* اللغةُ من البطاقات: عمود lang أولاً، فإن غاب فأوّل حرفٍ قويّ.
+   والأغلبيةُ تحسم — فبطاقةٌ عربيةٌ شاردة في مجموعةٍ إنجليزية لا تقلبها. */
+function localeOf(cards){
+  const en = cards.filter(c =>
+    (c.lang && c.lang !== 'ar') || dirOf(c.front) === 'ltr').length;
+  return en > cards.length / 2 ? 'en' : 'ar';
+}
 
 
 /* ═══════════ الصوت — بلا مكتبة ولا ملفّات ═══════════ */
@@ -69,13 +132,14 @@ const sfx = {
 
 /* ═══════════ تجهيز البنود ═══════════ */
 
-/* يوازي card_key في القاعدة (تشكيلٌ وصور ألف) — ذاك للتخزين وهذا للعرض */
+/* يوازي card_key في القاعدة (تشكيلٌ وصور ألف) — ذاك للتخزين وهذا للعرض.
+   وtoLowerCase تخدم الإنجليزية: "Civilization" في المثال تُطابق "civilization". */
 const norm = s => String(s || '')
   .replace(/[\u064B-\u0652\u0670\u0640]/g, '')
   .replace(/[أإآٱ]/g, 'ا').replace(/ى/g, 'ي')
   .toLowerCase();
 
-const STRIP = /^[«»"'(),.:؛،؟!\u2018\u2019]+|[«»"'(),.:؛،؟!\u2018\u2019]+$/g;
+const STRIP = /^[«»"'(),.:؛،؟!?\u2018\u2019\u201C\u201D]+|[«»"'(),.:؛،؟!?\u2018\u2019\u201C\u201D]+$/g;
 
 /* يُحذف المصطلح من مثاله إن ورد فيه — وإلّا كشف المثال جوابَه.
    ويُترك موضعُه فراغاً يُغرَس فيه الختم عند المطابقة. */
@@ -92,7 +156,6 @@ function slotted(example, term){
     return esc(tok);
   }).join('');
 
-  /* لا موضعَ له في المثال ⇒ الفراغ في الذيل، فيبقى للختم مستقرّ */
   return hit ? html : esc(example) + ' <i class="mg-slot"></i>';
 }
 
@@ -106,7 +169,9 @@ export function eligible(cards){
 
 export function openMatchGame({ subject, cards, title, onExit }){
   const pool = eligible(cards);
-  if(pool.length < 4){ toast('تحتاج أربع بطاقاتٍ لها أمثلة', false); onExit?.(); return; }
+  const t = L[localeOf(pool.length ? pool : (cards || []))];
+
+  if(pool.length < 4){ toast(t.need, false); onExit?.(); return; }
 
   const rounds = [];
   for(let i = 0; i < pool.length; i += PER_ROUND){
@@ -126,16 +191,17 @@ export function openMatchGame({ subject, cards, title, onExit }){
 
   function shell(){
     app.innerHTML = `
-      <div class="mg-wrap">
+      <div class="mg-wrap" dir="${t.dir}">
         <header class="mg-head">
-          <h2 class="mg-title">${esc(title || 'تحدّي المطابقة')}</h2>
-          <button class="mg-mute" id="mgMute" aria-label="الصوت">${muted ? '🔇' : '🔊'}</button>
+          <h2 class="mg-title">${esc(title || t.title(subject.name || ''))}</h2>
+          <button class="mg-mute" id="mgMute" aria-label="${t.sound}"
+            >${muted ? '🔇' : '🔊'}</button>
         </header>
 
         <div class="mg-hud">
           <div class="mg-shields" id="mgSh"></div>
           <div class="mg-combo" id="mgCb"></div>
-          <div class="mg-time" id="mgTm">٠:٠٠</div>
+          <div class="mg-time" id="mgTm">${t.num(0)}:${t.num('00')}</div>
         </div>
 
         <div class="mg-terms" id="mgTerms"></div>
@@ -150,9 +216,9 @@ export function openMatchGame({ subject, cards, title, onExit }){
 
     /* زمنٌ تصاعديّ يُعرض ولا يعاقب — ولا شيء يقع عند بلوغه رقماً */
     G.tick = setInterval(() => {
-      const t = el('mgTm'); if(!t) return;
+      const tm = el('mgTm'); if(!tm) return;
       const s = Math.floor((Date.now() - G.t0) / 1000);
-      t.textContent = AR(Math.floor(s/60)) + ':' + AR(String(s % 60).padStart(2,'0'));
+      tm.textContent = t.num(Math.floor(s/60)) + ':' + t.num(String(s % 60).padStart(2,'0'));
     }, 500);
   }
 
@@ -161,7 +227,7 @@ export function openMatchGame({ subject, cards, title, onExit }){
     sh.innerHTML = Array.from({length: SHIELDS}, (_, i) =>
       `<span class="mg-sh${i < G.shields ? '' : ' out'}"></span>`).join('');
     const cb = el('mgCb');
-    cb.textContent = G.combo > 1 ? `×${AR(G.combo)}` : '';
+    cb.textContent = G.combo > 1 ? `×${t.num(G.combo)}` : '';
     cb.className = 'mg-combo' + (G.combo >= 3 ? ' hot' : '');
   }
 
@@ -203,17 +269,17 @@ export function openMatchGame({ subject, cards, title, onExit }){
 
   function judge(){
     G.lock = true;
-    const t = G.term, r = G.row;
+    const tb = G.term, rb = G.row;
 
-    if(t.dataset.t === r.dataset.e){
+    if(tb.dataset.t === rb.dataset.e){
       G.combo++; G.best = Math.max(G.best, G.combo);
       sfx.seal(G.combo);
 
       /* الختم يُغرَس في الفراغ — فتكتمل الجملة ويُرى الاقتران */
-      const slot = r.querySelector('.mg-slot');
-      if(slot){ slot.textContent = t.textContent; slot.className = 'mg-slot filled'; }
-      t.classList.remove('on'); t.classList.add('used');
-      r.classList.remove('on'); r.classList.add('sealed');
+      const slot = rb.querySelector('.mg-slot');
+      if(slot){ slot.textContent = tb.textContent; slot.className = 'mg-slot filled'; }
+      tb.classList.remove('on'); tb.classList.add('used');
+      rb.classList.remove('on'); rb.classList.add('sealed');
 
       G.matched++; G.term = null; G.row = null; G.lock = false;
       paintHud();
@@ -225,12 +291,12 @@ export function openMatchGame({ subject, cards, title, onExit }){
     sfx.miss();
     /* أنفعُ ما تُنتجه اللعبة: أيُّ مفهومين يختلطان عنده — والبطاقة
        لا تكشف هذا أبداً، فهي تقيس الاستحضار لا التمييز. */
-    const right = rounds[G.r].find(c => String(c.id) === r.dataset.e);
-    if(right) G.confused.push([t.textContent, right.front].sort().join(' ↔ '));
+    const right = rounds[G.r].find(c => String(c.id) === rb.dataset.e);
+    if(right) G.confused.push([tb.textContent, right.front].sort().join(' ↔ '));
 
-    t.classList.add('bad'); r.classList.add('bad');
+    tb.classList.add('bad'); rb.classList.add('bad');
     setTimeout(() => {
-      [t, r].forEach(x => x.classList.remove('bad', 'on'));
+      [tb, rb].forEach(x => x.classList.remove('bad', 'on'));
       G.term = null; G.row = null; G.lock = false;
       paintHud();
       if(G.shields <= 0){ sfx.over(); finish(false); }
@@ -248,8 +314,8 @@ export function openMatchGame({ subject, cards, title, onExit }){
 
     /* 🔴 لا .catch() على نداء Supabase: PostgrestBuilder كائنٌ قابلٌ
        للانتظار (then) وليس Promise كاملاً — فـ.catch غير معرَّفة،
-       وتُرمى TypeError فيُرفَض الوعد بلا مُلتقِط. وهذا هو التجمّد
-       الذي وقع: كلُّ البطاقات مطابَقة ولا شيء يحدث. ⇒ try/catch. */
+       وتُرمى TypeError فيُرفَض الوعد بلا مُلتقِط. وذاك كان التجمّد:
+       كلُّ البطاقات مطابَقة ولا شيء يحدث. ⇒ try/catch. */
     let board = null, saveErr = null;
     if(won){
       try{
@@ -262,42 +328,42 @@ export function openMatchGame({ subject, cards, title, onExit }){
     }
 
     const med  = board?.median ?? null;
-    const rank = !won ? TITLES[3]
-      : G.mistakes === 0 && (med === null || secs < med) ? TITLES[0]
-      : G.mistakes === 0 ? TITLES[1]
-      : G.mistakes <= 2  ? TITLES[2] : TITLES[3];
+    const rank = !won ? t.ranks[3]
+      : G.mistakes === 0 && (med === null || secs < med) ? t.ranks[0]
+      : G.mistakes === 0 ? t.ranks[1]
+      : G.mistakes <= 2  ? t.ranks[2] : t.ranks[3];
 
     const next = !won ? ''
-      : G.mistakes === 0 && med !== null && secs >= med ? 'أسرعُ قليلاً وتبلغ الإمارة'
-      : G.mistakes > 0 ? 'بلا خدشٍ وتبلغ الفروسية' : '';
+      : G.mistakes === 0 && med !== null && secs >= med ? t.toPrince
+      : G.mistakes > 0 ? t.toKnight : '';
 
     const conf = [...new Set(G.confused)].slice(0, 3);
 
     app.innerHTML = `
-      <div class="mg-wrap">
+      <div class="mg-wrap" dir="${t.dir}">
         <div class="mg-end${won ? ' win' : ''}">
           <div class="mg-rank">${rank.i}</div>
           <div class="mg-rank-t">${esc(rank.t)}</div>
           <div class="mg-line">${won
-            ? `${scratch(G.mistakes)} · ${AR(secs)} ث`
-            : 'انكسرت الدروع الثلاثة'}</div>
+            ? `${t.scratch(G.mistakes)} · ${t.sec(t.num(secs))}`
+            : esc(t.broke)}</div>
           ${next ? `<div class="mg-next">${esc(next)}</div>` : ''}
-          ${G.best > 2 ? `<div class="mg-next">أطول سلسلة ${AR(G.best)}</div>` : ''}
+          ${G.best > 2 ? `<div class="mg-next">${esc(t.streak(G.best))}</div>` : ''}
         </div>
 
         ${conf.length ? `
           <section class="mg-sec">
-            <h3 class="mg-sec-t">التبس عليك</h3>
+            <h3 class="mg-sec-t">${esc(t.confused)}</h3>
             ${conf.map(p => `<div class="mg-conf">${esc(p)}</div>`).join('')}
           </section>` : ''}
 
         ${board ? boardHtml(board) : ''}
         ${saveErr ? `<section class="mg-sec"><div class="mg-conf"
-           >تعذّر حفظ النتيجة: ${esc(saveErr)}</div></section>` : ''}
+           >${esc(t.failed(saveErr))}</div></section>` : ''}
 
         <div class="mg-acts">
-          <button class="btn primary" id="again">مرّةً أخرى</button>
-          <button class="btn" id="out">عودة</button>
+          <button class="btn primary" id="again">${esc(t.again)}</button>
+          <button class="btn" id="out">${esc(t.out)}</button>
         </div>
       </div>`;
 
@@ -311,16 +377,15 @@ export function openMatchGame({ subject, cards, title, onExit }){
     const meIn = top.some(r => r.me);
     const row = r => `
       <div class="mg-lb${r.me ? ' me' : ''}">
-        <span class="mg-rk">${r.rank <= 3 ? ['🥇','🥈','🥉'][r.rank-1] : AR(r.rank)}</span>
+        <span class="mg-rk">${r.rank <= 3 ? ['🥇','🥈','🥉'][r.rank-1] : t.num(r.rank)}</span>
         <span class="mg-nm">${esc(r.name || '—')}</span>
-        <span class="mg-sc">${scratch(r.mistakes)} · ${AR(r.seconds)} ث</span>
+        <span class="mg-sc">${t.scratch(r.mistakes)} · ${t.sec(t.num(r.seconds))}</span>
       </div>`;
 
     return `
       <section class="mg-sec">
-        <h3 class="mg-sec-t">لوحة الأسبوع · ${AR(b.players || 0)} لاعب</h3>
-        ${top.length ? top.map(row).join('')
-                     : '<div class="mg-conf">كن أوّل من يسجّل</div>'}
+        <h3 class="mg-sec-t">${esc(t.board(b.players || 0))}</h3>
+        ${top.length ? top.map(row).join('') : `<div class="mg-conf">${esc(t.first)}</div>`}
         ${!meIn && b.me ? `<div class="mg-gap">⋯</div>${row(b.me)}` : ''}
       </section>`;
   }
@@ -328,15 +393,6 @@ export function openMatchGame({ subject, cards, title, onExit }){
 
 
 /* ═══════════ أدوات ═══════════ */
-
-/* لغةٌ واحدة تمتدّ: «بلا خدش» ثمّ «خدشٌ واحد» — بخلاف «بلا خطأ»
-   التي تترك المتصدّر في عالمٍ والباقي في آخر */
-function scratch(n){
-  return n === 0 ? 'بلا خدش'
-       : n === 1 ? 'خدشٌ واحد'
-       : n === 2 ? 'خدشان'
-       : `${AR(n)} خدوش`;
-}
 
 function shuffle(a){
   for(let i = a.length - 1; i > 0; i--){
