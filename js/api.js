@@ -309,6 +309,10 @@ export const addMyCard      = o => db.rpc('add_my_card', {
 export const subscribeCards = ids => db.rpc('subscribe_cards', { p_card_ids: ids });
 export const browseDeck     = id  => db.rpc('browse_deck',     { p_deck: id });
 export const reviewCard = (id, rating) => db.rpc('review_card', { p_card: id, p_rating: rating });
+export const saveGameScore = (sid, pairs, mistakes, seconds) =>
+  db.rpc('save_game_score', { p_subject: sid, p_pairs: pairs,
+                              p_mistakes: mistakes, p_seconds: seconds });
+export const gameBoard = (sid, pairs) => db.rpc('game_board', { p_subject: sid, p_pairs: pairs });
 
 /* ═══════════ ⑪ الفروع ═══════════ */
 export const listStrands  = sid => db.rpc('list_strands',  { p_subject: sid });
