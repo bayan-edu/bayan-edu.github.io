@@ -110,10 +110,9 @@ function openSession(subject){
 
     document.getElementById('bk').onclick = () => { if(confirm('إنهاء الجلسة الآن؟')) loadFlashcards(); };
 
-    const stage  = document.getElementById('bfStage');
-    const cardEl = document.getElementById('bfCard');
-    const front  = document.getElementById('bfFront');
-    const back   = document.getElementById('bfBack');
+    /* 🔑 تُقرأ لحظة الاستعمال لا مرّةً عند mount: restoreCard تُنشئ
+       عناصر جديدة، ومرجعٌ ملتقَطٌ سلفاً يبقى مشيراً إلى المحذوف. */
+    const el = id => document.getElementById(id);
     let fitters = [];
 
     function registerFit(face, target, basePx, minPx){
@@ -128,12 +127,26 @@ function openSession(subject){
         document.contains(f.target) && shrinkFont(f.face, f.target, f.basePx, f.minPx)), 120);
     });
 
+    /* هيكل البطاقة يُكتب في موضعٍ واحد: mount أوّلَ مرّة، وهنا بعد
+       شاشة «بعبارتك». وإعادةُ ربط النقر لازمة لأن bfCard عنصرٌ جديد. */
+    function restoreCard(){
+      const wrap = app.querySelector('.bf-wrap');
+      wrap.innerHTML = `
+        <div class="bf-stage" id="bfStage">
+          <div class="bf-card" id="bfCard">
+            <div class="bf-face bf-front" id="bfFront"></div>
+            <div class="bf-face bf-back"  id="bfBack"></div>
+          </div>
+        </div>`;
+      bind();
+    }
+
     function paint(){
       const c = queue[0];
       const gap = /\{\{\s*\}\}/.test(c.front);
-      cardEl.classList.remove('flipped');
+      el("bfCard").classList.remove('flipped');
 
-      front.innerHTML = `
+      el("bfFront").innerHTML = `
         ${c.entry === 'dx' ? '<div class="ed-m"><span class="chip">📍 من إجابةٍ سابقة</span></div>' : ''}
         ${gap ? '<div class="bf-prompt">ما الكلمة الناقصة؟</div>' : ''}
         <div class="bf-front-q" id="bfQ" dir="${dirOf(c.front)}"
@@ -144,9 +157,9 @@ function openSession(subject){
                     style="min-height:56px"></textarea>
           <button class="bf-hint" data-flip="1">اضغط لرؤية الإجابة</button>
         </div>`;
-      registerFit(front, document.getElementById('bfQ'), 18.9, 15);
+      registerFit(el("bfFront"), document.getElementById('bfQ'), 18.9, 15);
 
-      back.innerHTML = '';
+      el("bfBack").innerHTML = '';
     }
 
     function buildBack(){
@@ -154,7 +167,7 @@ function openSession(subject){
       const draft = document.getElementById('bfDraft').value.trim();
       const compare = draft || c.my_note;   // ما يُقارَن به إن وُجد — فرصٌ لا مصدر واحد
 
-      back.innerHTML = `
+      el("bfBack").innerHTML = `
         ${c.audio ? `<div style="display:flex;justify-content:flex-end;margin-bottom:6px">
             <span class="chip">🔊 نُطق</span></div>` : ''}
 
@@ -181,22 +194,25 @@ function openSession(subject){
           <button class="btn" data-g="3">بسهولة</button>
         </div>`;
 
-      registerFit(back, document.getElementById('bfAns'), 16.8, 13);
+      registerFit(el("bfBack"), document.getElementById('bfAns'), 16.8, 13);
 
-      back.querySelector('[data-flip]').onclick = e => { e.stopPropagation(); toggle(); };
-      back.querySelectorAll('[data-g]').forEach(b => b.onclick = e => {
+      el("bfBack").querySelector('[data-flip]').onclick = e => { e.stopPropagation(); toggle(); };
+      el("bfBack").querySelectorAll('[data-g]').forEach(b => b.onclick = e => {
         e.stopPropagation(); rate(+b.dataset.g, draft);
       });
     }
 
     function toggle(){
-      if(cardEl.classList.contains('flipped')) cardEl.classList.remove('flipped');
-      else { buildBack(); cardEl.classList.add('flipped'); }
+      if(el("bfCard").classList.contains('flipped')) el("bfCard").classList.remove('flipped');
+      else { buildBack(); el("bfCard").classList.add('flipped'); }
     }
-    cardEl.addEventListener('click', e => {
-      if(e.target.closest('textarea, .bf-btn-row')) return;
-      toggle();
-    });
+    function bind(){
+      el('bfCard').addEventListener('click', e => {
+        if(e.target.closest('textarea, .bf-btn-row')) return;
+        toggle();
+      });
+    }
+    bind();
 
     async function rate(g, draft){
       const c = queue.shift();
@@ -216,8 +232,12 @@ function openSession(subject){
     /* «بعبارتك» — بعد الإخفاق وحده، وتحتلّ الشاشة لحظتها */
     function afterMiss(c, draft){
       return new Promise(resolve => {
-        app.innerHTML = `
-          <div class="bf-wrap">
+        /* 🔴 لا تُنادى mount() هنا: كانت تُعيد كتابة app وتُنشئ نسخةً
+           ثانية من paint/advance، ثمّ يُنادى advance القديم المشير إلى
+           عناصرَ حُذفت من DOM — فتُرسم البطاقة في عناصر يتيمة لا تظهر.
+           ⇒ يُستبدل محتوى bf-wrap وحده، ويُعاد بناؤه بعد الانتهاء. */
+        const wrap = app.querySelector('.bf-wrap');
+        wrap.innerHTML = `
             <div class="card" style="padding:20px 18px">
               <div class="bf-label" style="margin-bottom:4px">تعود اليوم</div>
               <div style="font-weight:700;margin-bottom:14px" dir="${dirOf(c.front)}"
@@ -228,12 +248,16 @@ function openSession(subject){
               <div class="nav" style="margin-top:14px">
                 <button class="btn primary" id="ok" style="width:100%">التالية</button>
               </div>
-            </div>
-          </div>`;
+            </div>`;
         document.getElementById('ok').onclick = async () => {
           const note = document.getElementById('mn').value.trim();
-          if(note) await api.saveMyNote(c.id, note);
-          resolve(); mount(); advance();
+          if(note){
+            const { error } = await api.saveMyNote(c.id, note);
+            if(!error) c.my_note = note;      // يظهر في عَودها داخل الجلسة نفسها
+          }
+          restoreCard();
+          resolve();
+          advance();
         };
       });
     }
