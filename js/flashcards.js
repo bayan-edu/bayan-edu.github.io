@@ -409,15 +409,16 @@ function openBrowseDeck(subject, deck){
     if(error){ app.innerHTML = errBox(error, 'المجموعة'); return; }
     const cards = data || [];
 
+    /* 🔴 لا يُستعار .ed-row هنا: label عنصرٌ سطريّ لا يُنشئ سياق flex،
+       فـflex:1 على الابن بلا أثر — يأخذ المربّع عرضه الطبيعيّ ويُحشر
+       النصّ فيما بقي فينكسر حرفاً حرفاً. ⇒ يُصرَّح بالتخطيط هنا. */
     const row = c => `
-      <label class="ed-row" style="cursor:pointer">
-        <input type="checkbox" data-c="${c.id}" ${c.mine ? 'checked disabled' : ''}
-               style="margin-inline-end:10px">
-        <div style="flex:1;min-width:0">
-          <div class="ed-t" dir="${dirOf(c.front)}">${esc(c.front)}</div>
-          <div class="ed-m" style="color:var(--text-muted)" dir="${dirOf(c.back)}"
-            >${esc(c.back)}</div>
-        </div>
+      <label class="pick-row">
+        <input type="checkbox" data-c="${c.id}" ${c.mine ? 'checked disabled' : ''}>
+        <span class="pick-txt">
+          <span class="pick-f" dir="${dirOf(c.front)}">${esc(c.front)}</span>
+          <span class="pick-b" dir="${dirOf(c.back)}">${esc(c.back)}</span>
+        </span>
         ${c.mine ? '<span class="chip g">عندك</span>' : ''}
       </label>`;
 
