@@ -368,7 +368,7 @@ function openSession(subject){
 
       const pb = document.getElementById('play');
       if(pb) pb.onclick = () => openMatchGame({
-        subject, cards: seen, title: 'فرسان ' + subject.name,
+        subject, cards: seen,          // العنوان واللغة يُشتقّان من البطاقات
         onExit: () => openSubjectCards(subject) });
 
       document.getElementById('back').onclick = async () => {
