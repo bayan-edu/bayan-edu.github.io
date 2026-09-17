@@ -454,7 +454,7 @@ async function startPlacement(x){
   startPlacementQuiz(data.session, data.quiz, x, data.resumed);
 }
 
-/* ═══════════ بطاقات الدرس ═══════════ */
+/* ═══════════ بطاقات الدرس — مصدرٌ ثابت لا فعلٌ يقع مرّة ═══════════ */
 
 const DECK_SVG = `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
   <rect x="3"  y="7"  width="12" height="14" rx="2.5" stroke="currentColor"
@@ -469,48 +469,31 @@ async function loadLessonDeck(l){
   let deck;
   try{
     const { data } = await api.subjectDecks(S.subj.id);
-    deck = (data || []).find(d => !d.mine && String(d.lesson_id) === String(l.id) && d.cards > 0);
+    deck = (data || []).find(d => !d.mine &&
+             String(d.lesson_id) === String(l.id) && d.cards > 0);
   }catch(e){ return; }
   if(!deck || S.lesson?.id !== l.id) return;   // غادر الدرس قبل أن يصل الردّ
 
   const host = document.createElement('div');
   host.className = 'deck-card';
+  host.setAttribute('role', 'button');
+  host.tabIndex = 0;
   host.innerHTML = `
     <div class="deck-ic">${DECK_SVG}</div>
     <div class="deck-txt">
       <div class="deck-t">${esc(deck.title)}</div>
-      <div class="deck-m" id="deckM">${AR(deck.cards)} بطاقة · تعود إليك بالتباعد</div>
+      <div class="deck-m">${AR(deck.cards)} بطاقة · تعود إليك بالتباعد</div>
     </div>
-    <button class="deck-b" id="deckB">أضِف</button>`;
+    <div class="deck-go">←</div>`;
 
   const anchor = app.querySelector('.hint');
   anchor ? anchor.before(host) : app.append(host);
 
-  document.getElementById('deckB').onclick = async () => {
-    const b = document.getElementById('deckB'), m = document.getElementById('deckM');
-    b.disabled = true; b.textContent = '…';
-    try{
-      const { data: list } = await api.browseDeck(deck.id);
-      const ids = (list || []).filter(c => !c.mine).map(c => c.id);
+  const open = () => openLessonDeck(
+    { id: S.subj.id, name: S.subj.name },
+    { ...deck, lesson: l.title },
+    () => openLesson(l));                       // العودة إلى الدرس لا إلى «تذكّرها»
 
-      if(!ids.length){                      // أخذها كلَّها من قبل
-        host.classList.add('got');
-        m.textContent = 'كلُّها في صندوقك';
-        b.textContent = 'راجِعها'; b.disabled = false;
-        b.onclick = () => loadFlashcards();
-        return;
-      }
-      const { data: r, error } = await api.subscribeCards(ids);
-      if(error) throw error;
-
-      host.classList.add('got');
-      m.textContent = `أُضيفت ${AR(r.added)}` +
-                      (r.already ? ` · وكانت ${AR(r.already)} عندك` : '');
-      b.textContent = 'راجِعها'; b.disabled = false;
-      b.onclick = () => loadFlashcards();
-    }catch(err){
-      b.disabled = false; b.textContent = 'أضِف';
-      toast(err?.message || 'تعذّرت الإضافة', false);
-    }
-  };
+  host.onclick = open;
+  host.onkeydown = e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); open(); } };
 }
