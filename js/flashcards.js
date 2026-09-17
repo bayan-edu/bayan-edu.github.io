@@ -83,7 +83,17 @@ function openSubjectCards(subject){
 /* ═══════════ ③ الجلسة ═══════════ */
 
 function openSession(subject){
-  let queue = [], pos = 0, counts = { 1:0, 2:0, 3:0 }, firstTimers = 0, total = 0;
+  /* حارسٌ يُطلق مرّةً عند الفتح: نداءٌ ناقصٌ في api.js كان يظهر عطلاً
+     غامضاً في منتصف الجلسة — الآن يُسمّى باسمه قبل أن تبدأ. */
+  const missing = ['dueCards','reviewCard','saveMyNote']
+    .filter(f => typeof api[f] !== 'function');
+  if(missing.length){
+    app.innerHTML = `<div class="err"><b>ناقصٌ في api.js</b>
+      لم تُضَف: ${missing.join(' · ')}</div>`;
+    return;
+  }
+
+  let queue = [], counts = { 1:0, 2:0, 3:0 }, firstTimers = 0, total = 0;
 
   app.innerHTML = `<div class="status">جارٍ التحميل…</div>`;
 
@@ -108,7 +118,9 @@ function openSession(subject){
         </div>
       </div>`;
 
-    document.getElementById('bk').onclick = () => { if(confirm('إنهاء الجلسة الآن؟')) loadFlashcards(); };
+    document.getElementById('bk').onclick = () => {
+      if(confirm('إنهاء الجلسة الآن؟')){ unbindResize(); loadFlashcards(); }
+    };
 
     /* 🔑 تُقرأ لحظة الاستعمال لا مرّةً عند mount: restoreCard تُنشئ
        عناصر جديدة، ومرجعٌ ملتقَطٌ سلفاً يبقى مشيراً إلى المحذوف. */
@@ -121,11 +133,13 @@ function openSession(subject){
       fitters.push({ face, target, basePx, minPx });
     }
     let resizeT;
-    window.addEventListener('resize', () => {
+    const onResize = () => {
       clearTimeout(resizeT);
       resizeT = setTimeout(() => fitters.forEach(f =>
         document.contains(f.target) && shrinkFont(f.face, f.target, f.basePx, f.minPx)), 120);
-    });
+    };
+    window.addEventListener('resize', onResize);
+    const unbindResize = () => window.removeEventListener('resize', onResize);
 
     /* هيكل البطاقة يُكتب في موضعٍ واحد: mount أوّلَ مرّة، وهنا بعد
        شاشة «بعبارتك». وإعادةُ ربط النقر لازمة لأن bfCard عنصرٌ جديد. */
@@ -214,12 +228,30 @@ function openSession(subject){
     }
     bind();
 
-    async function rate(g, draft){
-      const c = queue.shift();
-      counts[g] = (counts[g] || 0) + 1;
+    let busy = false;
 
-      const { error } = await api.reviewCard(c.id, g);
-      if(error){ toast(error.message, false); queue.unshift(c); return; }   // فشل الحفظ ⇒ تبقى في مكانها
+    async function rate(g, draft){
+      if(busy) return;                    // نقرتان سريعتان لا تُقدّران مرّتين
+      busy = true;
+      const c = queue[0];                 // 🔴 لا shift قبل أن تنجح الكتابة
+
+      let res;
+      try {
+        res = await api.reviewCard(c.id, g);
+      } catch(err){
+        /* 🔴 استثناءٌ مرميّ (دالّةٌ غير معرَّفة · انقطاعُ شبكة) يتخطّى فرع
+           error تماماً. وكان يقع بعد shift — فتتقدّم الحالة بلا حفظ:
+           الوجه الأول يبقى للبطاقة القديمة والمعنى يصير للتالية.
+           عطلٌ صامتٌ لا يظهر في الطرفية لأن الوعد يُرفَض بلا مُلتقِط. */
+        busy = false;
+        toast('تعذّر حفظ المراجعة: ' + (err?.message || err), false);
+        return;
+      }
+      if(res?.error){ busy = false; toast(res.error.message, false); return; }
+
+      queue.shift();                      // الآن فقط — بعد أن ثبتت الكتابة
+      counts[g] = (counts[g] || 0) + 1;
+      busy = false;
 
       if(g === 1){
         queue.push(c);          // 🔑 لا تخرج قبل أن تصحّ — تعود إلى الذيل
@@ -268,6 +300,7 @@ function openSession(subject){
     }
 
     function finish(){
+      unbindResize();                     // وإلا تراكمت مستمعاتٌ على نافذةٍ واحدة
       const failed = counts[1] > 0;
       const line = failed
         ? { t: 'ما نسيته اليوم، ستتذكره غداً', thumb: true }
