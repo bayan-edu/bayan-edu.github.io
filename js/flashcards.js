@@ -14,6 +14,7 @@
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
 import { S } from './state.js';
+import { openMatchGame, eligible } from './card_game_match.js';
 import { app, head, toast, esc, AR, errBox, nav, scrollTop,
          dirOf, shrinkFont } from './ui.js';
 
@@ -93,7 +94,7 @@ function openSession(subject){
     return;
   }
 
-  let queue = [], counts = { 1:0, 2:0, 3:0 }, firstTimers = 0, total = 0;
+  let queue = [], seen = [], counts = { 1:0, 2:0, 3:0 }, firstTimers = 0, total = 0;
 
   /* إعدادُ النظام قيمةٌ ابتدائية، والاختيار اليدويّ يعلوها ويُحفظ.
      وlocalStorage يرمي في التصفّح الخاص — فلولا try لسقطت الجلسة
@@ -112,6 +113,7 @@ function openSession(subject){
     if(error){ app.innerHTML = errBox(error, 'الجلسة'); return; }
     queue = data?.cards || [];
     if(!queue.length){ openSubjectCards(subject); return; }
+    seen = queue.slice();          // queue تُستهلك بالـshift — واللعبة تحتاج الجولة كاملة
     firstTimers = queue.filter(c => c.reps === 0).length;
     total = queue.length;
     mount();
@@ -345,6 +347,10 @@ function openSession(subject){
         : { t: 'حفظتَها كلها. لن تعود قريباً', thumb: false };
 
       const reviewed = counts[1] + counts[2] + counts[3];
+      /* 🔑 الدعوة **بعد** الجلسة لا بدلها: المطابقة تعرّفٌ لا استرجاع،
+         وتُنتج شعوراً بالإتقان أقوى مما تُنتجه البطاقة. فلو سبقت،
+         لاستُبدل الأنفع بالأمتع. وتظهر بشرط البيانات لا بشرط المادة. */
+      const playable = eligible(seen);
 
       app.innerHTML = `
         <div class="bf-wrap">
@@ -354,8 +360,16 @@ function openSession(subject){
             </div>
             <div class="ed-m" style="justify-content:center;margin:14px 0">راجعتَ ${AR(reviewed)} بطاقة</div>
             <button class="btn primary" id="back" style="width:100%">عودة</button>
+            ${playable.length >= 4 ? `
+              <button class="btn" id="play" style="width:100%;margin-top:8px"
+                >⚔️ جرّب تمييزها · ${AR(playable.length)} بطاقة</button>` : ''}
           </div>
         </div>`;
+
+      const pb = document.getElementById('play');
+      if(pb) pb.onclick = () => openMatchGame({
+        subject, cards: seen, title: 'فرسان ' + subject.name,
+        onExit: () => openSubjectCards(subject) });
 
       document.getElementById('back').onclick = async () => {
         const { data } = await api.dueCounts();
