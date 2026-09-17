@@ -101,7 +101,20 @@ function openSubjectCards(subject){
 
 /* ═══════════ ③ الجلسة ═══════════ */
 
-function openSession(subject){
+/* جلسةٌ واحدة بمصدرين: الطابور المستحقّ (due_cards)، أو قائمةٌ
+   جاهزة يُمرّرها الدرس. والمنطق بينهما واحد — القلبُ والتقدير
+   و«بعبارتك» والنهاية. ⇒ لا نسختان تتباعدان (ثابت ⑨).
+
+   opts = { fetch, back, label }
+     fetch : دالّةٌ تُرجع { cards } — بديلٌ عن due_cards
+     back  : ما يُنادى عند الخروج والانتهاء — بديلٌ عن شاشة المادة
+     label : عنوانُ مسار العودة */
+export function openSession(subject, opts = {}){
+  const fetchCards = opts.fetch || (() => api.dueCards(subject.id)
+                                          .then(r => r.error ? Promise.reject(r.error)
+                                                             : (r.data?.cards || [])));
+  const goBack = opts.back || (() => openSubjectCards(subject));
+
   /* حارسٌ يُطلق مرّةً عند الفتح: نداءٌ ناقصٌ في api.js كان يظهر عطلاً
      غامضاً في منتصف الجلسة — الآن يُسمّى باسمه قبل أن تبدأ. */
   const missing = ['dueCards','reviewCard','saveMyNote']
@@ -127,19 +140,18 @@ function openSession(subject){
 
   app.innerHTML = `<div class="status">جارٍ التحميل…</div>`;
 
-  api.dueCards(subject.id).then(({ data, error }) => {
-    if(error){ app.innerHTML = errBox(error, 'الجلسة'); return; }
-    queue = data?.cards || [];
-    if(!queue.length){ openSubjectCards(subject); return; }
+  Promise.resolve(fetchCards()).then(list => {
+    queue = list || [];
+    if(!queue.length){ toast('لا بطاقات', false); goBack(); return; }
     seen = queue.slice();          // queue تُستهلك بالـshift — واللعبة تحتاج الجولة كاملة
-    firstTimers = queue.filter(c => c.reps === 0).length;
+    firstTimers = queue.filter(c => (c.reps || 0) === 0).length;
     total = queue.length;
     mount();
-  });
+  }).catch(e => { app.innerHTML = errBox(e, 'الجلسة'); });
 
   function mount(){
     app.innerHTML = `
-      <div class="crumb" id="bk">← ${esc(subject.name)}</div>
+      <div class="crumb" id="bk">← ${esc(opts.label || subject.name)}</div>
       <div class="bf-wrap${calm ? ' calm' : ''}">
         <div class="bf-bar">
           <label class="bf-toggle">
@@ -165,7 +177,7 @@ function openSession(subject){
     };
 
     document.getElementById('bk').onclick = () => {
-      if(confirm('إنهاء الجلسة الآن؟')){ unbindResize(); loadFlashcards(); }
+      if(confirm('إنهاء الجلسة الآن؟')){ unbindResize(); goBack(); }
     };
 
     /* 🔑 تُقرأ لحظة الاستعمال لا مرّةً عند mount: restoreCard تُنشئ
@@ -390,11 +402,16 @@ function openSession(subject){
         onExit: () => openSubjectCards(subject) });
 
       document.getElementById('back').onclick = async () => {
-        const { data } = await api.dueCounts();
-        const rest = (data || []).filter(x => x.subject_id !== subject.id)
-                                  .reduce((a,x) => a + x.due, 0);
-        if(rest > 0) toast(`متبقٍّ اليوم: ${AR(rest)} في موادّ أخرى`);
-        loadFlashcards();
+        /* تنبيهُ المتبقّي يخصّ الطابور العامّ — وجلسةُ درسٍ لا شأن لها به */
+        if(!opts.fetch){
+          try{
+            const { data } = await api.dueCounts();
+            const rest = (data || []).filter(x => x.subject_id !== subject.id)
+                                      .reduce((a, x) => a + x.due, 0);
+            if(rest > 0) toast(`متبقٍّ اليوم: ${AR(rest)} في موادّ أخرى`);
+          }catch(e){}
+        }
+        goBack();
       };
     }
 
@@ -510,5 +527,55 @@ function openBrowseDeck(subject, deck){
       openSubjectCards(subject);
     };
     scrollTop();
+  });
+}
+
+
+/* ═══════════ ⑥ بطاقات درسٍ بعينه ═══════════
+   تُنادى من student.js حين يضغط الطالب مصدرَ البطاقات في الدرس.
+
+   🔑 والاشتراك **ضمنيّ لا زرٌّ منفصل**: فتحُها هو أخذُها. وزرُّ «أضِف»
+      كان يعامل البطاقات فعلاً يقع مرّةً، وهي **مصدرٌ ثابت** يُعاد إليه
+      كالصوت والاختبار.
+
+   🔑 والجلسة **هذه البطاقات وحدها** لا طابور المادة: فأوّل لقاءٍ يقع
+      في سياق درسه — والسياق جزءٌ من الترميز. ثمّ تدخل الطابور العامّ
+      فتعود متباعدةً بعد أيام.
+*/
+export function openLessonDeck(subject, deck, back){
+  app.innerHTML = `<div class="status">جارٍ التحميل…</div>`;
+
+  openSession(subject, {
+    label: deck.lesson || deck.title,
+    back,
+    fetch: async () => {
+      const { data, error } = await api.browseDeck(deck.id);
+      if(error) throw error;
+      const cards = data || [];
+
+      /* ما ليس في صندوقه يُضمّ الآن — فتبدأ جدولتُه من هذه اللحظة.
+         والفشل لا يمنع المراجعة: القراءة تعمل بلا اشتراك، وتُعاد
+         المحاولة في الفتح التالي. */
+      const fresh = cards.filter(c => !c.mine).map(c => c.id);
+      if(fresh.length){
+        try{ await api.subscribeCards(fresh); }catch(e){}
+      }
+
+      /* browse_deck لا تُرجع note ولا reps — والجلسة تحتاجهما.
+         ⇒ تُكمَّل من deck_cards، وهي مقروءةٌ لمن يرى المجموعة. */
+      let notes = new Map();
+      try{
+        const { data: full } = await api.deckCards(deck.id);
+        (full || []).forEach(c => notes.set(c.id, c));
+      }catch(e){}
+
+      return cards.map(c => ({
+        ...c,
+        note:  notes.get(c.id)?.note ?? null,
+        reps:  c.mine ? 1 : 0,          // ما كان عنده ليس أوّل لقاء
+        entry: 'lesson',
+        my_note: null
+      }));
+    }
   });
 }
