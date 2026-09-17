@@ -1012,21 +1012,15 @@ body.gate .wrap{max-width:1000px}
 
 /* ══════ بطاقات الدرس — نوعٌ آخر لا صفٌّ مثل المصادر ══════ */
 .deck-card{display:flex;align-items:center;gap:14px;margin-top:18px;padding:16px 18px;
-  border-radius:18px;border:1px solid var(--accent-line);
+  border-radius:18px;border:1px solid var(--accent-line);cursor:pointer;
   background:linear-gradient(135deg,var(--accent-soft),transparent 70%);
-  transition:border-color .2s,background .2s}
+  transition:transform .15s,border-color .15s,background .15s}
+.deck-card:hover{transform:translateY(-2px);border-color:var(--accent)}
+.deck-card:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 .deck-ic{flex:0 0 auto;width:34px;height:34px;color:var(--accent)}
 .deck-ic svg{width:100%;height:100%;display:block}
 .deck-txt{flex:1;min-width:0}
 .deck-t{font-weight:700;font-size:.95rem}
 .deck-m{font-size:var(--fs-meta);color:var(--text-muted);margin-top:3px}
-.deck-b{font:inherit;font-weight:700;font-size:.82rem;cursor:pointer;flex:0 0 auto;
-  padding:9px 18px;border-radius:999px;border:0;
-  background:var(--accent);color:var(--on-accent);
-  transition:transform .15s,opacity .15s}
-.deck-b:hover:not(:disabled){transform:translateY(-1px)}
-.deck-b:disabled{opacity:.5;cursor:default}
-.deck-card.got{border-color:var(--accent);background:var(--accent-fill)}
-.deck-card.got .deck-b{background:transparent;color:var(--accent);
-  box-shadow:inset 0 0 0 1px var(--accent-edge)}
-@media(prefers-reduced-motion:reduce){.deck-card,.deck-b{transition:none}}
+.deck-go{flex:0 0 auto;color:var(--accent);font-size:1.15rem;opacity:.7}
+@media(prefers-reduced-motion:reduce){.deck-card{transition:none}}
