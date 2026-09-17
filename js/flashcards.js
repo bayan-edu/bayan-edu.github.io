@@ -95,6 +95,17 @@ function openSession(subject){
 
   let queue = [], counts = { 1:0, 2:0, 3:0 }, firstTimers = 0, total = 0;
 
+  /* إعدادُ النظام قيمةٌ ابتدائية، والاختيار اليدويّ يعلوها ويُحفظ.
+     وlocalStorage يرمي في التصفّح الخاص — فلولا try لسقطت الجلسة
+     كلُّها لأجل قراءةٍ فاشلة (الدرس نفسه من toggleTheme). */
+  let calm;
+  try{
+    const saved = localStorage.getItem('bf-calm');
+    calm = saved === null
+      ? matchMedia('(prefers-reduced-motion: reduce)').matches
+      : saved === '1';
+  }catch(err){ calm = false; }
+
   app.innerHTML = `<div class="status">جارٍ التحميل…</div>`;
 
   api.dueCards(subject.id).then(({ data, error }) => {
@@ -109,7 +120,14 @@ function openSession(subject){
   function mount(){
     app.innerHTML = `
       <div class="crumb" id="bk">← ${esc(subject.name)}</div>
-      <div class="bf-wrap">
+      <div class="bf-wrap${calm ? ' calm' : ''}">
+        <div class="bf-bar">
+          <label class="bf-toggle">
+            <input type="checkbox" id="bfCalm" ${calm ? 'checked' : ''}>
+            <span class="bf-track"><span class="bf-knob"></span></span>
+            <span class="bf-toggle-t">حركة أقل</span>
+          </label>
+        </div>
         <div class="bf-stage" id="bfStage">
           <div class="bf-card" id="bfCard">
             <div class="bf-face bf-front" id="bfFront"></div>
@@ -117,6 +135,14 @@ function openSession(subject){
           </div>
         </div>
       </div>`;
+
+    /* 🔑 مفتاحٌ واحد يشترك فيه المحرّر والطالب: من خفّف في المعاينة
+       يجده مخفَّفاً في الجلسة. ولا يُعاد سؤاله مرّتين. */
+    document.getElementById('bfCalm').onchange = e => {
+      calm = e.target.checked;
+      try{ localStorage.setItem('bf-calm', calm ? '1' : '0'); }catch(err){}
+      app.querySelector('.bf-wrap').classList.toggle('calm', calm);
+    };
 
     document.getElementById('bk').onclick = () => {
       if(confirm('إنهاء الجلسة الآن؟')){ unbindResize(); loadFlashcards(); }
@@ -145,13 +171,21 @@ function openSession(subject){
        شاشة «بعبارتك». وإعادةُ ربط النقر لازمة لأن bfCard عنصرٌ جديد. */
     function restoreCard(){
       const wrap = app.querySelector('.bf-wrap');
-      wrap.innerHTML = `
+      const bar  = wrap.querySelector('.bf-bar')?.outerHTML || '';
+      wrap.innerHTML = bar + `
         <div class="bf-stage" id="bfStage">
           <div class="bf-card" id="bfCard">
             <div class="bf-face bf-front" id="bfFront"></div>
             <div class="bf-face bf-back"  id="bfBack"></div>
           </div>
         </div>`;
+      /* المفتاح عنصرٌ جديد بعد إعادة البناء — يُعاد ربطه وإلا صمت */
+      const cb = document.getElementById('bfCalm');
+      if(cb) cb.onchange = e => {
+        calm = e.target.checked;
+        try{ localStorage.setItem('bf-calm', calm ? '1' : '0'); }catch(err){}
+        wrap.classList.toggle('calm', calm);
+      };
       bind();
     }
 
