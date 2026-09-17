@@ -72,12 +72,30 @@ function openSubjectCards(subject){
 
     <div class="nav" style="margin:16px 0">
       <button class="btn" id="add">＋ أضِف كلمة</button>
+      <button class="btn" id="play" hidden>⚔️ تدرّب على كلماتك</button>
     </div>`;
 
   document.getElementById('bk').onclick = loadFlashcards;
   const go = document.getElementById('go');
   if(go) go.onclick = () => openSession(subject);
   document.getElementById('add').onclick = () => openAdd(subject);
+
+  /* 🔑 مدخلٌ **دائم** لا محبوسٌ في مسار الجلسة: تقديمُ الجلسة عليها
+     ترتيبٌ، وحبسُها فيها حرمانٌ لمن أراد التكرار. والزرّ تحت زرّ
+     الجلسة لا فوقه — فالأولوية بالموضع لا بالقفل («منعُ الراغب»
+     مرفوضٌ في هذا المشروع).
+     ويُخفى حتى تُعرف الأهليّة، فلا يُعرض زرٌّ يعتذر عند الضغط. */
+  api.practiceCards(subject.id).then(({ data }) => {
+    const pool = eligible(data || []);
+    if(pool.length < 4) return;
+    const b = document.getElementById('play');
+    if(!b) return;
+    b.hidden = false;
+    b.textContent = `⚔️ تدرّب على كلماتك · ${AR(pool.length)}`;
+    b.onclick = () => openMatchGame({
+      subject, cards: pool,
+      onExit: () => openSubjectCards(subject) });
+  }).catch(() => {});
 }
 
 
