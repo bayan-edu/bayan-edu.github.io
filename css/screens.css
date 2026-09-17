@@ -911,5 +911,14 @@ body.gate .wrap{max-width:1000px}
 .bf-front-q[dir="ltr"], .bf-answer[dir="ltr"],
 .bf-note[dir="ltr"], .bf-term[dir="ltr"]{text-align:left}
 .bf-front-q[dir="rtl"]{text-align:center}
+/* ── قائمة اختيار البطاقات للاشتراك ── */
+.pick-row{display:flex;align-items:flex-start;gap:11px;cursor:pointer;
+          padding:12px 14px;border:1px solid var(--line);border-radius:12px;
+          background:var(--surface);margin-bottom:8px}
+.pick-row input{flex:0 0 auto;width:17px;height:17px;margin:2px 0 0;accent-color:var(--accent)}
+.pick-txt{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:3px}
+.pick-f{font-weight:600;line-height:1.5;overflow-wrap:anywhere}
+.pick-b{font-size:var(--fs-meta);color:var(--text-muted);line-height:1.6;overflow-wrap:anywhere}
+.pick-row:has(input:disabled){opacity:.62}
 @media(max-width:560px){.bf-card{height:min(370px,74dvh)}}
 @media(orientation:landscape) and (max-height:480px){.bf-card{height:min(320px,70dvh)}}
