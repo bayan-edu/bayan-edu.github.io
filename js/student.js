@@ -12,6 +12,7 @@ import { app, head, toast, esc, AR, ICONS, KINDS, bubble, errBox, nav,
 import { startQuiz } from './quiz.js';
 import { mediaUrl, isManaged } from './media.js';
 import { isSim, openSim } from './simulations.js';
+import { loadFlashcards } from './flashcards.js';
 
 /* ═══════════ ① المواد ═══════════ */
 
@@ -291,6 +292,10 @@ export function openLesson(l){
     const i = items.find(v=>String(v.id)===el.dataset.i);
     openItem(i);
   });
+     /* بطاقاتُ الدرس — تُلحَق بعد الرسم فلا تؤخّر ظهورَه.
+     🔑 وليست «مصدراً» يُستهلك: مصادرُ الدرس تُفتح وتُقرأ، والبطاقةُ
+     تُؤخَذ فتلازم الطالب أسابيع. ⇒ نوعٌ بصريٌّ آخر، لا صفٌّ مثلها. */
+  loadLessonDeck(l);
   scrollTop();
 }
 
@@ -447,4 +452,65 @@ async function startPlacement(x){
   if(!data.ok){ toast(data.error); loadList(); return; }
   const { startPlacementQuiz } = await import('./quiz.js');
   startPlacementQuiz(data.session, data.quiz, x, data.resumed);
+}
+
+/* ═══════════ بطاقات الدرس ═══════════ */
+
+const DECK_SVG = `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+  <rect x="3"  y="7"  width="12" height="14" rx="2.5" stroke="currentColor"
+        stroke-width="1.6" opacity=".35"/>
+  <rect x="6.5" y="4.5" width="12" height="14" rx="2.5" stroke="currentColor"
+        stroke-width="1.6" opacity=".6"/>
+  <rect x="10" y="2"  width="12" height="14" rx="2.5" fill="currentColor"
+        fill-opacity=".1" stroke="currentColor" stroke-width="1.6"/>
+</svg>`;
+
+async function loadLessonDeck(l){
+  let deck;
+  try{
+    const { data } = await api.subjectDecks(S.subj.id);
+    deck = (data || []).find(d => !d.mine && String(d.lesson_id) === String(l.id) && d.cards > 0);
+  }catch(e){ return; }
+  if(!deck || S.lesson?.id !== l.id) return;   // غادر الدرس قبل أن يصل الردّ
+
+  const host = document.createElement('div');
+  host.className = 'deck-card';
+  host.innerHTML = `
+    <div class="deck-ic">${DECK_SVG}</div>
+    <div class="deck-txt">
+      <div class="deck-t">${esc(deck.title)}</div>
+      <div class="deck-m" id="deckM">${AR(deck.cards)} بطاقة · تعود إليك بالتباعد</div>
+    </div>
+    <button class="deck-b" id="deckB">أضِف</button>`;
+
+  const anchor = app.querySelector('.hint');
+  anchor ? anchor.before(host) : app.append(host);
+
+  document.getElementById('deckB').onclick = async () => {
+    const b = document.getElementById('deckB'), m = document.getElementById('deckM');
+    b.disabled = true; b.textContent = '…';
+    try{
+      const { data: list } = await api.browseDeck(deck.id);
+      const ids = (list || []).filter(c => !c.mine).map(c => c.id);
+
+      if(!ids.length){                      // أخذها كلَّها من قبل
+        host.classList.add('got');
+        m.textContent = 'كلُّها في صندوقك';
+        b.textContent = 'راجِعها'; b.disabled = false;
+        b.onclick = () => loadFlashcards();
+        return;
+      }
+      const { data: r, error } = await api.subscribeCards(ids);
+      if(error) throw error;
+
+      host.classList.add('got');
+      m.textContent = `أُضيفت ${AR(r.added)}` +
+                      (r.already ? ` · وكانت ${AR(r.already)} عندك` : '');
+      b.textContent = 'راجِعها'; b.disabled = false;
+      b.onclick = () => loadFlashcards();
+    }catch(err){
+      b.disabled = false; b.textContent = 'أضِف';
+      toast(err?.message || 'تعذّرت الإضافة', false);
+    }
+  };
 }
