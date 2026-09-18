@@ -7,7 +7,7 @@ import { S } from './state.js';
 import { mediaUrl, isManaged } from './media.js';
 
 /* ── بصمة النسخة — لمعرفة أي شيفرة يشغّلها المتصفح فعلاً ── */
-export const BUILD = "b64";
+export const BUILD = "b66";
 
 /* ── مراسي الصفحة ── */
 export const app = document.getElementById("app");
@@ -272,29 +272,307 @@ export function toggleTheme(){
   try{ localStorage.setItem("bayan.theme", next); }catch(e){}
 }
 
+/* ══════════════════════════════════════════════════════════════
+   الهيكل — الشريط والدرج والجرس  (b65)
+
+   ثلاثة قرارات لا تُقرأ من الشيفرة:
+
+   ① **الوجهاتُ تُخفى والإشاراتُ لا تُخفى.** إخفاء التنقّل يُنقص
+      اكتشافه — ثمنٌ مقبولٌ لوجهةٍ يعرفها العائد، ومرفوضٌ لما يقول
+      «شيءٌ ينتظرك». ⇒ الجرس خارج الدرج، وأعدادُ الوجهات تظهر على
+      بنودها داخله. **يُخفى الطريق لا النداء.**
+
+   ② **الجرس للحدث لا للحال** (قرار `106`). ملاحظةُ معلّمٍ تقع مرّةً
+      وتُقرأ فتنتهي؛ والبطاقةُ المستحقّة تتجدّد كلَّ يوم بتصميم FSRS.
+      ⇒ المستحقُّ شارةٌ على «تذكّرها» **ولا يدخل الجرس أبداً** —
+      وجرسٌ لا يسكت يُعلّم الصَّمَم.
+
+   ③ **الدرج يسكن في `body` لا في `#bar`.** الاختبار يستبدل الشريط
+      بعدّاده (`quiz.js`) والبوّابة تُفرغه (`auth.js`)، فلو سكن فيه
+      لتبخّر مع أوّل اختبار. ⇒ يُبنى مرّةً، ويُحدَّث نصُّه عند كل تنقّل.
+
+   🔒 وui.js لا تلمس القاعدة: الأعداد تُجلب في `auth.js` وتُسجَّل هنا
+      بـregisterCounts — نفس نمط registerRoutes، فتبقى هذه الوحدة ورقةً.
+   ══════════════════════════════════════════════════════════════ */
+
+/* أيقوناتٌ خطّية بـcurrentColor. ولا إيموجي هنا خلافاً لـICONS أعلاه:
+   وزنُ الإيموجي يختلف بين المنصّات فينكسر الصفّ، ولونُه مخبوزٌ في
+   المحرف فلا يتبع السِمة ولا حالةَ البند. */
+const ICO = {
+  menu:      '<path d="M4 7h16M4 12h16M4 17h11"/>',
+  bell:      '<path d="M6.5 9.5a5.5 5.5 0 1111 0c0 3.6 1 5 1.7 5.8H4.8c.7-.8 1.7-2.2 1.7-5.8z"/><path d="M10 19a2 2 0 004 0"/>',
+  close:     '<path d="M6 6l12 12M18 6L6 18"/>',
+  subjects:  '<path d="M4 5.5A2.5 2.5 0 016.5 3H19v14H6.5A2.5 2.5 0 004 19.5z"/><path d="M4 19.5A2.5 2.5 0 016.5 17H19v4H6.5A2.5 2.5 0 014 19.5z"/>',
+  cards:     '<rect x="9" y="3" width="11" height="13" rx="2"/><path d="M6 6.5v10.5a3 3 0 003 3h8"/>',
+  perf:      '<path d="M4 4v16h16"/><path d="M8 16.5v-3.5M12 16.5v-8M16 16.5v-5.5"/>',
+  feedback:  '<rect x="4" y="4.5" width="16" height="13" rx="2.5"/><path d="M8 9.5h8M8 13h5"/>',
+  chat:      '<path d="M20 12.2c0 3.5-3.6 6.3-8 6.3-.95 0-1.87-.13-2.72-.38L4.5 20l1.15-3.15C4.6 15.55 4 13.95 4 12.2 4 8.7 7.6 5.9 12 5.9s8 2.8 8 6.3z"/>',
+  grade:     '<rect x="4" y="4" width="16" height="16" rx="3.5"/><path d="M8.5 12.3l2.6 2.6 4.4-5"/>',
+  students:  '<circle cx="9.5" cy="8" r="3.2"/><path d="M3.8 19.2a5.7 5.7 0 0111.4 0"/><path d="M16.2 5.6a3.2 3.2 0 010 4.8"/><path d="M17.6 13.6a5.7 5.7 0 012.6 4.3"/>',
+  inbox:     '<path d="M4 13.5l2.1-7.2A2 2 0 018 4.8h8a2 2 0 011.9 1.5L20 13.5"/><path d="M4 13.5h4.2l1.1 2.3h5.4l1.1-2.3H20v4a2 2 0 01-2 2H6a2 2 0 01-2-2z"/>',
+  mySubjects:'<path d="M7.5 3.5h9A1.5 1.5 0 0118 5v15.3l-6-3.5-6 3.5V5a1.5 1.5 0 011.5-1.5z"/>',
+  editor:    '<path d="M4.5 19.5l.9-3.6L16 5.3a2 2 0 012.8 0l.9.9a2 2 0 010 2.8L9.1 19.6l-3.6.9z"/><path d="M14.6 6.7l2.7 2.7"/>',
+  requests:  '<circle cx="10" cy="8" r="3.2"/><path d="M4.3 19.2a5.7 5.7 0 0111.4 0"/><path d="M18.5 7v5M21 9.5h-5"/>',
+  theme:     '<circle cx="12" cy="12" r="8.2"/><path d="M12 3.8a8.2 8.2 0 010 16.4z" fill="currentColor" stroke="none"/>',
+  /* الاستئناف — مثلَّثٌ محدَّدٌ لا ممتلئ: يجاور أيقوناتٍ خطّيةً كلَّها،
+     وقرصٌ أسودُ بينها يُقرأ حالةً لا فعلاً. */
+  resume:    '<circle cx="12" cy="12" r="8.6"/><path d="M10.4 8.9l4.8 3.1-4.8 3.1z"/>',
+  /* الخروج يتبع اتجاه الصفحة: السهم إلى اليسار لأن العربية تخرج يساراً */
+  out:       '<path d="M10.5 4.5H17A2 2 0 0119 6.5v11a2 2 0 01-2 2h-6.5"/><path d="M7.5 15L4.5 12l3-3M4.5 12h8.5"/>'
+};
+
+const svg = k => `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+  stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICO[k] || ''}</svg>`;
+
+/* اسمٌ عامٌّ لنفس الدالّة — تستعمله الشاشات، ويبقى svg داخلياً قصيراً.
+   ولا نسخةَ ثانية: نفس المرجع باسمين، فلا يفترق الرسمان يوماً. */
+export const icon = svg;
+
+/* ══════════════════════════════════════════════════════════════
+   أشكال المواد — هويةٌ ثابتة لا حالة  (b66)
+
+   🔴 **الشكل يميّز واللون يخبر.** فلو حملت كلُّ مادةٍ لوناً خاصّاً
+      لاستُهلك اللونُ في التمييز ولم يبقَ منه ما يقول «أين أنت من
+      هذه المادة». والطالبُ يسأل الثاني يومياً ويحفظ الأولَ مرّة.
+      ⇒ ستّةُ أشكالٍ بلا لون، واللونُ يُحقَن من CSS بـ--sh-f/--sh-s.
+
+   ⚠️ ولا تُرتَّب الأشكال بالمعنى: لا «الدائرةُ للرياضيات». التوزيع
+      بموضع المادة في القائمة — ثابتٌ ما ثبت ترتيبُها (sort في
+      list_subjects)، ومادةٌ تُضاف في الوسط تُزيح ما بعدها. وذاك
+      مقبول: الشكلُ يُميّز في الشاشة الواحدة ولا يُحفظ مدى العمر.
+      🔓 ولو طُلب ثباتٌ مطلق يوماً فالموضع عمودُ `shape` في `subjects`
+         — قرارُ بنيةٍ يُناقَش، لا رقعةٌ تُكتب هنا.
+
+   ⚠️ والحشوُ في viewBox مقصود: الحدُّ ١٫٦px يخرج نصفُه عن المسار،
+      ومساراتٌ تلامس ٠ أو ٤٨ تُقصّ حوافُّها في بعض المتصفحات.
+   ══════════════════════════════════════════════════════════════ */
+const SHAPES = [
+  '<circle cx="24" cy="24" r="19"/>',                                    /* دائرة */
+  '<polygon points="24,4.5 6.9,14.3 6.9,33.7 24,43.5 41.1,33.7 41.1,14.3"/>', /* سداسي */
+  '<rect x="6" y="6" width="36" height="36" rx="11"/>',                  /* مربّع */
+  '<polygon points="24,4.5 43.5,24 24,43.5 4.5,24"/>',                   /* معيّن */
+  '<polygon points="24,4.5 5.2,18.1 12.4,40.2 35.6,40.2 42.8,18.1"/>',   /* خماسي */
+  '<path d="M7 42V20a17 17 0 0134 0v22a3 3 0 01-3 3H10a3 3 0 01-3-3z"/>' /* قوس */
+];
+
+/* الباقي مضاعَفٌ ثم مُعاد: `-1 % 6` في جافاسكربت ‎-1‎ لا ‎5‎، وفهرسٌ
+   سالبٌ يُخرج undefined فيظهر شكلٌ فارغ بلا خطأ في أيّ سجلّ. */
+export const shape = i =>
+  `<svg class="sh" viewBox="0 0 48 48" stroke-linejoin="round"
+     aria-hidden="true">${SHAPES[((i % SHAPES.length) + SHAPES.length) % SHAPES.length]}</svg>`;
+
+/* الوجهة ← حقلُها في my_counts. و«المستحقّ» هنا لأنه شارةٌ على بندٍ،
+   وليس في BELL أدناه لأنه حالٌ لا حدث (القرار ②). */
+const NCOUNT = { cards:'due', feedback:'feedback', chat:'messages',
+                 inbox:'messages', grade:'grading', requests:'requests' };
+
+/* بنودُ الجرس — [الوجهة · الحقل · النصّ]. ولا يُعرض بندٌ لوجهةٍ ليست
+   في دور المستخدم، فيُفرز chat عن inbox بلا شرطٍ على الدور. */
+const BELL = [
+  ['feedback', 'feedback', n => `${AR(n)} ملاحظة جديدة من معلّمك`],
+  ['chat',     'messages', n => `${AR(n)} رسالة جديدة من معلّمك`],
+  ['inbox',    'messages', n => `${AR(n)} رسالة من طلابك`],
+  ['grade',    'grading',  n => `${AR(n)} إجابة مقالية تنتظر تصحيحك`],
+  ['requests', 'requests', n => `${AR(n)} طلب انضمام معلّم`]
+];
+
+let countsFetcher = null;
+export function registerCounts(fn){ countsFetcher = fn; }
+
+/* تُنادى عند الإقلاع وبعد كلّ فعلٍ يُغيّر عدداً — لا عند كل شاشة.
+   ⚠️ وفشلُ الجلب يُبقي العدد القديم ولا يصفّره: رقمٌ قديم أصدقُ من
+      صفرٍ مخترع، والصفرُ الكاذب يقول «لا شيء ينتظرك» فيُهمل الطالبُ ما ينتظره. */
+export async function refreshCounts(){
+  if(!countsFetcher) return;
+  try{ S.counts = (await countsFetcher()) || {}; }catch(e){ return; }
+  paintCounts();
+}
+
+/* يُحدِّث الشارات في مكانها بلا إعادة رسم — فلا يفقد التركيزَ ولا يطبق درجاً مفتوحاً */
+function paintCounts(){
+  const c = S.counts || {};
+  const bdg = document.getElementById('bellBdg');
+  if(bdg){
+    const n = c.bell || 0;
+    bdg.textContent = AR(n);
+    bdg.hidden = !n;
+    document.getElementById('bellBtn')
+      ?.setAttribute('aria-label', n ? `الإشعارات · ${AR(n)} جديدة` : 'الإشعارات · لا جديد');
+  }
+  document.querySelectorAll('#drawer [data-n]').forEach(el => {
+    const n = c[el.dataset.n] || 0;
+    el.textContent = AR(n);
+    el.hidden = !n;
+  });
+  const p = document.getElementById('bellPanel');
+  if(p && !p.hidden) p.innerHTML = bellHtml();
+}
+
+const roleOf  = () => S.roleInfo?.role || S.prof?.role || 'student';
+const destsOf = () => DEST[roleOf()] || DEST.student;
+
+/* حرفٌ واحد لا حرفان: «محمود محمد» يُنتج «مم» — تكرارٌ يبدو خطأً
+   مطبعياً، والعربية لا تعرف اختصار الاسم بالأحرف أصلاً. */
+function initials(name){
+  return (String(name || '').trim()[0]) || '؟';
+}
+
+const ROLE_AR = { student:'طالب', teacher:'معلّم', admin:'مدير',
+                  pending_teacher:'طلبٌ قيد المراجعة' };
+
+function bellHtml(){
+  const c = S.counts || {}, keys = destsOf().map(([k]) => k);
+  const rows = BELL.filter(([dest, field]) => keys.includes(dest) && (c[field] || 0) > 0);
+  if(!rows.length)
+    return `<div class="bell-empty">لا جديد — وهذا خبرٌ طيّب</div>`;
+  return rows.map(([dest, field, text]) =>
+    `<button class="bell-item" data-r="${dest}" role="menuitem">
+       <span class="bell-ic">${svg(dest)}</span>
+       <span>${text(c[field])}</span>
+     </button>`).join('');
+}
+
+/* الدرج يُبنى مرّةً في body — انظر القرار ③ */
+function ensureDrawer(){
+  if(document.getElementById('drawer')) return;
+  const scrim = document.createElement('div');
+  scrim.id = 'scrim'; scrim.className = 'scrim';
+  scrim.onclick = closeDrawer;
+  const d = document.createElement('aside');
+  d.id = 'drawer'; d.className = 'drawer';
+  d.setAttribute('role', 'dialog');
+  d.setAttribute('aria-modal', 'true');
+  d.setAttribute('aria-label', 'القائمة');
+  document.body.append(scrim, d);
+
+  /* نقرةٌ خارج لوحة الجرس تطويها. والدرج له غطاؤه فلا يشترك معها.
+     ⚠️ وموضعُه هنا لا في nav(): تلك تُنادى في كلّ شاشة، فمستمعٌ فيها
+        يتراكم حتى يصير على المستند عشرون مستمعاً لحدثٍ واحد. */
+  document.addEventListener('click', e => {
+    const p = document.getElementById('bellPanel');
+    if(p && !p.hidden && !e.target.closest('.bellwrap')){
+      p.hidden = true;
+      document.getElementById('bellBtn')?.setAttribute('aria-expanded', 'false');
+    }
+  });
+
+  /* حبسُ التركيز والإغلاق بـEsc — على المستند لأن الدرج قد يُعاد رسمه */
+  document.addEventListener('keydown', e => {
+    if(!document.body.classList.contains('drawer-open')) return;
+    if(e.key === 'Escape'){ closeDrawer(); return; }
+    if(e.key !== 'Tab') return;
+    const f = [...d.querySelectorAll('button:not([disabled])')];
+    if(!f.length) return;
+    const first = f[0], last = f[f.length - 1];
+    if(e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+    else if(!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+  });
+}
+
+function renderDrawer(active){
+  const d = document.getElementById('drawer');
+  if(!d) return;
+  const prof = S.prof || {};
+  d.innerHTML = `
+    <div class="drawer-head">
+      <div class="who">
+        <span class="avatar lg">${esc(initials(prof.full_name))}</span>
+        <span class="who-t">
+          <b dir="auto">${esc(prof.full_name || 'حسابك')}</b>
+          <span>${esc(ROLE_AR[roleOf()] || '')}${
+            prof.klass ? ' · ' + esc(prof.klass) : ''}</span>
+        </span>
+      </div>
+      <button class="iconbtn" id="drawerX" aria-label="إغلاق القائمة">${svg('close')}</button>
+    </div>
+    <nav class="drawer-nav">
+      ${destsOf().map(([k, label]) => `
+        <button class="drawer-item ${k === active ? 'on' : ''}" data-r="${k}">
+          ${svg(k)}<span>${label}</span>
+          ${NCOUNT[k] ? `<span class="bdg soft" data-n="${NCOUNT[k]}" hidden></span>` : ''}
+        </button>`).join('')}
+    </nav>
+    <div class="drawer-foot">
+      <button class="drawer-item" id="themeBtn">${svg('theme')}<span>تبديل السِمة</span></button>
+      <button class="drawer-item danger" data-r="out">${svg('out')}<span>خروج</span></button>
+    </div>`;
+  d.querySelector('#drawerX').onclick = closeDrawer;
+  d.querySelector('#themeBtn').onclick = toggleTheme;
+  wire(d);
+}
+
+export function closeDrawer(){
+  if(!document.body.classList.contains('drawer-open')) return;
+  document.body.classList.remove('drawer-open');
+  const b = document.getElementById('menuBtn');
+  b?.setAttribute('aria-expanded', 'false');
+  b?.focus();
+}
+
+function openDrawer(){
+  ensureDrawer();
+  document.body.classList.add('drawer-open');
+  document.getElementById('menuBtn')?.setAttribute('aria-expanded', 'true');
+  /* بعد الرسم لا قبله، وإلا ذهب التركيز إلى عنصرٍ لم يظهر بعد */
+  requestAnimationFrame(() =>
+    document.querySelector('#drawer .drawer-item')?.focus());
+}
+
+function toggleBell(){
+  const p = document.getElementById('bellPanel'), b = document.getElementById('bellBtn');
+  if(!p) return;
+  const show = p.hidden;
+  p.hidden = !show;
+  b.setAttribute('aria-expanded', String(show));
+  if(show){ p.innerHTML = bellHtml(); wire(p); p.querySelector('button')?.focus(); }
+}
+
+/* ممرٌّ واحد للتوجيه: كلُّ [data-r] يُغلق ما فُتح ثم يذهب.
+   والإغلاق قبل الذهاب لا بعده — فالشاشة الجديدة تُرسم وقد خلا الطريق. */
+function wire(root){
+  root.querySelectorAll('[data-r]').forEach(b => b.onclick = () => {
+    const go = ROUTES[b.dataset.r];
+    closeDrawer();
+    const p = document.getElementById('bellPanel');
+    if(p) p.hidden = true;
+    if(go) go();
+  });
+}
+
 // active = مفتاح الوجهة الحالية · النقر على النشط يُعيد التحميل
 export function nav(active){
   setWide(false);
-  const role  = S.roleInfo?.role || S.prof?.role || 'student';
-  const dests = DEST[role] || DEST.student;
   /* ⚠️ لا نقرأ hero من className: nav() تسبق head() في أكثر الشاشات،
      فقد نلتقط hero عالقةً من البوابة. نأخذ has-logo وحدها صراحةً. */
   const bEl  = document.getElementById("brand");
   /* بلا has-logo عمداً: ٢٥px لا تكفي لشعارٍ مركَّب، فيظهر الوردمارك
      النصّيّ — حادٌّ في أي مقاس ويتلوّن مع السِمة بلا ملفٍّ ثانٍ. */
   const mark = `<div class="brand topbrand">${bEl.innerHTML}</div>`;
+
   bar.innerHTML = `<div class="topbar">
+    <button class="iconbtn" id="menuBtn" aria-label="القائمة"
+            aria-expanded="false" aria-controls="drawer">${svg('menu')}</button>
     ${mark}
-    <nav class="navlinks">${dests.map(([k,label]) =>
-      `<button class="navlink ${k===active?'on':''}" data-r="${k}">${label}</button>`).join("")}</nav>
-    <button class="navtheme" id="themeBtn" aria-label="تبديل السِمة" title="تبديل السِمة">◐</button>
-    <button class="navout" data-r="out">خروج</button>
+    <span class="topgap"></span>
+    <span class="bellwrap">
+      <button class="iconbtn" id="bellBtn" aria-label="الإشعارات"
+              aria-expanded="false" aria-haspopup="menu">${svg('bell')}<span
+        class="bdg" id="bellBdg" hidden></span></button>
+      <div class="bellpanel" id="bellPanel" role="menu" hidden></div>
+    </span>
+    <button class="acct" id="acctBtn" aria-label="حسابك والقائمة">
+      <span class="avatar">${esc(initials(S.prof?.full_name))}</span>
+      <span class="acct-n" dir="auto">${esc((S.prof?.full_name || '').split(/\s+/)[0] || '')}</span>
+    </button>
   </div>`;
-  bar.querySelectorAll('[data-r]').forEach(b => b.onclick = () => {
-    const go = ROUTES[b.dataset.r];
-    if(go) go();
-  });
-  bar.querySelector('#themeBtn').onclick = toggleTheme;
+
+  ensureDrawer();
+  renderDrawer(active);
+  paintCounts();
+
+  bar.querySelector('#menuBtn').onclick = openDrawer;
+  bar.querySelector('#acctBtn').onclick = openDrawer;   // بابان لغرفةٍ واحدة — لا قائمتان
+  bar.querySelector('#bellBtn').onclick = toggleBell;
 }
 
 /* ── صندوق خطأ: يُظهر رسالة Supabase كاملة بدل ابتلاعها ──
