@@ -103,7 +103,7 @@ body.gate .wrap{max-width:1000px}
 .lsn:hover{border-color:var(--accent)}
 .lsn.locked{opacity:.5;cursor:not-allowed;border-style:dashed}
 .lsn.locked:hover{border-color:var(--line)}
-.lsn.done{border-color:var(--accent-edge)}
+.lsn.done{border-color:var(--ok-edge)}
 .lsn-t{font-family:'Almarai';font-weight:700;font-size:var(--fs-read)}
 .lsn-m{font-size:var(--fs-meta);color:var(--text-muted);margin-top:4px}
 .lockmsg{font-size:var(--fs-meta);color:var(--warn);margin-top:5px}
@@ -212,7 +212,7 @@ body.gate .wrap{max-width:1000px}
         font-family:inherit;font-size:inherit;font-weight:inherit;
         text-align:center;transition:background .15s,box-shadow .15s}
 .gap-in::placeholder{opacity:.45;font-weight:400}
-.gap-in:focus{outline:none;background:var(--card,#fff);
+.gap-in:focus{outline:none;background:var(--surface-2);
               box-shadow:0 0 0 2px var(--accent) inset}
 .gap-in:disabled{background:transparent;border-bottom-style:dashed;opacity:.55}
 .gaprow{margin-top:10px}
@@ -246,19 +246,19 @@ body.gate .wrap{max-width:1000px}
 .score-num{font-family:'Almarai';font-weight:800;font-size:clamp(2.4rem,11vw,3.5rem);line-height:1;color:var(--accent)}
 .score-of{color:var(--text-muted);font-size:var(--fs-ui);margin-top:6px}
 .verdict{font-family:'Almarai';font-weight:700;margin-top:14px;font-size:var(--fs-read)}
-.unlocked{margin-top:14px;background:var(--accent-soft);border:1px solid var(--accent-line);
- border-radius:11px;padding:13px;font-family:'Almarai';font-weight:700;font-size:var(--fs-ui);color:var(--accent)}
+.unlocked{margin-top:14px;background:var(--ok-soft);border:1px solid var(--ok-line);
+ border-radius:11px;padding:13px;font-family:'Almarai';font-weight:700;font-size:var(--fs-ui);color:var(--ok)}
 
 /* الحدّ الملوّن يتبع اتجاه المحتوى — سؤال إنجليزي يأخذه يساراً */
 .rev{border-inline-start:3px solid var(--line);padding:15px;margin-bottom:11px;
  background:var(--fill-soft);
  border-start-end-radius:11px;border-end-end-radius:11px}
-.rev.ok{border-inline-start-color:var(--accent)}
+.rev.ok{border-inline-start-color:var(--ok)}
 .rev.no{border-inline-start-color:var(--danger)}
 .rev.new{border-inline-start-color:var(--warn)}
 .tag{display:inline-block;font-family:'Almarai';font-weight:800;font-size:var(--fs-tag);
  padding:3px 10px;border-radius:999px;margin-bottom:8px}
-.tag.ok{background:var(--accent-fill);color:var(--accent)}
+.tag.ok{background:var(--ok-fill);color:var(--ok)}
 .tag.no{background:var(--danger-fill);color:var(--danger)}
 /* 🔴 الهرم مقلوبٌ هنا عمداً: في شاشة المراجعة السؤالُ سياقٌ والتشخيصُ متن.
    فـ.rev-q ١٥٫٢px و.trap ١٦٫٨px — الشرحُ أكبر مما يشرحه.
@@ -278,7 +278,7 @@ body.gate .wrap{max-width:1000px}
  color:var(--warn);cursor:pointer;text-align:center}
 
 .recur{margin:22px 0;padding:16px 18px;border-radius:12px;
-       background:var(--card);border:1px solid var(--line)}
+       background:var(--surface);border:1px solid var(--line)}
 .recur h3{margin:0 0 12px;font-size:1rem;color:var(--accent)}
 .rc-row{padding:10px 0;border-top:1px solid var(--line)}
 .rc-row:first-of-type{border-top:0}
@@ -291,11 +291,11 @@ body.gate .wrap{max-width:1000px}
   background:var(--fill-soft);border:1px solid var(--line);
   font-size:var(--fs-ui);line-height:1.75}
 .jd .key{flex:0 0 27px;height:27px;font-size:var(--fs-tag)}
-.jd.hit{border-color:var(--accent-edge);background:var(--accent-soft)}
+.jd.hit{border-color:var(--ok-edge);background:var(--ok-soft)}
 .jd.err{border-color:var(--danger-edge);background:var(--danger-soft)}
 .jd.dim{opacity:.6}
 .jd-m{display:block;margin-top:4px;font-family:'Almarai';font-weight:800;font-size:var(--fs-tag);color:var(--text-muted)}
-.jd.hit .jd-m{color:var(--accent)}
+.jd.hit .jd-m{color:var(--ok)}
 .jd.err .jd-m{color:var(--danger)}
 .jd-dx{display:block;margin-top:5px;font-size:var(--fs-read);color:var(--warn);line-height:1.8}
 
@@ -351,6 +351,7 @@ body.gate .wrap{max-width:1000px}
 .rowbtn{display:flex;gap:9px;margin-top:12px}
 .rowbtn button{flex:1;border:none;border-radius:10px;padding:10px;cursor:pointer;
   font-family:'Almarai';font-weight:800;font-size:var(--fs-ui)}
+/* ok-b «قبول» زرُّ قرارٍ إداريّ لا حكمٌ على تعلّم ⇒ يبقى accent عمداً (b61) */
 .ok-b{background:var(--accent);color:var(--on-accent)}
 .no-b{background:var(--danger-fill);color:var(--danger);border:1px solid var(--danger-edge)!important}
 
@@ -365,7 +366,7 @@ body.gate .wrap{max-width:1000px}
 .ed-sec{margin-bottom:26px}
 .ed-sec-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
           margin-bottom:11px;padding-inline-start:3px}
-.rt-ok{border-color:var(--accent)}
+.rt-ok{border-color:var(--ok)}
 .rt-bad{border-color:var(--warn-edge);background:var(--warn-fill)}
 .rt-iss{margin:10px 0 0;padding-inline-start:20px;line-height:1.9;font-size:var(--fs-meta)}
 .rt-list{display:flex;flex-direction:column;gap:7px}
@@ -437,7 +438,7 @@ body.gate .wrap{max-width:1000px}
 .eq-opt{display:flex;align-items:center;gap:9px;flex-wrap:wrap;
   background:var(--fill-soft);border:1px solid var(--line);
   border-radius:11px;padding:10px 13px;margin-bottom:9px}
-.eq-opt.ok{border-color:var(--accent-edge);background:var(--accent-soft)}
+.eq-opt.ok{border-color:var(--ok-edge);background:var(--ok-soft)}
 .eq-ob{flex:1 1 220px;width:auto;padding:10px 12px;font-size:var(--fs-ui)}
 .eq-c{display:flex;align-items:center;gap:5px;font-size:var(--fs-tag);color:var(--text-muted);
   white-space:nowrap;cursor:pointer;font-family:'Almarai';font-weight:700}
@@ -453,9 +454,9 @@ body.gate .wrap{max-width:1000px}
 /* الجاهزية */
 .eq-ready{background:var(--danger-soft);border:1px solid var(--danger-line);
   border-radius:11px;padding:12px}
-.eq-ready.ok{background:var(--accent-soft);border-color:var(--accent-line)}
+.eq-ready.ok{background:var(--ok-soft);border-color:var(--ok-line)}
 .eq-iss{font-size:var(--fs-meta);color:var(--warn-text);line-height:1.75;margin-top:8px}
-.eq-ok{font-family:'Almarai';font-weight:800;font-size:.83rem;color:var(--accent);margin-top:8px}
+.eq-ok{font-family:'Almarai';font-weight:800;font-size:.83rem;color:var(--ok);margin-top:8px}
 
 /* أسطر الجاهزية — صارت أزرار فلترة تُصيب الشريط المقابل */
 .eq-rl{display:flex;align-items:center;gap:6px;flex-wrap:wrap;cursor:pointer;
@@ -507,7 +508,7 @@ body.gate .wrap{max-width:1000px}
 
 .addmenu{position:fixed;z-index:200;
          min-width:270px;max-width:min(320px,84vw);padding:8px;
-         border-radius:16px;background:var(--card,#fff);
+         border-radius:16px;background:var(--surface-2);
          border:1px solid var(--accent-line);
          box-shadow:0 12px 32px rgba(0,0,0,.14),0 2px 8px rgba(0,0,0,.06)}
 .addmenu button{display:flex;align-items:flex-start;gap:12px;
@@ -571,7 +572,7 @@ body.gate .wrap{max-width:1000px}
 
 /* الحكم — و«لا فحص» ليست ✅ */
 .eq-flag{font-size:var(--fs-tag);white-space:nowrap}
-.eq-flag.ok{color:var(--accent)}
+.eq-flag.ok{color:var(--ok)}
 .eq-flag.warn{color:var(--warn)}
 .eq-flag.bad{color:var(--danger)}
 .eq-flag.none{color:var(--text-muted);opacity:.8}
@@ -590,7 +591,7 @@ body.gate .wrap{max-width:1000px}
 .cmp-o{display:flex;align-items:flex-start;gap:7px;font-size:.79rem;line-height:1.8;
   background:var(--fill-soft);border:1px solid var(--line);
   border-radius:9px;padding:7px 9px;margin-bottom:6px}
-.cmp-o.ok{border-color:var(--accent-edge);background:var(--accent-soft)}
+.cmp-o.ok{border-color:var(--ok-edge);background:var(--ok-soft)}
 .cmp-tx{flex:1;min-width:0}
 .cmp-dx{font-size:var(--fs-tag);color:var(--warn);background:var(--warn-soft);
   border:1px solid var(--warn-line);border-radius:7px;padding:1px 6px;white-space:nowrap}
@@ -740,7 +741,7 @@ body.gate .wrap{max-width:1000px}
 .an-row:not(.static):hover{border-color:var(--line-strong)}
 .an-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
 .an-n{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
-.an-n.high{color:var(--accent)} .an-n.mid{color:var(--warn)}
+.an-n.high{color:var(--ok)} .an-n.mid{color:var(--warn)}
 .an-n.low{color:var(--danger)}  .an-n.na{color:var(--text-muted)}
 .an-n.flat{color:var(--accent)}
 
@@ -748,7 +749,8 @@ body.gate .wrap{max-width:1000px}
 .an-track{height:6px;border-radius:99px;background:var(--fill-strong);
           overflow:hidden;margin:8px 0 7px}
 .an-fill{height:100%;border-radius:99px;transition:width .5s ease}
-.an-fill.high,.an-fill.flat{background:var(--accent-edge)}
+.an-fill.high{background:var(--ok-edge)}
+.an-fill.flat{background:var(--accent-edge)}
 .an-fill.mid{background:var(--warn-edge)}
 .an-fill.low{background:var(--danger-edge)}
 .an-fill.na{background:var(--line-strong)}
@@ -774,7 +776,8 @@ body.gate .wrap{max-width:1000px}
 .an-gauge svg{width:100%;height:100%;display:block;transform:scaleX(-1)}
 .an-gbg{fill:none;stroke:var(--fill-strong);stroke-width:11}
 .an-gfg{fill:none;stroke-width:11;stroke-linecap:round;transition:stroke-dasharray .7s ease}
-.an-gfg.high,.an-gfg.flat{stroke:var(--accent-edge)}
+.an-gfg.high{stroke:var(--ok-edge)}
+.an-gfg.flat{stroke:var(--accent-edge)}
 .an-gfg.mid{stroke:var(--warn-edge)}
 .an-gfg.low{stroke:var(--danger-edge)}
 .an-gfg.na{stroke:var(--line-strong)}
@@ -783,7 +786,7 @@ body.gate .wrap{max-width:1000px}
        align-items:center;justify-content:center;gap:2px;pointer-events:none}
 .an-gn{font-size:2rem;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
 .an-gauge.sm .an-gn{font-size:1.28rem}
-.an-gn.high,.an-gn.flat{color:var(--accent)} .an-gn.mid{color:var(--warn)}
+.an-gn.high{color:var(--ok)} .an-gn.flat{color:var(--accent)} .an-gn.mid{color:var(--warn)}
 .an-gn.low{color:var(--danger)} .an-gn.na{color:var(--text-muted)}
 .an-gs{font-size:.8rem;color:var(--text-muted)}
 .an-gauge.sm .an-gs{font-size:.72rem}
@@ -820,13 +823,13 @@ body.gate .wrap{max-width:1000px}
        border:1px solid var(--line);background:var(--fill);color:var(--text-muted)}
 .an-st.persistent{background:var(--danger-soft);border-color:var(--danger-line);color:var(--danger)}
 .an-st.partial{background:var(--warn-soft);border-color:var(--warn-line);color:var(--warn)}
-.an-st.cleared{background:var(--accent-fill);border-color:var(--accent-line);color:var(--accent)}
+.an-st.cleared{background:var(--ok-fill);border-color:var(--ok-line);color:var(--ok)}
 
 /* ── تفاصيل الإجابة: شريطٌ جانبيّ يقول الحكم قبل أن يُقرأ النصّ ── */
 .an-q{border:1px solid var(--line);border-radius:var(--r);padding:13px 15px;
       margin-bottom:9px;background:var(--surface);box-shadow:var(--shadow);
       border-inline-start:3px solid var(--line-strong)}
-.an-q.ok{border-inline-start-color:var(--accent-edge)}
+.an-q.ok{border-inline-start-color:var(--ok-edge)}
 .an-q.no{border-inline-start-color:var(--danger-edge)}
 .an-qh{display:flex;gap:10px;align-items:baseline}
 .an-qn{flex:0 0 auto;min-width:26px;height:26px;line-height:26px;text-align:center;
@@ -971,16 +974,16 @@ body.gate .wrap{max-width:1000px}
 .mg-row.on{border-color:var(--accent-edge);background:var(--accent-soft)}
 .mg-row.bad{border-color:var(--danger-edge);background:var(--danger-soft);
             animation:mgShake .42s}
-.mg-row.sealed{border-color:var(--accent-line);background:var(--accent-soft);
-               pointer-events:none;box-shadow:inset 3px 0 0 var(--accent)}
+.mg-row.sealed{border-color:var(--ok-line);background:var(--ok-soft);
+               pointer-events:none;box-shadow:inset 3px 0 0 var(--ok)}
 .mg-ex{font-size:.95rem}
 
 /* الفراغ ثمّ الختم فيه — الجرأة الوحيدة */
 .mg-slot{display:inline-block;min-width:76px;height:1.05em;vertical-align:-.18em;
          border-bottom:2px dashed var(--line-strong);font-style:normal}
 .mg-slot.filled{min-width:0;height:auto;vertical-align:baseline;border-bottom:0;
-                font-weight:700;color:var(--accent);padding:1px 7px;border-radius:7px;
-                background:var(--accent-fill);animation:mgSeal .42s cubic-bezier(.34,1.5,.5,1)}
+                font-weight:700;color:var(--ok);padding:1px 7px;border-radius:7px;
+                background:var(--ok-fill);animation:mgSeal .42s cubic-bezier(.34,1.5,.5,1)}
 @keyframes mgSeal{
   0%{transform:scale(1.9) rotate(-5deg);opacity:0}
   60%{transform:scale(.94) rotate(1deg);opacity:1}
@@ -991,7 +994,7 @@ body.gate .wrap{max-width:1000px}
 /* النتيجة */
 .mg-end{text-align:center;padding:30px 20px;border-radius:20px;
         border:1px solid var(--line);background:var(--surface);box-shadow:var(--shadow)}
-.mg-end.win{border-color:var(--accent-line);background:var(--hero-accent)}
+.mg-end.win{border-color:var(--ok-line);background:var(--hero-ok)}
 .mg-rank{font-size:2.6rem;line-height:1}
 .mg-rank-t{font-size:1.3rem;font-weight:700;margin:8px 0 5px}
 .mg-line{color:var(--text-muted);font-size:.9rem}
