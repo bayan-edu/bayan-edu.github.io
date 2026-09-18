@@ -146,7 +146,7 @@ export async function loadMentors(subj, switching){
   const card = m => `
     <div class="mentor ${m.full?'full':''} ${state.teacher_id===m.id?'cur':''}" data-t="${m.id}">
       <div class="m-n">أ. ${esc(m.name)}
-        ${state.teacher_id===m.id?'<span class="badge ok">معلمك الحالي</span>':''}</div>
+        ${state.teacher_id===m.id?'<span class="badge on">معلمك الحالي</span>':''}</div>
       <div class="m-m">${esc(m.school||'—')}${m.years?` · ${AR(m.years)} سنوات خبرة`:''}</div>
       ${m.bio?`<div class="m-b">${esc(m.bio)}</div>`:''}
       <span class="m-cap">${m.full?'اكتمل النصاب':`يتابع ${AR(m.students)} من ${AR(m.capacity)} طالباً`}</span>
@@ -405,10 +405,10 @@ export async function loadFeedback(){
   app.innerHTML = `
     ${errBox(error,'ملاحظات المعلم')}
     ${list.length?list.map(f=>`
-      <div class="rev ${f.read_by_student?'ok':'new'}">
+      <div class="rev ${f.read_by_student?'':'new'}">
         <div class="rev-q">${esc(f.quizzes?.title||'')} ${f.read_by_student?'':'<span class="badge lock">جديد</span>'}</div>
         <div class="line">${new Date(f.submitted_at).toLocaleDateString('ar-EG')} · اختيار ${AR(f.score)}/${AR(f.total)} (${AR(f.pct)}٪)${f.essay_score!=null?` · مقالي: ${AR(f.essay_score)}`:''}</div>
-        <div class="model" style="background:rgba(72,207,192,.07)">${esc(f.teacher_comment).replace(/\n/g,"<br>")}</div>
+        <div class="model">${esc(f.teacher_comment).replace(/\n/g,"<br>")}</div>
       </div>`).join(""):'<div class="status">لا توجد ملاحظات بعد</div>'}`;
 
   const unread = list.filter(f=>!f.read_by_student).map(f=>f.id);
