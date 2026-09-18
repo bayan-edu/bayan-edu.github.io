@@ -879,10 +879,10 @@ body.gate .wrap{max-width:1000px}
 .bf-toggle input:focus-visible + .bf-track{outline:2px solid var(--accent);outline-offset:2px}
 
 /* المسرح والبطاقة — الارتفاع min(px,dvh): سقفٌ للشاشات الطويلة، ومرونةٌ للقصيرة */
-.bf-stage{perspective:1200px;transition:opacity .18s ease,transform .18s ease}
+.bf-stage{perspective:1200px}
 .bf-stage.bf-out{opacity:0;transform:translateY(5px)}
 .bf-card{position:relative;height:min(400px,78dvh);cursor:pointer;
-         transform-style:preserve-3d;transition:transform .5s cubic-bezier(.4,.15,.2,1)}
+         transform-style:preserve-3d}
 .bf-card.flipped{transform:rotateY(180deg)}
 
 .bf-face{position:absolute;inset:0;display:flex;flex-direction:column;
@@ -912,9 +912,18 @@ body.gate .wrap{max-width:1000px}
                overflow:visible;clip:auto;white-space:normal;background:none;
                color:var(--accent);font-size:.78rem;cursor:pointer}
 
-/* صفٌّ واحد يعطّل القلب والانتقال معاً */
-.bf-wrap.calm .bf-card,
-.bf-wrap.calm .bf-stage{transition:none}
+/* 🔑 حركةُ البطاقة تسكن هنا وحدها، ويحكمها المفتاح وحده (b63).
+   كانت هنا قاعدةٌ تُطفئ الحركة مع .calm — والمفتاح بها يُطفئ ولا يُشعل:
+   base.css يُطفئ كلَّ انتقالٍ بـ!important حين يطلب النظامُ التخفيف،
+   فمن اختار «حركة أكثر» صراحةً بقي بلا حركة، وصار المفتاح بلا قيمة.
+   ⇒ الحركة لا تُكتب إلا حين لا يكون .calm، وبـ!important تعلو قاعدةَ
+      النظام (خصوصيّتها أعلى من *). والنظامُ لم يُهمَل: هو القيمةُ
+      الابتدائية للمفتاح في flashcards.js و editor_cards.js، والاختيارُ
+      الصريح يعلوه في الاتجاهين. مرجعٌ واحد لا اثنان.
+   ⚠️ ولا تُضَف transition إلى .bf-card أو .bf-stage في موضعٍ آخر: تعود
+      القاعدتان تتنازعان. */
+.bf-wrap:not(.calm) .bf-stage{transition:opacity .18s ease,transform .18s ease!important}
+.bf-wrap:not(.calm) .bf-card{transition:transform .5s cubic-bezier(.4,.15,.2,1)!important}
 .bf-front-q[dir="ltr"], .bf-answer[dir="ltr"],
 .bf-note[dir="ltr"], .bf-term[dir="ltr"]{text-align:left}
 .bf-front-q[dir="rtl"]{text-align:center}
