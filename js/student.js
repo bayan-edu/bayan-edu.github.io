@@ -8,69 +8,170 @@
 import * as api from './api.js';
 import { S } from './state.js';
 import { app, head, toast, esc, AR, ICONS, KINDS, bubble, errBox, nav,
-         scrollTop, scrollBottom } from './ui.js';
+         refreshCounts, scrollTop, scrollBottom, shape, icon } from './ui.js';
 import { startQuiz } from './quiz.js';
 import { mediaUrl, isManaged } from './media.js';
 import { isSim, openSim } from './simulations.js';
-import { openLessonDeck } from './flashcards.js';
+import { openLessonDeck, loadFlashcards } from './flashcards.js';
 
-/* ═══════════ ① المواد ═══════════ */
+/* ═══════════ ① المواد — الرئيسة ═══════════ */
+
+/* ⚠️ function لا const — كما ينصّ رأس الملفّ: هاتان صارتا في نطاق
+   الوحدة لا داخل loadList (b66)، وconst في وحدةٍ داخلةٍ في استيرادٍ
+   دائريّ تسقط في TDZ إن سبقها نداء. والتصريحُ يُرفَع فلا يسقط. */
+
+/* مادة صفّ سابق دروسها في lessons_review لا lessons_total —
+   فلا يصحّ قياس «الفراغ» على lessons_total وحده. */
+function bulk(x){ return (x.lessons_total || 0) + (x.lessons_review || 0); }
+
+/* ⚠️ lessons_total > 0 شرط لازم: بدونه تُطوى المواد الفارغة
+   بوسم «أتممتها» — إذ 0 === 0 صحيح. */
+function isDone(x){ return x.lessons_total > 0 && x.lessons_done >= x.lessons_total; }
+
+/* ── أين تركتَ؟ ──
+   🔑 محلّيٌّ لا في القاعدة عمداً: هذا **تسهيلٌ لا سجلّ**. لو سكن
+      القاعدة لاحتاج جدولاً وسياسةَ RLS ونداءً في كلّ إقلاع — ثمنٌ
+      لا يقابله إلا سطرٌ واحد في الشاشة. وثمنُه المقبول أنه يُفقد
+      بتبديل الجهاز أو مسح البيانات، والبديلُ حينها هو الرئيسةُ
+      نفسها تحته مباشرة. ⇒ غيابُه لا يمنع فعلاً.
+   ⚠️ وlocalStorage يرمي في التصفّح الخاصّ ⇒ try في الطرفين. */
+const LAST_KEY = 'bayan.last';
+
+function rememberSubject(x){
+  try{ localStorage.setItem(LAST_KEY, JSON.stringify({ id:x.id })); }catch(e){}
+}
+
+/* تُطابَق بالقائمة الحيّة لا بما حُفظ: المادة قد تُسحب أو يتغيّر
+   تسجيلُ الطالب فيها، فمعرّفٌ محفوظٌ يقود إلى بابٍ لا يُفتح.
+   ⚠️ ولا تُنادى قبل أن تُملأ S.subjects. */
+function lastSubject(){
+  let saved = null;
+  try{ saved = JSON.parse(localStorage.getItem(LAST_KEY) || 'null'); }catch(e){}
+  if(!saved?.id) return null;
+  return (S.subjects || []).find(v => String(v.id) === String(saved.id)) || null;
+}
+
+/* ── حالةُ المادة صنفاً · والألوان في screens.css عند .st-* ──
+   ستٌّ لا اثنتان: «بدأتُ» ليست «أوشكتُ»، والفرقُ بينهما هو ما يجعل
+   الشبكة تُقرأ بلمحة. والصفُّ السابق لا تقدُّمَ فيه يُقاس: مادّتُه
+   مراجعةٌ لا مسار، فحالتُه «فيها ما يُراجَع» أو «لا». */
+function subjectState(x, isPast){
+  if(!x.needs_placement && bulk(x) === 0) return 'st-empty';
+  if(x.needs_placement)                   return 'st-new';
+  if(isPast) return (x.lessons_review || 0) > 0 ? 'st-new' : 'st-empty';
+  const t = x.lessons_total || 0;
+  if(!t) return 'st-new';
+  const p = (x.lessons_done || 0) / t;
+  if(p <= 0)   return 'st-new';
+  if(p >= 1)   return 'st-done';
+  if(p < 0.34) return 'st-active';
+  if(p < 0.67) return 'st-mid';
+  return 'st-near';
+}
+
+/* ── شريط «اليوم» · والشرح كاملاً في screens.css عند .today ──
+   يُعيد '' حين لا ينتظر شيء: الغيابُ يقول «لا جديد» أصدقَ من ثلاثة
+   أصفارٍ تُعرض كلَّ يوم حتى يُكفَّ عن النظر إلى الشريط أصلاً.
+   🔒 ولا نداءَ شبكةٍ هنا: الأعداد من S.counts التي ملأها refreshCounts،
+      و«أين تركتَ» من الجهاز. ثلاثُ بطاقاتٍ بلا طلبٍ واحد. */
+function todayStrip(){
+  const c = S.counts || {}, acts = [];
+  const back = lastSubject();
+
+  if(back && bulk(back) > 0 && !isDone(back) && !back.needs_placement)
+    acts.push(['go-resume', 'resume',   'ta-accent', 'تابِع',   back.name]);
+  if((c.due || 0) > 0)
+    acts.push(['go-cards',  'cards',    'ta-ok',     'استرجِع', `${AR(c.due)} بطاقة استحقّت`]);
+  if((c.feedback || 0) > 0)
+    acts.push(['go-fb',     'feedback', 'ta-dx',     'عالِج',   `${AR(c.feedback)} ملاحظة جديدة`]);
+
+  if(!acts.length) return '';
+  return `<div class="today">${acts.map(([id, ic, fam, lbl, val]) => `
+    <button class="today-act ${fam}" id="${id}">
+      <span class="ta-ic">${icon(ic)}</span>
+      <span class="ta-lbl">${lbl}</span>
+      <span class="ta-val" dir="auto">${esc(val)}</span>
+    </button>`).join('')}</div>`;
+}
 
 export async function loadList(){
   nav('subjects');
-  head("أهلًا "+S.prof.full_name, "اختر المادة التي تريد التعلّم فيها");
   app.innerHTML = `<div class="status">جارٍ التحميل…</div>`;
 
   const { data, error } = await api.listSubjects();
-  if(error){ app.innerHTML = `<div class="err"><b>تعذّر التحميل</b>${esc(error.message)}</div>`; return; }
+  if(error){
+    head("أهلًا "+S.prof.full_name, "");
+    app.innerHTML = `<div class="err"><b>تعذّر التحميل</b>${esc(error.message)}</div>`; return; }
   S.subjects = data || [];
 
-  /* العدد من my_counts (106) — المصدر الواحد الذي سيقرؤه الجرس أيضاً */
-  const { data:counts, error:eCount } = await api.myCounts();
-  const count = counts?.feedback || 0;
+  /* العدد من S.counts — يملؤها refreshCounts، وهي نفسها التي يقرؤها
+     الجرس. نداءٌ واحد لا نداءان، فلا يفترق الرقمان (الثابت ⑨).
+     ⚠️ ولا errBox لفشلها: refreshCounts تُبقي العدد القديم عمداً ولا
+        تصفّره (ui.js)، فليس ثمّ خطأٌ يُعرض. وكان هنا صندوقٌ يقرأ
+        متغيّراً زال مع نقل الجلب في b65 — صمتٌ في المتصفّح لا في
+        الشاشة، وهذا موضعُ زواله لا رقعتُه. */
+  await refreshCounts();
+
+  /* الشريط يُبنى قبل الترويسة: وجودُه يغيّر ما تقوله. */
+  const strip = todayStrip();
+  head("أهلًا " + S.prof.full_name,
+       strip ? "ابدأ بما ينتظرك، أو اختر مادة" : "اختر المادة التي تريد التعلّم فيها");
 
   /* ثلاث مجموعات: صفّي · صفوف سابقة · مهارات */
   const grade  = S.subjects.filter(x => x.group_key === '1_grade');
   const past   = S.subjects.filter(x => x.group_key === '2_past');
   const skills = S.subjects.filter(x => !['1_grade','2_past'].includes(x.group_key));
 
-  /* مادة صفّ سابق دروسها في lessons_review لا lessons_total —
-     فلا يصحّ قياس «الفراغ» على lessons_total وحده. */
-  const bulk = x => (x.lessons_total || 0) + (x.lessons_review || 0);
+  /* الشكلُ بموضع المادة في القائمة الكاملة لا في مجموعتها: لو عُدَّ
+     داخل كلّ مجموعة لبدأت الثلاثُ بالدائرة نفسها في شاشةٍ واحدة. */
+  const shapeOf = x => shape(S.subjects.indexOf(x));
 
-  /* ⚠️ lessons_total > 0 شرط لازم: بدونه تُطوى المواد الفارغة
-     بوسم «أتممتها» — إذ 0 === 0 صحيح. */
-  const isDone = x => x.lessons_total > 0 && x.lessons_done >= x.lessons_total;
+  const face = x => `<div class="sh-wrap">${shapeOf(x)}<span
+      class="sh-icon">${esc(x.icon || '')}</span></div>`;
 
   const card = (x, isPast) => {
     const empty = !x.needs_placement && bulk(x) === 0;
     const pct   = x.lessons_total ? Math.round(x.lessons_done / x.lessons_total * 100) : 0;
+    /* نصٌّ قصير: البطاقة ١٥٠px، وجملةٌ كاملة تلتفّ ثلاثة أسطر فتتفاوت
+       ارتفاعاتُ الشبكة. والجملةُ الطويلة باقيةٌ حيث يقع الفعل —
+       في toast عند النقر، وفي شاشة المادة. */
     const meta  =
-        empty            ? 'دروس هذه المادة قيد الإعداد'
-      : x.needs_placement ? 'ابدأ باختبار «اعرف مستواك»'
-      : isPast           ? `${AR(x.lessons_review)} درساً للمراجعة`
-      : `${AR(x.lessons_done)} من ${AR(x.lessons_total)} درساً`;
-    return `<div class="subj ${empty?'soon':''}" data-i="${x.id}">
-      <div style="flex:1">
-        <div class="subj-t" dir="auto">${esc(x.icon||'')} <bdi>${esc(x.name)}</bdi>
-          ${x.my_level && !isPast?`<span class="lvl-tag">${esc(x.my_level)}</span>`:''}
-          ${x.elective?'<span class="badge lock">اختيارية</span>':''}
-          ${empty?'<span class="badge lock">قريباً</span>':''}</div>
-        ${x.description?`<div class="subj-d">${esc(x.description)}</div>`:''}
-        <div class="subj-m">${meta}${
-            empty ? '' :
-            x.mentor_name ? ' · مع أ. ' + esc(x.mentor_name)
-            : (x.mentor_chosen ? ' · متابعة ذاتية' : '')}</div>
-        ${(x.needs_placement || empty || isPast)?'':
-          `<div class="pbar"><div class="pfill" style="width:${pct}%"></div></div>`}
-      </div>
-      <div class="qz-go">${empty?'⏳':(x.needs_placement?'حدّد مستواك ←':'ادخل ←')}</div>
+        empty             ? 'قيد الإعداد'
+      : x.needs_placement ? 'اعرف مستواك'
+      : isPast            ? `${AR(x.lessons_review)} للمراجعة`
+      : `${AR(x.lessons_done)} / ${AR(x.lessons_total)} درساً`;
+    /* ⚠️ ولا شارةَ «قريباً»: البطاقةُ الفارغة تحمل أصلاً حدّاً متقطّعاً
+       وبهتاناً وشكلاً رمادياً و«قيد الإعداد» — خمسُ إشاراتٍ لمعنىً
+       واحد في ١٥٠px. والإفراطُ في الإشارة يُدرِّب على تجاهلها. */
+    const tags = [
+      x.my_level && !isPast ? `<span class="lvl-tag">${esc(x.my_level)}</span>` : '',
+      x.elective            ? '<span class="badge lock">اختيارية</span>'        : ''
+    ].filter(Boolean).join('');
+
+    /* 🔑 الوصفُ في title لا على الوجه: سطران فيه يُطيلان البطاقة حتى
+       تفقد الشبكةُ انتظامها — وانتظامُها هو ما يجعل الشكل واللون
+       يُقرآن بلمحة. ولم يُحذف: يظهر بالمرور ويقرؤه قارئُ الشاشة،
+       وموضعُه الطبيعيّ شاشةُ المادة نفسها.
+       ⚠️ والفارغة بلا role ولا tabindex: ليست زرّاً فلا تُعلن زرّاً،
+          ولا تُلتقط بالتنقّل بلوحة المفاتيح إلى بابٍ لا يُفتح. */
+    return `<div class="subj ${subjectState(x, isPast)} ${empty ? 'soon' : ''}"
+                 data-i="${x.id}" ${empty ? '' : 'role="button" tabindex="0"'}
+                 ${x.description ? `title="${esc(x.description)}"` : ''}>
+      ${face(x)}
+      <div class="subj-t" dir="auto"><bdi>${esc(x.name)}</bdi></div>
+      ${tags ? `<div class="subj-b">${tags}</div>` : ''}
+      <div class="subj-m">${meta}</div>
+      ${(x.needs_placement || empty || isPast) ? '' :
+        `<div class="pbar"><div class="pfill" style="width:${pct}%"></div></div>`}
     </div>`;
   };
 
-  /* المكتملة تنكمش إلى سطر يحمل نتيجتها — لا تختفي */
-  const mini = x => `<div class="subj mini" data-i="${x.id}">
-      <div style="flex:1"><div class="subj-t">✅ ${esc(x.icon||'')} <bdi>${esc(x.name)}</bdi></div></div>
+  /* المكتملة تنكمش إلى سطر يحمل نتيجتها — لا تختفي.
+     وتحتفظ بشكلها مصغَّراً: الهويةُ لا تسقط بالإتمام. */
+  const mini = x => `<div class="subj mini st-done" data-i="${x.id}"
+                          role="button" tabindex="0">
+      ${face(x)}
+      <div style="flex:1;min-width:0"><div class="subj-t" dir="auto"><bdi>${esc(x.name)}</bdi></div></div>
       <div class="qz-go">${AR(x.lessons_done)} / ${AR(x.lessons_total)}</div>
     </div>`;
 
@@ -78,7 +179,7 @@ export async function loadList(){
   const done = grade.filter(isDone);
 
   app.innerHTML = `
-    ${errBox(eCount,'عدّاد الملاحظات')}
+    ${strip}
     ${grade.length?`<div class="grp">📚 موادّ صفّي</div>
       ${live.map(x => card(x,false)).join("")}
       ${done.length?`<div class="fold-lbl">أتممتها · ${AR(done.length)}</div>${done.map(mini).join("")}`:''}`:''}
@@ -93,17 +194,30 @@ export async function loadList(){
         <div style="font-size:2rem;margin-bottom:10px">📚</div>
         <div class="rev-q">لا توجد مواد متاحة بعد</div>
         <div class="line">موادّ صفّك وتدريبات المهارات قيد الإعداد — ستظهر هنا فور جهوزها.</div>
-      </div>`:''}
-    ${count?`<div class="fbnote" id="fbgo">📩 لديك ${AR(count)} ملاحظة جديدة من معلمك</div>`:''}`;
+      </div>`:''}`;
 
-  app.querySelectorAll(".subj").forEach(el=>el.onclick=()=>{
-    const x = S.subjects.find(v=>String(v.id)===el.dataset.i);
-    if(!x.needs_placement && bulk(x) === 0){
-      toast("دروس هذه المادة قيد الإعداد — ستصلك عند جهوزها"); return; }
-    if(x.needs_placement) return startPlacement(x);
-    if(!x.mentor_chosen) return loadMentors(x);
-    loadLessons(x);
+  /* البطاقة صارت role=button ⇒ لها لوحةُ المفاتيح كما لها الفأرة.
+     ولا div بلا هذا: الطالبُ الذي لا يستعمل فأرةً يقف عند الرئيسة. */
+  app.querySelectorAll(".subj").forEach(el => {
+    const go = () => {
+      const x = S.subjects.find(v => String(v.id) === el.dataset.i);
+      if(!x) return;
+      if(!x.needs_placement && bulk(x) === 0){
+        toast("دروس هذه المادة قيد الإعداد — ستصلك عند جهوزها"); return; }
+      if(x.needs_placement) return startPlacement(x);
+      if(!x.mentor_chosen)  return loadMentors(x);
+      loadLessons(x);
+    };
+    el.onclick   = go;
+    el.onkeydown = e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); go(); } };
   });
+
+  /* ⚠️ زرُّ «تابِع» يُعيد قراءة المادة لا يلتقطها من الإغلاق: بين
+     الرسم والنقر قد تُعاد الشبكةُ، فمرجعٌ قديم يفتح دروساً قديمة. */
+  const on = (id, fn) => { const el = document.getElementById(id); if(el) el.onclick = fn; };
+  on('go-resume', () => { const x = lastSubject(); if(x) loadLessons(x); else loadList(); });
+  on('go-cards',  loadFlashcards);
+  on('go-fb',     loadFeedback);
 
   const ph = document.getElementById("pastHdr");
   if(ph) ph.onclick = ()=>{
@@ -112,7 +226,6 @@ export async function loadList(){
     ph.classList.toggle('open', !box.hidden);
   };
 
-  const fg = document.getElementById("fbgo"); if(fg) fg.onclick = loadFeedback;
   scrollTop();
 }
 
@@ -199,6 +312,9 @@ export async function loadMentors(subj, switching){
 
 export async function loadLessons(subj){
   S.subj = subj;
+  /* الأثرُ يُكتب هنا لا في openLesson: المادةُ هي وحدةُ الاستئناف،
+     ودرسٌ بعينه قد يُتمّ فيصير «تابِع» يفتح ما فُرغ منه. */
+  rememberSubject(subj);
   nav('subjects');
   head(subj.name, subj.my_level ? "مستواك: "+subj.my_level : "");
   app.innerHTML = `<div class="status">جارٍ تحميل الدروس…</div>`;
@@ -422,6 +538,7 @@ export async function loadFeedback(){
     if(eMark) toast("تعذّر تسجيل قراءتك — ستبقى الملاحظات «جديدة» حتى تنجح");
     else if(n !== unread.length)
       console.warn("[feedback] عُلِّم", n, "من", unread.length);
+    refreshCounts();          // الشارة تنطفئ في الشريط لا في هذه الشاشة وحدها
   }
 }
 
@@ -433,6 +550,7 @@ export async function loadChat(){
   const { data, error } = await api.studentThread(S.user.id);
   renderChat(data || [], error);
   await api.studentReadsThread(S.user.id);
+  refreshCounts();
 }
 
 function renderChat(msgs, error){
