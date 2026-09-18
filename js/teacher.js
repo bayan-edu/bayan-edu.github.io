@@ -144,7 +144,7 @@ export async function loadMySubjects(){
     </div>
     ${subs.map(x=>`
       <div class="mentor ${picked.has(x.id)?'cur':''}" data-i="${x.id}">
-        <div class="m-n">${esc(x.name)} ${picked.has(x.id)?'<span class="badge ok">مختارة</span>':''}</div>
+        <div class="m-n">${esc(x.name)} ${picked.has(x.id)?'<span class="badge on">مختارة</span>':''}</div>
         <div class="m-m">${x.family?esc(x.family)+' · ':''}${AR(x.students)} طالباً · السعة ${AR(x.capacity)}</div>
       </div>`).join("")}
     ${!subs.length?'<div class="status">لا توجد مواد بعد</div>':''}
@@ -157,7 +157,7 @@ export async function loadMySubjects(){
     if(picked.has(id)) picked.delete(id); else picked.add(id);
     el.classList.toggle('cur');
     const b = el.querySelector('.badge');
-    if(picked.has(id) && !b) el.querySelector('.m-n').insertAdjacentHTML('beforeend',' <span class="badge ok">مختارة</span>');
+    if(picked.has(id) && !b) el.querySelector('.m-n').insertAdjacentHTML('beforeend',' <span class="badge on">مختارة</span>');
     if(!picked.has(id) && b) b.remove();
   });
 
