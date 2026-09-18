@@ -16,7 +16,7 @@
       يُلصق بمفتاحه كما في بقية الشاشات (ثابت ②).
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
-import { app, head, toast, esc, AR, errBox, nav, setWide, scrollTop, dirOf, shrinkFont } from './ui.js';
+import { app, head, toast, esc, AR, errBox, nav, setWide, scrollTop, dirOf, shrinkFont, examples, pickExample } from './ui.js';
 import { openCourse } from './editor.js';
 
 let ctx = null;   // { course, lessons }
@@ -168,7 +168,11 @@ function renderCards(){
     <div class="ed-row" data-c="${c.id}">
       <div style="flex:0 0 34%;min-width:0">
         <div class="ed-t" dir="${dirOf(c.front)}">${esc(c.front)}</div>
-        ${c.audio ? '<div class="ed-m"><span class="chip">🔊 نُطق</span></div>' : ''}
+        <div class="ed-m">
+          ${c.audio ? '<span class="chip">🔊 نُطق</span>' : ''}
+          ${examples(c.note).length > 1
+            ? `<span class="chip">${AR(examples(c.note).length)} أمثلة</span>` : ''}
+        </div>
       </div>
       <div style="flex:1;min-width:0;color:var(--text-muted);
                   font-size:var(--fs-meta);line-height:1.6"
@@ -235,8 +239,10 @@ function pasteBox(){
         <div class="ed-hint">📋 <b>سطرٌ لكلّ بطاقة.</b> الوجه ثمّ المعنى،
           والفاصل <b>Tab</b> — وهو ما ينتجه النسخُ من جدول Word أو Excel.
           ويقبل <code>|</code> و<code>—</code> أيضاً.</div>
-        <div class="ed-hint" style="opacity:.75"><b>عمودٌ ثالث اختياريّ:</b>
-          ملاحظةٌ تظهر تحت المعنى.</div>
+        <div class="ed-hint" style="opacity:.75"><b>عمودٌ ثالث — المثال:</b>
+          وتُكتب عدّةُ أمثلةٍ مفصولةً بـ<code>؛</code>، فتختار البطاقة
+          واحداً في كلّ لقاء. <b>ومثالٌ ثابت يُحفظ بنصّه</b> فيتعرّف
+          الطالبُ الجملةَ لا المفهوم.</div>
         <div class="ed-hint" style="opacity:.75">🔑 <b>وأقوى وجهٍ جملةٌ
           بفراغ:</b> اكتب <code>{{ }}</code> مكان الكلمة — فيُسترجَع
           المصطلح في سياقه لا مجرَّداً.</div>
@@ -321,9 +327,10 @@ function cardForm(c){
         <label class="fl" style="margin-top:16px">المعنى *</label>
         <textarea id="bk2" style="min-height:90px">${esc(c?.back || '')}</textarea>
 
-        <label class="fl" style="margin-top:16px">ملاحظة
-          <span style="opacity:.6">(اختياري)</span></label>
-        <input type="text" id="nt" value="${esc(c?.note || '')}">
+        <label class="fl" style="margin-top:16px">أمثلة
+          <span style="opacity:.6">(سطرٌ لكلّ مثال)</span></label>
+        <textarea id="nt" dir="auto" style="min-height:80px"
+          placeholder="مثالٌ في سطر&#10;وآخرُ في سطرٍ تالٍ">${esc(c?.note || '')}</textarea>
 
         <div class="ed-3">
           <div>
@@ -449,6 +456,7 @@ function preview(){
   function paint(){
     const c = C[i];
     const gap = /\{\{\s*\}\}/.test(c.front);
+    c._ex = pickExample(c.note);      // ثابتٌ ما دامت البطاقة معروضة
     cardEl.classList.remove('flipped');
 
     /* 🔑 لا عنوان للمصطلح المجرَّد: «ما معناها؟» تتكرّر في كل بطاقة
@@ -491,9 +499,10 @@ function preview(){
         <div class="bf-answer" id="bfAns" dir="${dirOf(c.back)}">${esc(c.back)}</div>`
       : `<div class="bf-answer" id="bfAns" dir="${dirOf(c.back)}">${esc(c.back)}</div>`}
 
-      ${c.note ? `<div class="bf-divider"></div>
-        <div class="bf-label">مثال</div>
-        <div class="bf-note" dir="${dirOf(c.note)}">${esc(c.note)}</div>` : ''}
+      ${c._ex ? `<div class="bf-divider"></div>
+        <div class="bf-label">مثال${examples(c.note).length > 1
+          ? ` · ${AR(examples(c.note).length)}` : ''}</div>
+        <div class="bf-note" dir="${dirOf(c._ex)}">${esc(c._ex)}</div>` : ''}
 
       <button class="bf-hint" data-flip="1">اضغط للعودة للسؤال</button>
       <div class="bf-btn-row">
