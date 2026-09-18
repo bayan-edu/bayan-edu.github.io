@@ -392,7 +392,8 @@ function preview(){
      دائماً، وهذا ما يريده الآن. ⇒ إعداد النظام قيمةٌ ابتدائية، والاختيار
      اليدويّ يعلوها ويُحفظ — كما تفعل سِمة المنصّة. */
   const sysReduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let calm = localStorage.getItem('bf-calm');
+  let calm;
+  try{ calm = localStorage.getItem('bf-calm'); }catch(err){ calm = null; }
   calm = calm === null ? sysReduce : calm === '1';
 
   app.innerHTML = `
@@ -430,7 +431,7 @@ function preview(){
 
   document.getElementById('bfCalm').onchange = e => {
     calm = e.target.checked;
-    localStorage.setItem('bf-calm', calm ? '1' : '0');
+    try{ localStorage.setItem('bf-calm', calm ? '1' : '0'); }catch(err){}
     applyCalm();
   };
 
@@ -539,11 +540,22 @@ function preview(){
        transitionend لا يقع أبداً بعد التفعيل — فيتجمّد الانتقال بصمت. */
     if(calm){ advance(); return; }
 
+    /* 🔴 شبكةُ أمان (b63): كان المفتاحُ مطفأً والنظامُ يطلب التخفيف ⇒
+       base.css يُلغي الانتقال فلا يقع transitionend أبداً، وتتجمّد المعاينة
+       بعد أول تقدير — بلا خطأٍ في الطرفية. screens.css صار يمنع هذا، لكنّ
+       الحدث يغيب لأسبابٍ أخرى أيضاً (تبويبٌ مخفيّ · عنصرٌ أُزيل). ⇒ مهلةٌ
+       أطولُ قليلاً من الانتقال (١٨٠ مللي ثانية) تتقدّم إن لم يأتِ، ولا
+       تتقدّم مرّتين إن أتى. */
+    let moved = false;
+    const onEnd = e => { if(e.target === stage) go(); };   // لا حدثَ فقاعةٍ من ابن
+    const go = () => {
+      if(moved) return; moved = true;
+      stage.removeEventListener('transitionend', onEnd);
+      advance(); stage.classList.remove('bf-out');
+    };
     stage.classList.add('bf-out');
-    stage.addEventListener('transitionend', () => {
-      advance();
-      stage.classList.remove('bf-out');
-    }, { once: true });
+    stage.addEventListener('transitionend', onEnd);
+    setTimeout(go, 400);
   }
 
   paint(); scrollTop();
