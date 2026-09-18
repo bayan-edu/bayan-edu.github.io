@@ -62,40 +62,157 @@ body.gate .wrap{max-width:1000px}
       «كلُّ شيءٍ يمتدّ إلا البطاقة» — عكسُها يكسر أوّلَ عنصرٍ جديد
       يُضاف ولا ينتبه له أحد. */
 .wrap:has(.subj) #app,
-.wrap:has(.mentor) #app{display:grid;gap:10px;align-items:start;
-  grid-template-columns:repeat(auto-fill,minmax(288px,1fr))}
+.wrap:has(.mentor) #app{display:grid;gap:10px;align-items:start}
 .wrap:has(.subj) #app > *,
 .wrap:has(.mentor) #app > *{grid-column:1/-1}
-.wrap:has(.subj) #app > .subj,
+.wrap:has(.subj) #app > .subj:not(.mini),
 .wrap:has(.mentor) #app > .mentor{grid-column:auto;margin-bottom:0}
 
-/* ═══ المواد ═══ */
-.subj{display:flex;justify-content:space-between;align-items:center;gap:12px;
+/* ⚠️ مقاسان لا مقاس: بطاقةُ المعلم تحمل سيرةً في أسطر، وبطاقةُ المادة
+   صارت عموداً فيه شكلٌ واسمٌ وشريط (b66). فلو جمعهما رقمٌ واحد لضاق
+   أحدُهما أو تبدّد الآخر. والمشترَك — الشبكةُ نفسها — بقي مشترَكاً. */
+/* ⚠️ stretch لا start لبطاقات المواد: العنوانُ يلتفّ سطرين في مادة
+   ولا يلتفّ في أخرى، والشارةُ تظهر هنا وتغيب هناك — فتتفاوت ارتفاعاتُ
+   الصفّ الواحد ويبدو مهلهلاً. والممتدّ (grid-column:1/-1) لا يتأثّر:
+   كلٌّ منه في صفّه، وارتفاعُ صفّه ارتفاعُه. */
+.wrap:has(.subj)   #app{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+  align-items:stretch}
+.wrap:has(.mentor) #app{grid-template-columns:repeat(auto-fill,minmax(288px,1fr))}
+
+/* ══════════════════════════════════════════════════════════
+   المواد — بطاقةٌ عمودية: شكلٌ يقول «أيُّ مادة» ولونٌ يقول «أين أنا»
+   (b66)
+
+   🔴 **الشكلُ هوية واللونُ حالة** — ولا يُعكس الدور أبداً.
+      لو حملت كلُّ مادةٍ لوناً خاصّاً بها (كما يُغري التصميم) لاستُهلك
+      اللونُ في التمييز، ولم يبقَ منه ما يقول للطالب «هذه بدأتَها
+      وتلك أوشكت». والطالب يحتاج الثاني كلَّ يوم، والأول مرّةً
+      يحفظه بعدها. ⇒ الشكلُ ثابتٌ للمادة، واللونُ يتحرّك بالتقدّم.
+
+   ⚠️ ولا أسرة ألوانٍ جديدة هنا: accent · ok · line وحدها — وكلُّها
+      مقيسةٌ لعمى الأحمر والأخضر في base.css. أسرةٌ رابعة تعني
+      تحليلَ وصوليةٍ كاملاً، لا اختيارَ درجةٍ تروق.
+
+   🔑 والألوان تُمرَّر بـ--sh-f و--sh-s لا بقواعدَ على العنصر: الشكلُ
+      يُرسم في ui.js وهي لا تعرف الحالة، والحالةُ تُحسب في student.js
+      وهي لا ترسم. المتغيّر هو المفصِل بينهما.
+   ══════════════════════════════════════════════════════════ */
+.subj{display:flex;flex-direction:column;align-items:center;text-align:center;gap:7px;
   background:var(--surface);border:1px solid var(--line);
-  border-radius:13px;padding:16px;margin-bottom:10px;cursor:pointer;transition:border-color .18s}
-.subj:hover{border-color:var(--accent)}
+  border-radius:18px;padding:18px 12px 15px;cursor:pointer;
+  transition:border-color .18s,box-shadow .18s,transform .18s}
+.subj:hover{border-color:var(--accent);transform:translateY(-2px);
+  box-shadow:0 6px 18px rgba(0,0,0,.07)}
+.subj:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 .subj.soon{opacity:.5;cursor:default;border-style:dashed}
-.subj.soon:hover{border-color:var(--line)}
-.subj-t{font-family:'Almarai';font-weight:700;font-size:var(--fs-read)}
-.subj-m{font-size:var(--fs-meta);color:var(--text-muted);margin-top:6px}
-.subj-d{font-size:var(--fs-meta);color:var(--text);opacity:.72;margin-top:6px;line-height:1.8}
-.pbar{height:5px;background:var(--fill-strong);border-radius:99px;overflow:hidden;margin-top:9px}
-.pfill{height:100%;background:var(--track-grad);border-radius:99px}
+.subj.soon:hover{border-color:var(--line);transform:none;box-shadow:none}
+
+.subj-t{font-family:'Almarai';font-weight:700;font-size:var(--fs-ui);line-height:1.55}
+/* margin-top:auto يُنزل العدّاد وشريطَه إلى قاع البطاقة — فتصطفّ
+   الأشرطةُ على خطٍّ واحد في الصفّ، ويُقارَن التقدّمُ بلمحةٍ لا بقراءة. */
+.subj-m{font-size:var(--fs-tag);color:var(--text-muted);line-height:1.6;margin-top:auto;
+  padding-top:2px}
+.subj.mini .subj-m{margin-top:0}
+.subj-b{display:flex;flex-wrap:wrap;gap:4px;justify-content:center}
+.subj-d{font-size:var(--fs-meta);color:var(--text);opacity:.72;margin-top:4px;line-height:1.8}
+.pbar{height:5px;background:var(--fill-strong);border-radius:99px;overflow:hidden;
+  margin-top:3px;width:100%}
+.pfill{height:100%;background:var(--track-grad);border-radius:99px;transition:width .5s ease}
 .lvl-tag{display:inline-block;background:var(--accent-fill);color:var(--accent);
   font-family:'Almarai';font-weight:800;font-size:var(--fs-tag);padding:2px 9px;border-radius:999px}
 .qz-t{font-family:'Almarai';font-weight:700;font-size:var(--fs-read)}
 .qz-m{font-size:var(--fs-meta);color:var(--text-muted);margin-top:3px}
 .qz-go{font-family:'Almarai';font-weight:800;font-size:var(--fs-meta);color:var(--accent);white-space:nowrap}
 
-.subj.mini{padding:11px 14px;opacity:.6}
-.subj.mini:hover{opacity:1}
+/* ── الشكل: يحتضن أيقونة المادة ويأخذ لون الحالة ── */
+.sh-wrap{position:relative;width:58px;height:58px}
+.sh{width:100%;height:100%;display:block;
+  fill:var(--sh-f,var(--fill-strong));stroke:var(--sh-s,var(--line-strong));stroke-width:1.6;
+  transition:fill .3s,stroke .3s}
+.sh-icon{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:1.35rem;line-height:1;pointer-events:none}
+
+/* ── الحالات — ستٌّ لا اثنتان: «بدأتُ» ليست «أوشكتُ» ──
+   ⚠️ والفارق بين active وmid في الشدّة لا في الأسرة: تدرّجٌ داخل
+      الأزرق يُقرأ تقدّماً، وقفزةٌ إلى أسرةٍ أخرى تُقرأ تغيّرَ نوع. */
+.st-empty {--sh-f:var(--fill);--sh-s:var(--line-strong)}
+.st-empty  .subj-t{color:var(--text-muted)}
+.st-new   {--sh-f:var(--accent-soft);--sh-s:var(--accent-edge)}
+.st-active{--sh-f:var(--accent-soft);--sh-s:var(--accent)}
+.st-active .pfill{background:var(--accent-edge)}
+.st-mid   {--sh-f:var(--accent-fill);--sh-s:var(--accent)}
+.st-mid    .pfill{background:var(--accent)}
+.st-near  {--sh-f:var(--ok-soft);--sh-s:var(--ok)}
+.st-near   .pfill{background:var(--ok-edge)}
+.st-near   .lvl-tag{background:var(--ok-fill);color:var(--ok)}
+.st-done  {--sh-f:var(--ok-fill);--sh-s:var(--ok)}
+.st-done   .pfill{background:var(--ok)}
+.st-done   .lvl-tag{background:var(--ok-fill);color:var(--ok)}
+/* المستوى وسمُ هوية لا حكمَ تقدّم ⇒ يبقى accent حيث لم تُبلغ الخضرة */
+.st-new .lvl-tag,.st-active .lvl-tag,.st-mid .lvl-tag{background:var(--accent-fill);color:var(--accent)}
+
+/* المكتملة تنكمش سطراً أفقياً — تحتفظ بنتيجتها ولا تُزاحم الحيّ */
+.subj.mini{flex-direction:row;text-align:start;justify-content:space-between;
+  align-items:center;gap:12px;padding:11px 14px;border-radius:13px;opacity:.6}
+.subj.mini:hover{opacity:1;transform:none;box-shadow:none}
 .subj.mini .subj-t{font-size:var(--fs-ui)}
+.subj.mini .sh-wrap{width:34px;height:34px;flex:0 0 34px}
+.subj.mini .sh-icon{font-size:.98rem}
+
 .fold-lbl{font-size:var(--fs-tag);color:var(--text-muted);margin:14px 0 8px;
   padding-right:3px;letter-spacing:.03em}
 .grp.fold{cursor:pointer;user-select:none}
 .grp.fold .caret{margin-right:auto;font-size:.75rem;color:var(--text-muted);
   transition:transform .22s}
 .grp.fold.open .caret{transform:rotate(180deg)}
+
+/* ══════════════════════════════════════════════════════════
+   شريط «اليوم» — ثلاثة أفعالٍ فوق قائمة المواد  (b66)
+
+   🔴 **حالتُك قبل قائمتك.** الرئيسةُ كانت جرداً: «هذه موادّك، دبّر
+      أمرك». والطالبُ العائد بعد يومين لا يسأل «ما موادّي» بل «بمَ
+      أبدأ الآن» — فسؤاله يُجاب في الأعلى قبل أن يُعرض الجرد.
+
+   ثلاثةٌ لا أكثر، وكلٌّ يقابل نوعاً من العمل لا مكاناً في الواجهة:
+     تابِع   ← الاستئناف   (أين تركتَ · من localStorage)
+     استرجِع ← التباعد     (بطاقاتٌ استحقّت اليوم · counts.due)
+     عالِج   ← التشخيص     (ملاحظاتٌ لم تُقرأ · counts.feedback)
+
+   🔑 ولونُ كلٍّ من أسرته لا من ترتيبه: الاستئنافُ تفاعلٌ (accent)،
+      والاسترجاعُ إتقانٌ يُبنى (ok)، والعلاجُ تشخيصٌ (dx) — وهي
+      نفسها الأسرة التي يراها في شاشة النتيجة. فيتعلّم المعنى
+      مرّةً ويقرؤه في كلّ موضع.
+   ⚠️ ولا يظهر الشريط ببطاقةٍ صفرية: «لا شيء ينتظرك» يُقال بغياب
+      البطاقة لا بصفرٍ يُعرض. وصفرٌ معروضٌ ثلاثَ مرّات كلَّ يوم
+      يُدرِّب على ألّا يُنظر إلى الشريط أصلاً.
+   ══════════════════════════════════════════════════════════ */
+.today{display:flex;gap:9px;flex-wrap:wrap;margin:2px 0 4px}
+.today-act{flex:1 1 128px;min-width:0;display:flex;flex-direction:column;
+  align-items:center;gap:6px;padding:14px 10px;border-radius:15px;text-align:center;
+  background:var(--surface);border:1px solid var(--line);cursor:pointer;
+  font-family:inherit;color:var(--text);
+  transition:border-color .18s,box-shadow .18s,transform .18s}
+.today-act:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,.07)}
+.today-act:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.ta-ic{width:38px;height:38px;border-radius:11px;display:flex;
+  align-items:center;justify-content:center}
+.ta-ic .ic{width:21px;height:21px}
+.ta-lbl{font-family:'Almarai';font-weight:800;font-size:var(--fs-ui)}
+.ta-val{font-size:var(--fs-tag);color:var(--text-muted);line-height:1.5;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+
+.ta-accent .ta-ic{background:var(--accent-fill);color:var(--accent)}
+.ta-accent:hover{border-color:var(--accent)}
+.ta-ok     .ta-ic{background:var(--ok-fill);color:var(--ok)}
+.ta-ok:hover{border-color:var(--ok)}
+.ta-dx     .ta-ic{background:var(--dx-soft);color:var(--dx)}
+.ta-dx:hover{border-color:var(--dx-edge)}
+
+@media(prefers-reduced-motion:reduce){
+  .subj,.today-act{transition:border-color .18s}
+  .subj:hover,.today-act:hover{transform:none}
+  .sh,.pfill{transition:none}
+}
 
 /* ═══ الدروس ═══ */
 .lsn{background:var(--fill-soft);border:1px solid var(--line);border-radius:12px;
