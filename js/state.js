@@ -14,6 +14,10 @@ export const S = {
   gate: "login",              // login · register · teacher
   /* الهوية */
   user: null,
+  /* أعدادُ ما ينتظر المستخدم — يملؤها refreshCounts من my_counts (106).
+     ⚠️ وتبقى هنا لا في ui.js: الشريط والدرج والشاشات تقرؤها جميعاً،
+        ونسختان لرقمٍ واحد تختلفان يوماً (الثابت ⑨). */
+  counts: {},
   prof: null,
   roleInfo: null,
   /* التصفّح */
