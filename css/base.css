@@ -47,12 +47,15 @@
    ⚠️ وترتيب التعبئة: soft أقلّ حبراً و strong أكثره. في الداكنة
       «أكثر حبراً» يعني أفتح، وعلى الورق أغمق — والاسم صادقٌ فيهما. */
 :root{
+  /* ⚠️ --page مكرَّرٌ اضطراراً في meta theme-color (index.html · data-light) */
   --page:#F5F5F4; --surface:#fff; --surface-2:#fff;
   --bar:rgba(255,255,255,.88);
   --fill-soft:#FAFAF9; --fill:#F5F5F4; --fill-strong:#E7E5E4;
   --line:#D6D3D1; --line-strong:#BCB7B1;
   --text:#292524; --text-muted:#57534E;
   --on-accent:#fff; --on-warn:#fff; --on-ok:#fff;
+  /* ⚠️ --accent يبقى hex سداسياً في السِمتين: analytics.js يُلحق به ألفا
+     نصّاً (ACC+'4D') لتدرّج المخطّط. rgb() أو oklch() هنا يكسره صامتاً. */
   --accent:#1D4ED8; --accent-soft:#EFF6FF; --accent-fill:#DBEAFE;
   --accent-line:#BFDBFE; --accent-edge:#3B82F6;
   --track-grad:linear-gradient(90deg,#60A5FA,#1D4ED8);
@@ -247,11 +250,16 @@ h2.sec{font-family:'Almarai';font-weight:800;font-size:var(--fs-h);margin:24px 0
 /* ── الوسوم والرقائق ── */
 .badge{display:inline-block;font-family:'Almarai';font-weight:800;font-size:var(--fs-tag);
  padding:3px 10px;border-radius:999px;margin-right:7px}
-.badge.ok{background:var(--accent-fill);color:var(--accent)}
+/* ok حكمٌ («أُنجز») و on حالةُ اختيار («مختارة» · «معلمك الحالي»).
+   كانتا صنفاً واحداً — فبدا الاختيارُ إنجازاً. */
+.badge.ok{background:var(--ok-fill);color:var(--ok)}
+.badge.on{background:var(--accent-fill);color:var(--accent)}
 .badge.lock{background:var(--fill-strong);color:var(--text-muted)}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
 .chip{background:var(--fill);border:1px solid var(--line);border-radius:8px;
   padding:4px 10px;font-size:var(--fs-tag);color:var(--text-muted)}
+/* g اسمٌ تاريخيّ (كان أخضر). دورُه إعلاميّ — عدد · محطّة · «عندك» —
+   لا حكم، فتبع accent إلى الأزرق. لا يُعاد تسميته: يسكن في ١٣ موضعاً. */
 .chip.g{background:var(--accent-fill);border-color:var(--accent-line);color:var(--accent)}
 
 /* ── الحالات والرسائل ── */
