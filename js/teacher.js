@@ -7,7 +7,8 @@
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
 import { S } from './state.js';
-import { app, head, toast, esc, fmt, AR, bubble, errBox, nav, BUILD, scrollTop, scrollBottom } from './ui.js';
+import { app, head, toast, esc, fmt, AR, bubble, errBox, nav, BUILD,
+         refreshCounts, scrollTop, scrollBottom } from './ui.js';
 
 /* ═══════════ ① التصحيح ═══════════ */
 
@@ -69,7 +70,9 @@ export async function openGrade(id){
     const fb = (document.getElementById("fb").value||"").trim();
     if(!fb){ toast("اكتب ملاحظاتك أولاً"); return; }
     const { error } = await api.saveGrade(id, es===''?null:Number(es), fb, S.user.id);
-    toast(error?"تعذّر الحفظ":"أُرسلت الملاحظات"); loadTeacher();
+    toast(error?"تعذّر الحفظ":"أُرسلت الملاحظات");
+    if(!error) refreshCounts();    // نقص المنتظِر ⇒ ينقص الجرس
+    loadTeacher();
   };
   scrollTop();
 }
@@ -122,6 +125,7 @@ export async function openThread(sid){
     toast(error?"تعذّر الإرسال":"أُرسل الرد"); openThread(sid);
   };
   await api.teacherReadsThread(sid);
+  refreshCounts();          // قُرئت رسائلُ هذا الطالب ⇒ ينقص الجرس
   scrollBottom();
 }
 
