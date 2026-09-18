@@ -51,7 +51,7 @@
    ⚠️ ثلاث قيم رُفضت من Preline بالقياس (الحدّ ٤٫٥ للنص):
       stone-400 للخافت = ٢٫٥٢ ⇒ stone-600 = ٧٫٦٣
       red-500 للخطر   = ٣٫٧٦ ⇒ red-700   = ٦٫٤٧
-      blue-600 فوق تعبئته = ٤٫٢٤ ⇒ blue-700 = ٥٫٤٩  (.tab.on · .navlink.on)
+      blue-600 فوق تعبئته = ٤٫٢٤ ⇒ blue-700 = ٥٫٤٩  (.tab.on · .drawer-item.on)
    ⚠️ warn (b62): قيمُها القديمة كانت مصبوغةً بصبغة الورق (الخلفية ٨٥°
       والصفحة الكريمية ٨٩°) فبدت على الصفحة المحايدة بقيّةَ ورقٍ لا إشارة
       ⇒ خلفيّةٌ وحدٌّ من سلّم amber يحملان الهويّة.
@@ -86,6 +86,7 @@
   --danger:#B91C1C; --danger-text:#7F1D1D; --danger-soft:#FEF2F2;
   --danger-fill:#FEE2E2; --danger-line:#FECACA; --danger-edge:#EF4444;
   --shadow:0 1px 2px rgba(28,25,23,.05), 0 8px 24px -8px rgba(28,25,23,.10);
+  --scrim:rgba(28,25,23,.38);
   --r:14px}
 
 /* الداكنة (b62) — محايدةٌ على طريقة Preline، والقيم بالقياس.
@@ -135,7 +136,8 @@
   --danger:#F87171; --danger-text:#FEE2E2; --danger-soft:rgba(248,113,113,.07);
   --danger-fill:rgba(248,113,113,.12); --danger-line:rgba(248,113,113,.26);
   --danger-edge:rgba(248,113,113,.45);
-  --shadow:0 1px 2px rgba(0,0,0,.30), 0 8px 24px -8px rgba(0,0,0,.50)}
+  --shadow:0 1px 2px rgba(0,0,0,.30), 0 8px 24px -8px rgba(0,0,0,.50);
+  --scrim:rgba(0,0,0,.58)}
 
 /* ══ السلّم الطباعيّ ══
    ستّ درجات لا أربعين. والقاعدة تُقرأ من الأسماء لا من الأرقام:
@@ -317,45 +319,111 @@ h2.sec{font-family:'Almarai';font-weight:800;font-size:var(--fs-h);margin:24px 0
   display:flex;align-items:center;gap:10px;padding:9px 14px}
 /* هوية الشريط — تُستنسخ من #brand فلا يُفترض شكلها ولا مكان ملفّها.
    وتُخفى تحت ٥٦٠px: الوجهات أحقُّ بالعرض من الاسم في شاشةٍ ضيّقة. */
-.topbrand{flex:0 0 auto;margin:0 0 0 4px;gap:7px}
+.topbrand{flex:0 0 auto;margin:0 2px;gap:7px}
 .topbrand .brand-logo{height:25px}
 .topbrand .brand-slogan{display:none}
 .topbrand .brand-name{font-size:var(--fs-read)}
-@media(max-width:560px){ .topbrand{display:none} }
+/* 🔓 وعادت الهويّة تظهر في الشاشة الضيّقة (b65): كانت تُخفى لتفسح
+   للوجهات، والوجهات صارت في الدرج — فلا مزاحم، والهويّة أولى بالفراغ. */
+.topgap{flex:1;min-width:0}
 
-.navlinks{display:flex;gap:5px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none}
-.navlinks::-webkit-scrollbar{display:none}
-.navlink{background:none;border:1px solid transparent;border-radius:9px;
-  padding:7px 13px;cursor:pointer;white-space:nowrap;color:var(--text-muted);
-  font-family:'Almarai';font-weight:700;font-size:var(--fs-meta);
+/* ── أزرار الأيقونات: ☰ · الجرس · الإغلاق ──
+   ٣٨px مساحةُ إصابةٍ لا مساحةُ رسم: الأيقونة ٢٠ والباقي هامشٌ يُلمَس. */
+.iconbtn{flex:0 0 auto;width:38px;height:38px;padding:0;background:none;
+  border:1px solid transparent;border-radius:11px;cursor:pointer;color:var(--text-muted);
+  display:flex;align-items:center;justify-content:center;position:relative;
   transition:color .18s,background .18s,border-color .18s}
-.navlink:hover{color:var(--text);background:var(--fill)}
-.navlink.on{color:var(--accent);background:var(--accent-fill);border-color:var(--accent-edge)}
-.navlink:focus-visible,.navout:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-/* مبدّل السِمة — أيقونةٌ لا كلمة، لأنه لا يُقرأ بل يُتعرَّف عليه.
-   و◐ نصفُ دائرة: رمزُ التباين المتعارف عليه، ولا يتحوّل إلى إيموجي
-   ملوّن في أي نظام — بخلاف ☀ و🌙. */
-.navtheme{flex:0 0 auto;width:33px;height:33px;padding:0;
-  background:none;border:1px solid var(--line);border-radius:999px;
-  cursor:pointer;color:var(--text-muted);font-size:1rem;line-height:1;
-  display:flex;align-items:center;justify-content:center;
-  transition:color .18s,border-color .18s}
-.navtheme:hover{color:var(--accent);border-color:var(--accent-edge)}
+.iconbtn:hover{color:var(--text);background:var(--fill)}
+.iconbtn:focus-visible,.acct:focus-visible,.drawer-item:focus-visible,
+.bell-item:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.ic{width:20px;height:20px;display:block}
 
-/* «خروج» ليس زراً — والقاعدة باقية. لكنه كان ٣٫٣:١ بالقياس، وحدّ
-   WCAG AA أربعةٌ ونصف. فرُفع فوق أرضية القراءة ولم يُرفع فوق رتبته:
-   الإطار يقول «هذا يُنقَر» واللون الرماديّ يقول «لستُ الإجراء الرئيس».
-   و flex:0 0 auto تمنعه من الانكماش حين تزدحم الوجهات في الجوّال. */
-.navout{flex:0 0 auto;background:none;border:1px solid var(--line);
-  border-radius:999px;cursor:pointer;white-space:nowrap;
-  color:var(--text-muted);font-family:'Almarai';font-weight:700;font-size:var(--fs-meta);
-  padding:6px 13px;transition:color .18s,border-color .18s,background .18s}
-.navout:hover{color:var(--danger);border-color:var(--danger-edge);
-  background:var(--danger-soft)}
+/* ── شارة العدد ──
+   🔑 كهرمانيّةٌ لا حمراء: الأحمر في بيان يقول «أخطأتَ» وحدها (طبقة
+      الأدوار في الرأس)، وعددُ ما ينتظرك ليس خطأً. */
+/* ⚠️ تركب الزاوية ولا تجلس داخل الزرّ: قياسٌ أوّل وضعها عند 1px
+   فغطّت الجرسَ نفسه — فصار الرقم يمحو الأيقونة التي يصفها. */
+.bdg{position:absolute;top:-3px;inset-inline-end:-4px;min-width:19px;height:19px;
+  padding:0 5px;border-radius:999px;background:var(--warn-fill);color:var(--warn-text);
+  border:1px solid var(--warn-edge);font-family:'Almarai';font-weight:800;
+  font-size:var(--fs-tag);line-height:17px;text-align:center}
+.bdg.soft{position:static}
+
+/* ── زرّ الحساب — بابٌ ثانٍ للدرج لا قائمةٌ ثانية ── */
+.acct{flex:0 0 auto;display:flex;align-items:center;gap:8px;background:none;
+  border:1px solid var(--line);border-radius:999px;cursor:pointer;color:var(--text);
+  padding-block:3px;padding-inline:3px 11px;
+  transition:border-color .18s,background .18s}
+.acct:hover{border-color:var(--accent-edge);background:var(--fill)}
+.acct-n{font-family:'Almarai';font-weight:700;font-size:var(--fs-meta);
+  max-width:9ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.avatar{width:30px;height:30px;border-radius:999px;background:var(--accent-fill);
+  color:var(--accent);font-family:'Almarai';font-weight:800;font-size:var(--fs-meta);
+  display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.avatar.lg{width:44px;height:44px;font-size:var(--fs-read)}
+@media(max-width:520px){ .acct-n{display:none} .acct{padding-inline:3px} }
+
+/* ── لوحة الجرس ──
+   تتدلّى من زرّها لا من طرف الشاشة: العينُ تتبع ما نقرت عليه. */
+.bellwrap{position:relative;flex:0 0 auto;display:flex}
+.bellpanel{position:absolute;top:calc(100% + 9px);inset-inline-end:0;z-index:40;
+  width:min(86vw,304px);background:var(--surface);border:1px solid var(--line);
+  border-radius:14px;box-shadow:var(--shadow);padding:6px}
+.bell-item{display:flex;align-items:flex-start;gap:10px;width:100%;text-align:start;
+  background:none;border:none;border-radius:10px;padding:10px;cursor:pointer;
+  color:var(--text);font-family:inherit;font-size:var(--fs-meta);line-height:1.7;
+  transition:background .18s}
+.bell-item:hover{background:var(--fill)}
+.bell-ic{color:var(--accent);display:flex;flex:0 0 auto;margin-top:3px}
+.bell-empty{padding:18px 12px;text-align:center;color:var(--text-muted);
+  font-size:var(--fs-meta)}
+
+/* ── الدرج ──
+   🔑 يخرج من يمين الشاشة لأن ☰ في اليمين: القائمة تنبثق من تحت
+      الإصبع الذي فتحها، فلا تقطع العينُ الشاشةَ بحثاً عنها.
+   ⚠️ و inset-inline-start في RTL هو اليمين، و translateX(100%)
+      فيزيائيّ يُخفيه يميناً. الاثنان متوافقان هنا عن قصد. */
+/* ⚠️ الظهور فوريّ والاختفاء مؤجَّل: لو تدرّج visibility مع الحركة
+   لبقي الدرج مخفيّاً في أول إطار، **وعنصرٌ مخفيّ لا يقبل التركيز** —
+   فيسقط نقلُ التركيز إليه صامتاً. مقيسٌ في فحص ⑦. */
+.scrim{position:fixed;inset:0;z-index:65;background:var(--scrim);
+  opacity:0;visibility:hidden;transition:opacity .25s,visibility 0s linear .25s}
+.drawer{position:fixed;inset-block:0;inset-inline-start:0;z-index:70;
+  width:min(86vw,312px);background:var(--surface);
+  border-inline-end:1px solid var(--line);box-shadow:var(--shadow);
+  display:flex;flex-direction:column;
+  transform:translateX(100%);visibility:hidden;
+  transition:transform .26s ease,visibility 0s linear .26s}
+body.drawer-open .scrim{opacity:1;visibility:visible;
+  transition:opacity .25s,visibility 0s}
+body.drawer-open .drawer{transform:none;visibility:visible;
+  transition:transform .26s ease,visibility 0s}
+body.drawer-open{overflow:hidden}
+/* البوّابة لا شريطَ لها ولا درج — والحارس هنا لا في كل شاشة */
+body.gate .drawer,body.gate .scrim{display:none}
+
+.drawer-head{display:flex;align-items:center;gap:10px;padding:14px 14px 12px;
+  border-bottom:1px solid var(--line)}
+.who{display:flex;align-items:center;gap:11px;min-width:0;flex:1}
+.who-t{display:flex;flex-direction:column;min-width:0;line-height:1.55}
+.who-t b{font-family:'Almarai';font-weight:800;font-size:var(--fs-ui);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.who-t span{font-size:var(--fs-tag);color:var(--text-muted)}
+.drawer-nav{flex:1;overflow-y:auto;padding:10px 10px 4px}
+.drawer-foot{padding:8px 10px 14px;border-top:1px solid var(--line)}
+.drawer-item{display:flex;align-items:center;gap:11px;width:100%;text-align:start;
+  background:none;border:1px solid transparent;border-radius:11px;padding:11px 12px;
+  cursor:pointer;color:var(--text-muted);font-family:'Almarai';font-weight:700;
+  font-size:var(--fs-ui);transition:color .18s,background .18s,border-color .18s}
+.drawer-item > span:not(.bdg){flex:1}
+.drawer-item:hover{color:var(--text);background:var(--fill)}
+.drawer-item.on{color:var(--accent);background:var(--accent-fill);
+  border-color:var(--accent-edge)}
+.drawer-item.danger:hover{color:var(--danger);background:var(--danger-soft);
+  border-color:var(--danger-line)}
+
 @media(max-width:420px){
   .topbar{padding:8px 10px;gap:6px}
-  .navlink{padding:7px 10px;font-size:var(--fs-meta)}
-  .navout{padding:6px 10px}
 }
 
 /* ── الإتاحة ──
