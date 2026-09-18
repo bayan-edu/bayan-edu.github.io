@@ -95,9 +95,12 @@ export const submitAttempt = (quizId, answers, durationSec, auto) =>
 
 /* ═══════════ ⑥ الملاحظات والتصحيح ═══════════ */
 
-export const unreadFeedbackCount = uid =>
-  db.from('attempts').select('id', { count:'exact', head:true })
-    .eq('user_id', uid).not('teacher_comment','is',null).eq('read_by_student', false);
+/* 🔔 «ما الجديد عندي؟» — جوابٌ واحد بحسب الدور (106):
+      الطالب         feedback · messages · due · bell
+      المعلّم/المدير  grading · messages · requests · bell
+   و bell رقمُ الجرس، يُقرَّر في القاعدة لا هنا — والمستحقّ خارجه عمداً.
+   ⚠️ حلّت محلّ unreadFeedbackCount: عدٌّ في موضعين يختلف يوماً (ثابت ⑨). */
+export const myCounts = () => db.rpc('my_counts');
 
 export const myFeedback = uid =>
   db.from('attempts')
@@ -105,8 +108,11 @@ export const myFeedback = uid =>
     .eq('user_id', uid).not('teacher_comment','is',null)
     .order('submitted_at', { ascending:false });
 
-export const markFeedbackRead = ids =>
-  db.from('attempts').update({ read_by_student:true }).in('id', ids);
+/* «قُرئت» تعني «عُرضت»: تُمرَّر معرّفاتُ ما رسمته الشاشة، ولا «علِّم الكلّ».
+   🔴 كانت update مباشرة، وسياسة UPDATE على attempts للمعلّم وحده (STATE ⑦)
+      ⇒ صفر صفوف بلا خطأ، فبقي الرقم أبداً. الآن دالّةٌ تُرجع عددَ ما تغيّر
+      (106) — فيُرى الفشل. */
+export const markFeedbackRead = ids => db.rpc('mark_feedback_read', { p_ids: ids });
 
 // المعلم لا يرى إلا طلابه — العزل في RLS عبر teaches()، لا في هذا الاستعلام
 export const attemptsToGrade = () =>
