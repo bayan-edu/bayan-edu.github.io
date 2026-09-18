@@ -62,7 +62,7 @@
    ⚠️ وترتيب التعبئة: soft أقلّ حبراً و strong أكثره. في الداكنة
       «أكثر حبراً» يعني أفتح، وعلى الورق أغمق — والاسم صادقٌ فيهما. */
 :root{
-  /* ⚠️ --page مكرَّرٌ اضطراراً في meta theme-color (index.html · data-light) *
+  /* ⚠️ --page مكرَّرٌ اضطراراً في meta theme-color (index.html · data-light) */
   --page:#F5F5F4; --surface:#fff; --surface-2:#fff;
   --bar:rgba(255,255,255,.88);
   --fill-soft:#FAFAF9; --fill:#F5F5F4; --fill-strong:#E7E5E4;
