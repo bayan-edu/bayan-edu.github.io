@@ -61,6 +61,24 @@ export function dirOf(t){
   return m ? (AR_RX.test(m[0]) ? 'rtl' : 'ltr') : 'rtl';
 }
 
+/* أمثلةٌ متعدّدة في حقلٍ واحد: سطرٌ لكلّ مثال في المحرّر، أو مفصولةٌ
+   بـ«؛» في اللصق الجماعي (حيث السطر محجوزٌ لصفٍّ كامل).
+   مصدرٌ واحد تستعمله البطاقة واللعبة والمعاينة — فلا ثلاث قواعد تفترق. */
+export function examples(note){
+  return String(note || '')
+    .split(/\r?\n|؛|\s\|\s/)
+    .map(s => s.trim())
+    .filter(Boolean);
+}
+
+/* 🔑 يُنتقى مرّةً لكلّ ظهور لا لكلّ رسم: فلو تغيّر المثال مع كلّ قلبةٍ
+   لبدت البطاقة غير مستقرّة. والتنويع بين اللقاءات هو المقصود —
+   فمثالٌ ثابت يُحفظ بنصّه، ويصير الطالب يتعرّف الجملة لا المفهوم. */
+export function pickExample(note){
+  const xs = examples(note);
+  return xs.length ? xs[Math.floor(Math.random() * xs.length)] : '';
+}
+
 /* حرف الخيار: المخزَّن إن وُجد (i · ii · iii) وإلا يُشتقّ من اتجاهه */
 export const optLabel = (o, i) =>
   (o?.label && String(o.label).trim())
