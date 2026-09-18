@@ -263,10 +263,12 @@ body.gate .wrap{max-width:1000px}
 /* 🔴 الهرم مقلوبٌ هنا عمداً: في شاشة المراجعة السؤالُ سياقٌ والتشخيصُ متن.
    فـ.rev-q ١٥٫٢px و.trap ١٦٫٨px — الشرحُ أكبر مما يشرحه.
    ولو تساويا لقرأ الطالبُ الأعلى وتجاوز الأسفل، والأسفلُ هو المقصود. */
-.trap{margin-top:11px;background:var(--warn-soft);border:1px solid var(--warn-line);
- border-radius:10px;padding:13px 15px;font-size:var(--fs-read);line-height:1.9;color:var(--warn-text)}
+/* التشخيص dx لا warn (b62): الصندوق يجاور «خاطئة»، والكهرمانيُّ يذوب في
+   الأحمر عند عمى الأحمر ⇒ يُقرأ الشرحُ لوماً. «لماذا» ليست «أخطأت». */
+.trap{margin-top:11px;background:var(--dx-soft);border:1px solid var(--dx-line);
+ border-radius:10px;padding:13px 15px;font-size:var(--fs-read);line-height:1.9;color:var(--dx-text)}
 .trap strong{display:block;margin-bottom:5px;font-family:'Almarai';font-weight:800;
- font-size:var(--fs-meta);letter-spacing:.02em;color:var(--warn)}
+ font-size:var(--fs-meta);letter-spacing:.02em;color:var(--dx)}
 .model{margin-top:11px;background:var(--accent-soft);border:1px solid var(--accent-line);
  border-radius:10px;padding:14px 16px;font-size:var(--fs-read);line-height:1.9}
 .model strong{font-family:'Almarai';font-weight:800;color:var(--accent);display:block;margin-bottom:5px}
@@ -297,7 +299,7 @@ body.gate .wrap{max-width:1000px}
 .jd-m{display:block;margin-top:4px;font-family:'Almarai';font-weight:800;font-size:var(--fs-tag);color:var(--text-muted)}
 .jd.hit .jd-m{color:var(--ok)}
 .jd.err .jd-m{color:var(--danger)}
-.jd-dx{display:block;margin-top:5px;font-size:var(--fs-read);color:var(--warn);line-height:1.8}
+.jd-dx{display:block;margin-top:5px;font-size:var(--fs-read);color:var(--dx);line-height:1.8}
 
 /* ═══ الإرشاد — اختيار المعلم ═══ */
 .mentor{background:var(--surface);border:1px solid var(--line);
@@ -593,8 +595,8 @@ body.gate .wrap{max-width:1000px}
   border-radius:9px;padding:7px 9px;margin-bottom:6px}
 .cmp-o.ok{border-color:var(--ok-edge);background:var(--ok-soft)}
 .cmp-tx{flex:1;min-width:0}
-.cmp-dx{font-size:var(--fs-tag);color:var(--warn);background:var(--warn-soft);
-  border:1px solid var(--warn-line);border-radius:7px;padding:1px 6px;white-space:nowrap}
+.cmp-dx{font-size:var(--fs-tag);color:var(--dx);background:var(--dx-soft);
+  border:1px solid var(--dx-line);border-radius:7px;padding:1px 6px;white-space:nowrap}
 .cmp-mark{outline:1px dashed var(--danger-edge);outline-offset:2px}
 .cmp-note{font-size:.76rem;color:var(--text-muted);line-height:1.8}
 
@@ -837,9 +839,11 @@ body.gate .wrap{max-width:1000px}
        font-size:.8rem;font-variant-numeric:tabular-nums}
 .an-qb{line-height:1.85}
 .an-qc{margin-top:8px;font-size:.9rem;color:var(--text-muted)}
-/* التشخيصُ متنٌ والإجابةُ سياق — فله أرضيةٌ ووزنٌ أظهر */
+/* التشخيصُ متنٌ والإجابةُ سياق — فله أرضيةٌ ووزنٌ أظهر.
+   ⚠️ كان على accent: ورثه من أيّام كان accent أخضرَ بيان؛ فلمّا صار
+      أزرقَ التفاعل (b61) صار التشخيصُ يبدو زرّاً. ⇒ dx (b62). */
 .an-qd{margin-top:9px;padding:10px 12px;border-radius:11px;line-height:1.8;
-       background:var(--accent-soft);border:1px solid var(--accent-line)}
+       background:var(--dx-soft);border:1px solid var(--dx-line);color:var(--dx-text)}
 .an-qr{margin-top:9px;padding:10px 12px;border-radius:11px;line-height:1.8;
        background:var(--warn-soft);border:1px solid var(--warn-line);color:var(--warn-text)}
 
