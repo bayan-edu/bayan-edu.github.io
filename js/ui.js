@@ -7,7 +7,7 @@ import { S } from './state.js';
 import { mediaUrl, isManaged } from './media.js';
 
 /* ── بصمة النسخة — لمعرفة أي شيفرة يشغّلها المتصفح فعلاً ── */
-export const BUILD = "b60";
+export const BUILD = "b61";
 
 /* ── مراسي الصفحة ── */
 export const app = document.getElementById("app");
@@ -264,10 +264,11 @@ export function setWide(on){
 export function toggleTheme(){
   const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
   document.documentElement.dataset.theme = next;
-  /* شريط عنوان المتصفح في الجوّال يتلوّن بـmeta theme-color لا بـCSS —
-     فلو تُرك ثابتاً لبقي كحلياً معلَّقاً فوق صفحةٍ كريمية. */
+  /* شريط عنوان المتصفح في الجوّال يتلوّن بـmeta theme-color لا بـCSS.
+     واللونان يسكنان في الوسم نفسه (data-light · data-dark) — لا هنا.
+     كانا في ثلاثة مواضع، فتغيّرت الصفحة (b61) وكاد الشريطُ يبقى كريمياً. */
   const m = document.querySelector('meta[name="theme-color"]');
-  if(m) m.content = next === "dark" ? "#07182a" : "#EDE9DF";
+  if(m) m.content = m.dataset[next];
   try{ localStorage.setItem("bayan.theme", next); }catch(e){}
 }
 
