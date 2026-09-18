@@ -7,7 +7,8 @@
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
 import { S } from './state.js';
-import { app, bar, head, toast, esc, AR, errBox, nav, registerRoutes, mathBoot } from './ui.js';
+import { app, bar, head, toast, esc, AR, errBox, nav, registerRoutes,
+         registerCounts, refreshCounts, mathBoot } from './ui.js';
 import { loadList, loadFeedback, loadChat } from './student.js';
 import { loadTeacher, loadInbox, loadMySubjects } from './teacher.js';
 import { openEditor } from './editor.js';
@@ -201,6 +202,10 @@ export async function boot(){
   S.roleInfo = ri || { role: S.prof.role };
   const role = S.roleInfo.role;
 
+  /* الأعداد تُجلب مرّةً هنا لا في كل شاشة — والشارات تُدهَن حين تصل.
+     وبلا await عمداً: الشاشة لا تنتظر رقماً، و paintCounts تلحق بها. */
+  refreshCounts();
+
   if(role === 'pending_teacher') return renderPending();
   if(role === 'admin')           return loadAdmin();
   if(role === 'teacher')         return loadTeacher();
@@ -263,6 +268,7 @@ export function renderGradePicker(msg){
 export async function signOut(){
   await api.signOutSession();
   S.user = null;
+  S.counts = {};        // وإلا ورث الداخلُ التالي أرقام من خرج
   S.gate = "login";
   renderGate();
 }
@@ -407,7 +413,9 @@ export async function loadAdmin(status){
     if(!ok && note===null) return;
     const { data:res, error } = await api.adminDecide(Number(b.dataset.id), ok, note||null);
     if(error){ toast(error.message); return; }
-    toast(res.result || "تم"); loadAdmin(st);
+    toast(res.result || "تم");
+    refreshCounts();        // بُتَّ في طلب ⇒ ينقص عدّاد الطلبات
+    loadAdmin(st);
   });
 }
 
@@ -415,6 +423,9 @@ export async function loadAdmin(status){
 
 export function start(){
   // خريطة الوجهات — الموضع الوحيد الذي يربط الشريط بالشاشات
+  /* ui.js لا تلمس القاعدة (الثابت ①) — فتُسلَّم الجالب ولا تعرف مصدره */
+  registerCounts(async () => (await api.myCounts()).data || {});
+
   registerRoutes({
     subjects:   loadList,
     cards:      loadFlashcards,
