@@ -25,7 +25,9 @@ export async function loadList(){
   if(error){ app.innerHTML = `<div class="err"><b>تعذّر التحميل</b>${esc(error.message)}</div>`; return; }
   S.subjects = data || [];
 
-  const { count, error:eCount } = await api.unreadFeedbackCount(S.user.id);
+  /* العدد من my_counts (106) — المصدر الواحد الذي سيقرؤه الجرس أيضاً */
+  const { data:counts, error:eCount } = await api.myCounts();
+  const count = counts?.feedback || 0;
 
   /* ثلاث مجموعات: صفّي · صفوف سابقة · مهارات */
   const grade  = S.subjects.filter(x => x.group_key === '1_grade');
@@ -411,8 +413,16 @@ export async function loadFeedback(){
         <div class="model">${esc(f.teacher_comment).replace(/\n/g,"<br>")}</div>
       </div>`).join(""):'<div class="status">لا توجد ملاحظات بعد</div>'}`;
 
+  /* 🔴 الصمتُ كان العطل: update بلا صفوف ولا خطأ، فبقي الرقم لا يسكت (106).
+     الآن: الفشل يُقال للطالب، والفرقُ في العدد يُسجَّل للمطوّر وحده —
+     فقد يسبق تبويبٌ آخر إلى بعضها، وإنذارٌ كاذبٌ للطالب أسوأ من لا إنذار. */
   const unread = list.filter(f=>!f.read_by_student).map(f=>f.id);
-  if(unread.length) await api.markFeedbackRead(unread);
+  if(unread.length){
+    const { data:n, error:eMark } = await api.markFeedbackRead(unread);
+    if(eMark) toast("تعذّر تسجيل قراءتك — ستبقى الملاحظات «جديدة» حتى تنجح");
+    else if(n !== unread.length)
+      console.warn("[feedback] عُلِّم", n, "من", unread.length);
+  }
 }
 
 /* ═══════════ ⑥ مراسلة المعلم ═══════════ */
