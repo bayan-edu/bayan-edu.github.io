@@ -28,7 +28,7 @@
    ④ لا مكتبة صوت: نغماتٌ من Web Audio.
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
-import { app, esc, AR, toast, scrollTop, dirOf } from './ui.js';
+import { app, esc, AR, toast, scrollTop, dirOf, examples, pickExample } from './ui.js';
 
 const SHIELDS   = 3;
 const PER_ROUND = 5;
@@ -161,7 +161,7 @@ function slotted(example, term){
 
 export function eligible(cards){
   return (cards || []).filter(c =>
-    c.note && String(c.note).trim() && !/\{\{\s*\}\}/.test(c.front || ''));
+    examples(c.note).length > 0 && !/\{\{\s*\}\}/.test(c.front || ''));
 }
 
 
@@ -239,9 +239,11 @@ export function openMatchGame({ subject, cards, title, onExit }){
       `<button class="mg-term" data-t="${c.id}" dir="${dirOf(c.front)}"
         >${esc(c.front)}</button>`).join('');
 
-    el('mgRows').innerHTML = shuffle(set.slice()).map(c =>
-      `<button class="mg-row" data-e="${c.id}" dir="${dirOf(c.note)}"
-        ><span class="mg-ex">${slotted(c.note, c.front)}</span></button>`).join('');
+    el('mgRows').innerHTML = shuffle(set.slice()).map(c => {
+      const ex = pickExample(c.note);     // مثالٌ آخر في كلّ جولة
+      return `<button class="mg-row" data-e="${c.id}" dir="${dirOf(ex)}"
+        ><span class="mg-ex">${slotted(ex, c.front)}</span></button>`;
+    }).join('');
 
     el('mgTerms').querySelectorAll('[data-t]').forEach(b => b.onclick = () => pickTerm(b));
     el('mgRows').querySelectorAll('[data-e]').forEach(b => b.onclick  = () => pickRow(b));
