@@ -310,6 +310,12 @@ export const saveMyNote     = (id, note) => db.rpc('save_my_note', { p_card: id,
 export const dueCards       = (sid, limit, fresh) =>
   db.rpc('due_cards', { p_subject: sid, p_limit: limit ?? 30, p_new: fresh ?? 6 });
 export const dueCounts      = () => db.rpc('due_counts');
+
+/* ── البحث العامّ (107 · 108) ──
+   p_limit سقفٌ **لكلّ نوع** لا للمجموع: أربعةُ أنواع ⇒ حتى ٣٢ نتيجة.
+   وثمانيةٌ تكفي المجموعةَ الواحدة في لوحةٍ تُقرأ بلمحة ولا تُتصفَّح. */
+export const searchAll = (q, n = 8) =>
+  db.rpc('search_all', { p_q: q, p_limit: n });
 export const addMyCard      = o => db.rpc('add_my_card', {
   p_subject: o.subject, p_front: o.front, p_level: o.level ?? null, p_back: o.back ?? null });
 export const subscribeCards = ids => db.rpc('subscribe_cards', { p_card_ids: ids });

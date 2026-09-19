@@ -8,8 +8,8 @@
 import * as api from './api.js';
 import { S } from './state.js';
 import { app, bar, head, toast, esc, AR, errBox, nav, registerRoutes,
-         registerCounts, refreshCounts, mathBoot } from './ui.js';
-import { loadList, loadFeedback, loadChat } from './student.js';
+         registerCounts, registerSearch, refreshCounts, mathBoot } from './ui.js';
+import { loadList, loadFeedback, loadChat, openSearchHit } from './student.js';
 import { loadTeacher, loadInbox, loadMySubjects } from './teacher.js';
 import { openEditor } from './editor.js';
 import { loadStudents, loadMyPerformance } from './analytics.js';
@@ -425,6 +425,10 @@ export function start(){
   // خريطة الوجهات — الموضع الوحيد الذي يربط الشريط بالشاشات
   /* ui.js لا تلمس القاعدة (الثابت ①) — فتُسلَّم الجالب ولا تعرف مصدره */
   registerCounts(async () => (await api.myCounts()).data || {});
+
+  /* والبحثُ مثلُه: النداءُ من api والوجهةُ من student — وui.js تجهل
+     مصدرَ الأول ومحتوى الثاني، فتبقى ورقةً بلا دورةِ استيراد. */
+  registerSearch(api.searchAll, openSearchHit);
 
   registerRoutes({
     subjects:   loadList,

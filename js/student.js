@@ -229,6 +229,52 @@ export async function loadList(){
   scrollTop();
 }
 
+/* ═══════════ ①ب وجهةُ نتيجة البحث ═══════════
+   تُسجَّل في auth.js عند ui.registerSearch — فتبقى ui.js ورقةً لا تعرف
+   الشاشات، وتبقى المعرفةُ بالتنقّل حيث تسكن الشاشات.
+
+   🔓 ودَينٌ معلَن — المهبط دقيقٌ في اثنين وخشنٌ في اثنين:
+     درسٌ ومصدر ⇒ **الدرس نفسه** يُفتح (المصدر يسكن فيه فيُرى بفتحه).
+     بطاقةٌ وإجابة ⇒ الشاشةُ العامّة، لا الصفُّ بعينه — لأنّ الهبوطَ
+       الدقيق يقتضي تصديرَ openSubjectCards من flashcards.js وفتحَ
+       محاولةٍ بعينها في analytics.js، وليس أيٌّ منهما مصدَّراً اليوم.
+       والصفُّ نفسه يحمل ما يحتاجه الطالب (وجهُ البطاقة ومعناها ·
+       السؤال وتشخيصه)، فالنقرةُ استزادةٌ لا كشف. ⇒ يُحسَّن حين
+       يُصدَّر البابان، ولا يُكتب لهما بابٌ ثانٍ هنا. */
+export async function openSearchHit(hit){
+  if(!hit) return;
+
+  if(hit.kind === 'card') return loadFlashcards();
+  if(hit.kind === 'answer'){
+    /* استيرادٌ كسول كما في startPlacement — analytics.js وحدةٌ ثقيلة
+       (Chart.js) ولا يدفع ثمنَها من لم يفتحها. */
+    const { loadMyPerformance } = await import('./analytics.js');
+    return loadMyPerformance();
+  }
+
+  /* الشبكةُ قد تكون فارغةً إن دخل الطالب من رابطٍ مباشر ولم يمرّ بالرئيسة */
+  if(!(S.subjects || []).length){
+    const { data } = await api.listSubjects();
+    S.subjects = data || [];
+  }
+  const subj = (S.subjects || []).find(v => String(v.id) === String(hit.subject_id));
+  if(!subj || !hit.lesson_id) return loadList();
+
+  const { data, error } = await api.listLessons(subj.id);
+  if(error){ toast('تعذّر فتح الدرس'); return loadLessons(subj); }
+
+  /* الترتيبُ لازم: openLesson تقرأ S.subj و S.lessons ولا تجلبهما */
+  S.subj = subj; S.lessons = data || [];
+  rememberSubject(subj);
+  const l = S.lessons.find(v => String(v.id) === String(hit.lesson_id));
+
+  /* 🔒 ولا يُلتَفّ على القفل: البحث يكشف ما يراه الطالب، والرؤيةُ
+     ليست الإتاحة. درسٌ مقفل يُقال سببُه وتُعرض قائمتُه. */
+  if(!l)        return loadLessons(subj);
+  if(l.locked){ toast(l.reason || 'هذا الدرس غير متاح بعد'); return loadLessons(subj); }
+  openLesson(l);
+}
+
 /* ═══════════ ② الانضمام إلى معلم ═══════════ */
 
 export async function loadMentors(subj, switching){

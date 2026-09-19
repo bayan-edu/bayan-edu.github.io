@@ -7,7 +7,7 @@ import { S } from './state.js';
 import { mediaUrl, isManaged } from './media.js';
 
 /* ── بصمة النسخة — لمعرفة أي شيفرة يشغّلها المتصفح فعلاً ── */
-export const BUILD = "b66";
+export const BUILD = "b67";
 
 /* ── مراسي الصفحة ── */
 export const app = document.getElementById("app");
@@ -317,6 +317,7 @@ const ICO = {
   /* الاستئناف — مثلَّثٌ محدَّدٌ لا ممتلئ: يجاور أيقوناتٍ خطّيةً كلَّها،
      وقرصٌ أسودُ بينها يُقرأ حالةً لا فعلاً. */
   resume:    '<circle cx="12" cy="12" r="8.6"/><path d="M10.4 8.9l4.8 3.1-4.8 3.1z"/>',
+  search:    '<circle cx="11" cy="11" r="6.6"/><path d="M15.7 15.7L20 20"/>',
   /* الخروج يتبع اتجاه الصفحة: السهم إلى اليسار لأن العربية تخرج يساراً */
   out:       '<path d="M10.5 4.5H17A2 2 0 0119 6.5v11a2 2 0 01-2 2h-6.5"/><path d="M7.5 15L4.5 12l3-3M4.5 12h8.5"/>'
 };
@@ -518,6 +519,171 @@ function openDrawer(){
     document.querySelector('#drawer .drawer-item')?.focus());
 }
 
+/* ══════════════════════════════════════════════════════════════
+   البحث  (b67)
+
+   🔒 وui.js لا تلمس القاعدة — كعادتها. النداء والوجهةُ يُسجَّلان من
+      auth.js بـregisterSearch، فتبقى هذه الوحدة ورقةً في شجرة
+      الاستيراد بلا دورة. نفس نمط registerCounts و registerRoutes.
+
+   🔴 والعرضُ مجموعٌ بالنوع لا قائمةً مسطّحة. والسبب مقيسٌ لا مذوَّق:
+      word_similarity تقارن المكتوبَ بالمنصوص، ونصُّ البطاقة كلمةٌ
+      ونصُّ الدرس جملة — فترتفع البطاقةُ فوق الدرس في قائمةٍ واحدة
+      وإن كان الدرسُ هو المقصود. والرتبةُ **داخل النوع** صادقة،
+      **وبين الأنواع** لا معنى لها. ⇒ تُستعمل حيث تصدُق وتُهمَل
+      حيث لا تصدُق: ترتيبُ الأنواع تعليميٌّ ثابت — ما تتعلّم منه
+      أوّلاً، ثمّ سجلُّ ما أخطأتَ فيه.
+   ══════════════════════════════════════════════════════════════ */
+
+/* [الأيقونة · العنوان] — وترتيبُ المفاتيح هو ترتيبُ المجموعات */
+const SKIND = {
+  lesson: ['subjects', 'الدروس'],
+  item:   ['feedback', 'المصادر'],
+  card:   ['cards',    'البطاقات'],
+  answer: ['perf',     'أخطاؤك وتشخيصها']
+};
+
+let searchRun = null, searchGo = null;
+export function registerSearch(run, go){ searchRun = run; searchGo = go; }
+
+/* ⚠️ حارسُ السباق. الكتابةُ السريعة تُطلق نداءاتٍ متتابعة، وردودُها
+   تصل بغير ترتيبها — فيغلب ردُّ «الهم» ردَّ «الهمزة» فيرى الطالب
+   نتائجَ حرفٍ حذفه. ولا خطأ يظهر: نتائجُ معقولةٌ لسؤالٍ قديم. */
+let sSeq = 0, sTimer = null;
+
+function ensureSearch(){
+  if(document.getElementById('sbox')) return;
+  const b = document.createElement('div');
+  b.id = 'sbox'; b.className = 'sbox';
+  b.innerHTML = `
+    <div class="spanel" role="dialog" aria-modal="true" aria-label="البحث">
+      <div class="sbar">
+        ${svg('search')}
+        <input class="sin" id="sin" type="search" dir="auto" autocomplete="off"
+               placeholder="ابحث في الدروس والمصادر والبطاقات وأخطائك"
+               aria-label="نصّ البحث" aria-controls="sres">
+        <button class="iconbtn" id="sx" aria-label="إغلاق البحث">${svg('close')}</button>
+      </div>
+      <div class="sres" id="sres" aria-live="polite"></div>
+    </div>`;
+  document.body.append(b);
+
+  const input = b.querySelector('#sin');
+  b.querySelector('#sx').onclick = closeSearch;
+  /* نقرةٌ على الخلفية تُغلق، ونقرةٌ داخل اللوحة لا */
+  b.onclick = e => { if(e.target === b) closeSearch(); };
+  input.oninput = () => askSearch(input.value);
+
+  /* ⚠️ المستمع على الصندوق لا على المستند: nav() تُستدعى في كل شاشة،
+     ومستمعٌ فيها يتراكم حتى يصير عشرون لحدثٍ واحد. وهذا يُبنى مرّةً. */
+  b.addEventListener('keydown', e => {
+    if(e.key === 'Escape'){ e.preventDefault(); closeSearch(); return; }
+    if(e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+    const rows = [...b.querySelectorAll('.sr')];
+    if(!rows.length) return;
+    e.preventDefault();
+    const i = rows.indexOf(document.activeElement);
+    /* السهم الأعلى من أول صفٍّ يعود إلى الحقل لا يقف: الطالب يصحّح
+       ما كتب أكثر ممّا يعيد الفتح. */
+    const n = e.key === 'ArrowDown' ? Math.min(i + 1, rows.length - 1)
+                                    : (i <= 0 ? -1 : i - 1);
+    (n < 0 ? input : rows[n]).focus();
+  });
+}
+
+/* الحدُّ الأدنى حرفان — والقاعدةُ هي الحاكمة لا هذا السطر: search_all
+   تُطبّع ثمّ تردّ ما دون حرفين. وهذا يوفّر نداءً لا يُغيّر حكماً،
+   فلا يُنسَخ منطقُ التطبيع هنا ليفارق أصلَه يوماً. */
+function askSearch(q){
+  clearTimeout(sTimer);
+  const my = ++sSeq;
+  if((q || '').trim().length < 2){ paintSearch(null, ''); return; }
+  sTimer = setTimeout(async () => {
+    if(!searchRun) return;
+    let res;
+    try{ res = await searchRun(q); }catch(e){ res = { error:e }; }
+    if(my !== sSeq) return;                       // ردٌّ متأخّرٌ لسؤالٍ مضى
+    paintSearch(res.error ? null : (res.data || []), q, res.error);
+  }, 260);
+}
+
+function paintSearch(hits, q, error){
+  const box = document.getElementById('sres');
+  if(!box) return;
+
+  if(error){ box.innerHTML = errBox(error, 'البحث'); return; }
+  if(hits === null){
+    box.innerHTML = `<div class="s-msg"><b>اكتب حرفين فأكثر</b>
+      يبحث في دروسك ومصادرها وبطاقاتك — وفي أخطائك وتشخيصها.
+      وتستطيع كتابة نوع الخطأ نفسه.</div>`;
+    return;
+  }
+  if(!hits.length){
+    box.innerHTML = `<div class="s-msg"><b>لا شيء يطابق «${esc(q)}»</b>
+      جرّب كلمةً واحدة، أو جذر الكلمة بلا سوابقَ ولواحق.</div>`;
+    return;
+  }
+
+  box.innerHTML = Object.entries(SKIND).map(([kind, [ic, label]]) => {
+    const rows = hits.filter(h => h.kind === kind);
+    if(!rows.length) return '';
+    return `<div class="sgrp">${label}<i>${AR(rows.length)}</i></div>` +
+      rows.map((h, i) => `
+        <button class="sr" data-k="${esc(kind)}" data-i="${esc(String(i))}">
+          <span class="sr-ic">${svg(ic)}</span>
+          <span class="sr-b">
+            <span class="sr-t" dir="auto">${esc(h.title || '')}</span>
+            ${(h.subject || h.snippet) ? `<span class="sr-s" dir="auto">${
+              esc([h.subject, h.snippet].filter(Boolean).join(' · '))}</span>` : ''}
+            ${h.dx ? `<span class="sr-dx" dir="auto">${esc(h.dx)}</span>` : ''}
+          </span>
+        </button>`).join('');
+  }).join('');
+
+  box.querySelectorAll('.sr').forEach(el => el.onclick = () => {
+    const hit = hits.filter(h => h.kind === el.dataset.k)[+el.dataset.i];
+    closeSearch();
+    if(hit && searchGo) searchGo(hit);
+  });
+}
+
+export function openSearch(){
+  ensureSearch();
+  closeDrawer();
+  const p = document.getElementById('bellPanel'); if(p) p.hidden = true;
+  document.body.classList.add('search-open');
+  /* بعد الرسم لا قبله: عنصرٌ ما زال visibility:hidden لا يقبل التركيز */
+  requestAnimationFrame(() => {
+    const i = document.getElementById('sin');
+    if(i){ i.select(); i.focus(); }
+    if(!document.getElementById('sres').innerHTML) paintSearch(null, '');
+  });
+}
+
+export function closeSearch(){
+  if(!document.body.classList.contains('search-open')) return;
+  sSeq++;                                   // يُلغي ردّاً في الطريق
+  clearTimeout(sTimer);
+  document.body.classList.remove('search-open');
+  document.getElementById('searchBtn')?.focus();
+}
+
+/* «/» يفتح البحث — ولا يُسرَق المحرف ممّن يكتبه في حقل.
+   ويُسجَّل مرّةً واحدة عند أول nav()، لا في كل شاشة. */
+let slashOn = false;
+function bindSlash(){
+  if(slashOn) return; slashOn = true;
+  document.addEventListener('keydown', e => {
+    if(e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
+    if(document.body.classList.contains('gate')) return;
+    if(document.body.classList.contains('search-open')) return;
+    const t = e.target;
+    if(t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+    e.preventDefault();
+    openSearch();
+  });
+}
+
 function toggleBell(){
   const p = document.getElementById('bellPanel'), b = document.getElementById('bellBtn');
   if(!p) return;
@@ -554,6 +720,7 @@ export function nav(active){
             aria-expanded="false" aria-controls="drawer">${svg('menu')}</button>
     ${mark}
     <span class="topgap"></span>
+    <button class="iconbtn" id="searchBtn" aria-label="البحث">${svg('search')}</button>
     <span class="bellwrap">
       <button class="iconbtn" id="bellBtn" aria-label="الإشعارات"
               aria-expanded="false" aria-haspopup="menu">${svg('bell')}<span
@@ -567,9 +734,12 @@ export function nav(active){
   </div>`;
 
   ensureDrawer();
+  ensureSearch();
+  bindSlash();
   renderDrawer(active);
   paintCounts();
 
+  bar.querySelector('#searchBtn').onclick = openSearch;
   bar.querySelector('#menuBtn').onclick = openDrawer;
   bar.querySelector('#acctBtn').onclick = openDrawer;   // بابان لغرفةٍ واحدة — لا قائمتان
   bar.querySelector('#bellBtn').onclick = toggleBell;
