@@ -1186,3 +1186,30 @@ body.gate .wrap{max-width:1000px}
   .pair-p{flex:1 1 100%;order:2}
   .pair-in{order:3;flex:1 1 100%;max-width:none;min-width:0}
 }
+
+/* ═══ تحرير المزاوجة (b70) ═══
+   🔑 المشتّت وتشخيصه صفٌّ واحد — والمشتّت هنا اقترانٌ لا خيار،
+      فيسكن كودُه تحت بنده مباشرةً لا في مربّعٍ أسفل الصفحة. */
+.mt-row{padding:11px 12px;margin-bottom:9px;border-radius:12px;
+        background:var(--fill-soft);border:1px solid var(--line)}
+.mt-head{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.mt-head .eq-ob{flex:1 1 180px;min-width:0}
+.mt-head select{width:auto;min-width:160px;max-width:38%;padding:8px 10px;font-size:var(--fs-ui)}
+
+/* الخلطُ المتوقَّع يتفرّع عن بنده — والحدُّ الملوّن يتبع اتجاه النصّ */
+.mt-wrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+         margin:8px 0 0;padding:8px 11px;border-radius:10px;
+         background:var(--accent-soft);border:1px dashed var(--accent-line);
+         margin-inline-start:24px}
+.mt-wrow select{width:auto;min-width:150px;max-width:36%;padding:7px 10px;font-size:var(--fs-tag)}
+.mt-addw{margin:8px 0 0 24px;margin-inline-start:24px;padding:5px 12px;
+         border-radius:8px;background:transparent;border:1px dashed var(--line);
+         color:var(--text-muted);font-family:'Almarai';font-size:var(--fs-tag);
+         cursor:pointer;transition:border-color .15s,color .15s}
+.mt-addw:hover{border-color:var(--accent);color:var(--accent)}
+
+@media (max-width:560px){
+  .mt-head select,.mt-wrow select{max-width:none;flex:1 1 100%;min-width:0}
+  .mt-wrow{margin-inline-start:12px}
+  .mt-addw{margin-inline-start:12px}
+}

@@ -319,6 +319,25 @@ function qCard(q){
         <label class="fl" style="margin-top:20px">شرح الخطأ — يراه الطالب بعد التسليم *</label>
         <textarea id="qe" placeholder="لماذا الإجابة الصحيحة صحيحة، وأين يزلّ الفهم؟"
           ${locked?'disabled':''}>${esc(q.explanation||'')}</textarea>
+      ` : q.kind === 'matching' ? `
+
+        <div class="gaprow">
+          <div class="gaplive" id="mtlive">${matchLive(q)}</div>
+        </div>
+
+        <label class="fl" style="margin-top:16px">عمود المقابلات — سطرٌ لكلّ مقابل *</label>
+        <textarea id="mtbank" dir="auto" style="min-height:92px"
+          placeholder="مشابهةٌ بأداةٍ ظاهرة&#10;مشابهةٌ حُذف أحد طرفيها&#10;إثباتُ معنًى بلفظٍ يَلزم عنه"
+          ${locked?'disabled':''}>${esc((q.bank||[]).join('\n'))}</textarea>
+        <div class="eq-hint" style="display:block;margin-top:6px;line-height:1.8">
+          ويُستحبّ أن تزيد المقابلاتُ على البنود — فبلا مقابلٍ زائد يُحلّ
+          البندُ الأخير بالاستبعاد، فيُصيبه من يجهله ولا يُسجَّل له كود.</div>
+
+        <div id="mtbox">${matchFields(q, locked)}</div>
+
+        <label class="fl" style="margin-top:20px">شرح الخطأ — يراه الطالب بعد التسليم *</label>
+        <textarea id="qe" placeholder="لماذا الإجابة الصحيحة صحيحة، وأين يزلّ الفهم؟"
+          ${locked?'disabled':''}>${esc(q.explanation||'')}</textarea>
       ` : `
         <label class="fl" style="margin-top:16px">الإجابة النموذجية — يقارن بها الطالب نفسه *</label>
         <textarea id="qm" style="min-height:130px"
@@ -994,6 +1013,80 @@ function wire(q){
       mark();
     };
   }
+  /* ── المزاوجة ──────────────────────────────────────────────
+     عمودُ المقابلات يُغذّي كلَّ قائمةٍ في الصفوف، فتغييرُه يُعيد رسم
+     الصفوف وحدها. ومربّعُ العمود **خارج** الصندوق المُعاد رسمُه،
+     فلا يقفز المؤشّر من تحت يد المؤلّف وهو يكتب. */
+  if(q.kind === 'matching'){
+    const box   = main.querySelector("#mtbox");
+    const bankT = main.querySelector("#mtbank");
+
+    const live = () => {
+      const lv = main.querySelector("#mtlive");
+      if(lv) lv.innerHTML = matchLive(q);
+    };
+
+    const redraw = () => { box.innerHTML = matchFields(q, false); wireBox(); live(); };
+
+    function wireBox(){
+      if(!box) return;
+
+      box.querySelectorAll(".eq-ob").forEach(el => el.oninput = () => {
+        const o = q.options?.[+el.dataset.o];
+        if(o) o.body = el.value;
+        live(); mark();
+      });
+
+      /* .miss تُرفع لحظة الاختيار — فالحقلُ الناقص يبقى ظاهراً وحده */
+      box.querySelectorAll(".mt-key,.mt-wt,.mt-wc").forEach(el => el.onchange = () => {
+        el.classList.toggle('miss', !el.value); collect(q); mark();
+      });
+
+      /* الصفُّ يُدرَج في الصفحة ولا يُعاد الرسم: صفٌّ فارغ لا يبقى
+         بعد collect (يُتجاوَز)، فلو أعدنا الرسم لاختفى فور ظهوره. */
+      box.querySelectorAll("[data-aw]").forEach(el => el.onclick = () => {
+        const i = +el.dataset.aw;
+        el.insertAdjacentHTML('beforebegin', mtWrongRow(q.bank || [], i, '', '', false));
+        wireBox(); mark();
+      });
+
+      box.querySelectorAll(".mt-rmw").forEach(el => el.onclick = () => {
+        el.closest('.mt-wrow')?.remove(); collect(q); mark();
+      });
+
+      box.querySelectorAll("[data-rmp]").forEach(el => el.onclick = () => {
+        if((q.options || []).length <= 3){
+          toast("المزاوجة تحتاج ثلاثة بنودٍ على الأقل"); return; }
+        collect(q);
+        const d = +el.dataset.rmp;
+        q.options.splice(d, 1);
+        if(q.accept?.pairs) q.accept.pairs.splice(d, 1);
+        /* 🔑 أرقامُ wrong_map مواضعُ بنود — فحذفُ بندٍ يُزيح ما بعده.
+           وبلا هذا يُنسَب خلطُ بندٍ إلى جاره بصمت. */
+        const w2 = {};
+        Object.entries(q.wrong || {}).forEach(([k, c]) => {
+          const m = /^(\d+):([\s\S]+)$/.exec(k); if(!m) return;
+          const i = +m[1] - 1;
+          if(i === d) return;                       // خلطُ بندٍ حُذف يسقط معه
+          w2[((i > d ? i - 1 : i) + 1) + ':' + m[2]] = c;
+        });
+        q.wrong = Object.keys(w2).length ? w2 : null;
+        redraw(); mark();
+      });
+
+      const ap = box.querySelector("#addprompt");
+      if(ap) ap.onclick = () => {
+        if((q.options || []).length >= 8){ toast("ثمانية بنودٍ حدٌّ كافٍ"); return; }
+        collect(q);
+        (q.options = q.options || []).push({ label:null, body:'', correct:false, dx:null });
+        redraw(); mark();
+      };
+    }
+
+    if(bankT) bankT.oninput = () => { collect(q); redraw(); mark(); };
+    wireBox();
+  }
+
   const sq = main.querySelector("#sq"); if(sq) sq.onclick = () => saveQ(q);
   const dq = main.querySelector("#dq"); if(dq) dq.onclick = () => dupQ(q);
   const nv = main.querySelector("#nv"); if(nv) nv.onclick = () => newVersion(q);
@@ -1039,6 +1132,82 @@ function gapFields(q, locked){
       سطرٌ لكل خطأ، والرقم قبل النقطتين رقمُ الفراغ.
       واتركه فارغاً إن لم تتوقّع خطأً بعينه — تُقاس الأخطاء الشائعة لاحقاً من إجابات الطلاب.</div>`;
 }
+/* ═══════════ حقول المزاوجة ═══════════
+   🔑 المبدأ الحاكم نفسه: المشتّت وتشخيصه صفٌّ واحد. والمشتّت هنا
+      **اقترانٌ** لا خيار — فلا يُعرف إلا بطرفيه. ولذلك يسكن الكودُ
+      تحت بنده مباشرةً: تكتب البند، وتختار صوابه، وتسأل في اللحظة
+      نفسها «بأيّ مقابلٍ سيلتبس؟» فتضع كوده.
+      ولو أُخفي في مربّعٍ أسفل الصفحة لصار واجباً إدارياً يُملأ آخر الوقت.
+
+   والرقمُ في wrong_map يُحسب من موضع البند ولا يُكتب بيد — فلا يُخطئ
+   المؤلّف في التتابع، وهو اللازم لئلا يُطابَق خلطُ بندٍ بآخر. */
+
+const mtBankSel = (bank, cls, val, i, ph, locked) => `
+  <select class="${cls}${val ? '' : ' miss'}" data-i="${i}" ${locked?'disabled':''}>
+    <option value="">— ${ph} —</option>
+    ${bank.map(w => `<option value="${esc(w)}"${w === val ? ' selected' : ''}>${esc(w)}</option>`).join("")}
+  </select>`;
+
+const mtDxSel = (val, locked) => {
+  const dx = (S.tree?.dx) || [];
+  const fams = [...new Set(dx.map(d => d.family || 'عام'))];
+  return `
+    <select class="mt-wc${val ? '' : ' miss'}" ${locked?'disabled':''}>
+      <option value="">— اختر التشخيص —</option>
+      ${fams.map(f => `<optgroup label="${esc(f)}">
+        ${dx.filter(d => (d.family||'عام')===f).map(d =>
+          `<option value="${esc(d.code)}"${d.code===val ? ' selected' : ''}>${esc(d.name)}</option>`).join("")}
+      </optgroup>`).join("")}
+    </select>`;
+};
+
+const mtWrongRow = (bank, i, t, code, locked) => `
+  <div class="mt-wrow" data-i="${i}">
+    <span class="eq-bs">إن زاوجه بـ</span>
+    ${mtBankSel(bank, 'mt-wt', t, i, 'المقابل الخاطئ', locked)}
+    <span class="eq-bs">فالتشخيص</span>
+    ${mtDxSel(code, locked)}
+    ${locked ? '' : `<button class="eq-x mt-rmw" title="احذف هذا الخلط">✕</button>`}
+  </div>`;
+
+/* المعاينة الحيّة — بدالّة الطالب نفسها، فما يراه المؤلّف هو ما سيُرى */
+const matchLive = q => ((q.bank||[]).length && (q.options||[]).length)
+  ? questionBody(q, { ro:true, pairs:[] })
+  : '<span class="eq-hint">…هكذا يراه الطالب</span>';
+
+function matchFields(q, locked){
+  const bank  = q.bank || [];
+  const pairs = q.accept?.pairs || [];
+
+  if(!bank.length) return `<div class="eq-hint" style="display:block;padding:14px 0">
+    لا مقابلات بعد — اكتب سطراً لكلّ مقابلٍ في العمود أعلاه.</div>`;
+
+  /* wrong_map مفتاحُها "البند:المقابل" ⇒ تُجمَّع تحت بندها لتُعرض في موضعها */
+  const wrongBy = {};
+  Object.entries(q.wrong || {}).forEach(([k, code]) => {
+    const m = /^(\d+):([\s\S]+)$/.exec(k); if(!m) return;
+    const i = +m[1] - 1;
+    (wrongBy[i] = wrongBy[i] || []).push({ t: m[2], code });
+  });
+
+  const rows = (q.options || []).map((p, i) => `
+    <div class="mt-row">
+      <div class="mt-head">
+        <span class="key">${AR(i+1)}</span>
+        <input class="eq-ob" data-o="${i}" dir="auto" value="${esc(p.body||'')}"
+               placeholder="نصّ البند" ${locked?'disabled':''}>
+        <span class="eq-bs">الصواب</span>
+        ${mtBankSel(bank, 'mt-key', pairs[i] || '', i, 'اختر المقابل', locked)}
+        ${locked ? '' : `<button class="eq-x" data-rmp="${i}" title="احذف البند">✕</button>`}
+      </div>
+      ${(wrongBy[i] || []).map(w => mtWrongRow(bank, i, w.t, w.code, locked)).join("")}
+      ${locked ? '' : `<button class="mt-addw" data-aw="${i}">＋ خلطٌ متوقَّع</button>`}
+    </div>`).join("");
+
+  return `${rows}
+    ${locked ? '' : `<button class="btn ghost eq-addo" id="addprompt">＋ بند</button>`}`;
+}
+
 /* جمع ما في الحقول إلى الكائن قبل أي إعادة رسم أو حفظ */
 function collect(q){
   const main = document.getElementById("main");
@@ -1067,6 +1236,24 @@ function collect(q){
       if(m) w[m[1].replace(/\s*:\s*/, ':')] = m[2];
     });
     q.wrong = Object.keys(w).length ? w : null;
+  }
+  if(q.kind === 'matching'){
+    q.bank = (main.querySelector("#mtbank")?.value || '')
+               .split('\n').map(s => s.trim()).filter(Boolean);
+
+    const pairs = [];
+    main.querySelectorAll(".mt-key").forEach(el => pairs[+el.dataset.i] = el.value);
+    q.accept = { pairs };
+
+    /* صفٌّ ناقصٌ (بلا مقابلٍ أو بلا كود) يُتجاوَز ولا يُحفَظ — فالمؤلّف
+       يفتح صفّاً ثم يعدل عنه، ولا يُرفَض حفظُه لأجل نيّةٍ لم تكتمل. */
+    const w = {};
+    main.querySelectorAll(".mt-wrow").forEach(row => {
+      const t = row.querySelector('.mt-wt')?.value || '';
+      const c = row.querySelector('.mt-wc')?.value || '';
+      if(t && c) w[(+row.dataset.i + 1) + ':' + t] = c;
+    });
+    q.wrong = Object.keys(w).length ? w : null;
   }}
 
 
@@ -1083,9 +1270,9 @@ async function saveQ(q){
     passage: q.passage_id, objective: q.objective_id, section: q.section,
     points: q.points, lang: q.lang, difficulty: q.difficulty,
     image: q.image, video: q.video, audio: q.audio,
-    accept: q.kind==='gap' ? q.accept : null,
-    wrong:  q.kind==='gap' ? q.wrong  : null,
-    bank:   q.kind==='gap' ? q.bank   : null });
+    accept: (q.kind==='gap' || q.kind==='matching') ? q.accept : null,
+    wrong:  (q.kind==='gap' || q.kind==='matching') ? q.wrong  : null,
+    bank:   (q.kind==='gap' || q.kind==='matching') ? q.bank   : null });
 
   if(error){ toast(error.message); return; }
   if(!data.ok){ toast(data.error); return; }
@@ -1103,6 +1290,9 @@ async function addQuestion(kind){
              options: [0,1,2,3].map(i => ({ label:null, body:'', correct:i<2,   dx:null })) },
          gap:   { id:null, kind:'gap',   body:'', answered:0, explanation:'', options:[],
              accept:{ ordered:true, slots:[] }, wrong:{}, bank:null },
+    matching:{ id:null, kind:'matching', body:'', answered:0, explanation:'',
+             options: [0,1,2].map(() => ({ label:null, body:'', correct:false, dx:null })),
+             accept:{ pairs:[] }, wrong:{}, bank:[] },
     essay: { id:null, kind:'essay', body:'', answered:0, model:'', options:[] }
   };
   Z.questions.push(blank[kind] || blank.mcq);
@@ -1273,7 +1463,7 @@ function preview(){
                     style="width:100%;margin-bottom:12px"></audio>`:''}
         ${v?`<iframe class="media-v" src="${esc(v)}" allowfullscreen></iframe>`:''}`; })()}
       ${questionText(q)}
-      ${questionBody(q, { bank: q.bank })}
+      ${questionBody(q, { bank: q.bank, pairs: [] })}
     </div>
 
     <div class="nav">
@@ -1410,6 +1600,52 @@ function parseImport(txt){
       return;
     }
 
+    /* ── المزاوجة ──────────────────────────────────────────────
+       البنودُ options بلا حكمٍ ولا كود · والمقابلاتُ bank ·
+       والمفتاحُ accept.pairs بترتيب البنود · والأكوادُ wrong. */
+    if(kind === 'matching'){
+      const opts = Array.isArray(q.options) ? q.options : [];
+      if(opts.length < 3 || opts.length > 8)
+        out.issues.push(`س${n}: المزاوجة من ثلاثة بنودٍ إلى ثمانية — والموجود ${AR(opts.length)}`);
+      if(opts.some(o => !String(o.body || '').trim()))
+        out.issues.push(`س${n}: كل بند يحتاج نصاً`);
+      if(opts.some(o => String(o.dx || '').trim()))
+        out.issues.push(`س${n}: الكودُ للاقتران لا للبند — ضعه في wrong`);
+
+      const bank = Array.isArray(q.bank) ? q.bank : [];
+      if(!bank.length){
+        out.issues.push(`س${n}: المزاوجة تحتاج bank — عمودَ المقابلات`); return; }
+      if(bank.some(b => !String(b || '').trim()))
+        out.issues.push(`س${n}: لا مقابلَ فارغاً في bank`);
+      if(bank.length <= opts.length)
+        out.warns.push(`س${n}: لا مقابلَ زائد — البندُ الأخير يُحلّ بالاستبعاد فلا يُشخَّص`);
+
+      const pr = q.accept?.pairs;
+      if(!Array.isArray(pr)){
+        out.issues.push(`س${n}: بلا مفتاح — { "pairs": [ … ] } بترتيب البنود`); return; }
+      if(pr.length !== opts.length)
+        out.issues.push(`س${n}: البنود ${AR(opts.length)} والمفاتيح ${AR(pr.length)}`);
+      pr.forEach((t, k) => {
+        if(!bank.includes(t))
+          out.issues.push(`س${n}: مفتاحُ البند ${AR(k+1)} ليس في القائمة — "${t}"`);
+      });
+
+      Object.entries(q.wrong || {}).forEach(([key, code]) => {
+        const m = /^(\d+):([\s\S]+)$/.exec(key);
+        if(!m) out.issues.push(`س${n}: مفتاح الخلط يبدأ برقم البند ثم نقطتين — "${key}"`);
+        else {
+          if(+m[1] > opts.length)
+            out.issues.push(`س${n}: الخلط "${key}" يشير إلى بندٍ غير موجود`);
+          if(!bank.includes(m[2]))
+            out.issues.push(`س${n}: المقابل الخاطئ ليس في القائمة — "${m[2]}"`);
+        }
+        if(!dxCodes.has(code)) out.issues.push(`س${n}: كود غير معروف "${code}"`);
+      });
+
+      if(!String(q.explanation || '').trim()) out.issues.push(`س${n}: بلا شرح للخطأ`);
+      return;
+    }
+
     if(kind !== 'mcq' && kind !== 'msq'){
       out.issues.push(`س${n}: نمط غير معروف "${kind}"`); return;
     }
@@ -1509,8 +1745,20 @@ function exportQuiz(){
       if(q.kind === 'essay'){ o.model = q.model || null; return o; }
       o.explanation = q.explanation || null;
       if(q.difficulty) o.difficulty = q.difficulty;
-      o.options = (q.options || []).map(x => x.correct
-        ? { body: x.body, correct: true } : { body: x.body, dx: x.dx || null });
+
+      /* 🆕 مفاتيحُ الإكمال والمزاوجة. وكانت تسقط من التصدير في gap —
+         فتعود «النسخة الاحتياطية» بأسئلةٍ بلا مقبولات، ويرفضها
+         parseImport عند الاستيراد. عطلٌ صامتٌ أُصلح مع بناء المزاوجة. */
+      if(q.kind === 'gap' || q.kind === 'matching'){
+        if(q.accept) o.accept = q.accept;
+        if(q.wrong && Object.keys(q.wrong).length) o.wrong = q.wrong;
+        if((q.bank || []).length) o.bank = q.bank;
+      }
+
+      o.options = (q.options || []).map(x =>
+          q.kind === 'matching' ? { body: x.body }          // بندٌ بلا حكمٍ ولا كود
+        : x.correct             ? { body: x.body, correct: true }
+        :                         { body: x.body, dx: x.dx || null });
       return o;
     })
   };
@@ -1867,8 +2115,9 @@ function readiness(){
   const r = Z.readiness || { ok:false, mcq:0, essay:0, issues:[] };
 
   const rrow = (k, label, req) => {
-    const n = k === 'mcq' ? (r.mcq || 0) : k === 'msq' ? (r.msq || 0) : (r.essay || 0);
-    if(k === 'msq' && !n) return '';
+    const n = k === 'mcq' ? (r.mcq || 0) : k === 'msq' ? (r.msq || 0)
+            : k === 'matching' ? (r.match || 0) : (r.essay || 0);
+    if((k === 'msq' || k === 'matching') && !n) return '';
     const s = kindStat(k);
     return `<div class="eq-rl ${LS.f===k?'on':''}" data-rf="${k}"
               title="اعرض هذا النمط وحده في شريط الأسئلة">
@@ -1885,6 +2134,7 @@ function readiness(){
     <div class="eq-ready ${r.ok?'ok':''}">
       ${rrow('mcq','اختيار من متعدد', true)}
       ${rrow('msq','اختيار متعدّد الإجابات', false)}
+      ${rrow('matching','المزاوجة', false)}
       ${rrow('essay','مقالي', false)}
       ${(r.issues||[]).length
         ? (r.issues||[]).map(i => `<div class="eq-iss">⚠️ ${esc(i)}</div>`).join("")
@@ -1966,6 +2216,7 @@ const members = k => (Z.questions || []).filter(x => x.variant_key === k);
 const NOSEC   = '— بلا قسم —';
 
 const F_LABEL = { mcq:'◉ اختيار من متعدد', msq:'☑ اختيار متعدّد الإجابات',
+                  matching:'⇄ المزاوجة',
                   essay:'✍️ مقالي' };
 const F_JUDGE = new Set(['all','warn','none','free']);   // ما يسكن الشريط نفسه
 
@@ -1988,6 +2239,15 @@ function verdict(ms){
     fails.push('نسختان تحت نصّ واحد — لا تُغنيان عن قراءته مرّتين');
 
   /* ⚠️ الحالة الثالثة: بلا خيارات فلا بصمة — ولا يُمنح ✅ على فحصٍ لم يقع */
+  /* 🆕 المزاوجة: خياراتُها **بنود** بلا أكواد، فبصمتُها [] دائماً —
+     ومقارنةُ [] بـ[] تمنح ✅ لخانةٍ لم تُفحص. وهو «الصدق الفارغ»
+     الذي أوقع المقاليّ من قبل، فيُسبَق هنا بحالته الثالثة. */
+  if(ms.some(x => x.kind === 'matching'))
+    return fails.length
+      ? { cls:'warn', icon:'⚠️', fails, manual:true }
+      : { cls:'none', icon:'⬜', manual:true,
+          fails:['لا فحص آليّ للمزاوجة — التكافؤ حكمُك أنت'] };
+
   if(!ms.every(x => (x.options || []).length))
     return fails.length
       ? { cls:'warn', icon:'⚠️', fails, manual:true }
@@ -2028,7 +2288,8 @@ function nodes(idxs){
   return out;
 }
 
-const kIcon = k => k === 'essay' ? '✍️' : k === 'msq' ? '☑' : '◉';
+const kIcon = k => k === 'essay' ? '✍️' : k === 'msq' ? '☑'
+                 : k === 'matching' ? '⇄' : k === 'gap' ? '✎' : '◉';
 
 function stats(){
   const qs = Z.questions || [];
@@ -2056,7 +2317,8 @@ function nodePass(n){
     return false;
   if(f === 'all')  return true;
   if(f === 'free') return n.t === 'q';
-  if(f === 'mcq' || f === 'msq' || f === 'essay') return qs.some(x => x.kind === f);
+  if(f === 'mcq' || f === 'msq' || f === 'essay' || f === 'matching' || f === 'gap')
+    return qs.some(x => x.kind === f);
   if(n.t !== 'v')  return false;
   const v = verdict(members(n.key));
   if(f === 'warn') return v.cls === 'warn' || v.cls === 'bad';
@@ -2157,7 +2419,7 @@ function sidebar(){
             <button data-k="msq"><i>☑</i><div><b>اختيار متعدّد</b><span>أكثر من إجابةٍ صحيحة</span></div></button>
             <button data-k="gap"><i>✎</i><div><b>إكمال الناقص</b><span>يكتب الطالب الإجابة</span></div></button>
             <button disabled><i>⇢</i><div><b>إكمال من قائمة</b><span>قريباً — يختار من كلماتٍ مُعطاة</span></div></button>
-            <button disabled><i>⇄</i><div><b>المزاوجة</b><span>قريباً — يربط عنصراً بعنصر</span></div></button>
+            <button data-k="matching"><i>⇄</i><div><b>المزاوجة</b><span>لكلّ بندٍ درجة</span></div></button>
             <hr>
             <button data-k="essay"><i>¶</i><div><b>مقالي قصير</b><span>يصحّحه المعلّم</span></div></button>
           </div>
