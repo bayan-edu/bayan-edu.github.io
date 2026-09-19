@@ -1161,3 +1161,28 @@ body.gate .wrap{max-width:1000px}
 .deck-m{font-size:var(--fs-meta);color:var(--text-muted);margin-top:3px}
 .deck-go{flex:0 0 auto;color:var(--accent);font-size:1.15rem;opacity:.7}
 @media(prefers-reduced-motion:reduce){.deck-card{transition:none}}
+
+/* ═══ المزاوجة (b69) ═══
+   عمودُ المقابلات يُعرض كاملاً فوق البنود (.bank يُعاد استعماله كما هو
+   في إكمال الناقص): المزاوجة حكمٌ على المجموعة لا أحكامٌ منفصلة،
+   والطالب يحتاج أن يرى المتشابهات معاً ليميّز بينها.
+
+   والإسنادُ بقائمةٍ أصيلة لا بسحبٍ وإفلات — تعمل باللمس وبلوحة
+   المفاتيح وقارئ الشاشة، والسحبُ يسقط في الثلاثة.
+
+   ⚠️ و width:auto لازمة: base.css تعطي select عرضاً كاملاً، فبدونها
+      ينزل الحقلُ سطراً ويتباعد عن بنده. */
+.pairs{margin-top:14px;display:flex;flex-direction:column;gap:10px}
+.pair{display:flex;align-items:center;gap:11px;padding:11px 13px;
+      background:var(--fill-soft);border:1px solid var(--line);border-radius:12px;
+      transition:border-color .15s}
+.pair:focus-within{border-color:var(--accent)}
+.pair-p{flex:1;min-width:0;font-size:var(--fs-read);line-height:1.75}
+.pair-in{width:auto;min-width:165px;max-width:44%;padding:9px 11px;font-size:var(--fs-ui)}
+
+/* دون ٥٦٠px: البندُ سطرٌ والقائمةُ سطرٌ تحته — فلا يُقصّ النصّ */
+@media (max-width:560px){
+  .pair{flex-wrap:wrap;gap:9px}
+  .pair-p{flex:1 1 100%;order:2}
+  .pair-in{order:3;flex:1 1 100%;max-width:none;min-width:0}
+}

@@ -8,6 +8,7 @@ export const KIND_LABEL = {
   mcq:  'اختيار من متعدد',
   msq:  'اختيار متعدّد الإجابات',
   gap:  'إكمال الناقص',
+  matching:'المزاوجة',
   essay:'مقالي قصير'
 };
 
@@ -34,8 +35,8 @@ export function bodyWithSlots(body, values = [], ro = false){
   }).join("");
 }
 
-/* جسم البند: الخيارات أو الحقول أو المقالي.
-   opts = { picked, values, ro, bank } */
+/* جسم البند: الخيارات أو الحقول أو المزاوجة أو المقالي.
+   opts = { picked, values, pairs, ro, bank } */
 export function questionBody(q, opts = {}){
   const { picked = () => false, values = [], ro = false } = opts;
   const multi = q.kind === 'msq';
@@ -56,6 +57,36 @@ export function questionBody(q, opts = {}){
         ? `<div class="q-hint">البند يُحتسب كاملاً أو لا يُحتسب</div>` : ''}
       ${bank.length ? `<div class="bank">${bank.map(w =>
         `<span class="bank-w">${esc(w)}</span>`).join("")}</div>` : ''}`;
+  }
+
+  /* ── المزاوجة ─────────────────────────────────────────────────
+     عمودُ المقابلات يُعرض كاملاً **فوق** البنود لا داخل القائمة وحدها:
+     المزاوجة حكمٌ على المجموعة لا خمسةَ أحكامٍ منفصلة، والطالب يحتاج
+     أن يرى المتشابهات معاً ليميّز بينها — وذاك هو ما يقيسه البند.
+
+     والإسنادُ بقائمةٍ أصيلة (select) لا بسحبٍ وإفلات: تعمل باللمس
+     وبلوحة المفاتيح وقارئ الشاشة، والسحبُ يسقط في الثلاثة.
+
+     🔑 والقيمةُ نصُّ المقابل لا فهرسُه: كذلك يُرسَل وكذلك يُحفَظ في
+        answers.meta، فيُقرأ بعد سنةٍ بلا مفتاح فكّ — واختيارُ gap نفسه. */
+  if(q.kind === 'matching'){
+    const bank    = q.bank    || [];
+    const prompts = q.options || [];
+    const pairs   = opts.pairs || [];
+    return `<div class="q-hint">لكلّ بندٍ درجة — وقد يبقى في العمود مقابلٌ لا يُزاوَج</div>
+      ${bank.length ? `<div class="bank">${bank.map(w =>
+        `<span class="bank-w">${esc(w)}</span>`).join("")}</div>` : ''}
+      <div class="pairs">${prompts.map((p, j) => `
+        <div class="pair">
+          <span class="key">${AR(j+1)}</span>
+          <span class="pair-p" dir="${dirOf(p.body)}">${fmt(p.body)}</span>
+          <select class="pair-in" data-i="${j}" ${ro ? 'disabled' : ''}
+                  aria-label="مقابل البند ${AR(j+1)}">
+            <option value="">— اختر —</option>
+            ${bank.map(w => `<option value="${esc(w)}"${
+              (pairs[j] || '') === w ? ' selected' : ''}>${esc(w)}</option>`).join("")}
+          </select>
+        </div>`).join("")}</div>`;
   }
 
   return `<textarea class="essay" placeholder="اكتب السلسلة السببية كاملة…"

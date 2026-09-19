@@ -42,6 +42,11 @@
          (زمنُ الصفحة / زمنُ السؤال) يمسّ submit_attempt ⇒ خطوةٌ
          مستقلّة. ولاحظ أنه سيصير حينئذٍ **قياساً لما تقدّره COST.pg
          حَدْساً** — أوّلُ بيّنةٍ على أرقام الميزانية.
+   ➕ b69 — المزاوجة.
+      الدرجةُ للبند لا للسؤال، خلافاً لـmsq — وعلّةُ المنع هناك ثغرةُ
+      التوسّع («من يختار الخيارات كلها يأخذ الدرجة كاملة»)، ولا وجود
+      لها حين يُسنَد مقابلٌ واحد لكلّ بند. والتصحيحُ كلُّه في القاعدة
+      كما كان: الواجهة ترسل النصوص وتستقبل الحكم.
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
 import { S } from './state.js';
@@ -74,6 +79,7 @@ let A = null, N = null, pages = null;
 
 export const COST = {
   q:  { mcq: 75, msq: 150, essay: 300 },                  // ثانيةً لكل سؤال
+  pair: 60,      // ثانيةً لكلّ بندٍ في المزاوجة — البندُ قرارٌ بدرجته
   pg: { text: 240, image: 120, audio: 300, video: 300 },  // مرّةً لكل نصّ
   media: 90,     // وسيطٌ ملحقٌ بالسؤال نفسه (audio/video في السؤال)
   floor: 300,    // أدنى ميزانية مهما قصُر الاختبار — خمس دقائق
@@ -96,12 +102,18 @@ export function budget(quiz){
                    .reduce((s, p) => s + (COST.pg[p.kind] ?? COST.pg.text), 0);
 
   /* ② كلفةٌ لكل سؤال بحسب نمطه، وزيادةٌ إن حمل وسيطاً خاصّاً به.
-     و ?? حارسٌ لازم لا زينة: المخطّط يسمح بخمسة أنماطٍ لا تعرضها
+     و ?? حارسٌ لازم لا زينة: المخطّط يسمح بأربعة أنماطٍ لا تعرضها
      الواجهة بعد، ونمطٌ مجهول بلا حارسٍ يُنتج undefined فتصير
      الميزانية كلُّها NaN، وNaN <= 0 كاذبة فلا يُسلَّم الاختبار
-     أبداً ويبقى العدّاد يعرض NaN:NaN. */
+     أبداً ويبقى العدّاد يعرض NaN:NaN.
+
+     🆕 والمزاوجة وحدها تُحسب بالبند لا بالسؤال: بندٌ ثالثٌ وبندٌ
+        ثامن ليسا سؤالاً واحداً في الكلفة كما ليسا واحداً في الدرجة.
+        والأدنى ثلاثة — وهو ما تفرضه save_question أصلاً. */
   const perQ = qs.reduce((s, q) =>
-        s + (COST.q[q.kind] ?? COST.q.mcq)
+        s + (q.kind === 'matching'
+               ? COST.pair * Math.max(3, (q.options || []).length)
+               : (COST.q[q.kind] ?? COST.q.mcq))
           + ((q.audio || q.video) ? COST.media : 0), 0);
 
   const sec = Math.min(COST.cap, Math.max(COST.floor, fixed + perQ));
@@ -162,6 +174,7 @@ export async function startQuiz(meta){
   S.itemId = meta.item_id || null;
      S.ans = data.questions.map(q=>({ q:q.id, kind:q.kind, o:null, os:[],
                                    txt:Array(gapCount(q.body)||1).fill(""),
+                                   pairs:Array((q.options||[]).length).fill(""),
                                    essay:"", sec:0, chg:0 }));
 
   A = new Map(S.ans.map(a => [a.q, a]));
@@ -212,7 +225,9 @@ function mountStation(data){
   (data.passages||[]).forEach(pg => S.passages[pg.id] = pg);
   S.itemId = null;
   S.ans = data.questions.map(q=>({ q:q.id, kind:q.kind, o:null, os:[],
-                                   txt:Array(q.gaps||1).fill(""), essay:"", sec:0, chg:0 }));
+                                   txt:Array(q.gaps||1).fill(""),
+                                   pairs:Array((q.options||[]).length).fill(""),
+                                   essay:"", sec:0, chg:0 }));
   A = new Map(S.ans.map(a => [a.q, a]));
   N = new Map(data.questions.map((q,i) => [q.id, i+1]));
   pages = paginate(data.questions);
@@ -281,7 +296,8 @@ function renderPage(){
          const qAudio = srcOf(q.audio);
     const picked = o => multi ? a.os.includes(o.id) : a.o === o.id;
 
-       const body = questionBody(q, { picked, essay:a.essay, values:a.txt });
+       const body = questionBody(q, { picked, essay:a.essay, values:a.txt,
+                                      pairs:a.pairs });
 
     const sec = (q.section && q.section !== seen)
       ? `<div class="q-sec" dir="auto">${esc(q.section)}</div>` : '';
@@ -349,6 +365,14 @@ function renderPage(){
     const card = t.closest('.qcard'); if(!card) return;
     const qid = +card.dataset.q, a = A.get(qid);
 
+    /* القائمة تُطلق input و change معاً في المتصفّحات الحديثة،
+       فيكفي هذا المستمع ولا يلزم ثالث. */
+    if(t.classList.contains('pair-in')){ credit(qid);
+      const i = +t.dataset.i;
+      if(a.pairs[i] && a.pairs[i] !== t.value) a.chg++;   // تبديلٌ بعد إسناد = تغيير
+      a.pairs[i] = t.value;
+      return;
+    }
     if(t.classList.contains('gap-in')){ credit(qid);
       const i = +t.dataset.i;
       if(a.txt[i] && a.txt[i] !== t.value) a.chg++;   // تبديلٌ بعد كتابة = تغيير
@@ -365,6 +389,7 @@ function renderPage(){
         return a.kind==='mcq' ? a.o === null
          : a.kind==='msq' ? a.os.length === 0
          : a.kind==='gap' ? a.txt.every(v => !v.trim())
+         : a.kind==='matching' ? a.pairs.every(v => !v)
          :                  !a.essay.trim();
   });
 
@@ -406,6 +431,7 @@ async function finish(auto){
       a.kind==='mcq' ? { q:a.q, o:a.o,   sec:a.sec, chg:a.chg }
     : a.kind==='msq' ? { q:a.q, os:a.os, sec:a.sec, chg:a.chg }
     : a.kind==='gap' ? { q:a.q, txt:a.txt.map(v=>v.trim()), sec:a.sec, chg:a.chg }
+    : a.kind==='matching' ? { q:a.q, pairs:a.pairs, sec:a.sec, chg:a.chg }
     :                  { q:a.q, essay:a.essay, sec:a.sec });
 
   /* 🔒 في الجلسة: لا مراجعة ولا درجة — المحطّة التالية تُركَّب مكانها.
@@ -465,6 +491,12 @@ function renderResult(){
     return null;
   };
 
+  /* بنودُ المزاوجة — نصُّها عند السؤال المعروض لا في المراجعة:
+     المراجعة تحمل ما أسنده الطالب والمفتاح، والنصُّ يُقرأ من S.quiz
+     فيرى الطالب البند كما رآه لحظة الإجابة. */
+  const prompts = qid =>
+    (S.quiz.questions.find(z => z.id === qid)?.options) || [];
+
   /* حكمٌ على كل خيار — لا على السؤال. فيرى الطالب حدّ المفهوم كاملاً:
      ما أدخله وليس منه، وما أخرجه وهو منه. */
   const jrows = x => {
@@ -514,6 +546,20 @@ function renderResult(){
         const answer = msq
       ? `<div class="jds">${jrows(x)}</div>
          ${pat?`<div class="line"><b>${pat.t}</b> — ${pat.s}</div>`:''}`
+      : x.kind==='matching'
+      ? `<div class="jds">${prompts(x.q).map((p,j) => {
+            const g  = String((x.given  || [])[j] || '').trim();
+            const kk = String((x.accept || [])[j] || '').trim();
+            const hit = !!g && g === kk;
+            return `<div class="jd ${hit?'hit':'err'}">
+              <span class="key">${AR(j+1)}</span>
+              <div style="flex:1">
+                <span dir="${dirOf(p.body)}" style="display:block">${fmt(p.body)}</span>
+                <span class="jd-m">${g ? (hit ? '✔ ' + esc(g) : '✗ ' + esc(g))
+                                       : '— لم تُزاوِج —'}</span>
+                ${hit ? '' : `<span class="jd-dx">الصواب: ${fmt(kk || '—')}</span>`}
+              </div></div>`;
+          }).join("")}</div>`
       : x.kind==='gap'
       ? `<div class="line" dir="auto">إجابتك: <b dir="auto">${
              esc((x.given||[]).filter(v=>v.trim()).join('  ·  ')) || '— لم تُجب —'}</b></div>
