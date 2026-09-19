@@ -1190,26 +1190,81 @@ body.gate .wrap{max-width:1000px}
 /* ═══ تحرير المزاوجة (b70) ═══
    🔑 المشتّت وتشخيصه صفٌّ واحد — والمشتّت هنا اقترانٌ لا خيار،
       فيسكن كودُه تحت بنده مباشرةً لا في مربّعٍ أسفل الصفحة. */
-.mt-row{padding:11px 12px;margin-bottom:9px;border-radius:12px;
-        background:var(--fill-soft);border:1px solid var(--line)}
-.mt-head{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
-.mt-head .eq-ob{flex:1 1 180px;min-width:0}
-.mt-head select{width:auto;min-width:160px;max-width:38%;padding:8px 10px;font-size:var(--fs-ui)}
+/* ═══ المزاوجة — 112 · صفٌّ بالهُويّة لا بالموضع ═══
+   🔑 شبكةٌ لا flex-wrap: العمودُ الأوسط أضيقُ ما في الشاشة، و max-width:38%
+      كانت تقتطع نصَّ القائمة **من أوّله** فيرى المؤلّف «…king, scrupulous»
+      ولا يعرف ماذا اختار. و minmax(0,1fr) تقتطع من آخره — فيُقرأ أوّلُه. */
 
-/* الخلطُ المتوقَّع يتفرّع عن بنده — والحدُّ الملوّن يتبع اتجاه النصّ */
-.mt-wrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
-         margin:8px 0 0;padding:8px 11px;border-radius:10px;
-         background:var(--accent-soft);border:1px dashed var(--accent-line);
-         margin-inline-start:24px}
-.mt-wrow select{width:auto;min-width:150px;max-width:36%;padding:7px 10px;font-size:var(--fs-tag)}
-.mt-addw{margin:8px 0 0 24px;margin-inline-start:24px;padding:5px 12px;
-         border-radius:8px;background:transparent;border:1px dashed var(--line);
-         color:var(--text-muted);font-family:'Almarai';font-size:var(--fs-tag);
-         cursor:pointer;transition:border-color .15s,color .15s}
-.mt-addw:hover{border-color:var(--accent);color:var(--accent)}
+/* شريطُ القياس — نصيحةٌ كانت تُقرأ فصارت حُكماً يُرى */
+.mt-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.mt-count{font-family:'Almarai';font-weight:800;font-size:var(--fs-tag);
+  background:var(--ok-fill);color:var(--ok);border:1px solid var(--ok-line);
+  border-radius:8px;padding:4px 11px;white-space:nowrap}
+.mt-count.warn{background:var(--warn-fill);color:var(--warn-text);border-color:var(--warn-line)}
+.mt-note{font-size:var(--fs-tag);color:var(--text-muted);line-height:1.7}
+
+/* رقائقُ المقابلات — تُحرَّر في موضعها، والنقطةُ تقول أمُزاوَجةٌ أم زائدة */
+.mt-bank{margin-bottom:18px}
+.mt-bank-h{display:flex;align-items:baseline;justify-content:space-between;
+  gap:10px;flex-wrap:wrap;margin-bottom:9px}
+.mt-chips{display:flex;flex-wrap:wrap;gap:8px}
+.mt-chip{display:flex;align-items:center;gap:7px;max-width:100%;
+  background:var(--fill-soft);border:1px solid var(--line);
+  border-radius:10px;padding:4px 8px}
+.mt-chip .dot{flex:none;width:7px;height:7px;border-radius:50%;background:var(--ok-edge)}
+.mt-chip.spare{border-style:dashed}
+.mt-chip.spare .dot{background:var(--line-strong)}
+.mt-chip .mt-bt{width:auto;min-width:0;flex:1 1 15ch;max-width:34ch;
+  background:transparent;border:none;padding:4px 2px;font-size:var(--fs-tag);
+  line-height:1.7;border-radius:0}
+.mt-chip .mt-bt:focus{outline:none;box-shadow:inset 0 -2px 0 var(--accent)}
+.mt-addb{padding:6px 13px;border-radius:10px;background:transparent;
+  border:1px dashed var(--line);color:var(--text-muted);
+  font-family:'Almarai';font-weight:700;font-size:var(--fs-tag);cursor:pointer;
+  transition:border-color .15s,color .15s}
+.mt-addb:hover{border-color:var(--accent);color:var(--accent)}
+
+/* جدولُ البنود — الرأسُ يقول «صوابه» مرّةً بدل مرّةٍ لكلّ صفّ */
+.mt-tbl{border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:12px}
+.mt-hdr,.mt-line,.mt-wrow{display:grid;gap:10px;align-items:center;
+  grid-template-columns:32px minmax(0,1fr) minmax(0,1.05fr) 30px}
+.mt-hdr{background:var(--fill);padding:9px 12px;
+  font-family:'Almarai';font-weight:800;font-size:var(--fs-tag);color:var(--text-muted)}
+.mt-item{border-top:1px solid var(--line)}
+.mt-item:first-of-type{border-top:none}
+.mt-line{padding:10px 12px}
+.mt-line .key{flex:none;width:30px;height:30px;border-radius:9px;
+  background:var(--fill-strong);color:var(--text-muted);
+  font-family:'Almarai';font-weight:800;font-size:var(--fs-meta);
+  display:flex;align-items:center;justify-content:center}
+.mt-line .eq-ob,.mt-line select{width:100%;min-width:0;flex:none;
+  padding:8px 10px;font-size:var(--fs-tag);text-overflow:ellipsis}
+
+/* الخلطُ المتوقَّع يتفرّع عن بنده — بالشبكة نفسها فتتراصّ الأعمدة */
+/* سطران في شبكةٍ واحدة: «إن زاوجه بـ …» ثم «فالتشخيص …» —
+   فتتراصّ قوائمُه مع قوائم البنود فوقه ولا ينكسر شيء. */
+.mt-wrow{padding:8px 12px;row-gap:7px;
+  border-top:1px dashed var(--accent-line);background:var(--accent-soft)}
+.mt-wrow select{width:100%;min-width:0;padding:7px 10px;
+  font-size:var(--fs-tag);text-overflow:ellipsis}
+.mt-rail{display:flex;align-items:center;justify-content:center;
+  font-size:.85rem;color:var(--accent-edge)}
+/* ⚠️ لا .eq-bs هنا: فيها margin-left:auto — وُضعت وسماً ذيليّاً
+   واستُعملت تسميةً وسطيّة، فكانت تبتلع الفراغ وتدفع ما بعدها للحافّة. */
+.mt-cap{font-family:'Almarai';font-weight:700;font-size:var(--fs-tag);
+  color:var(--text-muted);white-space:nowrap}
+.mt-addw{display:block;width:100%;text-align:start;
+  padding:7px 12px 7px 46px;border:none;border-top:1px dashed var(--line);
+  background:transparent;color:var(--text-muted);
+  font-family:'Almarai';font-weight:700;font-size:var(--fs-tag);cursor:pointer;
+  transition:color .15s,background .15s}
+.mt-addw:hover{color:var(--accent);background:var(--accent-soft)}
 
 @media (max-width:560px){
-  .mt-head select,.mt-wrow select{max-width:none;flex:1 1 100%;min-width:0}
-  .mt-wrow{margin-inline-start:12px}
-  .mt-addw{margin-inline-start:12px}
+  .mt-hdr{display:none}
+  .mt-line,.mt-wrow{grid-template-columns:32px minmax(0,1fr) 30px}
+  .mt-line select,.mt-wrow select{grid-column:2 / 4}
+  .mt-addw{padding-left:12px}
+}
 }

@@ -321,18 +321,6 @@ function qCard(q){
           ${locked?'disabled':''}>${esc(q.explanation||'')}</textarea>
       ` : q.kind === 'matching' ? `
 
-        <div class="gaprow">
-          <div class="gaplive" id="mtlive">${matchLive(q)}</div>
-        </div>
-
-        <label class="fl" style="margin-top:16px">عمود المقابلات — سطرٌ لكلّ مقابل *</label>
-        <textarea id="mtbank" dir="auto" style="min-height:92px"
-          placeholder="مشابهةٌ بأداةٍ ظاهرة&#10;مشابهةٌ حُذف أحد طرفيها&#10;إثباتُ معنًى بلفظٍ يَلزم عنه"
-          ${locked?'disabled':''}>${esc((q.bank||[]).join('\n'))}</textarea>
-        <div class="eq-hint" style="display:block;margin-top:6px;line-height:1.8">
-          ويُستحبّ أن تزيد المقابلاتُ على البنود — فبلا مقابلٍ زائد يُحلّ
-          البندُ الأخير بالاستبعاد، فيُصيبه من يجهله ولا يُسجَّل له كود.</div>
-
         <div id="mtbox">${matchFields(q, locked)}</div>
 
         <label class="fl" style="margin-top:20px">شرح الخطأ — يراه الطالب بعد التسليم *</label>
@@ -1014,77 +1002,120 @@ function wire(q){
     };
   }
   /* ── المزاوجة ──────────────────────────────────────────────
-     عمودُ المقابلات يُغذّي كلَّ قائمةٍ في الصفوف، فتغييرُه يُعيد رسم
-     الصفوف وحدها. ومربّعُ العمود **خارج** الصندوق المُعاد رسمُه،
-     فلا يقفز المؤشّر من تحت يد المؤلّف وهو يكتب. */
+     112 · لا مربّعَ عمودٍ يُعاد تقطيعُه، ولا معاينةً تكرّر ما يُحرَّر.
+     الصندوقُ واحد، وكلُّ تغييرٍ في بنيته (إضافةُ مقابلٍ أو بندٍ أو حذفُه)
+     يُعيد رسمَه بعد collect — فالمفاتيحُ في الكائن لا في الـDOM. */
   if(q.kind === 'matching'){
-    const box   = main.querySelector("#mtbox");
-    const bankT = main.querySelector("#mtbank");
+    const box = main.querySelector("#mtbox");
 
-    const live = () => {
-      const lv = main.querySelector("#mtlive");
-      if(lv) lv.innerHTML = matchLive(q);
-    };
+    const redraw = () => { box.innerHTML = matchFields(q, false); wire2(); mark(); };
 
-    const redraw = () => { box.innerHTML = matchFields(q, false); wireBox(); live(); };
-
-    function wireBox(){
+    function wire2(){
       if(!box) return;
 
+      /* نصُّ البند — يُكتب في الكائن ولا يُعاد الرسم (لئلّا يقفز المؤشّر) */
       box.querySelectorAll(".eq-ob").forEach(el => el.oninput = () => {
         const o = q.options?.[+el.dataset.o];
         if(o) o.body = el.value;
-        live(); mark();
+        mark();
+      });
+
+      /* 🔑 نصُّ المقابل — كذلك. ولا شيء ينقطع: المفتاح في data-bk
+         والنصُّ وحده يتغيّر. هذا هو موضعُ العطل الأوّل، وقد زال. */
+      box.querySelectorAll(".mt-bt").forEach(el => el.oninput = () => {
+        const b = (q.bank || []).find(x => x.k === el.closest('.mt-chip')?.dataset.bk);
+        if(!b) return;
+        b.t = el.value;
+        /* القوائمُ تعرض النصَّ نفسه ⇒ تُحدَّث في موضعها بلا إعادة رسم */
+        box.querySelectorAll(`option[value="${CSS.escape(b.k)}"]`)
+           .forEach(op => op.textContent = el.value);
+        mark();
       });
 
       /* .miss تُرفع لحظة الاختيار — فالحقلُ الناقص يبقى ظاهراً وحده */
       box.querySelectorAll(".mt-key,.mt-wt,.mt-wc").forEach(el => el.onchange = () => {
-        el.classList.toggle('miss', !el.value); collect(q); mark();
+        el.classList.toggle('miss', !el.value);
+        collect(q);
+        /* اختيارُ مقابلٍ يُبدّل حالَ رقاقته: مُزاوَجةٌ أو زائدة */
+        if(el.classList.contains('mt-key')) paintSpare();
+        mark();
       });
+
+      /* النقطةُ على الرقاقة تتبع الاستعمال — تُطلى ولا يُعاد الرسم */
+      function paintSpare(){
+        const used = new Set(Object.values(q.accept?.pairs || {}));
+        box.querySelectorAll('.mt-chip').forEach(ch =>
+          ch.classList.toggle('spare', !used.has(ch.dataset.bk)));
+      }
 
       /* الصفُّ يُدرَج في الصفحة ولا يُعاد الرسم: صفٌّ فارغ لا يبقى
          بعد collect (يُتجاوَز)، فلو أعدنا الرسم لاختفى فور ظهوره. */
       box.querySelectorAll("[data-aw]").forEach(el => el.onclick = () => {
-        const i = +el.dataset.aw;
-        el.insertAdjacentHTML('beforebegin', mtWrongRow(q.bank || [], i, '', '', false));
-        wireBox(); mark();
+        el.insertAdjacentHTML('beforebegin',
+          mtWrongRow(q.bank || [], el.dataset.aw, '', '', false));
+        wire2(); mark();
       });
 
       box.querySelectorAll(".mt-rmw").forEach(el => el.onclick = () => {
         el.closest('.mt-wrow')?.remove(); collect(q); mark();
       });
 
+      /* حذفُ بند: المفاتيحُ لا تُزاح — يُسقَط مفتاحُه ومعه خلطُه وحدهما.
+         وكان هذا الموضعُ يُعيد ترقيم wrong_map يدوياً لئلّا يُنسَب خلطُ
+         بندٍ إلى جاره. زال المنطقُ لأن زالت علّتُه. */
       box.querySelectorAll("[data-rmp]").forEach(el => el.onclick = () => {
         if((q.options || []).length <= 3){
           toast("المزاوجة تحتاج ثلاثة بنودٍ على الأقل"); return; }
         collect(q);
-        const d = +el.dataset.rmp;
-        q.options.splice(d, 1);
-        if(q.accept?.pairs) q.accept.pairs.splice(d, 1);
-        /* 🔑 أرقامُ wrong_map مواضعُ بنود — فحذفُ بندٍ يُزيح ما بعده.
-           وبلا هذا يُنسَب خلطُ بندٍ إلى جاره بصمت. */
-        const w2 = {};
-        Object.entries(q.wrong || {}).forEach(([k, c]) => {
-          const m = /^(\d+):([\s\S]+)$/.exec(k); if(!m) return;
-          const i = +m[1] - 1;
-          if(i === d) return;                       // خلطُ بندٍ حُذف يسقط معه
-          w2[((i > d ? i - 1 : i) + 1) + ':' + m[2]] = c;
-        });
-        q.wrong = Object.keys(w2).length ? w2 : null;
-        redraw(); mark();
+        const k = el.dataset.rmp;
+        q.options = (q.options || []).filter(o => o.k !== k);
+        if(q.accept?.pairs) delete q.accept.pairs[k];
+        if(q.wrong){
+          Object.keys(q.wrong).forEach(key => {
+            if(key.split(':')[0] === k) delete q.wrong[key]; });
+          if(!Object.keys(q.wrong).length) q.wrong = null;
+        }
+        redraw();
       });
+
+      /* حذفُ مقابل: يُسقَط من البنك، ويُيتَّم كلُّ ما أشار إليه — فيُرفَع
+         معه صراحةً. وتركُه يُنتج مفتاحاً يشير إلى لا شيء، وهو الصمت. */
+      box.querySelectorAll(".mt-rmb").forEach(el => el.onclick = () => {
+        collect(q);
+        const k = el.closest('.mt-chip')?.dataset.bk; if(!k) return;
+        q.bank = (q.bank || []).filter(b => b.k !== k);
+        if(q.accept?.pairs)
+          Object.keys(q.accept.pairs).forEach(ik => {
+            if(q.accept.pairs[ik] === k) delete q.accept.pairs[ik]; });
+        if(q.wrong){
+          Object.keys(q.wrong).forEach(key => {
+            if(key.split(':')[1] === k) delete q.wrong[key]; });
+          if(!Object.keys(q.wrong).length) q.wrong = null;
+        }
+        redraw();
+      });
+
+      const ab = box.querySelector("#addbank");
+      if(ab) ab.onclick = () => {
+        if((q.bank || []).length >= 12){ toast("اثنا عشر مقابلاً حدٌّ كافٍ"); return; }
+        collect(q);
+        (q.bank = q.bank || []).push({ k: mtKey('b', mtBankKeys(q)), t: '' });
+        redraw();
+        box.querySelector('.mt-chip:last-of-type .mt-bt')?.focus();
+      };
 
       const ap = box.querySelector("#addprompt");
       if(ap) ap.onclick = () => {
         if((q.options || []).length >= 8){ toast("ثمانية بنودٍ حدٌّ كافٍ"); return; }
         collect(q);
-        (q.options = q.options || []).push({ label:null, body:'', correct:false, dx:null });
-        redraw(); mark();
+        (q.options = q.options || []).push(
+          { k: mtKey('i', mtItemKeys(q)), label:null, body:'', correct:false, dx:null });
+        redraw();
+        box.querySelector('.mt-item:last-of-type .eq-ob')?.focus();
       };
     }
 
-    if(bankT) bankT.oninput = () => { collect(q); redraw(); mark(); };
-    wireBox();
+    wire2();
   }
 
   const sq = main.querySelector("#sq"); if(sq) sq.onclick = () => saveQ(q);
@@ -1139,13 +1170,37 @@ function gapFields(q, locked){
       نفسها «بأيّ مقابلٍ سيلتبس؟» فتضع كوده.
       ولو أُخفي في مربّعٍ أسفل الصفحة لصار واجباً إدارياً يُملأ آخر الوقت.
 
-   والرقمُ في wrong_map يُحسب من موضع البند ولا يُكتب بيد — فلا يُخطئ
-   المؤلّف في التتابع، وهو اللازم لئلا يُطابَق خلطُ بندٍ بآخر. */
+   🆕 112 · والهُويّةُ حلّت محلَّ النصّ والموضع:
+     · البندُ يحمل k يولّده المحرّر ويعبر الحفظ  ⇒ إعادةُ الترتيب لا تُزيح كوداً
+     · المقابلُ عنصرٌ في bank له k  ⇒ تحريرُ نصّه لا يقطع إشارةً إليه
+     · accept.pairs { مفتاح البند: مفتاح المقابل }
+     · wrong_map   { "مفتاح البند:مفتاح المقابل": كود }
 
-const mtBankSel = (bank, cls, val, i, ph, locked) => `
-  <select class="${cls}${val ? '' : ' miss'}" data-i="${i}" ${locked?'disabled':''}>
+   ولذلك زال منطقُ الإزاحة عند الحذف (كان يُعيد ترقيم wrong_map يدوياً):
+   المفتاحُ لا يُزاح، فلا شيء يُصحَّح بعده. */
+
+/* مفتاحٌ قصيرٌ فريدٌ داخل السؤال. والبادئة تقول ما هو عند القراءة. */
+const mtKey = (pre, taken) => {
+  let n = 1;
+  while(taken.has(pre + n)) n++;
+  const k = pre + n; taken.add(k); return k;
+};
+const mtItemKeys = q => new Set((q.options || []).map(o => o.k).filter(Boolean));
+const mtBankKeys = q => new Set((q.bank    || []).map(b => b.k).filter(Boolean));
+
+/* 🔧 ترميمُ ما جاء بلا مفاتيح — سؤالٌ أُلّف قبل 112، أو استيرادٌ خام.
+   يُدعى عند الرسم: فيفتحه المؤلّف فيُبنى مفتاحُه، ويحفظه فيثبت. */
+function mtEnsureKeys(q){
+  const ik = mtItemKeys(q), bk = mtBankKeys(q);
+  (q.options || []).forEach(o => { if(!o.k) o.k = mtKey('i', ik); });
+  (q.bank    || []).forEach(b => { if(!b.k) b.k = mtKey('b', bk); });
+}
+
+const mtBankSel = (bank, cls, val, ik, ph, locked) => `
+  <select class="${cls}${val ? '' : ' miss'}" data-ik="${esc(ik)}" ${locked?'disabled':''}>
     <option value="">— ${ph} —</option>
-    ${bank.map(w => `<option value="${esc(w)}"${w === val ? ' selected' : ''}>${esc(w)}</option>`).join("")}
+    ${bank.map(b => `<option value="${esc(b.k)}"${b.k === val ? ' selected' : ''}
+      >${esc(b.t)}</option>`).join("")}
   </select>`;
 
 const mtDxSel = (val, locked) => {
@@ -1161,50 +1216,91 @@ const mtDxSel = (val, locked) => {
     </select>`;
 };
 
-const mtWrongRow = (bank, i, t, code, locked) => `
-  <div class="mt-wrow" data-i="${i}">
-    <span class="eq-bs">إن زاوجه بـ</span>
-    ${mtBankSel(bank, 'mt-wt', t, i, 'المقابل الخاطئ', locked)}
-    <span class="eq-bs">فالتشخيص</span>
+const mtWrongRow = (bank, ik, bkey, code, locked) => `
+  <div class="mt-wrow" data-ik="${esc(ik)}">
+    <span class="mt-rail">↳</span>
+    <span class="mt-cap">إن زاوجه بـ</span>
+    ${mtBankSel(bank, 'mt-wt', bkey, ik, 'المقابل الخاطئ', locked)}
+    ${locked ? '<span></span>' : `<button class="eq-x mt-rmw" title="احذف هذا الخلط">✕</button>`}
+    <span></span>
+    <span class="mt-cap">فالتشخيص</span>
     ${mtDxSel(code, locked)}
-    ${locked ? '' : `<button class="eq-x mt-rmw" title="احذف هذا الخلط">✕</button>`}
+    <span></span>
   </div>`;
 
-/* المعاينة الحيّة — بدالّة الطالب نفسها، فما يراه المؤلّف هو ما سيُرى */
-const matchLive = q => ((q.bank||[]).length && (q.options||[]).length)
-  ? questionBody(q, { ro:true, pairs:[] })
-  : '<span class="eq-hint">…هكذا يراه الطالب</span>';
+/* شريطُ القياس — نصيحةٌ كانت تُقرأ فصارت حُكماً يُرى.
+   🔑 والمقابلُ الزائد ليس زينة: بلا زائدٍ يُحلّ البندُ الأخير بالاستبعاد،
+      فيُصيبه من يجهله ولا يُسجَّل له كود — وصمتُ التشخيص أخطر من خطئه. */
+function mtCount(q){
+  const n = (q.options || []).length, m = (q.bank || []).length, sp = m - n;
+  const say = sp > 1 ? `${AR(sp)} مقابلات زائدة`
+            : sp === 1 ? 'مقابلٌ زائد واحد'
+            : sp === 0 ? 'لا مقابلَ زائداً' : 'المقابلات أقلُّ من البنود';
+  return `<span class="mt-count${sp > 0 ? '' : ' warn'}">
+      ${AR(n)} ${n===1?'بند':n===2?'بندان':'بنود'} &nbsp;—&nbsp; ${AR(m)} مقابلات &nbsp;—&nbsp; ${say}</span>
+    <span class="mt-note">${sp > 0
+      ? 'الزائدُ يمنع حلَّ الأخير بالاستبعاد.'
+      : 'بلا زائدٍ يُصيب البندَ الأخيرَ من يجهله — ولا يُسجَّل له كود.'}</span>`;
+}
+
+/* رقائقُ المقابلات — تُحرَّر في موضعها، ومفتاحُها لا يتبع حرفَها.
+   والنقطةُ تقول: أمُزاوَجٌ هذا المقابل أم زائد؟ فالزائدُ يُرى ويُقصد. */
+function mtBankChips(q, locked){
+  const used = new Set(Object.values(q.accept?.pairs || {}));
+  return `
+    <div class="mt-bank">
+      <div class="mt-bank-h">
+        <label class="fl" style="margin:0">المقابلات</label>
+        <span class="mt-note">◦ الأجوفُ زائدٌ لم يُزاوَج — وهو مقصود</span>
+      </div>
+      <div class="mt-chips">
+        ${(q.bank || []).map(b => `
+          <span class="mt-chip${used.has(b.k) ? '' : ' spare'}" data-bk="${esc(b.k)}">
+            <i class="dot"></i>
+            <input class="mt-bt" dir="auto" value="${esc(b.t)}"
+                   placeholder="نصّ المقابل" ${locked?'disabled':''}
+                   aria-label="نصّ المقابل ${esc(b.k)}">
+            ${locked ? '' : `<button class="eq-x mt-rmb" title="احذف المقابل">✕</button>`}
+          </span>`).join("")}
+        ${locked ? '' : `<button class="mt-addb" id="addbank">＋ مقابل</button>`}
+      </div>
+    </div>`;
+}
 
 function matchFields(q, locked){
+  mtEnsureKeys(q);
   const bank  = q.bank || [];
-  const pairs = q.accept?.pairs || [];
+  const pairs = q.accept?.pairs || {};
 
-  if(!bank.length) return `<div class="eq-hint" style="display:block;padding:14px 0">
-    لا مقابلات بعد — اكتب سطراً لكلّ مقابلٍ في العمود أعلاه.</div>`;
-
-  /* wrong_map مفتاحُها "البند:المقابل" ⇒ تُجمَّع تحت بندها لتُعرض في موضعها */
+  /* wrong_map مفتاحُها "مفتاح البند:مفتاح المقابل" ⇒ تُجمَّع تحت بندها */
   const wrongBy = {};
   Object.entries(q.wrong || {}).forEach(([k, code]) => {
-    const m = /^(\d+):([\s\S]+)$/.exec(k); if(!m) return;
-    const i = +m[1] - 1;
-    (wrongBy[i] = wrongBy[i] || []).push({ t: m[2], code });
+    const m = /^([A-Za-z0-9_-]{1,16}):([A-Za-z0-9_-]{1,16})$/.exec(k); if(!m) return;
+    (wrongBy[m[1]] = wrongBy[m[1]] || []).push({ b: m[2], code });
   });
 
   const rows = (q.options || []).map((p, i) => `
-    <div class="mt-row">
-      <div class="mt-head">
+    <div class="mt-item" data-ik="${esc(p.k)}">
+      <div class="mt-line">
         <span class="key">${AR(i+1)}</span>
         <input class="eq-ob" data-o="${i}" dir="auto" value="${esc(p.body||'')}"
                placeholder="نصّ البند" ${locked?'disabled':''}>
-        <span class="eq-bs">الصواب</span>
-        ${mtBankSel(bank, 'mt-key', pairs[i] || '', i, 'اختر المقابل', locked)}
-        ${locked ? '' : `<button class="eq-x" data-rmp="${i}" title="احذف البند">✕</button>`}
+        ${mtBankSel(bank, 'mt-key', pairs[p.k] || '', p.k, 'اختر المقابل', locked)}
+        ${locked ? '<span></span>' : `<button class="eq-x" data-rmp="${esc(p.k)}" title="احذف البند">✕</button>`}
       </div>
-      ${(wrongBy[i] || []).map(w => mtWrongRow(bank, i, w.t, w.code, locked)).join("")}
-      ${locked ? '' : `<button class="mt-addw" data-aw="${i}">＋ خلطٌ متوقَّع</button>`}
+      ${(wrongBy[p.k] || []).map(w => mtWrongRow(bank, p.k, w.b, w.code, locked)).join("")}
+      ${locked ? '' : `<button class="mt-addw" data-aw="${esc(p.k)}">＋ خلطٌ متوقَّع</button>`}
     </div>`).join("");
 
-  return `${rows}
+  return `
+    <div class="mt-meta">${mtCount(q)}</div>
+    ${mtBankChips(q, locked)}
+    ${!bank.length ? `<div class="eq-hint" style="display:block;padding:14px 0">
+        لا مقابلات بعد — أضف مقابلاً واحداً على الأقل لكلّ بند.</div>` : `
+      <div class="mt-tbl">
+        <div class="mt-hdr"><span>#</span><span>البند</span><span>صوابه</span><span></span></div>
+        ${rows}
+      </div>`}
     ${locked ? '' : `<button class="btn ghost eq-addo" id="addprompt">＋ بند</button>`}`;
 }
 
@@ -1238,11 +1334,20 @@ function collect(q){
     q.wrong = Object.keys(w).length ? w : null;
   }
   if(q.kind === 'matching'){
-    q.bank = (main.querySelector("#mtbank")?.value || '')
-               .split('\n').map(s => s.trim()).filter(Boolean);
+    /* 🔑 112 · النصوص تُقرأ من الرقائق والمفاتيحُ تبقى كما هي.
+       وكان العمودُ مربّعَ نصّ يُعاد تقطيعُه كلَّ ضغطة مفتاح، فينقطع
+       كلُّ ما يشير إلى سطرٍ عُدِّل — صامتاً. والرقاقةُ تحمل مفتاحها
+       في data-bk، فتحريرُ نصّها لا يمسّ شيئاً سواه. */
+    const byKey = new Map((q.bank || []).map(b => [b.k, b]));
+    main.querySelectorAll('.mt-chip').forEach(ch => {
+      const b = byKey.get(ch.dataset.bk);
+      if(b) b.t = ch.querySelector('.mt-bt')?.value ?? b.t;
+    });
 
-    const pairs = [];
-    main.querySelectorAll(".mt-key").forEach(el => pairs[+el.dataset.i] = el.value);
+    const pairs = {};
+    main.querySelectorAll('.mt-key').forEach(el => {
+      if(el.value) pairs[el.dataset.ik] = el.value;
+    });
     q.accept = { pairs };
 
     /* صفٌّ ناقصٌ (بلا مقابلٍ أو بلا كود) يُتجاوَز ولا يُحفَظ — فالمؤلّف
@@ -1251,7 +1356,7 @@ function collect(q){
     main.querySelectorAll(".mt-wrow").forEach(row => {
       const t = row.querySelector('.mt-wt')?.value || '';
       const c = row.querySelector('.mt-wc')?.value || '';
-      if(t && c) w[(+row.dataset.i + 1) + ':' + t] = c;
+      if(t && c) w[row.dataset.ik + ':' + t] = c;
     });
     q.wrong = Object.keys(w).length ? w : null;
   }}
@@ -1292,7 +1397,7 @@ async function addQuestion(kind){
              accept:{ ordered:true, slots:[] }, wrong:{}, bank:null },
     matching:{ id:null, kind:'matching', body:'', answered:0, explanation:'',
              options: [0,1,2].map(() => ({ label:null, body:'', correct:false, dx:null })),
-             accept:{ pairs:[] }, wrong:{}, bank:[] },
+             accept:{ pairs:{} }, wrong:{}, bank:[] },   // 112 · بالهُويّة
     essay: { id:null, kind:'essay', body:'', answered:0, model:'', options:[] }
   };
   Z.questions.push(blank[kind] || blank.mcq);
@@ -1604,46 +1709,52 @@ function parseImport(txt){
        البنودُ options بلا حكمٍ ولا كود · والمقابلاتُ bank ·
        والمفتاحُ accept.pairs بترتيب البنود · والأكوادُ wrong. */
     if(kind === 'matching'){
-      const opts = Array.isArray(q.options) ? q.options : [];
-      if(opts.length < 3 || opts.length > 8)
-        out.issues.push(`س${n}: المزاوجة من ثلاثة بنودٍ إلى ثمانية — والموجود ${AR(opts.length)}`);
-      if(opts.some(o => !String(o.body || '').trim()))
-        out.issues.push(`س${n}: كل بند يحتاج نصاً`);
-      if(opts.some(o => String(o.dx || '').trim()))
-        out.issues.push(`س${n}: الكودُ للاقتران لا للبند — ضعه في wrong`);
+      if(opts.length < 3 || opts.length > 8){
+        out.issues.push(`س${n}: المزاوجة من ثلاثة بنودٍ إلى ثمانية — والموجود ${AR(opts.length)}`); return; }
+      if(opts.some(o => !String(o.body||'').trim()))
+        out.issues.push(`س${n}: بندٌ بلا نصّ`);
+      if(opts.some(o => (o.dx||'').trim()))
+        out.issues.push(`س${n}: الكودُ للاقتران لا للبند — ضعه في «خلطٌ متوقَّع»`);
+
+      /* 112 · المفاتيحُ أوّلاً: بلا مفتاحٍ لا تُقرأ إشارةٌ إليه */
+      const ik = opts.map(o => o.k).filter(Boolean);
+      if(ik.length !== opts.length)
+        out.issues.push(`س${n}: بندٌ بلا مفتاح — افتحه في المحرّر واحفظه`);
+      if(new Set(ik).size !== ik.length)
+        out.issues.push(`س${n}: مفتاحان متطابقان لبندين`);
 
       const bank = Array.isArray(q.bank) ? q.bank : [];
       if(!bank.length){
-        out.issues.push(`س${n}: المزاوجة تحتاج bank — عمودَ المقابلات`); return; }
-      if(bank.some(b => !String(b || '').trim()))
-        out.issues.push(`س${n}: لا مقابلَ فارغاً في bank`);
+        out.issues.push(`س${n}: المزاوجة تحتاج عمودَ مقابلات`); return; }
+      if(bank.some(b => !b || !String(b.t||'').trim()))
+        out.issues.push(`س${n}: لا مقابلَ فارغاً في القائمة`);
+      const bk = bank.map(b => b && b.k).filter(Boolean);
+      if(bk.length !== bank.length || new Set(bk).size !== bk.length)
+        out.issues.push(`س${n}: مقابلٌ بلا مفتاح أو بمفتاحٍ مكرَّر`);
       if(bank.length <= opts.length)
-        out.warns.push(`س${n}: لا مقابلَ زائد — البندُ الأخير يُحلّ بالاستبعاد فلا يُشخَّص`);
+        out.warns.push(`س${n}: لا مقابلَ زائداً — البند الأخير يُحلّ بالاستبعاد فلا يُشخَّص`);
 
       const pr = q.accept?.pairs;
-      if(!Array.isArray(pr)){
-        out.issues.push(`س${n}: بلا مفتاح — { "pairs": [ … ] } بترتيب البنود`); return; }
-      if(pr.length !== opts.length)
-        out.issues.push(`س${n}: البنود ${AR(opts.length)} والمفاتيح ${AR(pr.length)}`);
-      pr.forEach((t, k) => {
-        if(!bank.includes(t))
-          out.issues.push(`س${n}: مفتاحُ البند ${AR(k+1)} ليس في القائمة — "${t}"`);
+      if(!pr || typeof pr !== 'object' || Array.isArray(pr)){
+        out.issues.push(`س${n}: المزاوجة تحتاج مفاتيحَ — { "مفتاح البند": "مفتاح المقابل" }`); return; }
+
+      const bset = new Set(bk), iset = new Set(ik);
+      opts.forEach((o, z) => {
+        if(!pr[o.k]) out.issues.push(`س${n}: البند ${AR(z+1)} بلا صواب`);
+        else if(!bset.has(pr[o.k]))
+          out.issues.push(`س${n}: صوابُ البند ${AR(z+1)} ليس في القائمة`);
+      });
+      Object.keys(pr).forEach(k => {
+        if(!iset.has(k)) out.issues.push(`س${n}: مفتاحُ بندٍ «${k}» لا وجود له بين البنود`);
       });
 
       Object.entries(q.wrong || {}).forEach(([key, code]) => {
-        const m = /^(\d+):([\s\S]+)$/.exec(key);
-        if(!m) out.issues.push(`س${n}: مفتاح الخلط يبدأ برقم البند ثم نقطتين — "${key}"`);
-        else {
-          if(+m[1] > opts.length)
-            out.issues.push(`س${n}: الخلط "${key}" يشير إلى بندٍ غير موجود`);
-          if(!bank.includes(m[2]))
-            out.issues.push(`س${n}: المقابل الخاطئ ليس في القائمة — "${m[2]}"`);
-        }
-        if(!dxCodes.has(code)) out.issues.push(`س${n}: كود غير معروف "${code}"`);
+        const m = /^([A-Za-z0-9_-]{1,16}):([A-Za-z0-9_-]{1,16})$/.exec(key);
+        if(!m){ out.issues.push(`س${n}: مفتاحُ خلطٍ غير سليم: ${key}`); return; }
+        if(!iset.has(m[1])) out.issues.push(`س${n}: خلطٌ لبندٍ لا وجود له: ${key}`);
+        if(!bset.has(m[2])) out.issues.push(`س${n}: خلطٌ إلى مقابلٍ لا وجود له: ${key}`);
+        if(!code)           out.issues.push(`س${n}: خلطٌ بلا كود تشخيص: ${key}`);
       });
-
-      if(!String(q.explanation || '').trim()) out.issues.push(`س${n}: بلا شرح للخطأ`);
-      return;
     }
 
     if(kind !== 'mcq' && kind !== 'msq'){
@@ -1755,8 +1866,10 @@ function exportQuiz(){
         if((q.bank || []).length) o.bank = q.bank;
       }
 
+      /* 112 · ومفتاحُ البند يُصدَّر معه: إليه تشير accept و wrong_map،
+         فملفٌّ بلا مفاتيح يعود بمفاتيحَ يتيمة. */
       o.options = (q.options || []).map(x =>
-          q.kind === 'matching' ? { body: x.body }          // بندٌ بلا حكمٍ ولا كود
+          q.kind === 'matching' ? { k: x.k, body: x.body }  // بندٌ بلا حكمٍ ولا كود
         : x.correct             ? { body: x.body, correct: true }
         :                         { body: x.body, dx: x.dx || null });
       return o;
@@ -1902,10 +2015,13 @@ async function runImport(p){
         difficulty: q.difficulty || null, lang: q.lang || 'ar',
         options: (q.options || []).map(o => ({
           label: o.label, body: o.body, correct: !!o.correct, dx: o.dx })),
-        // مفاتيح «إكمال الناقص» — تُرسَل للنمط وحده لئلّا تُكتب لغيره
-        accept: q.kind === 'gap' ? (q.accept || null) : null,
-        wrong:  q.kind === 'gap' ? (q.wrong  || null) : null,
-        bank:   q.kind === 'gap' ? (q.bank   || null) : null });
+        /* 🔴 مفاتيحُ الإكمال **والمزاوجة** — تُرسَل للنمطين لا لواحد.
+           وكان الشرطُ 'gap' وحده، والتصديرُ يكتبهما معاً (انظر أعلاه) ⇒
+           ملفٌّ صُدِّر ثمّ استُورد يعود بلا مفتاحٍ ولا بنكٍ ولا تشخيص،
+           بلا شكوى. عطلٌ صامتٌ أُصلح مع 112. */
+        accept: (q.kind === 'gap' || q.kind === 'matching') ? (q.accept || null) : null,
+        wrong:  (q.kind === 'gap' || q.kind === 'matching') ? (q.wrong  || null) : null,
+        bank:   (q.kind === 'gap' || q.kind === 'matching') ? (q.bank   || null) : null });
       if(error || !data?.ok){
         stop(`السؤال ${AR(i+1)}`, error?.message || data?.error, done); return;
       }

@@ -52,7 +52,7 @@ export function questionBody(q, opts = {}){
         </button>`).join("")}</div>`;
 
   if(q.kind === 'gap'){
-    const bank = q.bank || [];
+    const bank = q.bank || [];   // نصوصٌ بلا مفاتيح — ولا مرجعَ يشير إلى كلمةٍ بعينها
     return `${gapCount(q.body) > 1
         ? `<div class="q-hint">البند يُحتسب كاملاً أو لا يُحتسب</div>` : ''}
       ${bank.length ? `<div class="bank">${bank.map(w =>
@@ -67,24 +67,28 @@ export function questionBody(q, opts = {}){
      والإسنادُ بقائمةٍ أصيلة (select) لا بسحبٍ وإفلات: تعمل باللمس
      وبلوحة المفاتيح وقارئ الشاشة، والسحبُ يسقط في الثلاثة.
 
-     🔑 والقيمةُ نصُّ المقابل لا فهرسُه: كذلك يُرسَل وكذلك يُحفَظ في
-        answers.meta، فيُقرأ بعد سنةٍ بلا مفتاح فكّ — واختيارُ gap نفسه. */
+     🔑 والقيمةُ **مفتاحُ المقابل** لا نصُّه ولا فهرسُه (112).
+        وكانت نصّاً بحجّة «يُقرأ بعد سنةٍ بلا مفتاح فكّ»، والحجّةُ قائمة
+        لكنّ ثمنها بان فادحاً: تحريرُ حرفٍ في نصّ مقابلٍ يقطع كلَّ إشارةٍ
+        إليه — في المفتاح وفي التشخيص معاً، وبصمت.
+        ⇒ المفتاحُ يُرسَل، و submit_attempt تحفظ النصَّ المقروء في
+           essay_text بجواره. فالسجلُّ يُقرأ، والإشارةُ لا تنقطع. */
   if(q.kind === 'matching'){
-    const bank    = q.bank    || [];
-    const prompts = q.options || [];
-    const pairs   = opts.pairs || [];
+    const bank    = q.bank    || [];      // [{k,t}] — مخلوطٌ بالبذرة في get_quiz
+    const prompts = q.options || [];      // [{k, body}]
+    const pairs   = opts.pairs || {};     // { مفتاح البند: مفتاح المقابل }
     return `<div class="q-hint">لكلّ بندٍ درجة — وقد يبقى في العمود مقابلٌ لا يُزاوَج</div>
-      ${bank.length ? `<div class="bank">${bank.map(w =>
-        `<span class="bank-w">${esc(w)}</span>`).join("")}</div>` : ''}
+      ${bank.length ? `<div class="bank">${bank.map(b =>
+        `<span class="bank-w">${esc(b.t)}</span>`).join("")}</div>` : ''}
       <div class="pairs">${prompts.map((p, j) => `
         <div class="pair">
           <span class="key">${AR(j+1)}</span>
           <span class="pair-p" dir="${dirOf(p.body)}">${fmt(p.body)}</span>
-          <select class="pair-in" data-i="${j}" ${ro ? 'disabled' : ''}
+          <select class="pair-in" data-k="${esc(p.k || '')}" ${ro ? 'disabled' : ''}
                   aria-label="مقابل البند ${AR(j+1)}">
             <option value="">— اختر —</option>
-            ${bank.map(w => `<option value="${esc(w)}"${
-              (pairs[j] || '') === w ? ' selected' : ''}>${esc(w)}</option>`).join("")}
+            ${bank.map(b => `<option value="${esc(b.k)}"${
+              (pairs[p.k] || '') === b.k ? ' selected' : ''}>${esc(b.t)}</option>`).join("")}
           </select>
         </div>`).join("")}</div>`;
   }

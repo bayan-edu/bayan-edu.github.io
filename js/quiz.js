@@ -174,7 +174,7 @@ export async function startQuiz(meta){
   S.itemId = meta.item_id || null;
      S.ans = data.questions.map(q=>({ q:q.id, kind:q.kind, o:null, os:[],
                                    txt:Array(gapCount(q.body)||1).fill(""),
-                                   pairs:Array((q.options||[]).length).fill(""),
+                                   pairs:{},                                     // 112 · { مفتاح البند: مفتاح المقابل }
                                    essay:"", sec:0, chg:0 }));
 
   A = new Map(S.ans.map(a => [a.q, a]));
@@ -226,7 +226,7 @@ function mountStation(data){
   S.itemId = null;
   S.ans = data.questions.map(q=>({ q:q.id, kind:q.kind, o:null, os:[],
                                    txt:Array(q.gaps||1).fill(""),
-                                   pairs:Array((q.options||[]).length).fill(""),
+                                   pairs:{},                                     // 112 · { مفتاح البند: مفتاح المقابل }
                                    essay:"", sec:0, chg:0 }));
   A = new Map(S.ans.map(a => [a.q, a]));
   N = new Map(data.questions.map((q,i) => [q.id, i+1]));
@@ -368,9 +368,11 @@ function renderPage(){
     /* القائمة تُطلق input و change معاً في المتصفّحات الحديثة،
        فيكفي هذا المستمع ولا يلزم ثالث. */
     if(t.classList.contains('pair-in')){ credit(qid);
-      const i = +t.dataset.i;
-      if(a.pairs[i] && a.pairs[i] !== t.value) a.chg++;   // تبديلٌ بعد إسناد = تغيير
-      a.pairs[i] = t.value;
+      /* 112 · المفتاح هُويّةُ البند لا موضعُه: يثبت وإن أُعيد ترتيبُ
+         البنود، والقيمةُ مفتاحُ المقابل فلا يقطعها تحريرُ نصّه. */
+      const k = t.dataset.k; if(!k) return;
+      if(a.pairs[k] && a.pairs[k] !== t.value) a.chg++;   // تبديلٌ بعد إسناد = تغيير
+      if(t.value) a.pairs[k] = t.value; else delete a.pairs[k];
       return;
     }
     if(t.classList.contains('gap-in')){ credit(qid);
@@ -389,7 +391,7 @@ function renderPage(){
         return a.kind==='mcq' ? a.o === null
          : a.kind==='msq' ? a.os.length === 0
          : a.kind==='gap' ? a.txt.every(v => !v.trim())
-         : a.kind==='matching' ? a.pairs.every(v => !v)
+         : a.kind==='matching' ? Object.values(a.pairs).every(v => !v)
          :                  !a.essay.trim();
   });
 
