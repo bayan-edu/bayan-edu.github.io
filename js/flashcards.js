@@ -16,7 +16,8 @@ import * as api from './api.js';
 import { S } from './state.js';
 import { openMatchGame, eligible } from './card_game_match.js';
 import { app, head, toast, esc, AR, errBox, nav, scrollTop,
-         dirOf, shrinkFont, examples, pickExample } from './ui.js';
+         dirOf, shrinkFont, examples, pickExample,
+         skeleton } from './ui.js';
 
 let subjects = [];   // { id, name, due }
 
@@ -26,7 +27,7 @@ let subjects = [];   // { id, name, due }
 export async function loadFlashcards(){
   nav('cards');
   head("تذكّرها", "ما تراجعه اليوم لا تنساه غداً");
-  app.innerHTML = `<div class="status">جارٍ التحميل…</div>`;
+  app.innerHTML = skeleton('rows');
 
   const [subj, counts] = await Promise.all([api.listSubjects(), api.dueCounts()]);
   if(subj.error){ app.innerHTML = errBox(subj.error, 'تذكّرها'); return; }
@@ -138,7 +139,7 @@ export function openSession(subject, opts = {}){
       : saved === '1';
   }catch(err){ calm = false; }
 
-  app.innerHTML = `<div class="status">جارٍ التحميل…</div>`;
+  app.innerHTML = skeleton('screen');
 
   Promise.resolve(fetchCards()).then(list => {
     queue = list || [];
@@ -425,7 +426,7 @@ export function openSession(subject, opts = {}){
 /* ═══════════ ④ الإضافة — كتابةً أو اشتراكاً ═══════════ */
 
 function openAdd(subject){
-  app.innerHTML = `<div class="status">جارٍ التحميل…</div>`;
+  app.innerHTML = skeleton('screen');
 
   api.subjectDecks(subject.id).then(({ data, error }) => {
     if(error){ app.innerHTML = errBox(error, 'الإضافة'); return; }
@@ -488,7 +489,7 @@ async function addByWriting(subject){
 /* ═══════════ ⑤ تصفّح مجموعةٍ رسمية والاشتراك ═══════════ */
 
 function openBrowseDeck(subject, deck){
-  app.innerHTML = `<div class="status">جارٍ التحميل…</div>`;
+  app.innerHTML = skeleton('rows');
 
   api.browseDeck(deck.id).then(({ data, error }) => {
     if(error){ app.innerHTML = errBox(error, 'المجموعة'); return; }
@@ -545,7 +546,7 @@ function openBrowseDeck(subject, deck){
       فتعود متباعدةً بعد أيام.
 */
 export function openLessonDeck(subject, deck, back){
-  app.innerHTML = `<div class="status">جارٍ التحميل…</div>`;
+  app.innerHTML = skeleton('screen');
 
   openSession(subject, {
     label: deck.lesson || deck.title,

@@ -8,7 +8,8 @@
 import * as api from './api.js';
 import { S } from './state.js';
 import { app, head, toast, esc, AR, ICONS, KINDS, bubble, errBox, nav,
-         refreshCounts, scrollTop, scrollBottom, shape, icon } from './ui.js';
+         refreshCounts, scrollTop, scrollBottom, shape, icon,
+         skeleton } from './ui.js';
 import { startQuiz } from './quiz.js';
 import { mediaUrl, isManaged } from './media.js';
 import { isSim, openSim } from './simulations.js';
@@ -96,7 +97,7 @@ function todayStrip(){
 
 export async function loadList(){
   nav('subjects');
-  app.innerHTML = `<div class="status">جارٍ التحميل…</div>`;
+  app.innerHTML = skeleton('subjects');
 
   const { data, error } = await api.listSubjects();
   if(error){
@@ -281,7 +282,7 @@ export async function loadMentors(subj, switching){
   S.subj = subj;
   nav('subjects');
   head(switching?"الانضمام إلى معلم آخر":"اختر معلمك", subj.name);
-  app.innerHTML = `<div class="status">جارٍ التحميل…</div>`;
+  app.innerHTML = skeleton('mentors');
 
   const [mRes, sRes] = await Promise.all([
     api.listMentors(subj.id),
@@ -363,7 +364,7 @@ export async function loadLessons(subj){
   rememberSubject(subj);
   nav('subjects');
   head(subj.name, subj.my_level ? "مستواك: "+subj.my_level : "");
-  app.innerHTML = `<div class="status">جارٍ تحميل الدروس…</div>`;
+  app.innerHTML = skeleton('rows');
 
   const { data, error } = await api.listLessons(subj.id);
   if(error){ app.innerHTML = `<div class="err"><b>تعذّر التحميل</b>${esc(error.message)}</div>`; return; }
@@ -562,7 +563,7 @@ function toggleAudio(i){
 
 export async function loadFeedback(){
   nav('feedback'); head("ملاحظات معلمي", S.prof.full_name);
-  app.innerHTML = `<div class="status">جارٍ التحميل…</div>`;
+  app.innerHTML = skeleton('rows');
   const { data, error } = await api.myFeedback(S.user.id);
 
   const list = data || [];
@@ -592,7 +593,7 @@ export async function loadFeedback(){
 
 export async function loadChat(){
   nav('chat'); head("مراسلة المعلم", S.prof.full_name);
-  app.innerHTML = `<div class="status">جارٍ التحميل…</div>`;
+  app.innerHTML = skeleton('rows');
   const { data, error } = await api.studentThread(S.user.id);
   renderChat(data || [], error);
   await api.studentReadsThread(S.user.id);
@@ -620,7 +621,7 @@ function renderChat(msgs, error){
 /* اختبار تحديد المستوى — أداةٌ قائمة بذاتها، لا درسَ لها ولا مقرَّر */
 async function startPlacement(x){
   if(!x.tool){ toast("اختبار تحديد المستوى قيد الإعداد"); return; }
-  app.innerHTML = `<div class="status">جارٍ فتح الاختبار…</div>`;
+  app.innerHTML = skeleton('screen');
   const { data, error } = await api.placementStart(x.tool);
   if(error){ app.innerHTML = errBox(error.message, 'تحديد المستوى'); return; }
   if(!data.ok){ toast(data.error); loadList(); return; }

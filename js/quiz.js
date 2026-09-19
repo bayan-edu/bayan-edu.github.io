@@ -46,7 +46,7 @@
 import * as api from './api.js';
 import { S } from './state.js';
 import { app, bar, head, toast, esc, fmt, AR, mmss, media, pgMedia, srcOf,
-        optLabel, dirOf, ICONS, nav, scrollTop } from './ui.js';
+        optLabel, dirOf, ICONS, nav, scrollTop, skeleton } from './ui.js';
 import { loadList, loadLessons } from './student.js';
 import { questionText, questionBody, KIND_LABEL, gapCount } from './render_q.js';
 
@@ -152,7 +152,7 @@ function leavePage(){
 /* ═══════════ ③ بدء الاختبار ═══════════ */
 
 export async function startQuiz(meta){
-  app.innerHTML = `<div class="status">جارٍ تحميل الأسئلة…</div>`;
+  app.innerHTML = skeleton('screen');
   const { data, error } = await api.getQuiz(meta.id);
   if(error){ toast(error.message); loadList(); return; }
 
@@ -396,6 +396,10 @@ function renderPage(){
 async function finish(auto){
   clearInterval(S.tick); leavePage();
   app.onclick = null; app.oninput = null;
+  /* ⚠️ نصٌّ لا شبح — والفرقُ مقصود (b68): الشبحُ يقول «المحتوى قادم»،
+     وهنا لا يُنتظر محتوى بل **حكم**. والطالبُ الذي سلّم للتوّ يسأل
+     «ماذا يجري الآن؟» لا «أين سيقع النصّ؟» — فـ«جارٍ التصحيح» جوابٌ،
+     وقضبانٌ رماديةٌ تمحوه. ⇒ الشبح للتحميل، والنصُّ للمعالجة. */
   app.innerHTML = `<div class="status">جارٍ التصحيح…</div>`; bar.innerHTML = "";
 
     const payload = S.ans.map(a =>

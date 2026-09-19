@@ -41,7 +41,8 @@
    ⚠️ الفاصل «،» لا «·»: الصفر العربيّ «٠» نقطةٌ مرفوعة كالفاصل.
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
-import { app, head, esc, fmt, AR, errBox, nav, BUILD, scrollTop } from './ui.js';
+import { app, head, esc, fmt, AR, errBox, nav, BUILD, scrollTop,
+         skeleton } from './ui.js';
 
 /* 🔑 ختمُ هذه الوحدة وحدها.
    BUILD تسكن ui.js، فالرقمُ المعروض يشهد لها لا لهذا الملفّ — وقد
@@ -382,7 +383,7 @@ export async function openStudentCard(uid){
 /* ═══════════ المُصيِّر المشترك ═══════════ */
 
 async function drawPerformance(title, sub, back){
-  app.innerHTML = `<div class="status">جارٍ التحميل…</div>`;
+  app.innerHTML = skeleton('screen');
   const crumb = back ? `<div class="crumb" id="bk">← تحليل الأداء</div>` : '';
   const bind  = () => { const b = document.getElementById('bk'); if(b) b.onclick = loadStudents; };
 
@@ -654,7 +655,7 @@ function nextSection(nx, lk, forMe){
       لو رأى الطالبُ الصوابَ متى شاء ثمّ أعاد، لقاست الإعادةُ
       الذاكرةَ لا التعلّم، وفرغ أثمنُ رقمٍ في المنصة. */
 async function openQuiz(quizId, backTitle, backSub, backHas){
-  app.innerHTML = `<div class="status">جارٍ الفتح…</div>`;
+  app.innerHTML = skeleton('screen');
   const { data, error } = await api.quizDetail(quizId, M.uid);
   const crumb = `<div class="crumb" id="bq">← ${M.forMe ? 'أدائي' : 'بطاقة الطالب'}</div>`;
   const back  = () => drawPerformance(backTitle, backSub, backHas);
@@ -727,7 +728,7 @@ function rushLine(r, forMe){
 export async function loadStudents(){
   nav('students');
   head("تحليل الأداء", "الأضعف أوّلاً — الترتيب توجيه");
-  app.innerHTML = `<div class="status">جارٍ التحميل…</div>`;
+  app.innerHTML = skeleton('rows');
 
   /* القوائم من النداء غير المُصفّى — نفس درس b47 */
   if(!F.opts){
@@ -756,7 +757,7 @@ export async function loadStudents(){
       <button class="an-tab ${F.view==='list' ?'on':''}" data-v="list">القائمة</button>
       <button class="an-tab ${F.view==='board'?'on':''}" data-v="board">اللوحة</button>
     </div>
-    <div id="anBody"><div class="status">جارٍ التحميل…</div></div>
+    <div id="anBody">${skeleton('rows')}</div>
     <p class="hint">نسخة الواجهة ${BUILD}${stamp()}</p>`;
 
   document.getElementById('flLevel').onchange   = e => { F.level = num(e.target.value); render(); };
@@ -775,7 +776,7 @@ export async function loadStudents(){
 async function render(){
   const box = document.getElementById('anBody');
   if(!box) return;
-  box.innerHTML = `<div class="status">جارٍ التحميل…</div>`;
+  box.innerHTML = skeleton('rows');
   if(F.view === 'list') await renderList(box);
   else                  await renderBoard(box);
 }
