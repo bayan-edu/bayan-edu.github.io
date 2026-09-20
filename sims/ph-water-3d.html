@@ -1,0 +1,1519 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>مختبر قياس الرقم الهيدروجيني (pH) للمياه</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+<!--
+  مختبر pH ثلاثيّ الأبعاد — بيان
+  ═══════════════════════════════
+  قراراتٌ تُشرح هنا لأنّها لا تُقرأ من الشيفرة:
+
+  ① المحرّك محلّيّ لا من CDN — ../vendor/three/three.min.js
+     محاكيات بيان تُحمَّل في iframe بـ sandbox="allow-scripts" بلا
+     allow-same-origin ⇒ الأصل معتم، فجلب وحدة ESM يسقط في فحص CORS.
+     لذلك نسخةٌ كلاسيكية تُسنِد window.THREE، ووسم <script> عاديّ.
+
+  ② الماء جسمٌ مُعتِم (opaque) والزجاج شفّافٌ بانكسارٍ حقيقيّ (transmission).
+     السبب تقنيّ: three.js لا يُدخل الأجسام الشفّافة في مخزن الانكسار،
+     فلو جُعل الماء شفّافاً لاختفى خلف زجاج الكأس. وبالمُعتِم يُرى الماء
+     منكسراً عبر الزجاج كما في الواقع.
+     ونتيجته: ما يغطس تحت السطح لا يُرى — فالفقاعات والرذاذ تُولد
+     فوق السطح لا تحته، وهو ما تراه العين فعلاً في سائلٍ ملوَّن.
+
+  ③ الصوت مُركَّب بـ WebAudio لا ملفّات — لا شبكة، ولا وزن، ويُبنى
+     عند أوّل لمسةٍ من الطالب (سياسة المتصفّحات في التشغيل التلقائيّ).
+
+  ④ عقد بيان: postMessage({bayanSim:'done'}) عند اكتمال ثلاث قراءات
+     لعيّنةٍ واحدة — «فتحَ» ليست «تعلّم».
+-->
+<style>
+  :root{
+    --bg-page:#EEF3F1;
+    --panel:#FFFFFF;
+    --ink:#16302E;
+    --ink-soft:#516864;
+    --ink-faint:#7C918D;
+    --teal-900:#0E3B39;
+    --teal-700:#1B5450;
+    --teal-500:#2D8C8C;
+    --teal-100:#DCEEEC;
+    --info-bg:#EAF3F2;
+    --line:#D7E1DE;
+    --danger:#AE3B26;
+    --danger-bg:#F8E6E1;
+    --radius-sm:8px;
+    --radius-md:14px;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg-page);
+    color:var(--ink);
+    font-family:'Tajawal', sans-serif;
+    line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .wrap{max-width:860px; margin:0 auto; padding:0 20px 64px;}
+
+  header.hero{background:linear-gradient(160deg, #1E7F96 0%, #125064 55%, #0B3540 100%); color:#EAF5F3; padding:40px 20px 20px; margin-bottom:34px;}
+  header.hero::after{
+    content:""; display:block; height:10px; margin-top:22px;
+    background-image:repeating-linear-gradient(90deg, rgba(234,245,243,0.55) 0 1.5px, transparent 1.5px 16px);
+    opacity:0.7;
+  }
+  .hero-inner{max-width:860px; margin:0 auto; position:relative;}
+  .eyebrow{font-size:13px; color:#9CCFC9; margin:0 0 10px; font-weight:500;}
+  h1{font-size:clamp(23px,4vw,32px); font-weight:900; margin:0 0 12px; letter-spacing:-0.01em;}
+  .hero p.lead{font-size:15px; color:#C4DEDA; max-width:58ch; margin:0; }
+
+  #sndBtn{
+    position:absolute; top:0; left:0;
+    background:rgba(255,255,255,0.10); color:#EAF5F3; border:1px solid rgba(234,245,243,0.32);
+    font-size:12.5px; padding:6px 12px; border-radius:999px; backdrop-filter:blur(3px);
+  }
+  #sndBtn:hover{background:rgba(255,255,255,0.18); border-color:rgba(234,245,243,0.6);}
+  #sndBtn.off{opacity:0.65;}
+
+  h2.section-title{font-size:18px; font-weight:700; margin:0 0 4px; display:flex; align-items:baseline; gap:10px;}
+  .step-num{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:26px; height:26px; border-radius:50%;
+    background:var(--teal-100); color:var(--teal-700);
+    font-size:13px; font-weight:700; flex-shrink:0;
+  }
+  .section-hint{font-size:13.5px; color:var(--ink-faint); margin:0 0 16px; padding-right:36px;}
+  section.step{margin-bottom:38px;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius-md); padding:18px 20px;}
+
+  button{
+    font-family:inherit; font-size:14px; font-weight:500; color:var(--ink);
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--radius-sm);
+    padding:9px 16px; cursor:pointer; transition:border-color .15s ease, background .15s ease, transform .15s ease, box-shadow .15s ease;
+  }
+  button:hover{border-color:var(--ink-faint);}
+  button:active{transform:scale(0.98);}
+  button:focus-visible{outline:2px solid var(--teal-500); outline-offset:2px;}
+
+  .sample-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(104px,1fr)); gap:10px;}
+  .sample-btn{display:flex; flex-direction:column; align-items:center; gap:6px; padding:10px 6px 12px;}
+  .sample-btn:hover{transform:translateY(-2px); box-shadow:0 6px 14px rgba(14,59,57,0.10);}
+  .sample-btn .name{font-size:13px; font-weight:700;}
+  .sample-btn .sub{font-size:11px; color:var(--ink-faint); font-weight:400;}
+  .sample-btn.selected{border-color:var(--teal-500); background:var(--teal-100); box-shadow:0 4px 12px rgba(45,140,140,0.18);}
+  .sample-btn.selected .sub{color:var(--teal-700);}
+  .sample-btn .done-tag{font-size:10.5px; color:var(--teal-700); font-weight:700;}
+
+  #calHint{
+    font-size:13px; color:var(--teal-700); background:var(--info-bg);
+    border-radius:var(--radius-sm); padding:8px 12px; margin:0 0 12px;
+    transition:background .25s ease, color .25s ease;
+  }
+  #calHint.ok{background:#E3F4EA; color:#1C6B45;}
+
+  /* ── المسرح ثلاثيّ الأبعاد ── */
+  #stage{
+    position:relative; width:100%;
+    height:clamp(330px, 54vw, 470px);
+    border:1px solid var(--line); border-radius:var(--radius-md);
+    overflow:hidden; background:linear-gradient(180deg,#7FA2A2 0%, #BACFCD 100%);
+    touch-action:none;
+  }
+  #lab{display:block; width:100%; height:100%; cursor:default;}
+  #lab.grabbable{cursor:grab;}
+  #lab.grabbing{cursor:grabbing;}
+
+  #labels{position:absolute; inset:0; pointer-events:none;}
+  .cup-tag{
+    position:absolute; transform:translate(-50%,-100%);
+    background:rgba(255,255,255,0.88); border:1px solid var(--line);
+    border-radius:999px; padding:2px 11px; font-size:12px; font-weight:700;
+    color:var(--teal-900); white-space:nowrap; box-shadow:0 2px 6px rgba(14,59,57,0.12);
+    transition:opacity .3s ease;
+  }
+  .cup-tag .badge{font-weight:500; font-size:11px; color:var(--ink-faint); margin-inline-start:5px;}
+  .cup-tag.lit{border-color:var(--teal-500); color:var(--teal-700);}
+
+  #dragHint{
+    position:absolute; pointer-events:none; transform:translate(-50%,-50%);
+    background:rgba(14,59,57,0.82); color:#EAF5F3; font-size:12px; font-weight:500;
+    padding:4px 12px; border-radius:999px; white-space:nowrap;
+    animation:bob 1.8s ease-in-out infinite; transition:opacity .4s ease;
+  }
+  @keyframes bob{0%,100%{margin-top:0;} 50%{margin-top:-7px;}}
+
+  #liveRead{
+    position:absolute; bottom:12px; left:50%; transform:translateX(-50%);
+    display:flex; align-items:baseline; gap:8px;
+    background:rgba(11,42,40,0.86); color:#EAF5F3; border-radius:999px;
+    padding:6px 18px; box-shadow:0 4px 14px rgba(11,42,40,0.28);
+    opacity:0; transition:opacity .3s ease; pointer-events:none;
+  }
+  #liveRead.on{opacity:1;}
+  #liveRead .v{font-size:26px; font-weight:900; font-variant-numeric:tabular-nums; letter-spacing:.02em;}
+  #liveRead .u{font-size:12px; color:#9CCFC9;}
+  #liveRead .s{font-size:12px; color:#9CCFC9; margin-inline-start:6px;}
+
+  #glLoading, #glFail{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    flex-direction:column; gap:10px; text-align:center; padding:24px;
+    background:linear-gradient(180deg,#E4EEEC 0%, #CFDEDC 100%); color:var(--teal-700); font-size:14px;
+  }
+  #glFail{font-size:13.5px; color:var(--danger); background:var(--danger-bg);}
+  [hidden]{display:none !important;}   /* لأنّ display:flex أعلاه يبطل خاصية hidden */
+  .spinner{width:26px; height:26px; border-radius:50%; border:3px solid var(--teal-100); border-top-color:var(--teal-500); animation:spin 0.9s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .dip-actions{display:flex; gap:10px; margin-top:12px; flex-wrap:wrap;}
+  .dip-actions button{font-weight:700; color:var(--teal-700); border-color:var(--teal-100); background:var(--info-bg);}
+  .dip-actions button:hover{border-color:var(--teal-500);}
+  .dip-actions button:disabled{opacity:.45; cursor:not-allowed;}
+
+  .drag-instructions{font-size:12.5px; color:var(--ink-faint); margin:10px 2px 0;}
+  #errMsg{display:none; margin-top:10px; font-size:13.5px; color:var(--danger); background:var(--danger-bg); border-radius:var(--radius-sm); padding:8px 12px;}
+  #errMsg.show{display:block; animation:shake .35s ease;}
+  @keyframes shake{0%,100%{transform:translateX(0);} 25%{transform:translateX(-5px);} 75%{transform:translateX(5px);}}
+
+  #resultCard{display:none; margin-top:20px;}
+  #resultCard.show{display:block; animation:rise .45s cubic-bezier(.2,.8,.3,1);}
+  @keyframes rise{from{opacity:0; transform:translateY(12px);} to{opacity:1; transform:none;}}
+  .result-top{display:flex; align-items:center; gap:16px; flex-wrap:wrap;}
+  #colorDot{width:46px; height:46px; border-radius:50%; border:1px solid var(--line); flex-shrink:0; transition:background .5s ease, box-shadow .5s ease;}
+  #phValue{font-size:30px; font-weight:900; font-variant-numeric:tabular-nums;}
+  #classText{font-size:14px; color:var(--ink-soft); margin:4px 0 0;}
+  #trialsRow{display:flex; gap:8px; margin-top:14px; flex-wrap:wrap;}
+  .trial-chip{background:var(--teal-100); color:var(--teal-700); border-radius:var(--radius-sm); padding:4px 11px; font-size:12.5px; font-weight:500; animation:pop .3s cubic-bezier(.2,1.4,.5,1);}
+  @keyframes pop{from{opacity:0; transform:scale(.7);} to{opacity:1; transform:none;}}
+
+  #markersLayer{position:relative; height:34px; transition:height .3s ease;}
+  .pin{position:absolute; bottom:0; display:flex; flex-direction:column; align-items:center; transform:translateX(-50%); animation:pin-in .4s cubic-bezier(.2,1.3,.4,1);}
+  @keyframes pin-in{from{opacity:0; transform:translateX(-50%) translateY(-8px);} to{opacity:1;}}
+  .pin-label{font-size:11px; font-weight:700; color:var(--ink); background:var(--panel); border-radius:6px; padding:1px 7px; white-space:nowrap; margin-bottom:2px; border:1.5px solid;}
+  .pin-stem{width:1.5px; opacity:0.85;}
+  .pin-arrow{width:0; height:0; border-left:5px solid transparent; border-right:5px solid transparent;}
+  .pin-dot{width:7px; height:7px; border-radius:50%; margin-top:-3px;}
+
+  #scaleBar{height:20px; border-radius:6px;}
+  .scale-ticks{display:flex; justify-content:space-between; margin-top:6px; font-size:11.5px; color:var(--ink-faint);}
+
+  footer{text-align:center; font-size:12.5px; color:var(--ink-faint); margin-top:48px;}
+
+  @media (prefers-reduced-motion: reduce){* {transition:none !important; animation:none !important;}}
+  @media (max-width:480px){
+    header.hero{padding:32px 16px 18px;}
+    #sndBtn{position:static; margin-top:12px;}
+    .section-hint{padding-right:0;}
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-inner">
+    <p class="eyebrow">علوم متكاملة · الصف الأول الثانوي</p>
+    <h1>مختبر قياس الرقم الهيدروجيني (pH) للمياه</h1>
+    <p class="lead">امسك جهاز القياس واسحبه بيدك، اغمس مِجسّه في الكأس، واستمع إلى الجهاز وهو يستقرّ على القراءة.</p>
+    <button id="sndBtn" type="button" aria-pressed="true">🔊 الصوت يعمل</button>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="step" aria-labelledby="step1-title">
+    <h2 class="section-title" id="step1-title"><span class="step-num">١</span>اختيار عينة الماء</h2>
+    <p class="section-hint">اختيار عينة غير الماء المقطر يستدعي معايرة الجهاز أولًا بغمسه في كأس الماء المقطر.</p>
+    <div class="sample-grid" id="sampleGrid"></div>
+  </section>
+
+  <section class="step" aria-labelledby="step2-title">
+    <h2 class="section-title" id="step2-title"><span class="step-num">٢</span>القياس</h2>
+    <p id="calHint">اختر عينة ماء لبدء القياس.</p>
+
+    <div id="stage">
+      <canvas id="lab"></canvas>
+      <div id="labels"></div>
+      <div id="dragHint" style="display:none;">امسك الجهاز واسحبه</div>
+      <div id="liveRead"><span class="v">—</span><span class="u">pH</span><span class="s"></span></div>
+      <div id="glLoading"><div class="spinner"></div><span>يُهيَّأ المختبر…</span></div>
+      <div id="glFail" hidden>
+        <strong>تعذّر تشغيل العرض ثلاثيّ الأبعاد على هذا الجهاز.</strong>
+        <span>يحتاج المحاكي إلى دعم WebGL. جرّب متصفّحاً حديثاً أو فعّل تسريع الرسوم.</span>
+      </div>
+    </div>
+
+    <div class="dip-actions">
+      <button id="dipCalBtn" type="button">⬇ اغمس في كأس المعايرة</button>
+      <button id="dipSampleBtn" type="button">⬇ اغمس في كأس العينة</button>
+    </div>
+    <p class="drag-instructions">تلميح: امسك الجهاز من جسمه واسحبه فوق الكأس ثم أفلته — أو استعمل الزرّين أعلاه. كرّر الغمس في كأس العينة ثلاث مرات لتسجيل متوسط القراءات.</p>
+    <div id="errMsg"></div>
+
+    <div id="resultCard" class="panel">
+      <div class="result-top">
+        <div id="colorDot"></div>
+        <div>
+          <div style="display:inline-flex; align-items:baseline; gap:6px;">
+            <span id="phValue">-</span>
+            <span style="font-size:13px; color:var(--ink-soft);">pH (متوسط القراءات)</span>
+          </div>
+          <p id="classText"></p>
+        </div>
+        <button id="resetBtn" style="display:none; margin-right:auto;">إعادة قياس هذه العينة</button>
+      </div>
+      <div id="trialsRow"></div>
+    </div>
+  </section>
+
+  <section class="step" aria-labelledby="step3-title">
+    <h2 class="section-title" id="step3-title"><span class="step-num">٣</span>مقياس الرقم الهيدروجيني</h2>
+    <p class="section-hint">متوسط كل عينة تم اختبارها يظهر على المدرّج بعلامة مضيئة، لمقارنة العينات بسهولة.</p>
+    <div class="scale-wrap" dir="ltr">
+      <div id="markersLayer"></div>
+      <div id="scaleBar"></div>
+      <div class="scale-ticks">
+        <span>0</span><span>2</span><span>4</span><span>6</span><span>7</span><span>8</span><span>10</span><span>12</span><span>14</span>
+      </div>
+    </div>
+  </section>
+
+  <footer>مدى قيم pH لكل عينة مبني على القيم التقريبية الواردة في كتاب العلوم المتكاملة — الصف الأول الثانوي.</footer>
+</div>
+
+<script src="../vendor/three/three.min.js"></script>
+<script>
+(function(){
+"use strict";
+
+var THREE = window.THREE;
+var RM = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+var TS = RM ? 0.25 : 1;                       /* معامل الزمن — يُقصّر كلّ حركة عند طلب تقليل الحركة */
+
+/* ════════════════ ١ · البيانات ════════════════ */
+
+var SAMPLES = [
+  {name:"الماء المقطر", sub:"pure water", range:[7,7],     tint:"#AECFD6"},
+  {name:"ماء البحر",    sub:"sea water",  range:[7.5,8.4], tint:"#2E8F97"},
+  {name:"مياه الأنهار", sub:"rivers",     range:[6.8,7.8], tint:"#5EB6C6"},
+  {name:"مياه البحيرات",sub:"lakes",      range:[7.3,8.5], tint:"#4CA6A0"},
+  {name:"المياه الجوفية",sub:"ground water",range:[6,8.5], tint:"#AFC7CC"},
+  {name:"مياه السحب",   sub:"clouds",     range:[4.5,5],   tint:"#C3DEE6"},
+  {name:"مياه المناجم", sub:"mine water", range:[3,4],     tint:"#B97A4A"}
+];
+
+var STOPS = [
+  {ph:0,h:0,s:70,l:42},{ph:2,h:12,s:75,l:44},{ph:4,h:32,s:82,l:50},
+  {ph:6,h:56,s:78,l:50},{ph:7,h:120,s:45,l:38},{ph:8,h:168,s:45,l:38},
+  {ph:10,h:205,s:50,l:42},{ph:12,h:232,s:45,l:45},{ph:14,h:272,s:40,l:45}
+];
+
+/* اللون يُحسب مرّةً بصيغة HSL ثم يُصرف إلى CSS أو إلى THREE —
+   لأنّ THREE.Color لا يقرأ صيغة hsl الحديثة بالمسافات. */
+function phHSL(ph){
+  ph = Math.max(0, Math.min(14, ph));
+  for(var i=0;i<STOPS.length-1;i++){
+    var a=STOPS[i], b=STOPS[i+1];
+    if(ph>=a.ph && ph<=b.ph){
+      var t=(ph-a.ph)/(b.ph-a.ph);
+      return {h:a.h+(b.h-a.h)*t, s:a.s+(b.s-a.s)*t, l:a.l+(b.l-a.l)*t};
+    }
+  }
+  return {h:0,s:0,l:50};
+}
+function phCss(ph){ var c=phHSL(ph); return "hsl("+Math.round(c.h)+" "+Math.round(c.s)+"% "+Math.round(c.l)+"%)"; }
+function phColor(ph, out){ var c=phHSL(ph); return (out||new THREE.Color()).setHSL(c.h/360, c.s/100, c.l/100); }
+
+function classify(ph){
+  if(ph<3) return "حمضية قوية جدًا";
+  if(ph<5) return "حمضية قوية";
+  if(ph<6.5) return "حمضية خفيفة";
+  if(ph<=7.5) return "متعادلة";
+  if(ph<=9) return "قاعدية خفيفة";
+  if(ph<=11) return "قاعدية قوية";
+  return "قاعدية قوية جدًا";
+}
+
+/* ════════════════ ٢ · الصوت — مُركَّب لا مُنزَّل ════════════════
+   لا ملفّات صوتية: كلّ أثرٍ يُولَّد بـ WebAudio. لا شبكة ولا وزن،
+   والسياق يُنشأ عند أوّل لمسةٍ لأنّ المتصفّحات تمنع التشغيل قبلها. */
+
+var Snd = (function(){
+  var ctx=null, master=null, noiseBuf=null, enabled=true;
+
+  function ensure(){
+    if(!enabled) return null;
+    if(ctx){ if(ctx.state==="suspended") ctx.resume(); return ctx; }
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if(!AC) return null;
+    try{ ctx = new AC(); }catch(e){ return null; }
+    master = ctx.createGain(); master.gain.value = 0.85; master.connect(ctx.destination);
+    var n = Math.floor(ctx.sampleRate * 1.5), d;
+    noiseBuf = ctx.createBuffer(1, n, ctx.sampleRate);
+    d = noiseBuf.getChannelData(0);
+    for(var i=0;i<n;i++) d[i] = Math.random()*2-1;
+    return ctx;
+  }
+
+  function tone(o){
+    var c = ensure(); if(!c) return;
+    var t0 = c.currentTime + (o.at||0);
+    var osc = c.createOscillator(), g = c.createGain();
+    osc.type = o.type || "sine";
+    osc.frequency.setValueAtTime(o.f, t0);
+    if(o.to) osc.frequency.exponentialRampToValueAtTime(Math.max(20,o.to), t0 + o.dur);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(Math.max(0.0002,o.gain), t0 + (o.attack||0.008));
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + o.dur);
+    var last = g;
+    if(o.lp){ var f = c.createBiquadFilter(); f.type="lowpass"; f.frequency.value=o.lp; g.connect(f); last=f; }
+    osc.connect(g); last.connect(master);
+    osc.start(t0); osc.stop(t0 + o.dur + 0.05);
+  }
+
+  function noise(o){
+    var c = ensure(); if(!c) return;
+    var t0 = c.currentTime + (o.at||0);
+    var src = c.createBufferSource(); src.buffer = noiseBuf;
+    src.playbackRate.value = o.rate || 1;
+    var f = c.createBiquadFilter();
+    f.type = o.filter || "bandpass";
+    f.Q.value = o.q || 1;
+    f.frequency.setValueAtTime(o.f0, t0);
+    f.frequency.exponentialRampToValueAtTime(Math.max(40,o.f1||o.f0), t0 + o.dur);
+    var g = c.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(Math.max(0.0002,o.gain), t0 + (o.attack||0.012));
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + o.dur);
+    src.connect(f); f.connect(g); g.connect(master);
+    src.start(t0); src.stop(t0 + o.dur + 0.05);
+  }
+
+  /* قطرةٌ تسقط: تردّدٌ يصعد سريعاً ثم يخفت — هذا ما يجعل الأذن تسمع «الماء» */
+  function plink(at, base, gain){
+    tone({f:base, to:base*2.6, dur:0.085, at:at, gain:gain, type:"sine", attack:0.004});
+  }
+
+  return {
+    get on(){ return enabled; },
+    toggle:function(){
+      enabled = !enabled;
+      if(master) master.gain.value = enabled ? 0.85 : 0;
+      if(enabled) ensure();
+      return enabled;
+    },
+    wake:function(){ ensure(); },
+    click:function(){ tone({f:520, to:380, dur:0.05, gain:0.07, type:"triangle"}); },
+    grab:function(){ tone({f:300, to:220, dur:0.06, gain:0.08, type:"triangle"}); noise({f0:2600, f1:1200, dur:0.05, gain:0.03, q:0.8}); },
+    dock:function(){ tone({f:140, to:95, dur:0.14, gain:0.10, type:"sine"}); noise({f0:900, f1:300, dur:0.09, gain:0.035, q:0.7}); },
+    splash:function(s){
+      s = s || 1;
+      tone({f:170, to:95, dur:0.22, gain:0.16*s, type:"sine"});
+      noise({f0:2600, f1:420, dur:0.42, gain:0.30*s, q:1.1});
+      noise({f0:900, f1:260, dur:0.30, at:0.03, gain:0.14*s, q:0.6, filter:"lowpass"});
+      for(var i=0;i<4;i++) plink(0.05+i*0.055+Math.random()*0.03, 620+Math.random()*760, 0.055*s);
+    },
+    fizz:function(){
+      for(var i=0;i<6;i++) plink(i*0.09+Math.random()*0.05, 900+Math.random()*900, 0.028);
+    },
+    drip:function(){ plink(0, 520+Math.random()*300, 0.07); },
+    lift:function(){ noise({f0:400, f1:1600, dur:0.28, gain:0.05, q:0.8}); },
+    beep:function(){
+      tone({f:1046, dur:0.055, gain:0.10, type:"square", lp:3000});
+      tone({f:1046, dur:0.055, at:0.10, gain:0.10, type:"square", lp:3000});
+    },
+    chime:function(){
+      var n=[659.25, 830.6, 987.77, 1318.5];
+      for(var i=0;i<n.length;i++) tone({f:n[i], dur:0.55, at:i*0.085, gain:0.075, type:"triangle", lp:4200});
+    },
+    err:function(){
+      tone({f:196, to:150, dur:0.26, gain:0.13, type:"sawtooth", lp:620});
+      tone({f:150, to:110, dur:0.26, at:0.14, gain:0.11, type:"sawtooth", lp:520});
+    }
+  };
+})();
+
+/* ════════════════ ٣ · الواجهة ثنائية الأبعاد ════════════════ */
+
+var state = {selected:null, calibrated:false, trials:[]};
+var results = {};                              /* idx → متوسط */
+var $ = function(id){ return document.getElementById(id); };
+
+var grid=$("sampleGrid"), calHint=$("calHint"), errMsg=$("errMsg"),
+    resultCard=$("resultCard"), trialsRow=$("trialsRow"), resetBtn=$("resetBtn"),
+    dragHintEl=$("dragHint"), sndBtn=$("sndBtn");
+
+$("scaleBar").style.background =
+  "linear-gradient(to right, " + STOPS.map(function(s){return phCss(s.ph)+" "+(s.ph/14*100)+"%";}).join(", ") + ")";
+
+function miniCupSVG(idx, color){
+  var clipId = "miniClip"+idx;
+  return '<svg viewBox="0 0 70 90" width="52" height="66" aria-hidden="true">'
+    + '<defs><clipPath id="'+clipId+'"><path d="M9,9 L61,9 L52,79 L18,79 Z"/></clipPath>'
+    + '<linearGradient id="g'+clipId+'" x1="0" y1="0" x2="1" y2="0">'
+    + '<stop offset="0%" stop-color="#fff" stop-opacity=".55"/><stop offset="45%" stop-color="#8FA6A3" stop-opacity=".12"/>'
+    + '<stop offset="100%" stop-color="#fff" stop-opacity=".5"/></linearGradient></defs>'
+    + '<ellipse cx="35" cy="81" rx="17" ry="4" fill="#14302E" opacity="0.10"/>'
+    + '<ellipse cx="35" cy="79" rx="16" ry="4.5" fill="#AEC4C1" opacity="0.5"/>'
+    + '<rect x="0" y="30" width="70" height="55" fill="'+color+'" clip-path="url(#'+clipId+')"/>'
+    + '<ellipse cx="35" cy="30" rx="21" ry="4.5" fill="'+color+'"/>'
+    + '<ellipse cx="35" cy="30" rx="21" ry="4.5" fill="#fff" opacity=".22"/>'
+    + '<path d="M9,9 L61,9 L52,79 L18,79 Z" fill="url(#g'+clipId+')" clip-path="url(#'+clipId+')"/>'
+    + '<path d="M9,9 L61,9 L52,79 L18,79 Z" fill="none" stroke="var(--ink-faint)" stroke-width="1.6"/>'
+    + '<ellipse cx="35" cy="79" rx="17" ry="4" fill="none" stroke="var(--ink-faint)" stroke-width="1.3"/>'
+    + '<ellipse cx="35" cy="9" rx="26" ry="5" fill="none" stroke="var(--ink-faint)" stroke-width="1.6"/>'
+    + '</svg>';
+}
+
+function updateCalHint(){
+  calHint.classList.remove("ok");
+  if(state.selected===null){ calHint.textContent = "اختر عينة ماء لبدء القياس."; return; }
+  if(state.selected===0){ calHint.textContent = "هذه عينة الماء المقطر نفسها، فلا حاجة إلى معايرة — اغمس الجهاز فيها مباشرة."; return; }
+  if(!state.calibrated){ calHint.textContent = "اغمس الجهاز أولًا في كأس الماء المقطر لمعايرته، ثم انقله إلى كأس العينة."; return; }
+  calHint.classList.add("ok");
+  calHint.textContent = "تمت المعايرة ✓ — اسحب الجهاز إلى كأس العينة لتسجيل القراءة.";
+}
+
+function showErr(msg){
+  if(msg){
+    errMsg.classList.remove("show"); void errMsg.offsetWidth;   /* لتُعاد الرجّة في كلّ خطأ */
+    errMsg.textContent = msg; errMsg.classList.add("show");
+  }
+  else { errMsg.classList.remove("show"); }
+}
+
+function buildSampleButtons(){
+  SAMPLES.forEach(function(s, idx){
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "sample-btn";
+    btn.innerHTML = miniCupSVG(idx, s.tint)
+      + '<span class="name">'+s.name+'</span>'
+      + '<span class="sub">'+s.sub+'</span>'
+      + '<span class="done-tag" data-done></span>';
+    btn.addEventListener("click", function(){
+      Snd.wake(); Snd.click();
+      selectSample(idx, btn);
+    });
+    grid.appendChild(btn);
+  });
+}
+
+function selectSample(idx, btn){
+  state.selected = idx;
+  state.trials = [];
+  Array.prototype.forEach.call(grid.children, function(c){ c.classList.remove("selected"); });
+  btn.classList.add("selected");
+
+  resultCard.classList.remove("show");
+  showErr("");
+  state.calibrated = (idx === 0);
+  updateCalHint();
+  Lab.onSampleSelected(idx);
+}
+
+function updateResults(){
+  var trials = state.trials;
+  var avg = trials.reduce(function(a,b){return a+b;},0)/trials.length;
+  avg = Math.round(avg*100)/100;
+
+  trialsRow.innerHTML = "";
+  trials.forEach(function(t,i){
+    var chip = document.createElement("span");
+    chip.className = "trial-chip";
+    chip.textContent = "تجربة "+(i+1)+": "+t.toFixed(1);
+    trialsRow.appendChild(chip);
+  });
+
+  $("phValue").textContent = avg.toFixed(2);
+  $("classText").textContent = classify(avg);
+  var css = phCss(avg), hsl = phHSL(avg);
+  $("colorDot").style.background = css;
+  $("colorDot").style.boxShadow = "0 0 0 5px hsla("+Math.round(hsl.h)+", "+Math.round(hsl.s)+"%, "+Math.round(hsl.l)+"%, 0.18)";
+  resultCard.classList.add("show");
+
+  results[state.selected] = avg;
+  layoutMarkers();
+  markSampleDone(state.selected, trials.length);
+
+  resetBtn.style.display = trials.length>=3 ? "inline-flex" : "none";
+  if(trials.length>=3){
+    Snd.chime();
+    try{ window.parent.postMessage({ bayanSim:"done" }, "*"); }catch(e){}
+  }
+  return avg;
+}
+
+function markSampleDone(idx, n){
+  var btn = grid.children[idx]; if(!btn) return;
+  var tag = btn.querySelector("[data-done]");
+  if(tag) tag.textContent = n>=3 ? "✓ اكتملت" : (n ? n+"/٣" : "");
+}
+
+function layoutMarkers(){
+  var layer = $("markersLayer");
+  layer.innerHTML = "";
+  var entries = Object.keys(results).map(function(k){ return {idx:+k, avg:results[k]}; });
+  entries.sort(function(a,b){ return a.avg-b.avg; });
+  var placed = [], maxTier = 0;
+  entries.forEach(function(e){
+    var x = e.avg/14*100, tier = 0;
+    while(placed.some(function(p){ return p.tier===tier && Math.abs(p.x-x) < 9; }) && tier<3){ tier++; }
+    placed.push({x:x, tier:tier});
+    maxTier = Math.max(maxTier, tier);
+    var color = phCss(e.avg), stemHeight = 10 + tier*24;
+
+    var pin = document.createElement("div");
+    pin.className = "pin"; pin.style.left = x+"%";
+
+    var label = document.createElement("span");
+    label.className = "pin-label"; label.style.borderColor = color;
+    label.textContent = SAMPLES[e.idx].name + " · " + e.avg.toFixed(1);
+
+    var stem = document.createElement("div");
+    stem.className = "pin-stem"; stem.style.height = stemHeight+"px"; stem.style.background = color;
+
+    var arrow = document.createElement("div");
+    arrow.className = "pin-arrow";
+    arrow.style.borderTop = "8px solid "+color;
+    arrow.style.filter = "drop-shadow(0 0 4px "+color+") drop-shadow(0 0 8px "+color+")";
+
+    var dot = document.createElement("div");
+    dot.className = "pin-dot"; dot.style.background = color;
+    dot.style.filter = "drop-shadow(0 0 5px "+color+")";
+
+    pin.appendChild(label); pin.appendChild(stem); pin.appendChild(arrow); pin.appendChild(dot);
+    layer.appendChild(pin);
+  });
+  layer.style.height = (34 + maxTier*24) + "px";
+}
+
+resetBtn.addEventListener("click", function(){
+  Snd.click();
+  state.trials = [];
+  delete results[state.selected];
+  resultCard.classList.remove("show");
+  markSampleDone(state.selected, 0);
+  layoutMarkers();
+  Lab.resetSampleWater();
+  resetBtn.style.display = "none";
+});
+
+$("dipCalBtn").addEventListener("click", function(){ Lab.dipInto("cal"); });
+$("dipSampleBtn").addEventListener("click", function(){ Lab.dipInto("sample"); });
+
+sndBtn.addEventListener("click", function(){
+  var on = Snd.toggle();
+  sndBtn.textContent = on ? "🔊 الصوت يعمل" : "🔇 الصوت متوقف";
+  sndBtn.setAttribute("aria-pressed", on ? "true" : "false");
+  sndBtn.classList.toggle("off", !on);
+  if(on) Snd.click();
+});
+
+/* ════════════════ ٤ · المختبر ثلاثيّ الأبعاد ════════════════ */
+
+var Lab = (function(){
+
+  var LEVEL   = 1.42;      /* ارتفاع سطح الماء داخل الكأس */
+  var RIM     = 2.225;     /* حافّة الكأس */
+  var R_SURF  = 0.832;     /* نصف قطر السطح عند هذا الارتفاع */
+  var CUP_X   = {cal: 1.35, sample: -1.35, solo: 0.0};
+  var HOME    = new THREE.Vector3(2.85, 0.10, -0.35);
+  var TIP_IN  = 1.06;      /* ارتفاع طرف المجسّ حين يكون مغموراً */
+  var HOVER_Y = 2.50;
+
+  var renderer, scene, camera, clock, raycaster, ndc, dragPlane, envTex;
+  var bench, deviceG, probeMat, ledMat, lcdCtx, lcdTex;
+  var cups = {}, tweens = [], parts = [], partGeo, camSway = {x:0,y:0, tx:0, ty:0};
+  var lcd = {text:"----", cal:false, hold:false, last:""};
+  var busy = false, dragging = false, grabOff = new THREE.Vector3(), pointerId = null;
+  var hinted = false, ready = false;
+  var canvas = $("lab"), stage = $("stage"), labels = $("labels");
+  var tagCal, tagSample;
+  var readEl = $("liveRead"), readV = readEl.querySelector(".v"), readS = readEl.querySelector(".s");
+  var tmpV = new THREE.Vector3(), tmpC = new THREE.Color();
+
+  /* ── مساعدات الحركة ───────────────────────────── */
+  function easeOut(k){ return 1 - Math.pow(1-k, 3); }
+  function easeIn(k){ return k*k*k; }
+  function easeInOut(k){ return k<0.5 ? 4*k*k*k : 1 - Math.pow(-2*k+2, 3)/2; }
+
+  function tween(dur, ease, step){
+    return new Promise(function(done){
+      tweens.push({t:0, d:Math.max(0.016, dur*TS/1000), e:ease||easeInOut, s:step, done:done});
+    });
+  }
+  function moveDevice(to, dur, ease, onStep){
+    var from = deviceG.position.clone();
+    return tween(dur, ease, function(k){
+      deviceG.position.lerpVectors(from, to, k);
+      if(onStep) onStep(k, deviceG.position);
+    });
+  }
+  function wait(ms){ return tween(ms, null, null); }
+
+  function updateTweens(dt){
+    for(var i=tweens.length-1; i>=0; i--){
+      var tw = tweens[i];
+      tw.t += dt;
+      var k = Math.min(1, tw.t/tw.d);
+      if(tw.s) tw.s(tw.e(k), k);
+      if(k>=1){ tweens.splice(i,1); tw.done(); }
+    }
+  }
+
+  /* ── نسائج مرسومة على canvas ───────────────────── */
+  function texFromCanvas(cv, repeatX){
+    var t = new THREE.CanvasTexture(cv);
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.anisotropy = 8;
+    if(repeatX){ t.wrapS = THREE.RepeatWrapping; t.repeat.x = repeatX; }
+    return t;
+  }
+
+  function benchTexture(){
+    var cv = document.createElement("canvas"); cv.width = cv.height = 512;
+    var c = cv.getContext("2d");
+    c.fillStyle = "#C6C3B8"; c.fillRect(0,0,512,512);
+    var i, x, y, r;
+    for(i=0;i<2600;i++){
+      x = Math.random()*512; y = Math.random()*512; r = Math.random()*1.7+0.2;
+      c.fillStyle = "rgba("+(Math.random()>0.5?"120,126,120":"200,196,186")+","+(0.05+Math.random()*0.22)+")";
+      c.beginPath(); c.arc(x,y,r,0,6.284); c.fill();
+    }
+    for(i=0;i<14;i++){   /* عروقٌ باهتة تكسر رتابة السطح */
+      c.strokeStyle = "rgba(150,155,150,"+(0.04+Math.random()*0.05)+")";
+      c.lineWidth = 0.6+Math.random()*1.6; c.beginPath();
+      x = Math.random()*512; y = Math.random()*512; c.moveTo(x,y);
+      for(var j=0;j<5;j++){ x += (Math.random()-0.5)*220; y += (Math.random()-0.5)*220; c.lineTo(x,y); }
+      c.stroke();
+    }
+    var t = texFromCanvas(cv);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(6,3);
+    return t;
+  }
+
+  function backdropTexture(){
+    var cv = document.createElement("canvas"); cv.width = 8; cv.height = 256;
+    var c = cv.getContext("2d");
+    var g = c.createLinearGradient(0,0,0,256);
+    g.addColorStop(0, "#4E6F71"); g.addColorStop(0.45, "#7FA2A2"); g.addColorStop(1, "#BACFCD");
+    c.fillStyle = g; c.fillRect(0,0,8,256);
+    return texFromCanvas(cv);
+  }
+
+  function radialTexture(inner, outer){
+    var cv = document.createElement("canvas"); cv.width = cv.height = 128;
+    var c = cv.getContext("2d");
+    var g = c.createRadialGradient(64,64,0,64,64,64);
+    g.addColorStop(0, inner); g.addColorStop(0.55, inner); g.addColorStop(1, outer);
+    c.fillStyle = g; c.fillRect(0,0,128,128);
+    var t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; return t;
+  }
+
+  function gradTexture(){
+    var cv = document.createElement("canvas"); cv.width = 512; cv.height = 128;
+    var c = cv.getContext("2d");
+    c.clearRect(0,0,512,128);
+    c.strokeStyle = "rgba(255,255,255,0.88)";
+    var marks = [0.08, 0.20, 0.32, 0.44, 0.56, 0.68, 0.80, 0.92];
+    for(var i=0;i<marks.length;i++){
+      var y = 128 - marks[i]*128, long = (i%2===1);
+      c.lineWidth = long ? 3.0 : 2.2; c.beginPath();
+      c.moveTo(18, y); c.lineTo(18 + (long?70:38), y); c.stroke();
+    }
+    return texFromCanvas(cv);
+  }
+
+  function facePlateTexture(){
+    var W = 256, H = 674;
+    var cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+    var c = cv.getContext("2d");
+    c.fillStyle = "#2B3138"; c.fillRect(0,0,W,H);
+    var g = c.createLinearGradient(0,0,W,H);
+    g.addColorStop(0,"rgba(255,255,255,0.10)"); g.addColorStop(0.5,"rgba(255,255,255,0.02)"); g.addColorStop(1,"rgba(0,0,0,0.14)");
+    c.fillStyle = g; c.fillRect(0,0,W,H);
+    /* نافذة الشاشة — الشاشة نفسها لوحٌ مستقلّ فوقها */
+    c.fillStyle = "#0C1512";
+    c.beginPath(); c.roundRect(24, 108, W-48, 160, 10); c.fill();
+    c.strokeStyle = "rgba(0,0,0,0.6)"; c.lineWidth = 3; c.stroke();
+    /* كتابات */
+    c.fillStyle = "#D7DEE2"; c.textAlign = "center";
+    c.font = "bold 30px sans-serif"; c.fillText("pH METER", W/2, 470);
+    c.font = "500 19px sans-serif"; c.fillStyle = "#8FA0A8";
+    c.fillText("BAYAN  BX-7", W/2, 500);
+    c.font = "bold 15px sans-serif"; c.fillStyle = "#7E8C94";
+    c.fillText("0.00 — 14.00 pH", W/2, 630);
+    /* رموز الأزرار */
+    c.font = "bold 16px sans-serif"; c.fillStyle = "#9FB0B8";
+    c.fillText("CAL", 74, 400); c.fillText("ON", 182, 400);
+    c.strokeStyle = "rgba(255,255,255,0.16)"; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(20, 530); c.lineTo(W-20, 530); c.stroke();
+    return texFromCanvas(cv);
+  }
+
+  function lcdTexture(){
+    var cv = document.createElement("canvas"); cv.width = 320; cv.height = 200;
+    lcdCtx = cv.getContext("2d");
+    var t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
+    return t;
+  }
+
+  function drawLcd(){
+    var c = lcdCtx; if(!c) return;
+    c.fillStyle = "#16281F"; c.fillRect(0,0,320,200);
+    var g = c.createLinearGradient(0,0,0,200);
+    g.addColorStop(0,"rgba(255,255,255,0.09)"); g.addColorStop(0.45,"rgba(255,255,255,0.01)"); g.addColorStop(1,"rgba(0,0,0,0.22)");
+    c.fillStyle = g; c.fillRect(0,0,320,200);
+
+    c.textAlign = "right"; c.textBaseline = "alphabetic";
+    c.font = "bold 92px 'Courier New', monospace";
+    c.fillStyle = "rgba(155,242,206,0.09)";
+    c.fillText("88.8", 248, 138);
+    c.fillStyle = "#A6F7D6";
+    c.shadowColor = "#3BE0A0"; c.shadowBlur = 14;
+    c.fillText(lcd.text, 248, 138);
+    c.shadowBlur = 0;
+    c.font = "bold 28px 'Courier New', monospace";
+    c.fillStyle = "#A6F7D6"; c.fillText("pH", 306, 138);
+
+    c.textAlign = "left"; c.font = "bold 19px 'Courier New', monospace";
+    c.fillStyle = lcd.cal ? "#A6F7D6" : "rgba(155,242,206,0.16)";
+    c.fillText("CAL", 16, 34);
+    c.fillStyle = lcd.hold ? "#A6F7D6" : "rgba(155,242,206,0.16)";
+    c.fillText("HOLD", 82, 34);
+    c.strokeStyle = "rgba(155,242,206,0.55)"; c.lineWidth = 2;
+    c.strokeRect(258, 18, 40, 18); c.fillStyle = "rgba(155,242,206,0.55)";
+    c.fillRect(298, 23, 4, 8); c.fillRect(261, 21, 28, 12);
+
+    c.font = "17px 'Courier New', monospace"; c.fillStyle = "rgba(155,242,206,0.7)";
+    c.fillText("25.0°C", 16, 182); c.fillText("ATC", 250, 182);
+    lcdTex.needsUpdate = true;
+  }
+
+  /* القراءة الحيّة في DOM — بالخطّ العربيّ وبحجمٍ يُقرأ من آخر الصفّ */
+  function liveRead(text, status){
+    if(text === null){ readEl.classList.remove("on"); return; }
+    readV.textContent = text;
+    readS.textContent = status || "";
+    readEl.classList.add("on");
+  }
+
+  function setLcd(text, opts){
+    opts = opts || {};
+    if("cal" in opts) lcd.cal = opts.cal;
+    if("hold" in opts) lcd.hold = opts.hold;
+    if(text === lcd.last && !("cal" in opts) && !("hold" in opts)) return;
+    lcd.text = text; lcd.last = text;
+    drawLcd();
+  }
+
+  /* ── بيئة الإضاءة: غرفة استوديو صغيرة تُخبز في خريطة انعكاس ──
+     بلا هذه الخريطة يبدو الزجاج بلاستيكاً — الانعكاس هو ما يقول «زجاج». */
+  function buildEnv(){
+    var pm = new THREE.PMREMGenerator(renderer);
+    var s = new THREE.Scene();
+    var room = new THREE.Mesh(new THREE.BoxGeometry(14,10,14),
+      new THREE.MeshBasicMaterial({color:new THREE.Color().setScalar(0.42), side:THREE.BackSide}));
+    s.add(room);
+    function panel(w,h,val,px,py,pz,rx,ry){
+      var m = new THREE.Mesh(new THREE.PlaneGeometry(w,h),
+        new THREE.MeshBasicMaterial({color:new THREE.Color().setScalar(val), side:THREE.DoubleSide}));
+      m.position.set(px,py,pz); m.rotation.set(rx||0, ry||0, 0); s.add(m);
+    }
+    panel(9, 2.6, 7.5,  0, 4.85, 0.6, Math.PI/2);        /* نيون السقف */
+    panel(9, 1.6, 4.0,  0, 4.85, -3.2, Math.PI/2);
+    panel(3.2, 6, 3.2, -6.6, 1.2, 1.0, 0, Math.PI/2);     /* صندوق ضوء جانبيّ */
+    panel(3.2, 6, 2.0,  6.6, 1.2, -0.8, 0, -Math.PI/2);
+    panel(9, 4, 0.9,    0, 1.0, -6.6);
+    panel(14, 14, 0.14, 0, -4.9, 0, -Math.PI/2);          /* أرضٌ داكنة */
+    var tex = pm.fromScene(s, 0.02).texture;
+    pm.dispose();
+    room.geometry.dispose();
+    return tex;
+  }
+
+  /* ── الكأس ───────────────────────────────────── */
+  var glassMat, gradMat;
+
+  /* الماء مُعتِمٌ (رأس الملفّ ②) فلا يخفت لونه بالعمق تلقائياً —
+     فنخبز الخفوت في ألوان الرؤوس: قاعٌ داكن وسطحٌ فاتح. */
+  function shadeByDepth(geo, y0, y1, flat){
+    var pos = geo.attributes.position, col = new Float32Array(pos.count*3), v;
+    for(var i=0;i<pos.count;i++){
+      v = (flat !== undefined) ? flat : 0.28 + 0.72*Math.pow((pos.getY(i)-y0)/(y1-y0), 1.6);
+      col[i*3] = col[i*3+1] = col[i*3+2] = v;
+    }
+    geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
+  }
+
+  function makeCup(tintCss){
+    var g = new THREE.Group();
+
+    var prof = [[0.0001,0],[0.58,0],[0.72,0.055],[0.80,0.17],[0.975,2.16],
+                [1.0,RIM],[0.93,RIM],[0.905,2.14],[0.72,0.20],[0.655,0.135],[0.0001,0.125]];
+    var pts = prof.map(function(p){ return new THREE.Vector2(p[0], p[1]); });
+    var glass = new THREE.Mesh(new THREE.LatheGeometry(pts, 96), glassMat);
+    glass.renderOrder = 2;
+    g.add(glass);
+
+    /* شريط التدريج — لوحٌ شفّاف يُرسم فوق الزجاج */
+    var gradGeo = new THREE.LatheGeometry(
+      [new THREE.Vector2(0.850, 0.60), new THREE.Vector2(0.973, 2.00)], 96);
+    var gradMesh = new THREE.Mesh(gradGeo, gradMat);
+    gradMesh.renderOrder = 3;
+    g.add(gradMesh);
+
+    /* الماء: جسمٌ مُعتِم (انظر رأس الملفّ ②) */
+    var waterMat = new THREE.MeshPhysicalMaterial({
+      color: new THREE.Color().setStyle(tintCss),
+      roughness: 0.11, metalness: 0.0, clearcoat: 0.75, clearcoatRoughness: 0.05,
+      envMapIntensity: 0.95, vertexColors: true
+    });
+    var h = LEVEL - 0.14;
+    var sideGeo = new THREE.CylinderGeometry(R_SURF, 0.712, h, 88, 24, true);
+    shadeByDepth(sideGeo, -h/2, h/2);
+    var side = new THREE.Mesh(sideGeo, waterMat);
+    side.position.y = 0.14 + h/2;
+    var botGeo = new THREE.CircleGeometry(0.712, 88);
+    botGeo.rotateX(-Math.PI/2); shadeByDepth(botGeo, 0, 1, 0.34);
+    var bot = new THREE.Mesh(botGeo, waterMat);
+    bot.position.y = 0.141;
+    var surfGeo = new THREE.RingGeometry(0.004, R_SURF, 88, 16);
+    surfGeo.rotateX(-Math.PI/2); shadeByDepth(surfGeo, 0, 1, 1.0);
+    var surf = new THREE.Mesh(surfGeo, waterMat);
+    surf.position.y = LEVEL;
+    g.add(side); g.add(bot); g.add(surf);
+
+    /* أنصاف الأقطار تُحسب مرّةً — تُقرأ كلّ إطارٍ في حساب الموج */
+    var pos = surfGeo.attributes.position, radii = new Float32Array(pos.count);
+    for(var i=0;i<pos.count;i++){
+      radii[i] = Math.sqrt(pos.getX(i)*pos.getX(i) + pos.getZ(i)*pos.getZ(i));
+    }
+
+    /* ظلٌّ ملامس + بركة ضوءٍ ملوّنة (caustic) — الزجاج لا يُلقي ظلاً مقنعاً */
+    var shadow = new THREE.Mesh(new THREE.CircleGeometry(1.22, 48),
+      new THREE.MeshBasicMaterial({map: radialTexture("rgba(10,32,30,0.55)","rgba(10,32,30,0)"),
+        transparent:true, depthWrite:false}));
+    shadow.rotation.x = -Math.PI/2; shadow.position.y = 0.006; shadow.renderOrder = -2;
+    g.add(shadow);
+
+    var caustic = new THREE.Mesh(new THREE.CircleGeometry(0.82, 40),
+      new THREE.MeshBasicMaterial({map: radialTexture("rgba(255,255,255,0.34)","rgba(255,255,255,0)"),
+        transparent:true, depthWrite:false, blending: THREE.AdditiveBlending,
+        color: new THREE.Color().setStyle(tintCss)}));
+    caustic.rotation.x = -Math.PI/2; caustic.position.set(0.12, 0.011, 0.10); caustic.renderOrder = -1;
+    g.add(caustic);
+
+    return {
+      group:g, mat:waterMat, surf:surf, surfGeo:surfGeo, radii:radii,
+      caustic:caustic, ripples:[], lift:0, t:0, tint:tintCss
+    };
+  }
+
+  /* ── الجهاز ──────────────────────────────────── */
+  function roundedSlab(w,h,d,r,bevel){
+    var s = new THREE.Shape(), x=-w/2, y=-h/2;
+    s.moveTo(x+r, y);
+    s.lineTo(x+w-r, y); s.quadraticCurveTo(x+w, y, x+w, y+r);
+    s.lineTo(x+w, y+h-r); s.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+    s.lineTo(x+r, y+h); s.quadraticCurveTo(x, y+h, x, y+h-r);
+    s.lineTo(x, y+r); s.quadraticCurveTo(x, y, x+r, y);
+    var g = new THREE.ExtrudeGeometry(s, {depth: Math.max(0.002, d-2*bevel), bevelEnabled:true,
+      bevelThickness:bevel, bevelSize:bevel, bevelSegments:3, curveSegments:10});
+    g.center(); g.computeVertexNormals();
+    return g;
+  }
+
+  function makeDevice(){
+    var g = new THREE.Group();
+    function add(mesh, x, y, z){ mesh.position.set(x||0, y||0, z||0); mesh.castShadow = true; g.add(mesh); return mesh; }
+
+    var bodyMat = new THREE.MeshPhysicalMaterial({color:0xE0912F, roughness:0.38, metalness:0.05,
+      clearcoat:0.7, clearcoatRoughness:0.25, envMapIntensity:1.0});
+    var darkMat = new THREE.MeshPhysicalMaterial({color:0x2A3036, roughness:0.55, metalness:0.15, envMapIntensity:0.8});
+    var rubberMat = new THREE.MeshStandardMaterial({color:0x1E2429, roughness:0.85, metalness:0.0});
+    var steelMat = new THREE.MeshStandardMaterial({color:0xB9C0C4, roughness:0.26, metalness:0.92, envMapIntensity:1.3});
+    probeMat = new THREE.MeshPhysicalMaterial({color:0xC9D0D4, roughness:0.3, metalness:0.9, envMapIntensity:1.2});
+
+    add(new THREE.Mesh(roundedSlab(0.46, 1.25, 0.26, 0.13, 0.035), bodyMat), 0, 2.05, 0);
+    add(new THREE.Mesh(roundedSlab(0.40, 1.02, 0.03, 0.06, 0.008),
+        new THREE.MeshStandardMaterial({map: facePlateTexture(), roughness:0.45, metalness:0.1})), 0, 2.10, 0.126);
+
+    var lcdPlane = new THREE.Mesh(new THREE.PlaneGeometry(0.30, 0.187),
+      new THREE.MeshBasicMaterial({map: lcdTex, toneMapped:false}));
+    lcdPlane.position.set(0, 2.335, 0.143); g.add(lcdPlane);
+    var lcdGlass = new THREE.Mesh(new THREE.PlaneGeometry(0.33, 0.215),
+      new THREE.MeshPhysicalMaterial({color:0xffffff, transparent:true, opacity:0.10,
+        roughness:0.02, metalness:0, clearcoat:1, envMapIntensity:2.2}));
+    lcdGlass.position.set(0, 2.335, 0.147); g.add(lcdGlass);
+
+    var btnGeo = new THREE.CylinderGeometry(0.045, 0.048, 0.022, 20);
+    var b1 = new THREE.Mesh(btnGeo, new THREE.MeshStandardMaterial({color:0x2E6EA8, roughness:0.4}));
+    b1.rotation.x = Math.PI/2; add(b1, -0.11, 2.075, 0.137);
+    var b2 = new THREE.Mesh(btnGeo, new THREE.MeshStandardMaterial({color:0xB03A2B, roughness:0.4}));
+    b2.rotation.x = Math.PI/2; add(b2, 0.11, 2.075, 0.137);
+
+    ledMat = new THREE.MeshStandardMaterial({color:0x2F3A38, emissive:0x000000, roughness:0.25});
+    var led = new THREE.Mesh(new THREE.SphereGeometry(0.022, 12, 10), ledMat);
+    led.position.set(0, 1.90, 0.134); g.add(led);
+
+    add(new THREE.Mesh(roundedSlab(0.22, 0.13, 0.22, 0.05, 0.02), darkMat), 0, 2.735, 0);
+    add(new THREE.Mesh(new THREE.CylinderGeometry(0.088, 0.095, 0.15, 24), rubberMat), 0, 1.37, 0);
+    add(new THREE.Mesh(new THREE.CylinderGeometry(0.048, 0.042, 1.24, 24), probeMat), 0, 0.70, 0);
+    add(new THREE.Mesh(new THREE.CylinderGeometry(0.056, 0.056, 0.055, 24), steelMat), 0, 0.33, 0);
+    add(new THREE.Mesh(new THREE.CylinderGeometry(0.052, 0.052, 0.04, 24),
+        new THREE.MeshStandardMaterial({color:0xE8E4DA, roughness:0.7})), 0, 0.20, 0);
+
+    var bulb = new THREE.Mesh(new THREE.SphereGeometry(0.058, 22, 16),
+      new THREE.MeshPhysicalMaterial({color:0x1B2E2A, roughness:0.04, metalness:0.1,
+        clearcoat:1, clearcoatRoughness:0.02, envMapIntensity:2.0}));
+    bulb.scale.y = 0.95; add(bulb, 0, 0.078, 0);
+
+    g.traverse(function(o){ if(o.isMesh) o.castShadow = true; });
+    return g;
+  }
+
+  function makeStand(){
+    var g = new THREE.Group();
+    var steel = new THREE.MeshStandardMaterial({color:0x9AA4A8, roughness:0.32, metalness:0.9, envMapIntensity:1.2});
+    var dark  = new THREE.MeshStandardMaterial({color:0x323A3E, roughness:0.6, metalness:0.4});
+    function add(m,x,y,z,rx){ m.position.set(x,y,z); if(rx) m.rotation.x = rx; m.castShadow = true; g.add(m); return m; }
+    add(new THREE.Mesh(new THREE.CylinderGeometry(0.30, 0.34, 0.062, 36), dark), 3.25, 0.031, -0.35);
+    add(new THREE.Mesh(new THREE.CylinderGeometry(0.034, 0.034, 2.10, 18), steel), 3.25, 1.09, -0.35);
+    add(new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.048, 0.048), steel), 3.05, 1.98, -0.35);
+    add(new THREE.Mesh(new THREE.TorusGeometry(0.205, 0.022, 10, 34), steel), 2.85, 1.98, -0.35, -Math.PI/2);
+    return g;
+  }
+
+  /* ── تركيب المشهد ─────────────────────────────── */
+  function buildScene(){
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x8FAEAD);
+    scene.fog = new THREE.Fog(0x9BB7B6, 12, 28);
+    scene.environment = envTex;
+
+    var back = new THREE.Mesh(new THREE.PlaneGeometry(46, 22),
+      new THREE.MeshBasicMaterial({map: backdropTexture(), fog:true}));
+    back.position.set(0, 7, -8); scene.add(back);
+
+    bench = new THREE.Mesh(new THREE.BoxGeometry(26, 0.5, 10),
+      new THREE.MeshStandardMaterial({map: benchTexture(), color:0xFFFFFF, roughness:0.68, metalness:0.02, envMapIntensity:0.42}));
+    bench.position.set(0, -0.25, -1.2);
+    bench.receiveShadow = true;
+    scene.add(bench);
+
+    var edge = new THREE.Mesh(new THREE.BoxGeometry(26, 0.08, 0.1),
+      new THREE.MeshStandardMaterial({color:0x8FA09C, roughness:0.5, metalness:0.3}));
+    edge.position.set(0, -0.02, 3.8); scene.add(edge);
+
+    /* الإضاءة: مفتاحٌ يُلقي الظلّ، ومالئٌ بارد، ونصف كرةٍ تُلطّف القيعان */
+    var key = new THREE.DirectionalLight(0xFFF6EA, 2.25);
+    key.position.set(3.4, 6.2, 4.2);
+    key.castShadow = true;
+    key.shadow.mapSize.set(2048, 2048);
+    key.shadow.camera.left = -6; key.shadow.camera.right = 6;
+    key.shadow.camera.top = 6; key.shadow.camera.bottom = -3;
+    key.shadow.camera.near = 0.5; key.shadow.camera.far = 22;
+    key.shadow.bias = -0.0006; key.shadow.normalBias = 0.022;
+    key.shadow.radius = 2.2;
+    scene.add(key);
+    scene.add(new THREE.DirectionalLight(0xCFE7E6, 0.9).translateX(-5).translateY(3).translateZ(2.5));
+    scene.add(new THREE.HemisphereLight(0xFFFFFF, 0x6E807D, 0.45));
+    var rim = new THREE.PointLight(0xBFE9FF, 12, 14, 2);
+    rim.position.set(-2.6, 3.0, -2.6); scene.add(rim);
+
+    glassMat = new THREE.MeshPhysicalMaterial({
+      color: 0xFFFFFF, metalness: 0, roughness: 0.02,
+      transmission: 1.0, thickness: 0.28, ior: 1.5,
+      clearcoat: 1.0, clearcoatRoughness: 0.03,
+      envMapIntensity: 1.6, side: THREE.DoubleSide, transparent: false
+    });
+    gradMat = new THREE.MeshBasicMaterial({map: gradTexture(), transparent:true,
+      opacity:0.85, depthWrite:false, side:THREE.DoubleSide});
+
+    cups.cal = makeCup(SAMPLES[0].tint);
+    cups.sample = makeCup(SAMPLES[1].tint);
+    cups.cal.group.position.set(CUP_X.cal, 0, 0);
+    cups.sample.group.position.set(CUP_X.sample, 0, 0);
+    cups.cal.group.visible = false;
+    scene.add(cups.cal.group); scene.add(cups.sample.group);
+
+    ["cal","sample"].forEach(function(k){
+      var cup = cups[k];
+      cup.side = cup.group.children[2];           /* جسم الماء — يُمدّ حين يغطس المجسّ */
+      cup.h = LEVEL - 0.14;
+      cup.dropMat = new THREE.MeshPhysicalMaterial({
+        color: cup.mat.color.clone(), roughness:0.06, metalness:0, clearcoat:1, envMapIntensity:1.8});
+    });
+
+    lcdTex = lcdTexture();
+    drawLcd();
+    deviceG = makeDevice();
+    deviceG.scale.setScalar(1.18);
+    deviceG.position.copy(HOME);
+    scene.add(deviceG);
+    scene.add(makeStand());
+
+    partGeo = new THREE.SphereGeometry(1, 10, 8);
+
+    /* بطاقتا الكأسين — نصٌّ عربيّ في DOM يُسقَط فوق المشهد */
+    tagCal = mkTag("معايرة — ماء مقطّر");
+    tagSample = mkTag("اختر عينة أولًا");
+    tagCal.style.opacity = 0;
+  }
+
+  function mkTag(txt){
+    var d = document.createElement("div");
+    d.className = "cup-tag";
+    d.appendChild(document.createTextNode(txt));
+    var b = document.createElement("span"); b.className = "badge"; d.appendChild(b);
+    labels.appendChild(d);
+    return d;
+  }
+
+  /* ── الماء: موجٌ وجسيمات ───────────────────────── */
+  function ripple(cup, amp){ cup.ripples.push({t:0, amp:amp, life:1.6}); }
+
+  function updateCup(cup, dt){
+    if(!cup.group.visible) return;
+    cup.t += dt;
+    var rip = cup.ripples, i;
+    for(i=rip.length-1;i>=0;i--){ rip[i].t += dt; if(rip[i].t > rip[i].life) rip.splice(i,1); }
+
+    var pos = cup.surfGeo.attributes.position, radii = cup.radii, R = R_SURF;
+    for(i=0;i<pos.count;i++){
+      var r = radii[i], u = r/R;
+      var wave = 0.0032*Math.sin(r*7.0 - cup.t*1.7) + 0.0022*Math.sin(r*11.3 + cup.t*1.15);
+      for(var j=0;j<rip.length;j++){
+        var rp = rip[j];
+        wave += rp.amp * Math.sin(r*9.0 - rp.t*11.0) * Math.exp(-3.1*rp.t) * Math.exp(-1.2*r);
+      }
+      wave *= 1 - Math.pow(u, 10);                    /* الحافّة ملتصقةٌ بالجدار */
+      pos.setY(i, 0.011*Math.pow(u, 6) + wave);       /* + هلال الماء عند الزجاج */
+    }
+    pos.needsUpdate = true;
+    cup.surfGeo.computeVertexNormals();
+
+    cup.surf.position.y = LEVEL + cup.lift;
+    cup.side.scale.y = (cup.h + cup.lift)/cup.h;
+    cup.side.position.y = 0.14 + (cup.h + cup.lift)/2;
+    var pulse = 1 + 0.03*Math.sin(cup.t*1.3) + (rip.length ? 0.06*Math.exp(-3*rip[rip.length-1].t) : 0);
+    cup.caustic.scale.setScalar(pulse);
+  }
+
+  function spawn(cup, kind, x, y, z, vx, vy, vz, r, life){
+    var m = new THREE.Mesh(partGeo, cup.dropMat);
+    m.position.set(x,y,z); m.scale.setScalar(r);
+    scene.add(m);
+    parts.push({m:m, v:new THREE.Vector3(vx,vy,vz), kind:kind, life:life||2.5, t:0, r:r, cup:cup});
+    return m;
+  }
+
+  function updateParts(dt){
+    for(var i=parts.length-1;i>=0;i--){
+      var p = parts[i]; p.t += dt;
+      if(p.kind === "drop" || p.kind === "fall"){
+        p.v.y -= 6.2*dt;
+        p.m.position.addScaledVector(p.v, dt);
+        var floor = 0.02;
+        if(p.kind === "drop") floor = LEVEL;
+        else {
+          var over = nearestCup(p.m.position.x);
+          if(over){ floor = LEVEL; p.cup = cups[over]; p.kind = "drop"; }
+        }
+        if(p.m.position.y <= floor){
+          if(p.kind === "drop"){ ripple(p.cup, 0.012); }
+          else if(Math.random()<0.6){ Snd.drip(); }
+          scene.remove(p.m); parts.splice(i,1); continue;
+        }
+      } else if(p.kind === "foam"){
+        p.m.position.x += p.v.x*dt; p.m.position.z += p.v.z*dt;
+        p.m.position.y = p.cup.group.position.y + LEVEL + p.cup.lift + p.r*0.35;
+        var k = p.t/p.life;
+        p.m.scale.setScalar(p.r * (1 - Math.max(0, (k-0.7)/0.3)));
+      } else if(p.kind === "hang"){
+        p.m.position.copy(deviceG.position).add(p.v);
+        if(p.t > p.life){
+          p.kind = "fall"; p.v.set(0, -0.15, 0);
+          p.m.position.copy(deviceG.position).add(new THREE.Vector3(0, 0.02, 0));
+        }
+        continue;
+      }
+      if(p.t > p.life && p.kind !== "fall"){ scene.remove(p.m); parts.splice(i,1); }
+    }
+  }
+
+  function enterWater(cup){
+    Snd.splash(1);
+    ripple(cup, 0.062);
+    cup.lift = 0.022;
+    var cx = cup.group.position.x, i, a, sp;
+    for(i=0;i<9;i++){                                   /* رذاذٌ يقفز فوق السطح */
+      a = Math.random()*6.283; sp = 0.35 + Math.random()*0.5;
+      spawn(cup, "drop", cx + Math.cos(a)*0.12, LEVEL + 0.03, Math.sin(a)*0.12,
+            Math.cos(a)*sp, 1.1 + Math.random()*1.4, Math.sin(a)*sp, 0.018 + Math.random()*0.016);
+    }
+    for(i=0;i<12;i++){                                  /* زبدٌ على السطح — لا فقاعاتٌ تحته (رأس الملفّ ②) */
+      a = Math.random()*6.283;
+      var rr = 0.10 + Math.random()*0.30;
+      spawn(cup, "foam", cx + Math.cos(a)*rr, LEVEL, Math.sin(a)*rr,
+            Math.cos(a)*0.09, 0, Math.sin(a)*0.09, 0.012 + Math.random()*0.018, 0.9 + Math.random()*0.9);
+    }
+    setTimeout(function(){ Snd.fizz(); }, 260);
+  }
+
+  function exitWater(cup){
+    ripple(cup, 0.030);
+    cup.lift = 0;
+    Snd.lift();
+    probeMat.roughness = 0.10;
+    probeMat.color.setHex(0xAFB9BE);
+    spawn(cup, "hang", 0, 0, 0, 0, 0.02, 0, 0.026, 0.7);   /* قطرةٌ تتعلّق بالطرف ثمّ تسقط */
+  }
+
+  function tintWater(cup, color, dur){
+    var from = cup.mat.color.clone();
+    tween(dur||500, easeInOut, function(k){
+      cup.mat.color.lerpColors(from, color, k);
+      cup.caustic.material.color.copy(cup.mat.color);
+      cup.dropMat.color.copy(cup.mat.color);
+    });
+  }
+
+  /* ── تسلسل الغمس ──────────────────────────────── */
+  function r1(v){ return Math.round(v*10)/10; }
+  function fmt(v){ return Math.max(0, Math.min(14, v)).toFixed(1); }
+
+  function readSequence(target, label){
+    setLcd("--.-", {hold:false});
+    liveRead("—", "المجسّ يستقرّ…");
+    return wait(300).then(function(){
+      return tween(1200, null, function(k){
+        var noise = (1-k)*(1-k)*2.4*(Math.random()-0.5);
+        var shown = fmt(target + noise);
+        setLcd(shown);
+        liveRead(shown, "المجسّ يستقرّ…");
+      });
+    }).then(function(){
+      setLcd(fmt(target), {hold:true});
+      liveRead(fmt(target), label);
+      Snd.beep();
+    });
+  }
+
+  function dip(kind){
+    busy = true; showErr(""); hideHint();
+    var cup = cups[kind], cx = cup.group.position.x, splashed = false;
+    setLcd("----", {hold:false});
+    focus(cx);
+
+    return moveDevice(new THREE.Vector3(cx, HOVER_Y, 0), 430, easeOut)
+    .then(function(){
+      return moveDevice(new THREE.Vector3(cx, TIP_IN, 0), 560, easeIn, function(k, p){
+        if(!splashed && p.y <= LEVEL + 0.03){ splashed = true; enterWater(cup); }
+      });
+    })
+    .then(function(){
+      var target = kind === "cal"
+        ? r1(6.9 + Math.random()*0.2)
+        : (function(){ var rg = SAMPLES[state.selected].range; return r1(rg[0] + Math.random()*(rg[1]-rg[0])); })();
+      return readSequence(target, kind === "cal" ? "تمّت المعايرة ✓" : "قراءة مستقرّة ✓")
+             .then(function(){ return target; });
+    })
+    .then(function(target){
+      if(kind === "cal"){
+        state.calibrated = true;
+        ledMat.emissive.setHex(0x30E08C);
+        setLcd(fmt(target), {cal:true});
+        updateCalHint();
+        tagCal.classList.add("lit");
+        tagCal.lastChild.textContent = "✓ معايَر";
+      } else {
+        state.trials.push(target);
+        var avg = updateResults();
+        tintWater(cup, phColor(avg), 700);
+        tagSample.lastChild.textContent = state.trials.length + "/٣";
+      }
+      return wait(560);
+    })
+    .then(function(){
+      var crossed = false;
+      return moveDevice(new THREE.Vector3(cx, HOVER_Y + 0.15, 0), 620, easeOut, function(k, p){
+        if(!crossed && p.y > LEVEL + 0.02){ crossed = true; exitWater(cup); }
+      });
+    })
+    .then(function(){ unfocus(); return moveDevice(HOME.clone(), 820, easeInOut); })
+    .then(function(){
+      Snd.dock();
+      setLcd("----", {hold:false});
+      liveRead(null);
+      busy = false;
+    });
+  }
+
+  /* التقريب على الكأس أثناء القياس ثم العودة */
+  function focus(cx){
+    camGoal.x = cx*0.5 + 0.18; camGoal.y = 1.95; camGoal.k = 1.12;
+  }
+  function unfocus(){ camGoal.x = 0.35; camGoal.y = 1.30; camGoal.k = 1; }
+
+  function shake(){
+    var x0 = deviceG.position.x;
+    return tween(420, function(k){ return k; }, function(k){
+      deviceG.position.x = x0 + Math.sin(k*Math.PI*6) * 0.09 * (1-k);
+    });
+  }
+
+  function goHome(){
+    return moveDevice(HOME.clone(), 640, easeInOut).then(function(){ Snd.dock(); });
+  }
+
+  /* ── المسك والإفلات ───────────────────────────── */
+  var TARGET = new THREE.Vector3(0.35, 1.30, 0);
+  var camNow = {x:0.35, y:1.30, k:1}, camGoal = {x:0.35, y:1.30, k:1};
+  var CAM_DIR = new THREE.Vector3(-0.16, 0.36, 1).normalize();
+  var NEED_W = 4.05, NEED_H = 2.5, camDist = 8, tilt = 0, tiltGoal = 0, lastX = 0;
+
+  function pointerNDC(e){
+    var r = canvas.getBoundingClientRect();
+    ndc.x = ((e.clientX - r.left)/r.width)*2 - 1;
+    ndc.y = -((e.clientY - r.top)/r.height)*2 + 1;
+  }
+  function hitDevice(){
+    raycaster.setFromCamera(ndc, camera);
+    return raycaster.intersectObject(deviceG, true).length > 0;
+  }
+  function onPlane(out){
+    raycaster.setFromCamera(ndc, camera);
+    return raycaster.ray.intersectPlane(dragPlane, out);
+  }
+  function nearestCup(x){
+    var best = null, bd = 1e9;
+    ["cal","sample"].forEach(function(k){
+      if(!cups[k].group.visible) return;
+      var d = Math.abs(x - cups[k].group.position.x);
+      if(d < bd){ bd = d; best = k; }
+    });
+    return bd < 1.05 ? best : null;
+  }
+
+  function onDown(e){
+    Snd.wake();
+    if(!ready || busy) return;
+    pointerNDC(e);
+    if(!hitDevice()) return;
+    if(!onPlane(tmpV)) return;
+    dragging = true; pointerId = e.pointerId;
+    grabOff.copy(deviceG.position).sub(tmpV);
+    lastX = deviceG.position.x;
+    canvas.setPointerCapture(e.pointerId);
+    canvas.classList.add("grabbing");
+    hideHint(); Snd.grab();
+    e.preventDefault();
+  }
+
+  function onMove(e){
+    var r = canvas.getBoundingClientRect();
+    camSway.tx = (((e.clientX - r.left)/r.width)*2 - 1) * 0.40;
+    camSway.ty = (-((e.clientY - r.top)/r.height)*2 + 1) * 0.22;
+    if(!ready) return;
+    pointerNDC(e);
+    if(!dragging){
+      canvas.classList.toggle("grabbable", !busy && hitDevice());
+      return;
+    }
+    if(!onPlane(tmpV)) return;
+    var p = tmpV.add(grabOff);
+    deviceG.position.x = Math.max(-2.55, Math.min(3.25, p.x));
+    deviceG.position.y = Math.max(0.10, Math.min(3.05, p.y));
+    tiltGoal = Math.max(-0.11, Math.min(0.11, (deviceG.position.x - lastX) * -1.3));
+    lastX = deviceG.position.x;
+
+    var k = nearestCup(deviceG.position.x);
+    tagCal.classList.toggle("lit", k === "cal" || state.calibrated);
+    tagSample.classList.toggle("lit", k === "sample");
+  }
+
+  function onUp(e){
+    if(!dragging) return;
+    dragging = false; tiltGoal = 0;
+    if(pointerId !== null && canvas.releasePointerCapture) {
+      try{ canvas.releasePointerCapture(pointerId); }catch(err){}
+    }
+    pointerId = null;
+    canvas.classList.remove("grabbing");
+    tagSample.classList.remove("lit");
+    if(!state.calibrated) tagCal.classList.remove("lit");
+
+    var k = nearestCup(deviceG.position.x);
+    if(!tryDip(k)) goHome();
+  }
+
+  /* يُستدعى من الإفلات ومن زرّ الغمس معاً — فحصٌ واحدٌ لا فحصان يفترقان */
+  function tryDip(kind){
+    if(state.selected === null){ showErr("اختر عينة ماء أولًا"); Snd.err(); return false; }
+    if(!kind) return false;
+    if(kind === "cal" && !cups.cal.group.visible){
+      showErr("لا كأس معايرة مع الماء المقطر — اغمس الجهاز في كأس العينة مباشرة."); Snd.err(); return false;
+    }
+    if(kind === "sample" && !state.calibrated){
+      showErr("اغمس الجهاز في كأس الماء المقطر أولًا للمعايرة");
+      Snd.err(); shake().then(goHome); return true;
+    }
+    if(kind === "sample" && state.trials.length >= 3){
+      showErr("اكتملت ثلاث قراءات لهذه العينة — اضغط «إعادة قياس هذه العينة» للبدء من جديد.");
+      Snd.err(); return false;
+    }
+    dip(kind);
+    return true;
+  }
+
+  /* ── الكاميرا والبطاقات ───────────────────────── */
+  function fitCamera(){
+    if(!renderer) return;
+    var w = stage.clientWidth, h = stage.clientHeight;
+    if(!w || !h) return;
+    camera.aspect = w/h;
+    var t = Math.tan(THREE.MathUtils.degToRad(camera.fov)/2);
+    var narrow = camera.aspect < 1.35;            /* الشاشة الضيّقة: نضحّي بقاعدة الحامل لا بالكأسين */
+    camDist = Math.max((narrow ? 2.62 : NEED_H)/t, (narrow ? 3.35 : NEED_W)/(t*camera.aspect));
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h, false);
+  }
+
+  function project(x, y, el){
+    tmpV.set(x, y, 0).project(camera);
+    el.style.left = ((tmpV.x*0.5+0.5) * stage.clientWidth).toFixed(1) + "px";
+    el.style.top  = ((-tmpV.y*0.5+0.5) * stage.clientHeight).toFixed(1) + "px";
+  }
+
+  function showHint(){
+    if(hinted) return;
+    dragHintEl.style.display = "block"; dragHintEl.style.opacity = "1";
+  }
+  function hideHint(){
+    hinted = true; dragHintEl.style.opacity = "0";
+    setTimeout(function(){ dragHintEl.style.display = "none"; }, 400);
+  }
+
+  /* ── الحلقة ───────────────────────────────────── */
+  function animate(){
+    requestAnimationFrame(animate);
+    var dt = Math.min(0.1, clock.getDelta());   /* سقفٌ للخطوة: على جهازٍ بطيء تبطؤ الحركة ولا تقفز */
+    updateTweens(dt);
+    updateCup(cups.cal, dt);
+    updateCup(cups.sample, dt);
+    updateParts(dt);
+
+    tilt += (tiltGoal - tilt) * Math.min(1, dt*9);
+    deviceG.rotation.z = tilt;
+
+    camSway.x += (camSway.tx - camSway.x) * Math.min(1, dt*2.4);
+    camSway.y += (camSway.ty - camSway.y) * Math.min(1, dt*2.4);
+    var ck = Math.min(1, dt*2.2);
+    camNow.x += (camGoal.x - camNow.x)*ck;
+    camNow.y += (camGoal.y - camNow.y)*ck;
+    camNow.k += (camGoal.k - camNow.k)*ck;
+    TARGET.set(camNow.x, camNow.y, 0);
+    camera.position.copy(TARGET).addScaledVector(CAM_DIR, camDist*camNow.k);
+    camera.position.x += camSway.x; camera.position.y += camSway.y;
+    camera.lookAt(TARGET);
+
+    project(cups.cal.group.position.x, RIM + 0.30, tagCal);
+    project(cups.sample.group.position.x, RIM + 0.30, tagSample);
+    if(!hinted && dragHintEl.style.display !== "none") project(deviceG.position.x, 3.40, dragHintEl);
+
+    renderer.render(scene, camera);
+  }
+
+  /* ── الإقلاع ──────────────────────────────────── */
+  function fail(){
+    $("glLoading").style.display = "none";
+    $("glFail").hidden = false;
+  }
+
+  function init(){
+    try{
+      renderer = new THREE.WebGLRenderer({canvas:canvas, antialias:true, alpha:false, powerPreference:"high-performance"});
+      if(!renderer.getContext()) throw new Error("no gl");
+    }catch(e){ fail(); return; }
+
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.0;
+
+    camera = new THREE.PerspectiveCamera(38, 1.6, 0.1, 60);
+    raycaster = new THREE.Raycaster();
+    ndc = new THREE.Vector2();
+    dragPlane = new THREE.Plane(new THREE.Vector3(0,0,1), 0);
+    clock = new THREE.Clock();
+
+    envTex = buildEnv();
+    buildScene();
+    fitCamera();
+
+    window.addEventListener("resize", fitCamera);
+    if(window.ResizeObserver) new ResizeObserver(fitCamera).observe(stage);
+    canvas.addEventListener("pointerdown", onDown);
+    canvas.addEventListener("pointermove", onMove);
+    canvas.addEventListener("pointerup", onUp);
+    canvas.addEventListener("pointercancel", function(){ if(dragging){ dragging=false; tiltGoal=0; canvas.classList.remove("grabbing"); goHome(); } });
+    canvas.addEventListener("pointerleave", function(){ camSway.tx = 0; camSway.ty = 0; });
+
+    $("glLoading").style.display = "none";
+    ready = true;
+    animate();
+  }
+
+  return {
+    init: init,
+    ready: function(){ return ready; },
+    dipInto: function(kind){
+      if(!ready || busy || dragging) return;
+      Snd.wake(); Snd.click();
+      if(!tryDip(kind)) goHome();
+    },
+    onSampleSelected: function(idx){
+      var s = SAMPLES[idx], solo = (idx === 0);
+      cups.sample.tint = s.tint;
+      tintWater(cups.sample, new THREE.Color().setStyle(s.tint), 450);
+      cups.cal.group.visible = !solo;
+      tagCal.style.opacity = solo ? "0" : "1";
+      tagCal.classList.remove("lit");
+      tagCal.lastChild.textContent = "";
+      tagSample.firstChild.nodeValue = s.name;
+      tagSample.lastChild.textContent = results[idx] !== undefined ? "✓" : "";
+      ledMat.emissive.setHex(solo ? 0x30E08C : 0x000000);
+      setLcd("----", {cal: solo, hold:false});
+      tween(520, easeInOut, (function(){
+        var from = cups.sample.group.position.x, to = solo ? CUP_X.solo : CUP_X.sample;
+        return function(k){ cups.sample.group.position.x = from + (to-from)*k; };
+      })());
+      if(!busy && !dragging) goHome();
+      showHint();
+    },
+    resetSampleWater: function(){
+      if(state.selected === null) return;
+      tintWater(cups.sample, new THREE.Color().setStyle(SAMPLES[state.selected].tint), 450);
+      tagSample.lastChild.textContent = "";
+    }
+  };
+})();
+
+/* ════════════════ ٥ · الإقلاع ════════════════ */
+buildSampleButtons();
+layoutMarkers();
+Lab.init();
+
+})();
+</script>
+
+</body>
+</html>
