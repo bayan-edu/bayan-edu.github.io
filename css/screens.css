@@ -1408,6 +1408,12 @@ body.gate .wrap{max-width:1000px}
 /* صوابُ البند بحدٍّ أخضرَ خفيف: اللونُ هنا يقول «أصبتَ» — وهو معناه */
 .mt-line .mt-mb{border-color:var(--ok-line);background:var(--ok-soft)}
 .mt-line .mt-mb:focus{border-color:var(--ok-edge)}
+/* ⚠️ وبندٌ كُتب نصُّه وبقي مقابلُه فارغاً يُعلَّم: save_question ترفض
+   المقابلَ الفارغ، فبقاؤه بلا وسمٍ يُنتج رفضاً عند الحفظ لا قبله.
+   ولا يُعلَّم الفراغُ في سؤالٍ بكر — إنذارٌ دائم لا يُرى. */
+.mt-line .mt-mb.miss{border-color:var(--danger-edge);background:var(--danger-soft)}
+.mt-wrow select.miss{border-color:var(--danger-edge);background:var(--danger-soft)}
+.mt-chip .mt-sb.miss{box-shadow:inset 0 -2px 0 var(--danger-edge)}
 
 /* الخلطُ المتوقَّع — سطران في شبكةٍ رباعية تحت بنده */
 .mt-wrow{display:grid;gap:9px;row-gap:7px;align-items:center;
