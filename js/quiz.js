@@ -254,6 +254,12 @@ function renderPage(){
   const last = S.p === pages.length - 1;
   const pg   = P.pg ? S.passages[P.pg] : null;
 
+  /* نصّا الزرّ في موضعٍ واحد: صار النصُّ يتبدّل عند التنبيه ويعود
+     بعد الإجابة، فلو كُتب كلٌّ في موضعه لافترقا — ولعاد «إنهاء
+     وتسليم» بعد التنبيه «التالي». */
+  const LBL_NEXT  = last && !PL ? 'إنهاء وتسليم'  : 'التالي';
+  const LBL_BLANK = last        ? 'سلّم دون إكمال' : 'تابع دون إجابة';
+
   /* pgMedia تعرض الصوت في كل ما ليس صورةً ولا فيديو — فليكن
      التمييز هنا بالقاعدة نفسها، لا بقائمةٍ ثانية تتباعد عنها. */
   const isAudio = !!(pg && pg.media && pg.kind !== 'video' && pg.kind !== 'image');
@@ -319,8 +325,7 @@ function renderPage(){
     <div id="warn"></div>
     <div class="nav">
       ${S.p>0?'<button class="btn ghost" id="prev">السابق</button>':''}
-      <button class="btn primary" id="next">${
-        last && !PL ? 'إنهاء وتسليم' : 'التالي'}</button>
+      <button class="btn primary" id="next">${LBL_NEXT}</button>
     </div>`;
 
   /* ── التفويض: مستمعٌ واحد للصفحة كلها ──
@@ -337,18 +342,23 @@ function renderPage(){
         `<div class="eq-hint" style="display:block;padding:8px 0">انتهى التشغيل المتاح</div>`);
       a.remove(); } };
   });
+  /* ⚠️ كلُّ تبديلٍ في الإجابات يمرّ من هذه المستمعات الثلاثة، فيُلحق
+     بها جميعاً تحديثُ التنبيه في موضعٍ واحد — ولا يُترك تذكّرُه لكلّ
+     فرعٍ على حدة، فالفروعُ تنمو والنسيان يقع في أحدثها. */
+  const onAns = fn => (...args) => { fn(...args); syncWarn(); };
+
   /* ── المزاوجة: الإسنادُ بنقرتين أو بسحب ──
      الحالةُ تبقى في a.pairs كما كانت، والعقدُ نفسه: مفتاحُ البند
      ⇐ مفتاحُ المقابل. تغيّرت اليدُ ولم يتغيّر ما تكتبه. */
-  wireMatching(app, (ik, bk, slot) => {
+  wireMatching(app, onAns((ik, bk, slot) => {
     const card = slot.closest('.qcard'); if(!card) return;
     const qid = +card.dataset.q, a = A.get(qid); if(!a) return;
     credit(qid);
     if(a.pairs[ik] && a.pairs[ik] !== bk) a.chg++;   // تبديلٌ بعد إسناد = تغيير
     if(bk) a.pairs[ik] = bk; else delete a.pairs[ik];
-  });
+  }));
 
-   app.onclick = e => {
+   app.onclick = onAns(e => {
     const b = e.target.closest('.opt'); if(!b) return;
     const card = b.closest('.qcard'), qid = +card.dataset.q;
     const a = A.get(qid), v = +b.dataset.o;
@@ -370,9 +380,9 @@ function renderPage(){
     a.o = v;
     card.querySelectorAll('.opt').forEach(x =>
       x.classList.toggle('sel', +x.dataset.o === v));
-  };
+  });
 
-    app.oninput = e => {
+    app.oninput = onAns(e => {
     const t = e.target;
     const card = t.closest('.qcard'); if(!card) return;
     const qid = +card.dataset.q, a = A.get(qid);
@@ -388,7 +398,7 @@ function renderPage(){
       return;
     }
     if(t.classList.contains('essay')){ credit(qid); a.essay = t.value; }
-  };
+  });
 
   /* ── الفراغ: يُنبَّه عليه مرّة، ثم يُحترَم ── */
   let warned = false;
@@ -401,6 +411,24 @@ function renderPage(){
          :                  !a.essay.trim();
   });
 
+  const warnHtml = b => `<div class="q-hint">
+    بلا إجابة: ${b.map(q=>'س'+AR(N.get(q.id))).join(' · ')} —
+    أجب إن كان لك ترجيح، ودعها فارغةً إن لم يكن.
+    التخمينُ يقع في مشتّتٍ فيُسجَّل لك تشخيصٌ لا يخصّك.</div>`;
+
+  /* والتنبيهُ لا يتجمّد بعد ظهوره: كلُّ إجابةٍ تُعيد حسابه، فيضيق
+     بما بقي فارغاً ويزول هو ونصُّ الزرّ معاً إذا لم يبقَ شيء.
+     ⚠️ زرٌّ يقول «تابع دون إجابة» وقد أجاب الطالب يكذّب عليه —
+     ووعدُ الشاشة أن تصف الحاضر لا ما مضى. */
+  const syncWarn = () => {
+    if(!warned) return;
+    const b = blanks(),
+          w = document.getElementById("warn"),
+          n = document.getElementById("next");
+    if(w) w.innerHTML   = b.length ? warnHtml(b) : '';
+    if(n) n.textContent = b.length ? LBL_BLANK   : LBL_NEXT;
+  };
+
   const p = document.getElementById("prev");
   if(p) p.onclick = ()=>{ leavePage(); S.p--; renderPage(); };
 
@@ -409,12 +437,8 @@ function renderPage(){
     const b = blanks();
     if(b.length && !warned){
       warned = true;
-      document.getElementById("warn").innerHTML = `<div class="q-hint">
-        بلا إجابة: ${b.map(q=>'س'+AR(N.get(q.id))).join(' · ')} —
-        أجب إن كان لك ترجيح، ودعها فارغةً إن لم يكن.
-        التخمينُ يقع في مشتّتٍ فيُسجَّل لك تشخيصٌ لا يخصّك.</div>`;
-      document.getElementById("next").textContent =
-        last ? 'سلّم دون إكمال' : 'تابع دون إجابة';
+      document.getElementById("warn").innerHTML = warnHtml(b);
+      document.getElementById("next").textContent = LBL_BLANK;
       document.getElementById('q'+b[0].id)?.scrollIntoView({ behavior:'smooth', block:'start' });
       return;
     }
