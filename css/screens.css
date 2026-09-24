@@ -653,31 +653,45 @@ body.gate .wrap{max-width:1000px}
 .eq-item.on .eq-b{color:var(--text)}
 .eq-k{font-size:var(--fs-tag);opacity:.6}
 
-/* ══ المقفل — سطرٌ واحد وعلامةُ «i» ══
-   🔴 كان صندوقاً من خمسة أسطر يتصدّر العمود، فيدفع السؤالَ نفسه تحت
-      الطيّة في شاشةٍ متوسّطة. والبيانُ فيه سطرٌ واحد: **أنّه مقفل
-      وكم مرّةً أُجيب عنه**. أمّا «لماذا قُفل» و«ماذا يفعل الإصدار
-      الجديد» فشرحٌ يُطلب مرّةً ثم يُعرف، لا إنذارٌ يُقرأ كلَّ مرّة.
-   ⚠️ ولم يُنقل الشرح بل أُخّر نقرةً: يفتح **في موضعه** تحت السطر
-      نفسه. والحجّة تُكتب حيث يقع السؤال — وهذا هو موضعه بعينه. */
-.eq-lock{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
-  background:var(--warn-soft);border:1px solid var(--warn-line);
-  border-radius:11px;padding:9px 13px;margin-bottom:9px}
-.eq-lock-t{flex:1;min-width:0;font-size:var(--fs-meta);
-  color:var(--warn-text);line-height:1.7}
-.eq-lock-t b{font-family:'Almarai';font-weight:800}
-.eq-lock .btn{flex:0 0 auto;font-size:var(--fs-meta);padding:8px 15px}
-.eq-lock-d{flex:1 1 100%;font-size:var(--fs-meta);color:var(--warn-text);
-  line-height:1.85;border-top:1px solid var(--warn-line);padding-top:9px}
+/* ══ شريطُ حال السؤال وأفعاله — سطرٌ واحد ══
+   🔴 كانت ثلاثةَ صفوفٍ بعرض العمود: لافتةُ القفل (خمسةُ أسطر)، و«اصنع
+      بديلاً مكافئاً»، و«اقرن بسؤالٍ قائم» — وكلُّ صفٍّ يشرح نفسه
+      بجملةٍ كاملة. والجملةُ تُقرأ مرّةً ثمّ تُعرَف، ثمّ تبقى تأكل
+      صدرَ العمود في كلّ سؤالٍ يُفتح بعدها.
+   🔑 الحالُ يُعرض · والفعلُ يُسمّى · والشرحُ يُطلب. فالحالُ رقيقةٌ،
+      والفعلُ كلمتان، والجملةُ الكاملة في title عند الوقوف.
+   ⚠️ والشريط محايدُ اللون والرقيقةُ وحدها كهرمانية: صفٌّ كاملٌ
+      كهرمانيّ يصيح في كلّ سؤالٍ مقفل، والصياحُ الدائم لا يُسمع. */
+.eq-strip{display:flex;align-items:center;gap:7px;flex-wrap:wrap;
+  background:var(--fill-soft);border:1px solid var(--line);
+  border-radius:11px;padding:7px 11px;margin-bottom:9px}
+.eq-strip-g{flex:1 1 0;min-width:0}
+.eq-lockc{flex:0 0 auto;white-space:nowrap;cursor:help;
+  font-family:'Almarai';font-weight:700;font-size:var(--fs-tag);
+  color:var(--warn);background:var(--warn-soft);
+  border:1px solid var(--warn-line);border-radius:999px;padding:4px 11px}
+.eq-sb{flex:0 0 auto;cursor:pointer;white-space:nowrap;
+  background:var(--fill);border:1px solid var(--line);color:var(--text);
+  border-radius:9px;padding:6px 13px;
+  font-family:'Almarai';font-weight:700;font-size:var(--fs-tag);
+  transition:border-color .16s,color .16s,filter .16s}
+.eq-sb:hover{border-color:var(--accent);color:var(--accent)}
+.eq-sb.go{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.eq-sb.go:hover{filter:brightness(1.08);color:var(--on-accent);border-color:var(--accent)}
+.eq-strip-d{flex:1 1 100%;font-size:var(--fs-meta);color:var(--text-muted);
+  line-height:1.85;border-top:1px solid var(--line);padding-top:9px}
+.eq-strip-d div + div{margin-top:3px}
 
-/* علامةُ «i» — ٢٢px رسماً و٣٤ إصابةً، فالدائرة الصغيرة تُخطأ باللمس */
+/* علامةُ «i» — ٢٢px رسماً و٣٤ إصابةً، فالدائرة الصغيرة تُخطأ باللمس.
+   ⚠️ وتبقى مع title ولا تُغني عنها: اللمسُ لا وقوفَ فيه. */
 .eq-i-b{flex:0 0 auto;width:22px;height:22px;border-radius:50%;cursor:pointer;
-  background:var(--warn-fill);border:1px solid var(--warn-edge);color:var(--warn);
+  background:var(--fill-strong);border:1px solid var(--line);color:var(--text-muted);
   font-family:'Almarai';font-weight:800;font-size:var(--fs-tag);line-height:1;
   display:flex;align-items:center;justify-content:center;position:relative;
-  transition:background .16s,color .16s}
+  transition:background .16s,color .16s,border-color .16s}
 .eq-i-b::after{content:'';position:absolute;inset:-6px}
-.eq-i-b:hover,.eq-i-b[aria-expanded="true"]{background:var(--warn-edge);color:var(--on-warn)}
+.eq-i-b:hover,.eq-i-b[aria-expanded="true"]{background:var(--accent);
+  border-color:var(--accent);color:var(--on-accent)}
 
 /* الوسط: تحرير بهيئة شاشة الطالب */
 .eq-main{scroll-margin-top:calc(var(--eqbar) + var(--eqtb) + 14px)}
