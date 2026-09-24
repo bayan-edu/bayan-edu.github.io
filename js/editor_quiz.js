@@ -343,16 +343,18 @@ function qCard(q){
           ${locked?'disabled':''}>${esc(q.explanation||'')}</textarea>
       ` : q.kind === 'cloze' ? `
 
-        <div class="gaprow">
-          <div class="gaplive" id="gaplive">${
-            gapCount(q.body||'') ? czLive(q)
-                                 : '<span class="eq-hint">…هكذا يراه الطالب</span>'}</div>
-        </div>
         <div id="gapbox">${clozeFields(q, locked)}</div>
 
         <label class="fl" style="margin-top:20px">شرح الخطأ — يراه الطالب بعد التسليم *</label>
         <textarea id="qe" placeholder="لماذا الإجابة الصحيحة صحيحة، وأين يزلّ الفهم؟"
           ${locked?'disabled':''}>${esc(q.explanation||'')}</textarea>
+
+        <div class="cz-pv">
+          <div class="cz-pv-h">👁️ هكذا يراه الطالب</div>
+          <div class="gaplive" id="gaplive">${
+            gapCount(q.body||'') ? czLive(q)
+                                 : '<span class="eq-hint">اكتب الجملة وفراغاتها أعلاه</span>'}</div>
+        </div>
       ` : q.kind === 'matching' ? `
 
         <div id="mtbox">${matchFields(q, locked)}</div>
@@ -1041,7 +1043,8 @@ function wire(q){
       const lv = main.querySelector("#gaplive");
       if(lv) lv.innerHTML = gapCount(qb.value)
         ? (cz ? czLive(q) : questionText(q, [], true))
-        : '<span class="eq-hint">…هكذا يراه الطالب</span>';
+        : `<span class="eq-hint">${cz ? 'اكتب الجملة وفراغاتها أعلاه'
+                                      : '…هكذا يراه الطالب'}</span>`;
     };
 
     qb.oninput = () => {
@@ -1093,8 +1096,10 @@ function wire(q){
 
       /* صفُّ الخلط يُدرَج في موضعه ولا يُعاد الرسم: صفٌّ ناقص يُتجاوَز
          في collect، فإعادةُ الرسم تُخفيه فورَ ظهوره. */
+      /* 🔑 الزرّ صار في رأس الخليّة ⇒ يُذيَّل بالخليّة ولا يُسبَق بالزرّ:
+         beforebegin كان سيدسّ الصفَّ **داخل الرأس** بجوار الحقل. */
       box.querySelectorAll("[data-aw]").forEach(el => el.onclick = () => {
-        el.insertAdjacentHTML('beforebegin',
+        el.closest('.cz-cell')?.insertAdjacentHTML('beforeend',
           mtWrongRow(q.bank || [], el.dataset.aw, '', '', false, L_CLOZE));
         wireCloze(); mark();
       });
@@ -1414,28 +1419,38 @@ const mtWrongRow = (bank, ik, bkey, code, locked, L = L_MATCH) => `
    ⇒ تُمرَّر التسمياتُ ولا تُنسخ الشيفرة — فالنسختان تتفارقان دائماً،
    وهو الداء الذي وُلدت render_q.js لدفعه. */
 const L_MATCH = {
-  one:'بند', two:'بندان', many:'بنود', pool:'مقابلات',
-  spN:'مقابلات زائدة', sp1:'مقابلٌ زائد واحد', sp0:'لا مقابلَ زائداً',
+  one:'بند', two:'بندان', many:'بنود',
+  pool1:'مقابل', pool2:'مقابلان', poolN:'مقابلات',
+  spN:'مقابلات زائدة', sp2:'مقابلان زائدان', sp1:'مقابلٌ زائد',
+  sp0:'لا مقابلَ زائداً',
   lack:'المقابلات أقلُّ من البنود', last:'البندَ الأخيرَ',
   spare:'مقابلاتٌ زائدة', spareOf:'لا بندَ لها — وهي التي تمنع حلَّ البند الأخير بالاستبعاد',
   chip:'مقابلٌ زائد', addSp:'＋ مقابلٌ زائد', delSp:'احذف المقابل الزائد',
   wrongCap:'إن زاوجه بـ', wrongPh:'المقابل الخاطئ' };
 
 const L_CLOZE = {
-  one:'فراغ', two:'فراغان', many:'فراغات', pool:'كلمات',
-  spN:'كلمات زائدة', sp1:'كلمةٌ زائدة واحدة', sp0:'لا كلمةَ زائدة',
+  one:'فراغ', two:'فراغان', many:'فراغات',
+  pool1:'كلمة', pool2:'كلمتان', poolN:'كلمات',
+  spN:'كلمات زائدة', sp2:'كلمتان زائدتان', sp1:'كلمةٌ زائدة',
+  sp0:'لا كلمةَ زائدة',
   lack:'الكلمات أقلُّ من الفراغات', last:'الفراغَ الأخيرَ',
   spare:'كلماتٌ زائدة', spareOf:'لا فراغَ لها — وهي التي تمنع حلَّ الفراغ الأخير بالاستبعاد',
   chip:'كلمةٌ زائدة', addSp:'＋ كلمةٌ زائدة', delSp:'احذف الكلمة الزائدة',
   wrongCap:'إن اختار', wrongPh:'الكلمة الخاطئة' };
 
+/* العددُ والمعدود — تُفرد العربية وتُثنّي وتجمع، و«٢ كلمات» خطأٌ
+   يقرؤه المعلّم في كلّ سؤال. والمثنّى يُغني عن رقمه فلا يُسبَق به. */
+const cnt = (n, L1, L2, LN) => n === 1 ? L1 : n === 2 ? L2 : `${AR(n)} ${LN}`;
+
 function mtCount(n, m, L = L_MATCH){
   const sp = m - n;
-  const say = sp > 1 ? `${AR(sp)} ${L.spN}`
+  const say = sp > 2 ? `${AR(sp)} ${L.spN}`
+            : sp === 2 ? L.sp2
             : sp === 1 ? L.sp1
             : sp === 0 ? L.sp0 : L.lack;
   return `<span class="mt-count${sp > 0 ? '' : ' warn'}">
-      ${AR(n)} ${n===1?L.one:n===2?L.two:L.many} &nbsp;—&nbsp; ${AR(m)} ${L.pool} &nbsp;—&nbsp; ${say}</span>
+      ${cnt(n, L.one, L.two, L.many)} &nbsp;—&nbsp;
+      ${cnt(m, L.pool1, L.pool2, L.poolN)} &nbsp;—&nbsp; ${say}</span>
     <span class="mt-note">${sp > 0
       ? 'الزائدُ يمنع حلَّ الأخير بالاستبعاد.'
       : `بلا زائدٍ يُصيب ${L.last} من يجهله — ولا يُسجَّل له كود.`}</span>`;
@@ -1537,25 +1552,16 @@ function matchFields(q, locked){
    ⚠️ والصفُّ لا زرَّ حذفٍ له: الفراغُ يُحذف من **النصّ** لا من الجدول.
       وزرٌّ يحذف صفّاً بينما مصدرُه سطرٌ فوقه يُنتج جدولاً يكذب على نصّه. */
 
-const CZ_SLOT = /\{\{(\d+)\}\}/g;
+/* 🔴 وسقط «سياقُ الفراغ» الذي كان يتصدّر كلَّ صفّ (‎…This is a ▭‎):
+   الجملةُ مكتوبةٌ بحرفها في الصندوق فوقه، ومرسومةٌ بخاناتها في المعاينة
+   تحته ⇒ ثالثةٌ لا تزيد علماً. **ورقمُ الفراغ وحده يكفي للإشارة إليه**،
+   وهو ما يُرسَل في المفتاح أصلاً. وكلُّ تكرارٍ يُنفق عرضاً ويُعلّم القارئ
+   أن يقفز الصفَّ كلَّه. */
 
-/* سياقُ الفراغ — أربعُ كلماتٍ عن جانبيه. وهو ليس زينة: السياقُ حول
-   الفراغ هو ما يقيسه البند (render_q.js)، وبه يعرف المؤلّف أيَّ فراغٍ
-   يملأ حين يتشابه فراغان في جملةٍ واحدة. وسائرُ الفراغات ▭ فلا يُقرأ
-   ‎{{2}}‎ خاماً في شاشةٍ عربية. */
-function czCtx(body, n){
-  const s = String(body || '');
-  const m = [...s.matchAll(CZ_SLOT)].find(x => +x[1] === n);
-  if(!m) return '';
-  const w = t => String(t).replace(CZ_SLOT, '▭').trim().split(/\s+/).filter(Boolean);
-  const a = w(s.slice(0, m.index)).slice(-4).join(' ');
-  const b = w(s.slice(m.index + m[0].length)).slice(0, 4).join(' ');
-  return (a ? '…' + a + ' ' : '') + '▭' + (b ? ' ' + b + '…' : '');
-}
-
-/* المعاينة الحيّة: الجملةُ بخاناتها **بلا قائمة الكلمات** — القائمةُ
-   معروضةٌ في الحقول تحتها، وعرضُها مرّتين يُنفق صدرَ الصفحة على تكرار. */
-const czLive = q => questionText({ ...q, bank: [] }, {}, true);
+/* المعاينة: **السؤالُ كاملاً كما يراه الطالب** — قائمةُ الكلمات وجملتُها.
+   وموضعُها ذيلُ الصياغة لا صدرُها: أعلى الشاشة موضعُ ما يُكتب، وأسفلُها
+   موضعُ ما يُراجَع. والمؤلّف يكتب أوّلاً ثم ينظر ماذا صنع. */
+const czLive = q => questionText(q, {}, true);
 
 /* 🔧 ترميمٌ متماثل — نظيرُ mtEnsure:
      · كلُّ كلمةٍ بمفتاح                · لكلّ فراغٍ كلمتُه الصحيحة
@@ -1610,23 +1616,27 @@ function clozeFields(q, locked){
     (wrongBy[m[1]] = wrongBy[m[1]] || []).push({ b: m[2], code });
   });
 
-  const rows = Array.from({length:n}, (_, i) => {
+  /* خليّةٌ لكلّ فراغٍ برقمه — لا صفٌّ بعرض الصفحة لحقلٍ كلمتُه واحدة.
+     والشبكةُ تتبع العرض (‎auto-fill‎): عمودان في الشاشة الواسعة وواحدٌ في
+     الضيّقة، فتُرى المفاتيحُ كلُّها دفعةً واحدة كما يُقرأ مفتاحُ إجابة.
+     🔑 والخلطُ المتوقَّع **داخل خليّته** لا في مربّعٍ أسفل الصفحة: المشتّتُ
+        وتشخيصُه فكرةٌ واحدة، وتكتبه وأنت تفكّر بأيّ كلمةٍ سيلتبس هذا
+        الفراغ بعينه. */
+  const cells = Array.from({length:n}, (_, i) => {
     const k = String(i + 1);
     const mate = czMate(q, k) || { k:'', t:'' };
     return `
-    <div class="mt-item" data-ik="${esc(k)}">
-      <div class="mt-line">
+    <div class="cz-cell" data-ik="${esc(k)}">
+      <div class="cz-head">
         <span class="key">${AR(i+1)}</span>
-        <span class="cz-ctx" dir="auto">${esc(czCtx(q.body, i+1)) || '—'}</span>
-        <span class="mt-arrow" aria-hidden="true">←</span>
         <input class="mt-mb${mate.t.trim() ? '' : ' miss'}" data-bk="${esc(mate.k)}"
                dir="auto" value="${esc(mate.t)}" placeholder="الكلمة الصحيحة"
                ${locked?'disabled':''} aria-label="كلمة الفراغ ${AR(i+1)}">
-        <span></span>
+        ${locked ? '' : `<button class="mt-addw cz-addw" data-aw="${esc(k)}"
+                                 title="بأيّ كلمةٍ سيلتبس هذا الفراغ؟">＋ خلطٌ متوقَّع</button>`}
       </div>
       ${(wrongBy[k] || []).map(w =>
           mtWrongRow(bank, k, w.b, w.code, locked, L_CLOZE)).join("")}
-      ${locked ? '' : `<button class="mt-addw" data-aw="${esc(k)}">＋ خلطٌ متوقَّع</button>`}
     </div>`;
   }).join("");
 
@@ -1634,13 +1644,8 @@ function clozeFields(q, locked){
     <div class="mt-meta">${mtCount(n, bank.length, L_CLOZE)}
       <span class="mt-note">والترتيب هنا للتأليف — يرى الطالب الكلمات مخلوطة.</span>
     </div>
-    <div class="mt-tbl">
-      <div class="mt-hdr">
-        <span>#</span><span>الفراغ في الجملة</span><span></span>
-        <span>كلمتُه الصحيحة</span><span></span>
-      </div>
-      ${rows}
-    </div>
+    <label class="fl" style="margin-top:2px">كلمةُ كلِّ فراغٍ برقمه *</label>
+    <div class="cz-grid">${cells}</div>
     ${mtSpares(q, locked, L_CLOZE)}`;
 }
 
