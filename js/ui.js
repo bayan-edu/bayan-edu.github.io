@@ -7,7 +7,7 @@ import { S } from './state.js';
 import { mediaUrl, isManaged } from './media.js';
 
 /* ── بصمة النسخة — لمعرفة أي شيفرة يشغّلها المتصفح فعلاً ── */
-export const BUILD = "b72";
+export const BUILD = "b73";
 
 /* ── مراسي الصفحة ── */
 export const app = document.getElementById("app");
@@ -123,7 +123,12 @@ export function head(t, s, hero){
   b.classList.toggle("hero", !!hero);
   h.textContent = t || "";
   h.style.display = t ? "" : "none";
-  document.getElementById("subhead").textContent = s || "";
+  /* ⚠️ والوصفُ يُخفى حين يغيب لا يُفرَّغ: ‎.sub‎ فيها ‎margin-top‎،
+     فالفارغُ يحجز حشوَه في صدر كلّ شاشةٍ بلا وصف. وهو نظيرُ ‎.bare‎
+     أدناه: لا يُحجز فراغٌ لمحتوًى غير موجود. */
+  const sb = document.getElementById("subhead");
+  sb.textContent = s || "";
+  sb.style.display = s ? "" : "none";
   /* شاشةٌ بلا عنوان ولا وصف كانت تحجز ٢٤px حشواً فارغاً — و.bare تُلغيه.
      والتبديل هنا لا في كل شاشة: head() ممرٌّ إجباريّ لا يُنسى. */
   h.closest("header")?.classList.toggle("bare", !t && !s);
