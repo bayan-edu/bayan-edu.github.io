@@ -477,6 +477,15 @@ body.gate .wrap{max-width:1000px}
 /* ═══ المحرّر — للحاسوب أولاً ═══ */
 .wrap.wide{max-width:1180px}
 
+/* رتبةٌ رابعة: تأليفُ الأسئلة.
+   العملُ كلُّه يقع في عمودٍ واحد بين شريطٍ للأسئلة وحافّة الصفحة،
+   فيُعطى ما يسع **الخيارَ وكودَ تشخيصه في سطرٍ واحد** — والمبدأ
+   الحاكم أن المشتّت وتشخيصه فكرةٌ واحدة، فإن انكسر الصفّ انكسرت.
+   ⚠️ والخصوصية لازمة: ‎.wrap.wide‎ أعلاه تحمل max-width صريحاً،
+      فلا تغلبها إلا قاعدةٌ أخصُّ منها — ولهذا :has وليس صنفاً ثالثاً.
+      و:has يُشتقّ من المحتوى كما في base.css، فلا نداءَ في الشيفرة. */
+.wrap.wide:has(.eq){max-width:1400px}
+
 .ed-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
   background:var(--fill-soft);border:1px solid var(--line);
   border-radius:12px;padding:12px 14px;margin-bottom:16px}
@@ -529,13 +538,105 @@ body.gate .wrap{max-width:1000px}
 .modal{position:fixed;inset:0;z-index:300;display:flex;padding:24px;
        overflow:auto;background:rgba(0,0,0,.35)}
 
-/* ═══ محرّر الأسئلة — ثلاثة أعمدة ═══ */
-.eq{display:grid;grid-template-columns:290px 1fr 260px;gap:16px;align-items:start}
-.eq-h{font-family:'Almarai';font-weight:800;font-size:.85rem;margin-bottom:10px;
+/* ══════════════════════════════════════════════════════════
+   محرّر الأسئلة — شريطُ أوامرَ وعمودان
+   🔴 كان ثلاثة أعمدة: ٢٩٠ للأسئلة و٢٦٠ للجاهزية، فلم يبقَ للتحرير
+      — وهو موضع العمل كلِّه — إلا ٥٦٠px داخل ١١٨٠. والعمودُ الثالث
+      يعرض حكماً لا يتغيّر إلا عند الحفظ، فيدفع الكاتبُ عرضَه في كلّ
+      حرفٍ يكتبه. ⇒ نُقل ما فيه إلى حيث يعمل: الأفعالُ شريطَ أوامرٍ
+      بعرض الصفحة، والعدُّ رقائقَ فلترة، والعوائقُ لافتةً عريضة.
+   ⚠️ ومقاسا الالتصاق يُعرَّفان هنا مرّةً ويُقرآن في ثلاثة مواضع
+      (الشريط · عمود الأسئلة · مرساة التمرير) — فلا يتباعد رقمٌ عن
+      رقم. و--eqbar ارتفاعُ الشريط الأعلى (.topbar: ٣٨ + ٩×٢ + حدّ).
+   ══════════════════════════════════════════════════════════ */
+.eq-sc{--eqbar:57px;--eqtb:49px}
+
+/* شريط الأوامر — لاصقٌ تحت الشريط الأعلى، وخلفيّتُه صمّاء:
+   ما يمرّ تحته لا يُقرأ من خلاله.
+   🔴 ولا يلتفّ في الحاسوب: ارتفاعُه (--eqtb) هو ما يُبنى عليه التصاقُ
+      عمود الأسئلة تحته، فالتفافُه يُطيله فيغطّي رأسَ العمود — قيس
+      عند ١٠١٠px فكان ٩١ بدل ٤٩، والتغطية ٢٥px. والالتفاف يتبع طولَ
+      **العنوان وعددَ الأزرار** لا عرضَ الشاشة وحده، فلا يُحسم بنقطة
+      قطعٍ في @media. ⇒ يُمنع الالتفاف، ويُفسَح بالانكماش: العنوان
+      يُقصَّر بالنقاط، والرقائق تُمرَّر أفقيّاً. */
+.eq-tb{position:sticky;top:var(--eqbar);z-index:16;
+  display:flex;align-items:center;gap:8px;flex-wrap:nowrap;
+  background:var(--page);border-bottom:1px solid var(--line);
+  padding:9px 0 10px;margin-bottom:13px}
+
+.eq-back{flex:0 1 auto;min-width:0;
+  display:flex;align-items:center;gap:7px;cursor:pointer;
+  background:var(--fill);border:1px solid var(--line);color:var(--text);
+  border-radius:10px;padding:7px 11px;
+  font-family:'Almarai';font-weight:700;font-size:var(--fs-meta)}
+.eq-back:hover{border-color:var(--accent);color:var(--accent)}
+.eq-back-a{flex:0 0 auto;opacity:.7}
+.eq-back-t{min-width:0;max-width:26ch;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+
+/* رقائق الأنماط — عدٌّ وفلترةٌ في عنصرٍ واحد.
+   وهي وحدها التي تُمرَّر: عدٌّ يُلمَح، وما خرج منه يصله التمرير. */
+.eq-kinds{flex:1 1 0;min-width:0;display:flex;align-items:center;gap:6px;
+  flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+.eq-kinds::-webkit-scrollbar{display:none}
+.eq-kb{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+  background:var(--fill-soft);border:1px solid var(--line);color:var(--text-muted);
+  border-radius:9px;padding:5px 9px;font-family:inherit;font-size:var(--fs-tag)}
+.eq-kb:hover{border-color:var(--accent-edge);color:var(--accent)}
+.eq-kb.on{background:var(--accent-fill);border-color:var(--accent-edge);color:var(--accent)}
+.eq-kb i{font-style:normal;opacity:.75}
+.eq-kb b{font-family:'Almarai';font-weight:800;font-size:var(--fs-meta);color:var(--text)}
+.eq-kb.on b{color:var(--accent)}
+.eq-kb em{font-style:normal;color:var(--accent);background:var(--accent-soft);
+  border:1px solid var(--accent-line);border-radius:6px;padding:0 6px}
+.eq-kb.lack{background:var(--warn-soft);border-color:var(--warn-line)}
+.eq-kb.lack b,.eq-kb.lack em{color:var(--warn)}
+.eq-kb.lack em{background:var(--warn-fill);border-color:var(--warn-edge)}
+
+/* حالة النشر — كلمةٌ صريحة لا لونٌ يُستنتج */
+.eq-state{flex:0 0 auto;margin-inline-start:auto;display:inline-flex;align-items:center;gap:7px;
+  font-family:'Almarai';font-weight:800;font-size:var(--fs-tag);white-space:nowrap;
+  border:1px solid;border-radius:999px;padding:5px 13px}
+.eq-state::before{content:'';width:8px;height:8px;border-radius:50%;background:currentColor}
+.eq-state.draft{color:var(--text-muted);background:var(--fill);border-color:var(--line)}
+.eq-state.live{color:var(--ok);background:var(--ok-soft);border-color:var(--ok-line)}
+.eq-state.half{color:var(--warn);background:var(--warn-soft);border-color:var(--warn-line)}
+
+.eq-acts{flex:0 0 auto;display:flex;align-items:center;gap:7px;flex-wrap:nowrap}
+.eq-tbb{display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap;
+  background:var(--fill);border:1px solid var(--line);color:var(--text);
+  border-radius:10px;padding:8px 14px;
+  font-family:'Almarai';font-weight:700;font-size:var(--fs-meta);
+  transition:border-color .16s,color .16s,filter .16s}
+.eq-tbb .eq-i{font-size:1rem;line-height:1}
+.eq-tbb.go{background:var(--accent);border-color:var(--accent);
+  color:var(--on-accent);font-weight:800}
+.eq-tbb.warn{background:var(--warn-fill);border-color:var(--warn-edge);color:var(--warn-text)}
+/* ⚠️ و:not(:disabled) في كلّ hover — وإلا وعد المعطَّلُ بفعلٍ لا يقع */
+.eq-tbb:not(:disabled):hover{border-color:var(--accent);color:var(--accent)}
+.eq-tbb.go:not(:disabled):hover{filter:brightness(1.08);
+  color:var(--on-accent);border-color:var(--accent)}
+.eq-tbb.warn:not(:disabled):hover{filter:brightness(1.04);
+  color:var(--warn-text);border-color:var(--warn-edge)}
+/* ولا pointer-events:none — فيبقى title يشرح سببَ التعطيل */
+.eq-tbb:disabled{opacity:.42;cursor:not-allowed}
+
+/* العوائق — بعرض الصفحة: ما يمنع النشر لا يُقطَّع في عمودٍ ضيّق */
+.eq-warns{background:var(--warn-soft);border:1px solid var(--warn-line);
+  border-radius:12px;padding:12px 16px;margin-bottom:13px}
+.eq-warns-h{font-family:'Almarai';font-weight:800;font-size:var(--fs-meta);
+  color:var(--warn);margin-bottom:5px}
+.eq-warns ul{padding-inline-start:20px}
+.eq-warns li{font-size:var(--fs-meta);color:var(--warn-text);line-height:1.8}
+
+/* ═══ العمودان ═══ */
+.eq{display:grid;grid-template-columns:300px minmax(0,1fr);gap:18px;align-items:start}
+.eq-h{font-family:'Almarai';font-weight:800;font-size:.85rem;margin-bottom:2px;
   display:flex;align-items:center;gap:8px}
 
-.eq-list,.eq-side{background:var(--fill-soft);border:1px solid var(--line);
-  border-radius:12px;padding:13px;position:sticky;top:60px}
+.eq-list{background:var(--fill-soft);border:1px solid var(--line);
+  border-radius:12px;padding:13px;position:sticky}
+.eq-sc .eq-list{top:calc(var(--eqbar) + var(--eqtb) + 10px)}
 .eq-item{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:9px;
   cursor:pointer;margin-bottom:4px;border:1px solid transparent;transition:background .15s}
 .eq-item:hover{background:var(--fill)}
@@ -548,10 +649,20 @@ body.gate .wrap{max-width:1000px}
   text-overflow:ellipsis;white-space:nowrap;color:var(--text-muted)}
 .eq-item.on .eq-b{color:var(--text)}
 .eq-k{font-size:var(--fs-tag);opacity:.6}
-.eq-add{font-size:.78rem;padding:9px}
 
 /* الوسط: تحرير بهيئة شاشة الطالب */
-.eq-main{scroll-margin-top:72px}
+.eq-main{scroll-margin-top:calc(var(--eqbar) + var(--eqtb) + 14px)}
+/* ⚠️ والعمودُ اتّسع، فلا يُترك النثرُ يتّسع معه: العينُ تُخطئ العودةَ
+   إلى أوّل السطر بعد ~٧٥ حرفاً — وهي العلّة نفسها التي قسمت عروضَ
+   القراءة في base.css. الصندوقُ يكبر، والسطرُ لا.
+   🔑 وبـch لا بالبكسل: القياس حروفٌ لا مسافة، فيأخذ كلُّ حقلٍ
+      عرضاً بحسب قياسه هو.
+   ⚠️ ويُستثنى **نصُّ السؤال**: الوسطُ معاينةٌ بفئات شاشة الطالب،
+      فلو ضاق عمّا تحته لرأى المؤلّف تخطيطاً لا يراه الطالب. وهو
+      سطرٌ أو سطران لا فقرة. ويُستثنى JSON: يُمسح بالعين ولا يُقرأ. */
+.eq-main textarea{max-width:78ch}
+.eq-main .eq-qt,
+.eq-main textarea.eq-wide{max-width:none}
 .eq-qt{min-height:80px;font-family:'Almarai';font-weight:700;font-size:var(--fs-q);line-height:1.85}
 .eq-opts{margin-top:14px}
 .eq-opt{display:flex;align-items:center;gap:9px;flex-wrap:wrap;
@@ -562,29 +673,26 @@ body.gate .wrap{max-width:1000px}
 .eq-c{display:flex;align-items:center;gap:5px;font-size:var(--fs-tag);color:var(--text-muted);
   white-space:nowrap;cursor:pointer;font-family:'Almarai';font-weight:700}
 .eq-c input{width:auto}
-.eq-dx{width:auto;flex:0 0 178px;padding:8px 10px;font-size:.78rem}
+.eq-dx{width:auto;flex:0 0 206px;padding:8px 10px;font-size:.78rem}
 .eq-dx.miss{border-color:var(--danger-edge);background:var(--danger-soft)}
-.eq-sp{flex:0 0 178px}
+.eq-sp{flex:0 0 206px}
 .eq-x{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:.9rem;padding:4px}
 .eq-x:hover{color:var(--danger)}
 .eq-addo{font-size:.8rem;padding:9px 16px;flex:0 0 auto}
 .eq-del{color:var(--danger)!important}
+/* ⚠️ وأزرارُ السؤال لا تتمدّد بتمدّد العمود: ‎button.btn‎ فيها
+   ‎flex:1‎، فلمّا اتّسع الوسط صار «حذف» بعرض ثلاثمئة بكسل — يصيح
+   بحجمه لا بمعناه، ويستوي عند العين بـ«حفظ». القياسُ من النصّ. */
+.eq-main > .nav{flex-wrap:wrap}
+.eq-main > .nav .btn{flex:0 0 auto;padding-inline:28px}
 
-/* الجاهزية */
+/* حكمٌ على كتلةٍ قبل قبولها — معاينةُ الاستيراد وحدها تستعمله اليوم،
+   إذ صارت جاهزيةُ الاختبار شريطَ أوامرٍ ولافتةً أعلى الصفحة. */
 .eq-ready{background:var(--danger-soft);border:1px solid var(--danger-line);
   border-radius:11px;padding:12px}
 .eq-ready.ok{background:var(--ok-soft);border-color:var(--ok-line)}
 .eq-iss{font-size:var(--fs-meta);color:var(--warn-text);line-height:1.75;margin-top:8px}
 .eq-ok{font-family:'Almarai';font-weight:800;font-size:.83rem;color:var(--ok);margin-top:8px}
-
-/* أسطر الجاهزية — صارت أزرار فلترة تُصيب الشريط المقابل */
-.eq-rl{display:flex;align-items:center;gap:6px;flex-wrap:wrap;cursor:pointer;
-  border:1px solid transparent;border-radius:9px;padding:5px 7px;margin:0 -7px;
-  font-size:.85rem;line-height:1.9}
-.eq-rl:hover{background:var(--fill);border-color:var(--line)}
-.eq-rl.on{background:var(--accent-fill);border-color:var(--accent-edge)}
-.eq-rs{font-size:var(--fs-tag);color:var(--accent)}
-.eq-rq{font-size:var(--fs-tag);opacity:.6}
 
 /* زرّ الاختبار في صفّ الدرس */
 .eq-go{background:var(--accent-fill);border:1px solid var(--accent-line);
@@ -595,8 +703,18 @@ body.gate .wrap{max-width:1000px}
 
 @media(max-width:1000px){
   .eq{grid-template-columns:1fr}
-  .eq-list,.eq-side{position:static}
+  .eq-list{position:static}
   .eq-dx,.eq-sp{flex:1 1 100%}
+  /* وفي الضيّق يلتفّ ويُترك يلتفّ: لصوقُه هنا يأكل نصف الشاشة،
+     وبزواله يزول سببُ منع الالتفاف.
+     ⚠️ ويعود كلُّ شيءٍ قابلاً للانكماش: ‎flex:0 0 auto‎ أعلاه مُنع
+        الانكماشَ ليثبت الارتفاع، ولو بقي في الجوّال لدفع الشريطُ
+        الصفحةَ إلى تمريرٍ أفقيّ — قيس عند ٣٩٠px فكان العرض ٤٥٧. */
+  .eq-tb{position:static;flex-wrap:wrap}
+  .eq-kinds{flex:0 1 auto;flex-wrap:wrap;overflow:visible}
+  .eq-acts{flex:1 1 auto;min-width:0;flex-wrap:wrap}
+  .eq-state{flex:0 1 auto;margin-inline-start:0}
+  .eq-main{scroll-margin-top:var(--eqbar)}
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -607,8 +725,8 @@ body.gate .wrap{max-width:1000px}
    ⚠️ موضع هذه الكتلة لازم: تنقض .eq-list أعلاه و@media التي قبلها.
    ══════════════════════════════════════════════════════════ */
 
-.eq-list{display:flex;flex-direction:column;gap:9px;padding:11px;
-  max-height:calc(100vh - 76px);overflow-y:auto}
+.eq-list{display:flex;flex-direction:column;gap:9px;padding:11px;overflow-y:auto}
+.eq-sc .eq-list{max-height:calc(100vh - var(--eqbar) - var(--eqtb) - 20px)}
 
 /* الرأس — لا يتحرّك بحركة البيانات */
 .eq-top{flex:0 0 auto;display:flex;flex-direction:column;gap:8px}
@@ -620,10 +738,26 @@ body.gate .wrap{max-width:1000px}
 .eq-fb:hover{border-color:var(--accent);color:var(--accent)}
 .eq-fb.on{background:var(--accent-fill);border-color:var(--accent-edge);color:var(--accent)}
 .eq-fb.warn.on{background:var(--warn-fill);border-color:var(--warn-edge);color:var(--warn)}
-.eq-adds{display:flex;gap:5px}
+/* 🔑 «سؤال جديد» فعلُ المحرّر الأول، والاستيرادُ فعلُ مرّةٍ في عمر
+   الاختبار — فلا يقتسمان الصفَّ نصفين كما كانا. الأولُ زرٌّ رئيسٌ
+   بكلمته، والثاني أيقونةٌ مربّعة بجانبه. */
+.eq-adds{display:flex;gap:6px}
+.eq-new{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;
+  background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);
+  border-radius:10px;padding:11px 12px;cursor:pointer;line-height:1.5;
+  font-family:'Almarai';font-weight:800;font-size:var(--fs-ui);
+  transition:filter .16s,transform .12s}
+.eq-new:hover{filter:brightness(1.08)}
+.eq-new:active{transform:translateY(1px)}
+.eq-new-p{font-size:1.05rem;line-height:1}
+.eq-new-c{font-size:.68rem;opacity:.75}
 .eq-ab{flex:1;background:var(--fill);border:1px solid var(--line);
   color:var(--text);border-radius:9px;padding:7px 0;cursor:pointer;font-size:.82rem}
 .eq-ab:hover{border-color:var(--accent);color:var(--accent)}
+/* بلا ارتفاعٍ مكتوب: يتمدّد إلى ارتفاع جاره بالمرونة، فلا يتباعد
+   الرقمان حين يتغيّر حشوُ الزرّ الرئيس. */
+.eq-ab.ico{flex:0 0 44px;padding:0;font-size:1.05rem;
+  display:flex;align-items:center;justify-content:center}
 
 .addmenu{position:fixed;z-index:200;
          min-width:270px;max-width:min(320px,84vw);padding:8px;
@@ -719,7 +853,9 @@ body.gate .wrap{max-width:1000px}
 
 /* الجوّال — نقضٌ لما سبق: هذه الكتلة بعد @media القائمة فتعلوها */
 @media(max-width:1000px){
-  .eq-list{max-height:none}
+  /* ⚠️ .eq-sc لازمة هنا: max-height صارت تُكتب بها أعلاه، فقاعدةٌ
+     بصنفٍ واحد لا تنقضها مهما تأخّرت. */
+  .eq-sc .eq-list{max-height:none}
   .eq-body{overflow:visible}
   .cmp{grid-template-columns:1fr!important}
 }

@@ -1,7 +1,20 @@
 /* ══════════════════════════════════════════════════════════
    بيان — editor_quiz.js  ③  الأسئلة والتشخيص
 
-   ثلاثة أعمدة:  شريط الأسئلة │ التحرير-المعاينة │ الجاهزية
+   شريطُ أوامرَ بعرض الصفحة، وتحته عمودان: شريط الأسئلة │ التحرير.
+
+   🔴 وكانت ثلاثة أعمدة (أسئلة │ تحرير │ جاهزية)، فكان الوسطُ — وهو
+      موضع العمل كلِّه — يُخنق بين ٢٩٠ و٢٦٠ فلا يبقى له إلا ٥٦٠px
+      داخل ١١٨٠. والعمود الثالث كان يعرض **حكماً لا يتغيّر إلا عند
+      الحفظ**، فيدفع الكاتب عرضَه في كلّ حرفٍ يكتبه. ⇒ فُرّقت
+      الجاهزية بحسب ما تفعله كلُّ قطعةٍ منها:
+        · الأفعال (إعدادات · معاينة · نشر) ⇐ شريط الأوامر — فالفعل
+          الواقع على الاختبار كلِّه لا يسكن عموداً بجانب سؤالٍ واحد.
+        · العدّ بحسب النمط ⇐ رقائق في الشريط نفسه، وهي **فلاتر**
+          تُصيب شريط الأسئلة كما كانت (setFilter).
+        · العوائق ⇐ لافتةٌ بعرض الصفحة: ما يمنع النشر أحقُّ بالعرض
+          من عمودٍ يقطّع سطرَه أربع كلمات.
+      ⇒ صار للوسط ما يقارب ١١٠٠px، فيسع الخيارَ وكودَ تشخيصه في سطر.
 
    🔑 المبدأ الحاكم: المشتّت وتشخيصه فكرة واحدة ⇒ صفٌّ واحد.
       لا لوحة جانبية ولا نافذة منبثقة للأكواد — تكتب الخيار
@@ -105,32 +118,31 @@ function render(atTop){
   const q  = qs[cur] || null;
 
   app.innerHTML = `
-    <div class="crumb-row">
-      <span class="crumb" id="bk">← ${esc(ctx.lesson?.title || 'أدوات القياس')}</span>
-      <button class="it-b" id="qset" title="إعدادات الاختبار">⚙</button>
-    </div>
-    <div class="eq">
-      <aside class="eq-list">${sidebar()}</aside>
-      <section class="eq-main" id="main">${q ? qCard(q) : emptyCard()}</section>
-      <aside class="eq-side" id="ready"></aside>
+    <div class="eq-sc">
+      ${toolbar()}
+      ${issueBanner()}
+      <div class="eq">
+        <aside class="eq-list">${sidebar()}</aside>
+        <section class="eq-main" id="main">${q ? qCard(q) : emptyCard()}</section>
+      </div>
     </div>`;
 
-  document.getElementById("bk").onclick = leave;
-     document.getElementById("qset").onclick = quizSettings;
+  wireToolbar();
   wireList();
   if(q) wire(q);
-  readiness();
   atTop ? scrollTop() : focusMain();
 }
 
+/* البطاقة الفارغة تحمل الفعلين اللذين يخرجان منها — ولا تُحيل إلى
+   «الجانب»: إحالةٌ تُقرأ أسرعَ ممّا يُبحث عنها فعلاً. */
 const emptyCard = () => `<div class="card" style="text-align:center;padding:34px">
   <div style="font-size:2rem;margin-bottom:10px">◉</div>
   <div class="rev-q">لا أسئلة بعد</div>
   <div class="line">ابدأ بستّة أسئلة اختيار من متعدد — وهو الحدّ الذي تبقى معه عتبة ٦٥٪ ذات معنى.</div>
   <div class="nav" style="justify-content:center;margin-top:16px">
-    <button class="btn primary" id="imp0">⇪ استيراد اختبار</button>
+    <button class="btn primary" id="add0">＋ أضِف أوّل سؤال</button>
+    <button class="btn ghost" id="imp0">⇪ استيراد اختبار</button>
   </div>
-  <p class="hint">أو أضِف الأسئلة واحداً واحداً من الجانب</p>
 </div>`;
 
 function go(i){
@@ -1914,7 +1926,7 @@ function importBox(){
         <div class="drop-s">الملف يُقرأ في متصفحك — لا يُرفع إلى أي خادم · حتى ٢ ميجابايت</div>
         <input type="file" id="ifile" accept=".json,.txt,application/json" hidden>
       </div>
-      <textarea id="ij" dir="ltr" style="min-height:220px;font-family:monospace;font-size:.78rem"
+      <textarea id="ij" class="eq-wide" dir="ltr" style="min-height:220px;font-family:monospace;font-size:.78rem"
         placeholder='{ "questions": [ … ] }'></textarea>
       <div class="nav" style="margin-top:12px">
         <button class="btn primary" id="ian">تحليل</button>
@@ -2222,67 +2234,110 @@ async function delPassage(id){
 }
 
 
-/* ═══════════ الجاهزية والنشر ═══════════
-   🔒 معرّفاتها بادئتها rd* والبحث مقيَّد بـbox — فلا تعتمد على
-      ترتيب الأعمدة في الصفحة. */
+/* ═══════════ شريط الأوامر · الجاهزية · النشر ═══════════
+   🔴 كانت الجاهزية عموداً ثالثاً بعرض ٢٦٠px ملازماً للشاشة، يعرض
+      حكماً لا يتغيّر إلا عند الحفظ — فيدفع الكاتب عرضَه في كلّ حرف.
+      ⇒ فُرّقت بحسب ما تفعله كلُّ قطعةٍ منها، لا بحسب أصلها:
+        · فعلٌ يقع على الاختبار كلِّه ⇐ شريط الأوامر بعرض الصفحة.
+        · عدٌّ هو في حقيقته **فلتر** ⇐ رقيقةٌ تُصيب شريط الأسئلة.
+        · عائقٌ يمنع النشر ⇐ لافتةٌ بعرض الصفحة، لا سطرٌ في عمودٍ
+          يقطّعه أربع كلمات.
+   🔒 وبادئة rd* باقية (درس b23): المعرّف يُسمّى بنطاقه، والبحث
+      مقيَّدٌ بالشريط — فلا يعتمد على ترتيب العناصر في المستند. */
 
-function readiness(){
-  const box = document.getElementById("ready"); if(!box) return;
-  const r = Z.readiness || { ok:false, mcq:0, essay:0, issues:[] };
+function toolbar(){
+  const r   = Z.readiness || { ok:false, mcq:0, essay:0, issues:[] };
+  /* محطّةُ أداةٍ بلا درس — فلا معنى فيها لـ«الدرس مسودّة» */
+  const st  = ctx.course?.station === true;
+  const pub = !!Z.published;
+  const live = pub && (st || !!ctx.lesson?.published);
+  const s = !pub  ? { c:'draft', t:'مسودّة — لا يظهر لأحد' }
+          : live  ? { c:'live',  t:'منشور ويصل الطلاب' }
+                  : { c:'half',  t:'منشور — والدرس مسودّة' };
 
-  const rrow = (k, label, req) => {
-    const n = k === 'mcq' ? (r.mcq || 0) : k === 'msq' ? (r.msq || 0)
-            : k === 'matching' ? (r.match || 0) : (r.essay || 0);
-    if((k === 'msq' || k === 'matching') && !n) return '';
-    const s = kindStat(k);
-    return `<div class="eq-rl ${LS.f===k?'on':''}" data-rf="${k}"
-              title="اعرض هذا النمط وحده في شريط الأسئلة">
-        <b>${AR(n)}</b> ${label}
-        ${s.slots !== s.n ? `<span class="eq-rs">· ${AR(s.slots)} خانة</span>` : ''}
-        ${req ? `<span class="eq-rq">(٦ مطلوبة)</span>` : ''}
+  return `
+    <div class="eq-tb">
+      <button class="eq-back" id="rdBack" title="رجوع">
+        <span class="eq-back-a">←</span>
+        <span class="eq-back-t" dir="auto">${esc(ctx.lesson?.title || 'أدوات القياس')}</span>
+      </button>
+
+      <div class="eq-kinds">${kindChips()}</div>
+
+      <span class="eq-state ${s.c}">${s.t}</span>
+
+      <div class="eq-acts">
+        <button class="eq-tbb" id="rdSet"><span class="eq-i">⚙</span> الإعدادات</button>
+        <button class="eq-tbb" id="rdPrev" title="عِش تجربة الطالب"><span class="eq-i">👁</span> معاينة</button>
+        ${pub && !live ? `<button class="eq-tbb warn" id="rdLsn">نشر الدرس أيضاً</button>` : ''}
+        <button class="eq-tbb ${pub?'':'go'}" id="rdPub" ${r.ok?'':'disabled'}
+          title="${r.ok ? '' : pub
+            ? 'الجاهزية ناقصة — والزرّ محجوب حتى تكتمل (انظر اللافتة أعلاه)'
+            : 'لا يُنشر قبل أن تكتمل الجاهزية'}">${
+          pub ? 'إلغاء النشر' : 'نشر الاختبار'}</button>
       </div>
-      ${req && n >= 6 && s.slots < 6 ? `<div class="eq-iss">⚠️ البوّابة تعدّ البنود
-        (${AR(n)}) والطالب يرى ${AR(s.slots)} — وعتبة ٦٥٪ على هذا العدد هشّة.</div>` : ''}`;
+    </div>`;
+}
+
+/* رقائق الأنماط — عدٌّ وفلترةٌ في عنصرٍ واحد.
+   🔴 والرقمان مختلفان عمداً: quiz_readiness تعدّ **البنود** (وبوّابة
+      «٦ مطلوبة» تقيسها)، والطالب يرى **خانات**. فحيث اختلفا كُتب
+      الاثنان — والفرق هو ما كان مخفيّاً.
+   ⚠️ و«إكمال الناقص» يُعدّ محلّياً: quiz_readiness لا تُرجعه، فلا
+      يُنسب إلى البوّابة عددٌ لم تقله. */
+function kindChips(){
+  const r = Z.readiness || {};
+  const chip = (k, label, n, always) => {
+    if(!n && !always) return '';
+    const s = kindStat(k);
+    const lack = k === 'mcq' && n < 6;
+    return `<button class="eq-kb ${LS.f===k?'on':''} ${lack?'lack':''}" data-f="${k}"
+        title="${esc(label)} — اعرضه وحده في شريط الأسئلة">
+        <i>${kIcon(k)}</i><b>${AR(n)}</b><span>${esc(label)}</span>
+        ${lack ? '<em>٦ مطلوبة</em>' : ''}
+        ${s.slots !== s.n ? `<em>${AR(s.slots)} خانة</em>` : ''}
+      </button>`;
   };
+  return chip('mcq',      'اختيار من متعدد', r.mcq   || 0, true)
+       + chip('msq',      'اختيار متعدّد',   r.msq   || 0)
+       + chip('matching', 'مزاوجة',          r.match || 0)
+       + chip('gap',      'إكمال ناقص',      kindStat('gap').n)
+       + chip('essay',    'مقالي',           r.essay || 0);
+}
 
-  box.innerHTML = `
-    <div class="eq-h">الجاهزية</div>
-    <div class="eq-ready ${r.ok?'ok':''}">
-      ${rrow('mcq','اختيار من متعدد', true)}
-      ${rrow('msq','اختيار متعدّد الإجابات', false)}
-      ${rrow('matching','المزاوجة', false)}
-      ${rrow('essay','مقالي', false)}
-      ${(r.issues||[]).length
-        ? (r.issues||[]).map(i => `<div class="eq-iss">⚠️ ${esc(i)}</div>`).join("")
-        : `<div class="eq-ok">${Z.published
-             ? (ctx.lesson?.published ? '✅ منشور ويصل الطلاب' : '✅ منشور — بانتظار نشر الدرس')
-             : '✅ جاهز للنشر'}</div>`}
-    </div>
-    <div class="nav" style="gap:8px;margin-top:12px">
-      <button class="btn ${Z.published?'ghost':'primary'}" id="rdPub" ${r.ok?'':'disabled'}>
-        ${Z.published ? 'إلغاء النشر' : 'نشر'}</button>
-      <button class="btn ghost" id="rdPrev" title="عِش تجربة الطالب">👁️ معاينة</button>
-    </div>
-    <p class="hint" style="text-align:right;margin-top:10px">
-      ${Z.published
-        ? (ctx.lesson?.published
-            ? 'منشور — يراه طلاب هذا الدرس.'
-            : '⚠️ الاختبار منشور لكن <b>الدرس مسودّة</b> — فلا يصل أحداً.')
-        : 'غير منشور — لا يظهر لأحد بعد.'}</p>
-    ${Z.published && !ctx.lesson?.published
-      ? `<div class="nav"><button class="btn primary" id="rdLsn">نشر الدرس أيضاً</button></div>` : ''}`;
+/* ما يحول دون الاكتمال — بعرض الصفحة، فيُقرأ سطراً لا عموداً */
+function issueBanner(){
+  const r  = Z.readiness || {};
+  const ms = kindStat('mcq');
+  const out = (r.issues || []).map(esc);
 
-  box.querySelector("#rdPrev").onclick = preview;
+  /* فرقُ البنود عن الخانات: حكمٌ على الاختبار كلِّه لا على نمطٍ فيه */
+  if((r.mcq || 0) >= 6 && ms.slots < 6)
+    out.push(`البوّابة تعدّ البنود (${AR(r.mcq)}) والطالب يرى ${AR(ms.slots)}
+      — وعتبة ٦٥٪ على هذا العدد هشّة.`);
 
-  const pl = box.querySelector("#rdLsn");
+  if(!out.length) return '';
+  return `<div class="eq-warns">
+    <div class="eq-warns-h">⚠️ ما يحول دون اكتمال الاختبار</div>
+    <ul>${out.map(x => `<li>${x}</li>`).join('')}</ul>
+  </div>`;
+}
+
+function wireToolbar(){
+  const tb = app.querySelector('.eq-tb'); if(!tb) return;
+
+  tb.querySelector("#rdBack").onclick = leave;
+  tb.querySelector("#rdSet").onclick  = quizSettings;
+  tb.querySelector("#rdPrev").onclick = preview;
+
+  const pl = tb.querySelector("#rdLsn");
   /* ⚠️ pl.onclick = pubLesson كان يمرّر **حدث النقر** إلى quiet،
      فيصير صادقاً ⇒ لا إعادة تحميل ⇒ الزرّ يبقى بعد النشر. */
   if(pl) pl.onclick = () => pubLesson(false);
 
-  box.querySelectorAll("[data-rf]").forEach(el =>
-    el.onclick = () => setFilter(el.dataset.rf));
+  wireKinds(tb);
 
-  box.querySelector("#rdPub").onclick = async () => {
+  tb.querySelector("#rdPub").onclick = async () => {
     const { data, error } = await api.publishQuiz(Z.id, !Z.published);
     if(error){ toast(error.message); return; }
     if(!data.ok){ toast(data.error); return; }
@@ -2295,6 +2350,17 @@ function readiness(){
     }
     reload();
   };
+}
+
+const wireKinds = box => box.querySelectorAll(".eq-kb").forEach(el =>
+  el.onclick = () => setFilter(el.dataset.f));
+
+/* الرقائق وحدها — فلا يُعاد رسم الشريط كلِّه عند تبديل فلتر */
+function paintKinds(){
+  const box = app.querySelector('.eq-kinds');
+  if(!box) return;
+  box.innerHTML = kindChips();
+  wireKinds(box);
 }
 
 async function pubLesson(quiet){
@@ -2331,8 +2397,10 @@ let LS = { open: new Set(), q: '', f: 'all', lastCur: -1 };
 const members = k => (Z.questions || []).filter(x => x.variant_key === k);
 const NOSEC   = '— بلا قسم —';
 
+/* ⚠️ كلُّ نمطٍ يقبله nodePass له سطرٌ هنا — وإلا عُرض مفتاحُه خاماً
+   في شارة الفلتر. و«gap» سقط سهواً فكان يُكتب بحروفه اللاتينية. */
 const F_LABEL = { mcq:'◉ اختيار من متعدد', msq:'☑ اختيار متعدّد الإجابات',
-                  matching:'⇄ المزاوجة',
+                  matching:'⇄ المزاوجة', gap:'✎ إكمال الناقص',
                   essay:'✍️ مقالي' };
 const F_JUDGE = new Set(['all','warn','none','free']);   // ما يسكن الشريط نفسه
 
@@ -2513,9 +2581,30 @@ function sidebar(){
     body += ns.map(n => n.t === 'q' ? qRow(n.i) : vRow(n)).join('');
   }
 
+  /* 🔑 «سؤال جديد» يتصدّر الشريط بكلمته لا برمزه: كان ＋ وحده في
+     صندوقٍ يقاسمه ⇪ نصفين، فبدا الفعلُ الأكثرُ تكراراً في المحرّر
+     كلِّه زرَّ أداةٍ ثانوية. والاستيراد فعلُ مرّةٍ في عمر الاختبار
+     ⇒ أيقونةٌ مربّعة بجانبه، لا نصفُ الصفّ. */
   return `<div class="eq-top">
       <div class="eq-h">الأسئلة <span class="chip">${AR(st.n)}</span>
         <span class="chip g">${AR(st.slots)} خانة</span></div>
+
+      <div class="eq-adds">
+        <button class="eq-new" id="addq">
+          <span class="eq-new-p">＋</span><span>سؤال جديد</span>
+          <span class="eq-new-c">▾</span></button>
+        <button class="eq-ab ico" id="imp" title="استيراد وتصدير">⇪</button>
+      </div>
+      <div class="addmenu" id="addmenu" hidden>
+        <button data-k="mcq"><i>◉</i><div><b>اختيار من متعدد</b><span>إجابةٌ واحدة صحيحة</span></div></button>
+        <button data-k="msq"><i>☑</i><div><b>اختيار متعدّد</b><span>أكثر من إجابةٍ صحيحة</span></div></button>
+        <button data-k="gap"><i>✎</i><div><b>إكمال الناقص</b><span>يكتب الطالب الإجابة</span></div></button>
+        <button disabled><i>⇢</i><div><b>إكمال من قائمة</b><span>قريباً — يختار من كلماتٍ مُعطاة</span></div></button>
+        <button data-k="matching"><i>⇄</i><div><b>المزاوجة</b><span>لكلّ بندٍ درجة</span></div></button>
+        <hr>
+        <button data-k="essay"><i>¶</i><div><b>مقالي قصير</b><span>يصحّحه المعلّم</span></div></button>
+      </div>
+
       <input class="eq-sr" id="lsq" value="${esc(LS.q)}"
              placeholder="ابحث في النصّ · أو اكتب رقماً واضغط Enter">
       <div class="eq-f">
@@ -2527,21 +2616,6 @@ function sidebar(){
       ${F_JUDGE.has(LS.f) ? '' : `<button class="eq-chipf" id="lclr">
         <span>${esc(F_LABEL[LS.f] || LS.f)}</span>
         <span style="margin-inline-start:auto">✕</span></button>`}
-      <div class="eq-adds">
-               <div class="addwrap">
-          <button class="eq-ab" id="addq" title="أضف سؤالاً">＋</button>
-          <div class="addmenu" id="addmenu" hidden>
-                      <button data-k="mcq"><i>◉</i><div><b>اختيار من متعدد</b><span>إجابةٌ واحدة صحيحة</span></div></button>
-            <button data-k="msq"><i>☑</i><div><b>اختيار متعدّد</b><span>أكثر من إجابةٍ صحيحة</span></div></button>
-            <button data-k="gap"><i>✎</i><div><b>إكمال الناقص</b><span>يكتب الطالب الإجابة</span></div></button>
-            <button disabled><i>⇢</i><div><b>إكمال من قائمة</b><span>قريباً — يختار من كلماتٍ مُعطاة</span></div></button>
-            <button data-k="matching"><i>⇄</i><div><b>المزاوجة</b><span>لكلّ بندٍ درجة</span></div></button>
-            <hr>
-            <button data-k="essay"><i>¶</i><div><b>مقالي قصير</b><span>يصحّحه المعلّم</span></div></button>
-          </div>
-        </div>
-        <button class="eq-ab" id="imp"   title="استيراد">⇪</button>
-      </div>
     </div>
     <div class="eq-body" id="lbody">${body ||
       '<div class="eq-none">لا سؤال يطابق البحث أو الفلتر</div>'}</div>`;
@@ -2600,34 +2674,73 @@ function wireList(){
     if(i >= 0) go(i);
   });
 
-    const ab = box.querySelector("#addq"), am = box.querySelector("#addmenu");
-   ab.onclick = e => {
-    e.stopPropagation();
+  const am = box.querySelector("#addmenu");
+  /* زنادان لقائمةٍ واحدة: زرّ الشريط، وزرّ البطاقة الفارغة وسط
+     الشاشة. فالموضع وسيطٌ لا ثابت. */
+  const openMenu = an => {
     if(!am.hidden){ am.hidden = true; return; }
-    const r = ab.getBoundingClientRect();
-    am.style.top  = (r.bottom + 6) + 'px';
-    am.style.left = Math.max(8, Math.min(r.left, innerWidth - 300)) + 'px';
-    am.hidden = false;
+    am.hidden = false;                     // يُقاس بعد الإظهار: المخفيّ بلا مقاس
+    const r = an.getBoundingClientRect(), w = am.offsetWidth, h = am.offsetHeight;
+    /* ⚠️ وتُحاذى بالحافّة **الموافقة لاتّجاه الصفحة**: محاذاة يسارٍ
+       ثابتة كانت تُخرج القائمة من تحت الزرّ في صفحةٍ من اليمين. */
+    const rtl  = getComputedStyle(document.documentElement).direction === 'rtl';
+    const want = rtl ? r.right - w : r.left;
+    am.style.left = Math.max(8, Math.min(want, innerWidth - w - 8)) + 'px';
+    /* ⚠️ وتُقلب فوق الزرّ إذا ضاق ما تحته، ولا تُقصّ إلى أعلاه:
+       القصُّ كان يُجلسها **على الزرّ نفسه** فتحجب ما نُقر عليه. */
+    const down = r.bottom + 6, up = r.top - 6 - h;
+    am.style.top = (down + h <= innerHeight - 8 ? down
+                  : up >= 8                     ? up
+                  : Math.max(8, innerHeight - h - 8)) + 'px';
   };
-     /* الموضع يُحسب لحظة الفتح ⇒ يتقادم عند التمرير أو تغيير التكبير.
-     والأبسط أن تُطوى، فالقائمة لحظيّةٌ لا تُترك مفتوحة. */
-  const shut = () => { if(!am.hidden) am.hidden = true; };
-  addEventListener('scroll', shut, true);
-  addEventListener('resize', shut);
-   am.querySelectorAll("[data-k]").forEach(el =>
+
+  const ab = box.querySelector("#addq");
+  ab.onclick = e => { e.stopPropagation(); openMenu(ab); };
+  const a0 = document.getElementById("add0");      // في البطاقة الفارغة وسط الشاشة
+  if(a0) a0.onclick = e => { e.stopPropagation(); openMenu(a0); };
+
+  am.querySelectorAll("[data-k]").forEach(el =>
     el.onclick = () => { am.hidden = true; addQuestion(el.dataset.k); });
-  // نقرةٌ خارج القائمة تطويها — وإلا بقيت مفتوحةً تحجب ما تحتها
-  document.addEventListener('click', () => { am.hidden = true; }, { capture:true });
-  box.querySelector("#imp").onclick   = importBox;
+
+  shutMenuOnce();
+  box.querySelector("#imp").onclick = importBox;
   const i0 = document.getElementById("imp0");      // في البطاقة الفارغة وسط الشاشة
   if(i0) i0.onclick = importBox;
 }
 
-/* زنادٌ واحد لمصدرين: صفّ الشريط ولوحة الجاهزية.
-   والنقر على الفلتر الفعّال يُلغيه — فلا يحتاج المستخدم زرّ إلغاءٍ ثانياً. */
+/* 🔴 عطلٌ صامت: كانت مستمعات scroll/resize/click تُركَّب داخل
+   wireList — و wireList تُنادى مع **كلّ حرفٍ** يُكتب في صندوق
+   البحث (paintList). فتتراكم مئاتُ المستمعات على النافذة في جلسةٍ
+   واحدة، ولا شيء يظهر إلا بطءٌ يُنسب إلى المتصفّح.
+   ⇒ تُركَّب مرّةً واحدة، وتبحث عن القائمة عند الحاجة لا عند التركيب
+     (فالعنصر نفسه يُعاد بناؤه مع كلّ رسم). */
+let menuShut = false;
+function shutMenuOnce(){
+  if(menuShut) return;
+  menuShut = true;
+  /* الموضع يُحسب لحظة الفتح ⇒ يتقادم عند التمرير أو تغيير التكبير.
+     والأبسط أن تُطوى، فالقائمة لحظيّةٌ لا تُترك مفتوحة. */
+  /* ⚠️ والمرحلة capture تسبق زرَّ الزناد نفسه — فلولا استثناؤه لطوت
+     القائمةَ ثمّ فتحها الزرُّ من جديد، فلا تُغلق بنقرةٍ ثانية أبداً. */
+  const shut = e => {
+    const am = document.getElementById("addmenu");
+    if(!am || am.hidden) return;
+    if(e?.target?.closest?.('#addq, #add0')) return;
+    am.hidden = true;
+  };
+  addEventListener('scroll', shut, true);
+  addEventListener('resize', shut);
+  // نقرةٌ خارج القائمة تطويها — وإلا بقيت مفتوحةً تحجب ما تحتها
+  document.addEventListener('click', shut, { capture:true });
+}
+
+/* زنادٌ واحد لمصدرين: صفُّ الحكم في الشريط، ورقيقةُ النمط في شريط
+   الأوامر. والنقر على الفلتر الفعّال يُلغيه — فلا يحتاج زرّ إلغاءٍ ثانياً.
+   🔑 والشارة تبقى في الشريط وإن بعُد الزناد (eq-chipf): الحالة تسكن
+      حيث ينظر المستخدم، لا حيث ضغط. */
 function setFilter(k){
   LS.f = (LS.f === k) ? 'all' : k;
-  paintList(); readiness();
+  paintList(); paintKinds();
 }
 
 /* الوجهة بطاقةُ التحرير لا رأس الصفحة.
