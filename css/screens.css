@@ -1357,13 +1357,62 @@ body.gate .wrap{max-width:1000px}
       transition:border-color .15s}
 .pair:focus-within{border-color:var(--accent)}
 .pair-p{flex:1;min-width:0;font-size:var(--fs-read);line-height:1.75}
-.pair-in{width:auto;min-width:165px;max-width:44%;padding:9px 11px;font-size:var(--fs-ui)}
 
-/* دون ٥٦٠px: البندُ سطرٌ والقائمةُ سطرٌ تحته — فلا يُقصّ النصّ */
+/* ═══ الإسناد: نقرتان أو سحب — شروحُه في js/match_dnd.js ═══
+   ⚠️ ‎touch-action:none‎ على المقابل ثمنُ السحب بالإصبع: الإصبعُ الذي
+      يبدأ عليه يسحبه ولا يُمرّر الصفحة. والشريطُ صغيرٌ أعلى البطاقة
+      وما حوله كلُّه يُمرَّر، فالثمن محتمَل — والنقرتان تُغنيان عنه. */
+.bank-w{cursor:pointer;touch-action:none;font-family:inherit;color:var(--text);
+        transition:background .15s,border-color .15s,opacity .15s,transform .1s}
+.bank-w:hover:not(:disabled){border-color:var(--accent);background:var(--accent-fill)}
+.bank-w:active:not(:disabled){transform:scale(.97)}
+/* المحمول — يُرى محمولاً لا مختاراً: ظلٌّ يرفعه عن سطر أقرانه */
+.bank-w.armed{background:var(--accent);border-color:var(--accent);color:var(--on-accent);
+              box-shadow:0 4px 12px -2px rgba(0,0,0,.22)}
+/* المستعمَل يُعتم ولا يُرفع — ورفعُه يمنع مقابلاً يصحّ لبندين */
+.bank-w.used:not(.armed){opacity:.45}
+.mq.ro .bank-w{cursor:default}
+
+/* خانةُ البند — زرٌّ أصيل، فالمفاتيحُ وقارئُ الشاشة يبلغانه بلا شيفرة */
+.pair-slot{display:flex;align-items:center;min-width:165px;max-width:46%;
+           padding:9px 12px;cursor:pointer;text-align:start;
+           background:var(--surface);color:var(--text-muted);
+           border:1px dashed var(--line-strong);border-radius:11px;
+           font-family:inherit;font-size:var(--fs-ui);line-height:1.7;
+           transition:border-color .15s,background .15s,color .15s}
+.pair-slot .slot-t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pair-slot:hover:not(:disabled){border-color:var(--accent)}
+/* الممتلئةُ تصير مصمتةً: الحدُّ المتقطّع يقول «فارغ» — وهو معناه */
+.pair.filled .pair-slot{border-style:solid;border-color:var(--accent-line);
+  background:var(--accent-soft);color:var(--text);font-family:'Almarai';font-weight:700}
+/* ما يُفلَت عليه الآن · وما ينتظر محمولاً */
+.pair-slot.over,.pair-slot.armed{border-color:var(--accent);background:var(--accent-fill);
+  border-style:solid;color:var(--accent)}
+.mq.arming .pair-slot:not(.armed){border-color:var(--accent-edge)}
+.mq.dragging{cursor:grabbing}
+.mq.dragging .pair-slot{border-color:var(--accent-edge)}
+
+.slot-x{flex:0 0 auto;width:28px;height:28px;padding:0;cursor:pointer;
+        display:none;align-items:center;justify-content:center;
+        background:none;border:none;border-radius:8px;
+        color:var(--text-muted);font-size:.85rem}
+.pair.filled .slot-x{display:flex}
+.slot-x:hover{background:var(--danger-fill);color:var(--danger)}
+
+/* الشبحُ يتبع الإصبع — وبلا pointer-events، فما تحته هو ما يُصاب */
+.mq-ghost{position:fixed;top:0;left:0;z-index:400;pointer-events:none;
+  margin:-18px -40px;padding:7px 14px;border-radius:9px;
+  background:var(--accent);color:var(--on-accent);
+  font-family:'Almarai';font-weight:700;font-size:var(--fs-ui);
+  box-shadow:0 8px 22px -4px rgba(0,0,0,.30);opacity:.95}
+
+/* دون ٥٦٠px: البندُ سطرٌ والخانةُ سطرٌ تحته — فلا يُقصّ النصّ */
 @media (max-width:560px){
   .pair{flex-wrap:wrap;gap:9px}
   .pair-p{flex:1 1 100%;order:2}
-  .pair-in{order:3;flex:1 1 100%;max-width:none;min-width:0}
+  /* الخانةُ تأخذ السطر، و«✕» تجاورها — فلا تنزل وحدها سطراً ثالثاً */
+  .pair-slot{order:3;flex:1 1 0;max-width:none;min-width:0}
+  .slot-x{order:4}
 }
 
 /* ═══ تحرير المزاوجة (b70) ═══

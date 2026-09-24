@@ -54,6 +54,7 @@ import { app, bar, head, toast, esc, fmt, AR, mmss, media, pgMedia, srcOf,
         optLabel, dirOf, ICONS, nav, scrollTop, skeleton } from './ui.js';
 import { loadList, loadLessons } from './student.js';
 import { questionText, questionBody, KIND_LABEL, gapCount } from './render_q.js';
+import { wireMatching } from './match_dnd.js';
 
 /* مشتقّاتُ عرضٍ لا حالةَ محاولة — تُبنى كلُّها من S.quiz و S.ans عند
    البدء، ولو ضاعت أُعيد بناؤها بسطر. فمكانها الوحدة لا الحالة:
@@ -336,6 +337,17 @@ function renderPage(){
         `<div class="eq-hint" style="display:block;padding:8px 0">انتهى التشغيل المتاح</div>`);
       a.remove(); } };
   });
+  /* ── المزاوجة: الإسنادُ بنقرتين أو بسحب ──
+     الحالةُ تبقى في a.pairs كما كانت، والعقدُ نفسه: مفتاحُ البند
+     ⇐ مفتاحُ المقابل. تغيّرت اليدُ ولم يتغيّر ما تكتبه. */
+  wireMatching(app, (ik, bk, slot) => {
+    const card = slot.closest('.qcard'); if(!card) return;
+    const qid = +card.dataset.q, a = A.get(qid); if(!a) return;
+    credit(qid);
+    if(a.pairs[ik] && a.pairs[ik] !== bk) a.chg++;   // تبديلٌ بعد إسناد = تغيير
+    if(bk) a.pairs[ik] = bk; else delete a.pairs[ik];
+  });
+
    app.onclick = e => {
     const b = e.target.closest('.opt'); if(!b) return;
     const card = b.closest('.qcard'), qid = +card.dataset.q;
@@ -365,16 +377,10 @@ function renderPage(){
     const card = t.closest('.qcard'); if(!card) return;
     const qid = +card.dataset.q, a = A.get(qid);
 
-    /* القائمة تُطلق input و change معاً في المتصفّحات الحديثة،
-       فيكفي هذا المستمع ولا يلزم ثالث. */
-    if(t.classList.contains('pair-in')){ credit(qid);
-      /* 112 · المفتاح هُويّةُ البند لا موضعُه: يثبت وإن أُعيد ترتيبُ
-         البنود، والقيمةُ مفتاحُ المقابل فلا يقطعها تحريرُ نصّه. */
-      const k = t.dataset.k; if(!k) return;
-      if(a.pairs[k] && a.pairs[k] !== t.value) a.chg++;   // تبديلٌ بعد إسناد = تغيير
-      if(t.value) a.pairs[k] = t.value; else delete a.pairs[k];
-      return;
-    }
+    /* 🔓 ومزاوجةُ القائمة زالت من هنا: صار الإسنادُ أزراراً لا حقلاً
+       يُطلق input، فمستمعُه في match_dnd.js ونداؤه أعلاه.
+       ⚠️ و 112 قائمٌ كما هو: المفتاح هُويّةُ البند لا موضعُه، والقيمةُ
+          مفتاحُ المقابل — فلا يقطعها تحريرُ نصّه. */
     if(t.classList.contains('gap-in')){ credit(qid);
       const i = +t.dataset.i;
       if(a.txt[i] && a.txt[i] !== t.value) a.chg++;   // تبديلٌ بعد كتابة = تغيير
