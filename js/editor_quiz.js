@@ -304,16 +304,7 @@ function qCard(q){
     </div>`;
 
   return `
-    ${locked ? `<div class="eq-lock">
-      <span class="eq-lock-t">🔒 مقفل · أُجيب عنه <b>${AR(q.answered)}</b> مرة</span>
-      <button class="eq-i-b" id="nvi" aria-expanded="false" aria-controls="nvd"
-              title="لماذا هو مقفل، وما الذي يفعله «إصدارٌ جديد»؟">i</button>
-      <button class="btn primary" id="nv">✎ إصدارٌ جديد</button>
-      <div class="eq-lock-d" id="nvd" hidden>
-        التعديل يكسر ربط الإجابات بما رآه الطلاب فعلاً — ولهذا قُفلت الحقول.
-        <br>و«إصدارٌ جديد» يَنسخ السؤال بخياراته وأكواده وخانته وموضعه فتحرّره
-        بحرّية، والقديم يتقاعد بإجاباته سليمة — يختفي من الاختبار ولا يُمحى.</div>
-    </div>` : ''}
+    ${strip(q, locked)}
     ${sectionBar(q, locked)}
     ${passageBar(q, locked)}
     ${variantBar(q, locked)}
@@ -368,6 +359,51 @@ function qCard(q){
       <button class="btn ghost" id="dq">⧉ تكرار</button>
       ${locked ? '' : `<button class="btn ghost eq-del" id="xq">🗑 حذف</button>`}
     </div>`;
+}
+
+
+/* ═══════════ شريطُ حال السؤال وأفعاله — سطرٌ واحد ═══════════
+   🔴 كانت ثلاثةَ صفوفٍ بعرض العمود: لافتةُ القفل، و«اصنع بديلاً
+      مكافئاً»، و«اقرن بسؤالٍ قائم». وكلُّ صفٍّ يشرح نفسه بجملةٍ
+      كاملة — جملةٌ تُقرأ مرّةً ثمّ تُعرَف، ثمّ تبقى تأكل صدرَ العمود
+      في كلِّ سؤالٍ يُفتح بعدها. (١٦٣px ⇐ ٤٥.)
+   🔑 والقاعدة التي فُرز بها: **الحالُ يُعرض والفعلُ يُسمّى والشرحُ
+      يُطلب.** فالحال رقيقةٌ، والفعلُ كلمتان، والجملةُ الكاملة في
+      `title` عند الوقوف.
+   ⚠️ و«i» تبقى مع `title` ولا تُغني عنها: اللمسُ لا وقوفَ فيه،
+      وقارئُ الشاشة لا يقف. فالشرحُ يُفتح في موضعه لمن لا مؤشّر له. */
+
+function strip(q, locked){
+  const canVar = !!q.id && !q.variant_key;
+  if(!locked && !canVar) return '';
+
+  const T = {
+    lock: `أُجيب عن هذا السؤال ${AR(q.answered)} مرة، والتعديل يكسر ربط الإجابات بما رآه الطلاب فعلاً — ولهذا قُفلت الحقول.`,
+    nv:   'يَنسخ السؤال بخياراته وأكواده وخانته وموضعه فتحرّره بحرّية، والقديم يتقاعد بإجاباته سليمة — يختفي من الاختبار ولا يُمحى.',
+    mk:   'يبدأ نسخةً من هذا السؤال ثمّ تبدّل محتواها — للتأليف من الصفر.',
+    pair: 'يُعلن أنّ مكتوبَين قائمَين يقيسان الشيء نفسه — لمن يؤلّف البندين معاً.',
+    /* 🔓 القفل يخصّ المحتوى لا الخانة — وهذا موضع الحجّة الآن */
+    tag:  'والخانة تُعدَّل ولو كان السؤال مقفلاً: هي وسمُ تجميعٍ لا محتوى، فلا تمسّ إجابةً سابقة.' };
+
+  const det = [];
+  if(locked){ det.push(T.lock); det.push('و«إصدارٌ جديد» ' + T.nv); }
+  if(canVar){
+    det.push('و«بديلٌ مكافئ» ' + T.mk);
+    det.push('و«اقرِن» ' + T.pair);
+    if(locked) det.push(T.tag);
+  }
+
+  return `<div class="eq-strip">
+    ${locked ? `<span class="eq-lockc" title="${esc(T.lock)}">
+      🔒 مقفل · ${AR(q.answered)} إجابة</span>` : ''}
+    <span class="eq-strip-g"></span>
+    ${locked ? `<button class="eq-sb go" id="nv" title="${esc(T.nv)}">✎ إصدارٌ جديد</button>` : ''}
+    ${canVar ? `<button class="eq-sb" id="mkvar"  title="${esc(T.mk)}">⇄ بديلٌ مكافئ</button>
+                <button class="eq-sb" id="pairvar" title="${esc(T.pair)}">⇄ اقرِن</button>` : ''}
+    <button class="eq-i-b" id="nvi" aria-expanded="false" aria-controls="nvd"
+            title="التفاصيل">i</button>
+    <div class="eq-strip-d" id="nvd" hidden>${det.map(x => `<div>${esc(x)}</div>`).join('')}</div>
+  </div>`;
 }
 
 
@@ -450,15 +486,9 @@ function variantBar(q, locked){
   const note = locked ? `<div class="eq-bs" style="margin-top:8px;line-height:1.7">
       🔓 الخانة تُعدَّل ولو كان السؤال مقفلاً — هي وسمُ تجميعٍ لا محتوى.</div>` : '';
 
-  if(!q.variant_key){
-    /* فعلان مختلفان لا صورتان لفعل واحد:
-       الأول يبدأ من نسخة ثم يُبدَّل محتواها — للتأليف من الصفر.
-       والثاني إعلانُ تكافؤٍ بين مكتوبَين — لمن يؤلّف البنود معاً. */
-    return !q.id ? '' : `
-      <button class="eq-bar add" id="mkvar">⇄ اصنع بديلاً مكافئاً — يبدأ نسخةً ثم تبدّل محتواها</button>
-      <button class="eq-bar add" id="pairvar">⇄ اقرن بسؤالٍ قائم — أعلِن أن مكتوبَين يقيسان الشيء نفسه</button>
-      ${note}`;
-  }
+  /* فعلا الإنشاء (mkvar · pairvar) انتقلا إلى strip() — سطرٌ واحد
+     أعلى البطاقة. وهنا يبقى ما لا يُختصر: لوحةُ خانةٍ قائمة. */
+  if(!q.variant_key) return '';
 
   /* الحكم من verdict() لا من مقارنةِ بصمتين: هي وحدها التي تميّز
      «لا اختلاف» من «لا مادّة للفحص»، وتنظر إلى النصّ والقسم والنمط. */
