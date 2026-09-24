@@ -1553,4 +1553,30 @@ body.gate{padding-bottom:0}
   .mt-wrow select{grid-column:2 / 4}
   .mt-addw{padding-left:12px}
 }
+
+/* ═══ 113 · إكمال من قائمة ══════════════════════════════════════
+   الوحدةُ واحدة: قائمةُ الكلمات ثمّ الجملةُ بخاناتها — ولا فئاتٍ
+   موازيةً للمزاوجة. الخانةُ ‎.pair-slot‎ نفسها، يُجلَس بها في سطر
+   النثر ويُضيَّق عرضُها. فما يُصلَح في إحداهما يُصلَح في الأخرى. */
+.mq.cz .bank{margin-top:0;margin-bottom:14px}
+/* السطرُ يتّسع لخانةٍ في متنه — وبلا ذلك تتراكب الأسطر على بعضها */
+.mq.cz .cz-text{margin:0;line-height:2.7}
+
+/* ⚠️ و ‎inline-flex‎ لا ‎flex‎: الخانةُ تجلس في الجملة ولا تكسرها.
+   🔑 و ‎min-width‎ ثابتةٌ بالمحارف: خانةٌ يتبع عرضُها كلمتَها المنتظَرة
+      تُفشي طولَها — مفتاحُ إجابةٍ يُعطى بالتنسيق لا بالنصّ. */
+.cz-slot{display:inline-flex;vertical-align:baseline;
+  min-width:9ch;max-width:22ch;padding:2px 10px;margin:0 3px;
+  border-radius:9px;line-height:1.9;font-size:var(--fs-ui)}
+/* الممتلئةُ تصير مصمتة — والحدُّ المتقطّع يقول «فارغ»، وهو معناه */
+.cz-slot.filled{border-style:solid;border-color:var(--accent-line);
+  background:var(--accent-soft);color:var(--text);
+  font-family:'Almarai';font-weight:700}
+.mq.cz.ro .cz-slot{cursor:default}
+
+/* سياقُ الفراغ في جدول التأليف — يُقرأ ولا يُكتب، فلا يُرسم حقلاً:
+   حقلٌ معطَّل يدعو إلى النقر ثم لا يستجيب. */
+.cz-ctx{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-size:var(--fs-ui);color:var(--text-muted);line-height:1.8}
+
 }

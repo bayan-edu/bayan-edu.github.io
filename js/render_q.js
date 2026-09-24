@@ -8,6 +8,7 @@ export const KIND_LABEL = {
   mcq:  'اختيار من متعدد',
   msq:  'اختيار متعدّد الإجابات',
   gap:  'إكمال الناقص',
+  cloze:'إكمال من قائمة',
   matching:'المزاوجة',
   essay:'مقالي قصير'
 };
@@ -35,6 +36,50 @@ export function bodyWithSlots(body, values = [], ro = false){
   }).join("");
 }
 
+/* ── 113 · إكمال من قائمة ─────────────────────────────────────
+   نصُّ البند نفسه، لكنّ الفراغ **خانةُ اختيارٍ** لا حقلَ كتابة.
+   والفرق ليس في اليد بل في القياس: في `gap` المجالُ مفتوح فلا
+   يُشخَّص الخطأ إلا إن خمّن المؤلّفُ حرفَ ما سيُكتب؛ وهنا الاختيارُ
+   مغلق ⇒ كلُّ كلمةٍ ليست صواباً مشتّتٌ معلومٌ باسمه، فتحمل كودها.
+
+   🔑 والخانةُ تُرسَم بفئات المزاوجة نفسها (.pair-slot · .slot-t ·
+      .bank-w) لا بفئاتٍ موازية: match_dnd.js تعمل عليها بالمفتاح
+      والصنف وحدهما، فلا تُكتب آلةُ إسنادٍ ثانية تتفارق عن أختها.
+      و`data-k` هنا **رقمُ الفراغ** نصّاً — وهو مفتاحه في accept.pairs. */
+const czSlot = (n, bank, pairs, ro) => {
+  const k = String(n);
+  const v = pairs[k] || '';
+  const t = (bank.find(b => b.k === v) || {}).t || '';
+  const PH = '……';
+  return `<button type="button" class="pair-slot cz-slot${v ? ' filled' : ''}"
+            data-k="${esc(k)}"${v ? ` data-v="${esc(v)}"` : ''} ${ro ? 'disabled' : ''}>
+      <span class="sr-only">الفراغ ${AR(n)}</span>
+      <span class="slot-t" data-ph="${PH}">${v ? esc(t) : PH}</span>
+    </button>`;
+};
+
+/* الوحدةُ كلُّها: قائمةُ الكلمات ثمّ الجملةُ بخاناتها.
+   ولماذا في `questionText` لا في `questionBody`؟ لأنهما هنا شيءٌ
+   واحد: الكلماتُ لا تُقرأ بمعزلٍ عن مواضعها، والخانةُ لا تُملأ بمعزلٍ
+   عن قائمتها. وفصلُهما في عنصرين متجاورين يقطع `.mq` الذي تبحث عنه
+   آلةُ الإسناد، فتصير الكلماتُ في وعاءٍ والخاناتُ في آخر. */
+function clozeUnit(q, pairs = {}, ro = false){
+  const bank = q.bank || [];        // [{k,t}] — مخلوطٌ بالبذرة عند الطالب
+  const parts = String(q.body||'').split(SLOT);
+  const text = parts.map((p, i) => i % 2 === 0
+    ? fmt(p)
+    : czSlot(+p, bank, pairs, ro)).join("");
+
+  return `<div class="mq cz${ro ? ' ro' : ''}">
+      ${bank.length ? `<div class="bank">${bank.map(b => `
+        <button type="button" class="bank-w" data-bw="${esc(b.k)}"
+                aria-pressed="false" ${ro ? 'disabled' : ''}>${esc(b.t)}</button>`
+        ).join("")}</div>` : ''}
+      <div class="qtext cz-text" dir="auto">${text}</div>
+      <p class="mq-live sr-only" aria-live="polite" role="status"></p>
+    </div>`;
+}
+
 /* جسم البند: الخيارات أو الحقول أو المزاوجة أو المقالي.
    opts = { picked, values, pairs, ro, bank } */
 export function questionBody(q, opts = {}){
@@ -58,6 +103,10 @@ export function questionBody(q, opts = {}){
       ${bank.length ? `<div class="bank">${bank.map(w =>
         `<span class="bank-w">${esc(w)}</span>`).join("")}</div>` : ''}`;
   }
+
+  /* 113 · رُسمت كاملةً في questionText — ولا يُترك الفرعُ للذيل
+     المقاليّ تحته: نمطٌ يسقط في الافتراضيّ يُعرض مربّعَ نصٍّ صامتاً. */
+  if(q.kind === 'cloze') return '';
 
   /* ── المزاوجة ─────────────────────────────────────────────────
      عمودُ المقابلات يُعرض كاملاً **فوق** البنود لا داخل القائمة وحدها:
@@ -114,7 +163,11 @@ export function questionBody(q, opts = {}){
             ${ro ? 'disabled' : ''}>${esc(opts.essay || '')}</textarea>`;
 }
 
-/* نصُّ البند نفسه — بحقوله إن كان gap */
+/* نصُّ البند نفسه — بحقوله إن كان gap، وبخاناته إن كان cloze.
+   و`values` هو **ما أدخله الطالب** في النمطين: مصفوفةُ نصوصٍ في
+   `gap`، وكائنُ { رقم الفراغ: مفتاح الكلمة } في `cloze`. */
 export const questionText = (q, values = [], ro = false) =>
-  `<div class="qtext" dir="auto">${
-     q.kind === 'gap' ? bodyWithSlots(q.body, values, ro) : fmt(q.body)}</div>`;
+  q.kind === 'cloze'
+    ? clozeUnit(q, (values && !Array.isArray(values)) ? values : {}, ro)
+    : `<div class="qtext" dir="auto">${
+        q.kind === 'gap' ? bodyWithSlots(q.body, values, ro) : fmt(q.body)}</div>`;
