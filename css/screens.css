@@ -23,8 +23,20 @@ body.gate .wrap{max-width:1000px}
 
 .gatex{display:grid;grid-template-columns:1fr;gap:24px;padding-top:20px;
   grid-template-areas:"say" "form"}
+/* لوحة الهوية — كحليّةٌ، هي أوّل مواضع الكحليّ خارج الشعار (راجع
+   --brand-navy في base.css). بطاقةٌ محتواة بحشوٍ ونصف قطرٍ كبير، لا
+   لوحةٌ ملء الحافة: الشبكة الحقيقية عمودان محدودا العرض بفجوة ٦٠px
+   بينهما (أسفل)، لا انقسامٌ حادٌّ حافةً لحافة كما في مسوّدةٍ أولى.
+   والتدرّج لمسة عمقٍ خفيفة لا زخرفة: كحليٌّ إلى كحليٍّ، لا لونٌ غريب. */
 .gate-say{grid-area:say;text-align:center;
-  display:flex;flex-direction:column;justify-content:center}
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:radial-gradient(140% 100% at 50% 0%, #16447a 0%, var(--brand-navy) 65%);
+  border-radius:calc(var(--r) * 2);box-shadow:var(--shadow);
+  padding:clamp(36px,8vw,64px) clamp(24px,6vw,40px)}
+/* الشعار على الكحليّ دوماً أبيض — لا يتبع سِمة الصفحة: خلفيّته المحليّة
+   كحليّةٌ ثابتة في الحالتين، خلافاً لموضعه المعتاد فوق الورق مباشرة. */
+.gate-say .brand.hero{--logo-ink:#fff}
+.gate-say .brand.hero .brand-slogan{color:rgba(255,255,255,.72)}
 .gate-form{grid-area:form;width:100%;max-width:410px;margin-inline:auto}
 
 /* فاصلٌ لا كلمة فيه: وظيفته أن يقول «انتهى الإجراء الأول» */

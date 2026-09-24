@@ -7,7 +7,7 @@ import { S } from './state.js';
 import { mediaUrl, isManaged } from './media.js';
 
 /* ── بصمة النسخة — لمعرفة أي شيفرة يشغّلها المتصفح فعلاً ── */
-export const BUILD = "b77";
+export const BUILD = "b78";
 
 /* ── مراسي الصفحة ── */
 export const app = document.getElementById("app");
@@ -788,9 +788,10 @@ export function nav(active){
   /* ⚠️ لا نقرأ hero من className: nav() تسبق head() في أكثر الشاشات،
      فقد نلتقط hero عالقةً من البوابة. نأخذ has-logo وحدها صراحةً. */
   const bEl  = document.getElementById("brand");
-  /* بلا has-logo عمداً: ٢٥px لا تكفي لشعارٍ مركَّب، فيظهر الوردمارك
-     النصّيّ — حادٌّ في أي مقاس ويتلوّن مع السِمة بلا ملفٍّ ثانٍ. */
-  const mark = `<div class="brand topbrand">${bEl.innerHTML}</div>`;
+  /* has-logo صار مقصوداً هنا — لا غائباً كالسابق: الشعار متجهٌ حقيقيّ
+     الآن بنسخةٍ compact مبسّطة لأجل الأحجام الصغيرة، فيبقى حادّاً عند
+     ٢٥px بلا حاجةٍ للوردمارك النصّيّ الذي كان يعوّض عن الصورة القديمة. */
+  const mark = `<div class="brand topbrand has-logo">${bEl.innerHTML}</div>`;
 
   bar.innerHTML = `<div class="topbar">
     <button class="iconbtn" id="menuBtn" aria-label="القائمة"

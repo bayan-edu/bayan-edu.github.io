@@ -87,7 +87,7 @@
   --danger-fill:#FEE2E2; --danger-line:#FECACA; --danger-edge:#EF4444;
   --shadow:0 1px 2px rgba(28,25,23,.05), 0 8px 24px -8px rgba(28,25,23,.10);
   --scrim:rgba(28,25,23,.38);
-  --r:14px}
+  --r:14px; --logo-ink:#0D345E}
 
 /* الداكنة (b62) — محايدةٌ على طريقة Preline، والقيم بالقياس.
    🎓 لماذا محايدة لا كحليّة: منذ b61 كلُّ صبغةٍ في بيان رسالة — الأزرق
@@ -137,7 +137,21 @@
   --danger-fill:rgba(248,113,113,.12); --danger-line:rgba(248,113,113,.26);
   --danger-edge:rgba(248,113,113,.45);
   --shadow:0 1px 2px rgba(0,0,0,.30), 0 8px 24px -8px rgba(0,0,0,.50);
-  --scrim:rgba(0,0,0,.58)}
+  --scrim:rgba(0,0,0,.58); --logo-ink:#fff}
+
+/* ══ هوية العلامة — ثابتةٌ، لا تتبع السِمة ══
+   مُعرَّفةٌ مرّةً واحدة هنا (لا داخل [data-theme="dark"]) فترث الداكنةُ
+   قيمتها تلقائياً: هذا هو التعبير الصحيح عن «ثابت» في نظام طبقاتٍ كهذا.
+   ⚠️ الكحليّ والفيروزيّ والذهبيّ هويةٌ لا حكم: لا تحمل معنى «اخترتَ» أو
+      «أصبتَ» فتُقاس بمنطق التمايز الدلاليّ في رأس هذا الملف — استعمالها
+      محصورٌ بمواضع العلامة (.gate-say ونحوها)، لا بمفردات الاختبار.
+   ⚠️ --logo-hole شفافةٌ دوماً عمداً: هي نفيُ الحبر، فتكشف عمّا خلفها
+      أياً كان — الشريط أو لوحة .gate-say الكحليّة — بلا افتراضٍ مسبق
+      عن الخلفية، وبلا حاجةٍ لقيمةٍ ثانية في الداكنة. */
+:root{
+  --logo-hole:transparent;
+  --brand-navy:#0D345E; --brand-teal:#42B7B4; --brand-teal-2:#63AEA9;
+  --brand-gold:#D6B76D; --brand-shadow:#3C5979}
 
 /* ══ السلّم الطباعيّ ══
    ستّ درجات لا أربعين. والقاعدة تُقرأ من الأسماء لا من الأرقام:
@@ -198,22 +212,23 @@ header.bare{padding:0}
 .brand:not(.hero):not(.topbrand){display:none}
 .brand{margin-bottom:10px;line-height:1.5;display:flex;align-items:center;
   justify-content:center;gap:10px;flex-wrap:wrap}
-/* ══ الشعار — صورتان تتبادلان بالسِمة ══
-   ملفّ المصدر ليس متجهاً: ٩٦٪ منه صور PNG مضمّنة، والألوان مخبوزةٌ
-   في بكسلات لا في خصائص — فـcurrentColor غير ممكنة. ولهذا صورتان.
-   ⚠️ ويومَ يُعاد رسمه متجهاً حقيقياً، تُحذف هذه القواعد ويكفي
-      fill="currentColor" في ملفٍ واحد. الصورتان حلٌّ مؤقّت معلَّم.
-   ⚠️ ولا تُستعمل content:url() هنا: فشلُها يترك <img> بلا src فتظهر
-      أيقونة صورةٍ مكسورة. صورتان بـsrc حقيقيّ، وCSS يُخفي إحداهما —
-      فأسوأ ما يقع عند فشل CSS هو ظهور الاثنتين، لا ظهور عطل.
-   ⚠️ والوردمارك أبيضُ في الأصل — أي أن الشعار صُمّم لخلفيةٍ داكنة
-      وحدها. النسخة الفاتحة أُعيد تلوين أبيضها إلى #2C2C2A. */
+/* ══ الشعار — متجهٌ حقيقيّ الآن، بنسختين حسب الحجم ══
+   compact عربيٌّ فقط، مبسّطٌ ليبقى حادّاً عند ٢٥px (الشريط). full
+   ثنائيّ اللغة (بيان + BAYAN)، للبوابة حيث الشعار بطل الشاشة.
+   ⚠️ fill="var(--logo-ink)" على حبر الحروف — كحليّ في الفاتحة، أبيض
+      في الداكنة، كوردمارك الشعار القديم — و var(--logo-hole) على
+      ثقوبها (تكشف عمّا خلفها، شفّافةٌ دوماً). سِمةٌ واحدة تكفي الآن
+      بدل صورتين متبادلتين: الملفّ متجهٌ حقاً، لا بكسلاتٌ مخبوزة
+      الألوان كالشعار القديم.
+   ⚠️ والفيروزيّ/الذهبيّ ألوان هويةٍ ثابتة لا تتبع السِمة — راجع الكتلة
+      الثابتة أسفل ألوان الداكنة في رأس هذا الملف. */
 .brand-logo{height:36px;width:auto;max-width:100%;display:none}
-.brand.has-logo .lt{display:block}
-:root[data-theme="dark"] .brand.has-logo .lt{display:none}
-:root[data-theme="dark"] .brand.has-logo .dk{display:block}
+.brand.has-logo .compact{display:block}
+.brand.has-logo .full{display:none}
 .brand.hero{flex-direction:column;gap:6px}
 .brand.hero .brand-logo{height:clamp(110px,28vw,170px)}
+.brand.hero .full{display:block}
+.brand.hero .compact{display:none}
 .brand-text{display:inline-flex;align-items:baseline;gap:9px}
 .brand.hero .brand-text{flex-direction:column;align-items:center;gap:4px}
 .brand-name{font-family:'Almarai';font-weight:800;font-size:1.05rem;color:var(--accent);letter-spacing:.01em}
@@ -343,7 +358,6 @@ h2.sec{font-family:'Almarai';font-weight:800;font-size:var(--fs-h);margin:24px 0
 .topbrand{flex:0 0 auto;margin:0 2px;gap:7px}
 .topbrand .brand-logo{height:25px}
 .topbrand .brand-slogan{display:none}
-.topbrand .brand-name{font-size:var(--fs-read)}
 /* 🔓 وعادت الهويّة تظهر في الشاشة الضيّقة (b65): كانت تُخفى لتفسح
    للوجهات، والوجهات صارت في الدرج — فلا مزاحم، والهويّة أولى بالفراغ. */
 .topgap{flex:1;min-width:0}
