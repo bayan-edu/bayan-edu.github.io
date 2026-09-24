@@ -64,8 +64,12 @@ export function questionBody(q, opts = {}){
      المزاوجة حكمٌ على المجموعة لا خمسةَ أحكامٍ منفصلة، والطالب يحتاج
      أن يرى المتشابهات معاً ليميّز بينها — وذاك هو ما يقيسه البند.
 
-     والإسنادُ بقائمةٍ أصيلة (select) لا بسحبٍ وإفلات: تعمل باللمس
-     وبلوحة المفاتيح وقارئ الشاشة، والسحبُ يسقط في الثلاثة.
+     🔓 وكان الإسنادُ بقائمةٍ أصيلة (select) «لا بسحبٍ وإفلات: تعمل
+        باللمس وبلوحة المفاتيح وقارئ الشاشة، والسحبُ يسقط في الثلاثة».
+        والحجّةُ صادقةٌ في **سحب HTML5 الأصليّ** وحده. ⇒ لم تُنقض بل
+        استُوفيت: النواةُ نقرتان، والسحبُ ببصمة المؤشّر، والطرفان
+        زرّان أصيلان. والشروحُ كاملةً في match_dnd.js — وهي التي
+        تُحرّك ما يُرسَم هنا، وهذا الملفُّ يرسم ولا يُحرّك.
 
      🔑 والقيمةُ **مفتاحُ المقابل** لا نصُّه ولا فهرسُه (112).
         وكانت نصّاً بحجّة «يُقرأ بعد سنةٍ بلا مفتاح فكّ»، والحجّةُ قائمة
@@ -77,20 +81,33 @@ export function questionBody(q, opts = {}){
     const bank    = q.bank    || [];      // [{k,t}] — مخلوطٌ بالبذرة في get_quiz
     const prompts = q.options || [];      // [{k, body}]
     const pairs   = opts.pairs || {};     // { مفتاح البند: مفتاح المقابل }
+    const txt = k => (bank.find(b => b.k === k) || {}).t || '';
+    const PH  = 'انقر أو اسحب مقابلاً';
+
     return `<div class="q-hint">لكلّ بندٍ درجة — وقد يبقى في العمود مقابلٌ لا يُزاوَج</div>
-      ${bank.length ? `<div class="bank">${bank.map(b =>
-        `<span class="bank-w">${esc(b.t)}</span>`).join("")}</div>` : ''}
-      <div class="pairs">${prompts.map((p, j) => `
-        <div class="pair">
-          <span class="key">${AR(j+1)}</span>
-          <span class="pair-p" dir="${dirOf(p.body)}">${fmt(p.body)}</span>
-          <select class="pair-in" data-k="${esc(p.k || '')}" ${ro ? 'disabled' : ''}
-                  aria-label="مقابل البند ${AR(j+1)}">
-            <option value="">— اختر —</option>
-            ${bank.map(b => `<option value="${esc(b.k)}"${
-              (pairs[p.k] || '') === b.k ? ' selected' : ''}>${esc(b.t)}</option>`).join("")}
-          </select>
-        </div>`).join("")}</div>`;
+      <div class="mq${ro ? ' ro' : ''}">
+        ${bank.length ? `<div class="bank">${bank.map(b => `
+          <button type="button" class="bank-w" data-bw="${esc(b.k)}"
+                  aria-pressed="false" ${ro ? 'disabled' : ''}>${esc(b.t)}</button>`
+          ).join("")}</div>` : ''}
+
+        <div class="pairs">${prompts.map((p, j) => {
+          const v = pairs[p.k] || '';
+          return `<div class="pair${v ? ' filled' : ''}">
+            <span class="key">${AR(j+1)}</span>
+            <span class="pair-p" dir="${dirOf(p.body)}">${fmt(p.body)}</span>
+            <button type="button" class="pair-slot" data-k="${esc(p.k || '')}"
+                    ${v ? `data-v="${esc(v)}"` : ''} ${ro ? 'disabled' : ''}>
+              <span class="sr-only">مقابل البند ${AR(j+1)}</span>
+              <span class="slot-t" data-ph="${esc(PH)}">${v ? esc(txt(v)) : esc(PH)}</span>
+            </button>
+            ${ro ? '' : `<button type="button" class="slot-x"
+                                 aria-label="أزل مقابل البند ${AR(j+1)}">✕</button>`}
+          </div>`;
+        }).join("")}</div>
+
+        <p class="mq-live sr-only" aria-live="polite" role="status"></p>
+      </div>`;
   }
 
   return `<textarea class="essay" placeholder="اكتب السلسلة السببية كاملة…"

@@ -47,6 +47,7 @@ import { app, head, toast, esc, fmt, AR, errBox, nav, setWide, scrollTop, L,
 import { attachUpload } from './upload.js';
 import { openCourse, openTools } from './editor.js';
 import { questionText, questionBody, KIND_LABEL, gapCount } from './render_q.js';
+import { wireMatching } from './match_dnd.js';
 
 let Z    = null;   // الاختبار المحمَّل
 let cur  = 0;      // فهرس السؤال المعروض
@@ -1701,6 +1702,10 @@ function preview(){
     if(pv === qs.length-1){ toast("انتهت المعاينة"); pv = 0; render(); return; }
     pv++; preview();
   };
+  /* المزاوجة في المعاينة تعمل كما تعمل عند الطالب — والدالّة نفسها،
+     فما يجرّبه المؤلّف هو ما سيلمسه الطالب لا محاكاةً له. */
+  wireMatching(app);
+
   app.querySelectorAll("[data-pvo]").forEach(el => el.onclick = () => {
     if(q.kind === 'msq'){                       // تبديلٌ في مكانه — لا إلغاء لما سواه
       el.classList.toggle('sel');
