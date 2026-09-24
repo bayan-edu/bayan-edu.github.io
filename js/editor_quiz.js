@@ -63,7 +63,12 @@ export async function openQuiz(course, lesson){
   /* مساران: اختبارُ درسٍ (course, lesson) · ومحطّةُ أداة (station) بلا
      مقرَّرٍ ولا درس. والفرق في المدخل وحده — والمحرّر بعده واحد. */
   const st = course && course.station === true;
-  head(st ? "محطّة قياس" : "اختبار الدرس", st ? (course.title || '') : lesson.title);
+  /* 🔑 اسمُ الدرس مرّةً واحدة: كان في وصف الترويسة وفي شريط الأوامر
+     معاً، فيأكل سطراً كاملاً من صدر الصفحة ليقول ما هو مقروءٌ تحته.
+     ⚠️ والمحطّة لا درسَ لها، فاسمُها لا يظهر في زرّ الرجوع (وجهتُه
+        فهرسُ الأدوات) — فيبقى في الترويسة وحدَها، ولا يُحذف معه. */
+  head(st ? (course.title ? "محطّة قياس — " + course.title : "محطّة قياس")
+          : "اختبار الدرس");
   app.innerHTML = `<div class="status">جارٍ التحميل…</div>`;
 
   const qid = st ? course.id : lesson.quiz_id;
@@ -74,7 +79,7 @@ export async function openQuiz(course, lesson){
   if(!data.ok){ app.innerHTML = errBox({ message: data.error }, 'تحميل الاختبار'); return; }
 
   Z = data; cur = 0; dirty = false;
-  render(true);
+  render('top');
 }
 
 /* درس بلا اختبار — لا يكتمل عند الطالب أبداً */
@@ -113,7 +118,16 @@ async function createQuiz(){
 
 /* ═══════════ الهيكل ═══════════ */
 
-function render(atTop){
+/* أين تقف الصفحة بعد الرسم؟ ثلاثة أحوال لا حالان:
+     'top'   دخولٌ جديد ⇒ أعلى الصفحة.
+     'focus' عودةٌ من شاشةٍ أخرى (معاينة · استيراد · مقارنة) أو تغيّرٌ
+             في البنية (حفظ · إضافة · حذف) ⇒ إلى بطاقة التحرير.
+     'keep'  تبديلُ سؤالٍ من الشريط ⇒ **لا تتحرّك الصفحة**.
+   🔴 و'keep' جوابُ عطلٍ قِيس: الشريط ملازمٌ للشاشة، فالمؤلّف يبدّل
+      السؤال وهو ينظر إليه — ولا ينتقل بين شاشتين. وكانت كلُّ نقرةٍ
+      تقذفه إلى أعلى الصفحة، فيعود بالتمرير إلى حيث كان. حركةٌ تحت
+      القدمين تُفقد الموضع، ولا تُشترى بشيء. */
+function render(at = 'focus'){
   const qs = Z.questions || [];
   const q  = qs[cur] || null;
 
@@ -130,7 +144,8 @@ function render(atTop){
   wireToolbar();
   wireList();
   if(q) wire(q);
-  atTop ? scrollTop() : focusMain();
+  if(at === 'top')        scrollTop();
+  else if(at === 'focus') focusMain();
 }
 
 /* البطاقة الفارغة تحمل الفعلين اللذين يخرجان منها — ولا تُحيل إلى
@@ -146,9 +161,11 @@ const emptyCard = () => `<div class="card" style="text-align:center;padding:34px
 </div>`;
 
 function go(i){
-  if(i === cur) return focusMain();   // نقرةٌ على الحاضر: تقريبٌ لا انتقال
+  /* نقرةٌ على الحاضر: تقريبٌ لا انتقال — وهي المنفذ الوحيد إلى البطاقة
+     بعد أن صار تبديل السؤال لا يُحرّك الصفحة. */
+  if(i === cur) return focusMain();
   if(dirty && !confirm("تغييرات غير محفوظة في هذا السؤال — أتتركها؟")) return;
-  cur = i; dirty = false; render();
+  cur = i; dirty = false; render('keep');
 }
 
 function leave(){
@@ -287,14 +304,15 @@ function qCard(q){
     </div>`;
 
   return `
-    ${locked ? `<div class="warnbox">أُجيب عن هذا السؤال ${AR(q.answered)} مرة —
-      والتعديل يكسر ربط الإجابات بما رآه الطلاب فعلاً.
-      <div style="margin-top:11px">
-        <button class="btn primary" id="nv">✎ أنشئ إصداراً جديداً</button>
-      </div>
-      <div class="eq-bs" style="margin-top:9px;line-height:1.75">
-        يُنسخ السؤال بخياراته وأكواده وخانته وموضعه، فتحرّره بحرّية.
-        والقديم يتقاعد بإجاباته سليمة — يختفي من الاختبار ولا يُمحى.</div>
+    ${locked ? `<div class="eq-lock">
+      <span class="eq-lock-t">🔒 مقفل · أُجيب عنه <b>${AR(q.answered)}</b> مرة</span>
+      <button class="eq-i-b" id="nvi" aria-expanded="false" aria-controls="nvd"
+              title="لماذا هو مقفل، وما الذي يفعله «إصدارٌ جديد»؟">i</button>
+      <button class="btn primary" id="nv">✎ إصدارٌ جديد</button>
+      <div class="eq-lock-d" id="nvd" hidden>
+        التعديل يكسر ربط الإجابات بما رآه الطلاب فعلاً — ولهذا قُفلت الحقول.
+        <br>و«إصدارٌ جديد» يَنسخ السؤال بخياراته وأكواده وخانته وموضعه فتحرّره
+        بحرّية، والقديم يتقاعد بإجاباته سليمة — يختفي من الاختبار ولا يُمحى.</div>
     </div>` : ''}
     ${sectionBar(q, locked)}
     ${passageBar(q, locked)}
@@ -1133,6 +1151,14 @@ function wire(q){
   const sq = main.querySelector("#sq"); if(sq) sq.onclick = () => saveQ(q);
   const dq = main.querySelector("#dq"); if(dq) dq.onclick = () => dupQ(q);
   const nv = main.querySelector("#nv"); if(nv) nv.onclick = () => newVersion(q);
+  /* «i» تفتح الشرح في موضعه — والحالة في aria-expanded لا في صنفٍ
+     موازٍ، فقارئ الشاشة يقرأ ما يراه المبصر. */
+  const nvi = main.querySelector("#nvi");
+  if(nvi) nvi.onclick = () => {
+    const d = main.querySelector("#nvd");
+    d.hidden = !d.hidden;
+    nvi.setAttribute('aria-expanded', String(!d.hidden));
+  };
   const xq = main.querySelector("#xq"); if(xq) xq.onclick = () => delQ(q);
   const mu = main.querySelector("#mvup"); if(mu) mu.onclick = () => moveQ(-1);
   const md = main.querySelector("#mvdn"); if(md) md.onclick = () => moveQ(+1);

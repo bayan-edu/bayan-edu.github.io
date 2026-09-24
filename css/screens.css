@@ -571,7 +571,10 @@ body.gate .wrap{max-width:1000px}
   font-family:'Almarai';font-weight:700;font-size:var(--fs-meta)}
 .eq-back:hover{border-color:var(--accent);color:var(--accent)}
 .eq-back-a{flex:0 0 auto;opacity:.7}
-.eq-back-t{min-width:0;max-width:26ch;overflow:hidden;
+/* ⚠️ واتّسع من ٢٦ إلى ٤٦ حرفاً حين حُذف وصفُ الترويسة: صار هذا
+   الموضعَ الوحيد الذي يحمل اسمَ الدرس، فالقصُّ فيه يُفقده لا يختصره.
+   والانكماش يتكفّل بالضيّق — flex:0 1 auto على الزرّ. */
+.eq-back-t{min-width:0;max-width:46ch;overflow:hidden;
   text-overflow:ellipsis;white-space:nowrap}
 
 /* رقائق الأنماط — عدٌّ وفلترةٌ في عنصرٍ واحد.
@@ -649,6 +652,32 @@ body.gate .wrap{max-width:1000px}
   text-overflow:ellipsis;white-space:nowrap;color:var(--text-muted)}
 .eq-item.on .eq-b{color:var(--text)}
 .eq-k{font-size:var(--fs-tag);opacity:.6}
+
+/* ══ المقفل — سطرٌ واحد وعلامةُ «i» ══
+   🔴 كان صندوقاً من خمسة أسطر يتصدّر العمود، فيدفع السؤالَ نفسه تحت
+      الطيّة في شاشةٍ متوسّطة. والبيانُ فيه سطرٌ واحد: **أنّه مقفل
+      وكم مرّةً أُجيب عنه**. أمّا «لماذا قُفل» و«ماذا يفعل الإصدار
+      الجديد» فشرحٌ يُطلب مرّةً ثم يُعرف، لا إنذارٌ يُقرأ كلَّ مرّة.
+   ⚠️ ولم يُنقل الشرح بل أُخّر نقرةً: يفتح **في موضعه** تحت السطر
+      نفسه. والحجّة تُكتب حيث يقع السؤال — وهذا هو موضعه بعينه. */
+.eq-lock{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  background:var(--warn-soft);border:1px solid var(--warn-line);
+  border-radius:11px;padding:9px 13px;margin-bottom:9px}
+.eq-lock-t{flex:1;min-width:0;font-size:var(--fs-meta);
+  color:var(--warn-text);line-height:1.7}
+.eq-lock-t b{font-family:'Almarai';font-weight:800}
+.eq-lock .btn{flex:0 0 auto;font-size:var(--fs-meta);padding:8px 15px}
+.eq-lock-d{flex:1 1 100%;font-size:var(--fs-meta);color:var(--warn-text);
+  line-height:1.85;border-top:1px solid var(--warn-line);padding-top:9px}
+
+/* علامةُ «i» — ٢٢px رسماً و٣٤ إصابةً، فالدائرة الصغيرة تُخطأ باللمس */
+.eq-i-b{flex:0 0 auto;width:22px;height:22px;border-radius:50%;cursor:pointer;
+  background:var(--warn-fill);border:1px solid var(--warn-edge);color:var(--warn);
+  font-family:'Almarai';font-weight:800;font-size:var(--fs-tag);line-height:1;
+  display:flex;align-items:center;justify-content:center;position:relative;
+  transition:background .16s,color .16s}
+.eq-i-b::after{content:'';position:absolute;inset:-6px}
+.eq-i-b:hover,.eq-i-b[aria-expanded="true"]{background:var(--warn-edge);color:var(--on-warn)}
 
 /* الوسط: تحرير بهيئة شاشة الطالب */
 .eq-main{scroll-margin-top:calc(var(--eqbar) + var(--eqtb) + 14px)}
