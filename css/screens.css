@@ -395,8 +395,16 @@ body.gate{padding-bottom:0}
 .score-num{font-family:'Almarai';font-weight:800;font-size:clamp(2.4rem,11vw,3.5rem);line-height:1;color:var(--accent)}
 .score-of{color:var(--text-muted);font-size:var(--fs-ui);margin-top:6px}
 .verdict{font-family:'Almarai';font-weight:700;margin-top:14px;font-size:var(--fs-read)}
-.unlocked{margin-top:14px;background:var(--ok-soft);border:1px solid var(--ok-line);
- border-radius:11px;padding:13px;font-family:'Almarai';font-weight:700;font-size:var(--fs-ui);color:var(--ok)}
+/* محايدٌ لا أخضر (b83): كان يستعمل لون «أصبتَ»، وما فيه ليس حكماً على
+   إجابة — «أتممتَ الدرس» إنجازٌ على مستوى الدرس لا الإجابة، و«فُتح لك
+   الآن» حالةٌ جديدة وطريقٌ أمام الطالب. وكلُّ أخضرَ خارج الحكم يُضعف
+   الأخضرَ حين يُحكَم به فعلاً — والتشخيصُ يعيش على وضوح لغة الحكم.
+   ⚠️ والمعنى لا يُفقَد: 🎉 و🔓 والكلماتُ تحمله كاملاً — فاللونُ كان
+      تكراراً يصرف عائلةً محجوزة، لا إضافةً تُفهِم.
+   🟡 وصنفٌ واحد لمعنيين: لو صار «فُتح لك الآن» رابطاً إلى الدرس التالي
+      لاستحقّ لونَ التفاعل عن جدارة. تغييرُ سلوكٍ لا لون — مطروحٌ للنقاش. */
+.unlocked{margin-top:14px;background:var(--fill-soft);border:1px solid var(--line);
+ border-radius:11px;padding:13px;font-family:'Almarai';font-weight:700;font-size:var(--fs-ui);color:var(--text)}
 
 /* الحدّ الملوّن يتبع اتجاه المحتوى — سؤال إنجليزي يأخذه يساراً */
 .rev{border-inline-start:3px solid var(--line);padding:15px;margin-bottom:11px;
