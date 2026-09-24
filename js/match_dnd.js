@@ -81,6 +81,11 @@ function setup(mq, onChange){
     const t = sl.querySelector('.slot-t');
     if(t) t.textContent = bw.textContent.trim();
     sl.dataset.v = bw.dataset.bw;
+    /* 🆕 114 · والوسمُ على الخانة نفسها **وعلى صفّها**: المزاوجةُ تُغلّف
+       خانتَها بـ‎.pair‎، و«إكمال من قائمة» خانتُه في متن الجملة بلا غلاف.
+       فلو عُلِّق الوسمُ على الغلاف وحده لبقيت خانةُ الجملة تبدو فارغة
+       وفيها كلمة — وهو صمتٌ يراه الطالب ولا يفهمه. */
+    sl.classList.add('filled');
     sl.closest('.pair')?.classList.add('filled');
     drop(); paintUsed();
     say(`وُضع «${bw.textContent.trim()}» عند ${label(sl)}`);
@@ -91,6 +96,7 @@ function setup(mq, onChange){
     const t = sl.querySelector('.slot-t');
     if(t) t.textContent = t.dataset.ph || '';
     delete sl.dataset.v;
+    sl.classList.remove('filled');
     sl.closest('.pair')?.classList.remove('filled');
     paintUsed();
     say(`أُزيل مقابل ${label(sl)}`);

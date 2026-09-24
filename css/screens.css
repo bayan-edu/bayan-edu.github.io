@@ -445,6 +445,15 @@ body.gate{padding-bottom:0}
 .rc-note{opacity:.9;line-height:1.7}
 /* مراجعة msq — صفٌّ لكل خيار لا صفٌّ للسؤال.
    فيرى الطالب حدّ المفهوم كاملاً: ما أدخله وليس منه، وما أخرجه وهو منه. */
+/* 🆕 114 · رقمُ الفراغ في نصٍّ يُقرأ ولا يُجاب (المراجعة والتقارير):
+   ‎{{1}}‎ رمزُ تأليفٍ لا يخصّ الطالب، وكان يظهر خاماً منذ 63.
+   والرقمُ يقابل ترقيمَ إجاباته تحته، فيعرف أيَّ فراغٍ سقط. */
+.rev-blank{display:inline-flex;align-items:center;justify-content:center;
+  min-width:2.1em;padding:0 6px;margin:0 3px;border-radius:7px;
+  background:var(--fill-strong);color:var(--text-muted);
+  font-family:'Almarai';font-weight:800;font-size:.85em;line-height:1.75;
+  vertical-align:baseline}
+
 .jds{display:flex;flex-direction:column;gap:7px;margin:9px 0}
 .jd{display:flex;align-items:flex-start;gap:10px;padding:9px 11px;border-radius:10px;
   background:var(--fill-soft);border:1px solid var(--line);
