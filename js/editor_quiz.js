@@ -1080,33 +1080,27 @@ function wire(q){
         mark();
       });
 
-      /* 🔑 نصُّ المقابل — كذلك. ولا شيء ينقطع: المفتاح في data-bk
-         والنصُّ وحده يتغيّر. هذا هو موضعُ العطل الأوّل، وقد زال. */
-      box.querySelectorAll(".mt-bt").forEach(el => el.oninput = () => {
-        const b = (q.bank || []).find(x => x.k === el.closest('.mt-chip')?.dataset.bk);
+      /* 🔑 نصُّ المقابل — في صفّه أو في الزائد سواء. ولا شيء ينقطع:
+         المفتاح في data-bk والنصُّ وحده يتغيّر. وهذا موضعُ العطل
+         الأوّل في 112، وقد زال. */
+      box.querySelectorAll(".mt-mb,.mt-sb").forEach(el => el.oninput = () => {
+        const b = (q.bank || []).find(x => x.k === el.dataset.bk);
         if(!b) return;
         b.t = el.value;
-        /* القوائمُ تعرض النصَّ نفسه ⇒ تُحدَّث في موضعها بلا إعادة رسم */
-        box.querySelectorAll(`option[value="${CSS.escape(b.k)}"]`)
+        /* يُرفع الوسمُ لحظةَ الكتابة، ولا يُوضَع هنا: وضعُه على كلّ
+           فراغٍ يُحمّر سؤالاً بكراً بأكمله — والإنذارُ الدائم لا يُرى. */
+        if(el.value.trim()) el.classList.remove('miss');
+        /* قوائمُ «الخلط المتوقَّع» تعرض النصَّ نفسه ⇒ تُحدَّث في موضعها */
+        if(el.dataset.bk) box.querySelectorAll(`option[value="${CSS.escape(b.k)}"]`)
            .forEach(op => op.textContent = el.value);
         mark();
       });
 
       /* .miss تُرفع لحظة الاختيار — فالحقلُ الناقص يبقى ظاهراً وحده */
-      box.querySelectorAll(".mt-key,.mt-wt,.mt-wc").forEach(el => el.onchange = () => {
+      box.querySelectorAll(".mt-wt,.mt-wc").forEach(el => el.onchange = () => {
         el.classList.toggle('miss', !el.value);
-        collect(q);
-        /* اختيارُ مقابلٍ يُبدّل حالَ رقاقته: مُزاوَجةٌ أو زائدة */
-        if(el.classList.contains('mt-key')) paintSpare();
-        mark();
+        collect(q); mark();
       });
-
-      /* النقطةُ على الرقاقة تتبع الاستعمال — تُطلى ولا يُعاد الرسم */
-      function paintSpare(){
-        const used = new Set(Object.values(q.accept?.pairs || {}));
-        box.querySelectorAll('.mt-chip').forEach(ch =>
-          ch.classList.toggle('spare', !used.has(ch.dataset.bk)));
-      }
 
       /* الصفُّ يُدرَج في الصفحة ولا يُعاد الرسم: صفٌّ فارغ لا يبقى
          بعد collect (يُتجاوَز)، فلو أعدنا الرسم لاختفى فور ظهوره. */
@@ -1127,12 +1121,20 @@ function wire(q){
         if((q.options || []).length <= 3){
           toast("المزاوجة تحتاج ثلاثة بنودٍ على الأقل"); return; }
         collect(q);
-        const k = el.dataset.rmp;
+        const k    = el.dataset.rmp;
+        const mate = (q.accept?.pairs || {})[k];
         q.options = (q.options || []).filter(o => o.k !== k);
         if(q.accept?.pairs) delete q.accept.pairs[k];
+
+        /* 🆕 ويذهب مقابلُه الصحيح معه — فالصفُّ وحدةٌ واحدة. إلا أن
+           يشير إليه بندٌ آخر (اقترانٌ مشترك جاء من استيراد)، فيبقى. */
+        const still = Object.values(q.accept?.pairs || {}).includes(mate);
+        if(mate && !still) q.bank = (q.bank || []).filter(b => b.k !== mate);
+
         if(q.wrong){
           Object.keys(q.wrong).forEach(key => {
-            if(key.split(':')[0] === k) delete q.wrong[key]; });
+            const [ik, bk] = key.split(':');
+            if(ik === k || (bk === mate && !still)) delete q.wrong[key]; });
           if(!Object.keys(q.wrong).length) q.wrong = null;
         }
         redraw();
@@ -1142,7 +1144,7 @@ function wire(q){
          معه صراحةً. وتركُه يُنتج مفتاحاً يشير إلى لا شيء، وهو الصمت. */
       box.querySelectorAll(".mt-rmb").forEach(el => el.onclick = () => {
         collect(q);
-        const k = el.closest('.mt-chip')?.dataset.bk; if(!k) return;
+        const k = el.dataset.bk; if(!k) return;
         q.bank = (q.bank || []).filter(b => b.k !== k);
         if(q.accept?.pairs)
           Object.keys(q.accept.pairs).forEach(ik => {
@@ -1161,9 +1163,11 @@ function wire(q){
         collect(q);
         (q.bank = q.bank || []).push({ k: mtKey('b', mtBankKeys(q)), t: '' });
         redraw();
-        box.querySelector('.mt-chip:last-of-type .mt-bt')?.focus();
+        box.querySelector('.mt-chip:last-of-type .mt-sb')?.focus();
       };
 
+      /* بندٌ جديد: يُضاف وحدَه، و mtEnsure تُولّد مقابلَه عند الرسم —
+         فموضعُ الاقتران واحد، ولا يُكتب مرّتين. */
       const ap = box.querySelector("#addprompt");
       if(ap) ap.onclick = () => {
         if((q.options || []).length >= 8){ toast("ثمانية بنودٍ حدٌّ كافٍ"); return; }
@@ -1257,12 +1261,34 @@ const mtItemKeys = q => new Set((q.options || []).map(o => o.k).filter(Boolean))
 const mtBankKeys = q => new Set((q.bank    || []).map(b => b.k).filter(Boolean));
 
 /* 🔧 ترميمُ ما جاء بلا مفاتيح — سؤالٌ أُلّف قبل 112، أو استيرادٌ خام.
-   يُدعى عند الرسم: فيفتحه المؤلّف فيُبنى مفتاحُه، ويحفظه فيثبت. */
-function mtEnsureKeys(q){
+   يُدعى عند الرسم: فيفتحه المؤلّف فيُبنى مفتاحُه، ويحفظه فيثبت.
+
+   🆕 ويضمن أيضاً أنّ **لكلّ بندٍ مقابلَه الصحيح** — فالصفُّ في المحرّر
+      هو الاقتران نفسه، لا بندٌ يُختار له صوابٌ من قائمة. وبندٌ بلا
+      صوابٍ (سؤالٌ قديم · استيرادٌ ناقص · بندٌ أُضيف الآن) يُولَّد له
+      مقابلٌ فارغ: **يُرى فراغاً يُملأ لا صمتاً يُحفظ** — و save_question
+      ترفض المقابلَ الفارغ، فالفراغ هنا إنذارٌ صادق.
+   ⚠️ وهي **مُتماثلة**: ما اقترن لا يُعاد اقترانُه، فلا تتكاثر المقابلات
+      مع كلّ رسم. */
+function mtEnsure(q){
   const ik = mtItemKeys(q), bk = mtBankKeys(q);
   (q.options || []).forEach(o => { if(!o.k) o.k = mtKey('i', ik); });
   (q.bank    || []).forEach(b => { if(!b.k) b.k = mtKey('b', bk); });
+
+  q.accept = q.accept || {};
+  const pairs = q.accept.pairs = q.accept.pairs || {};
+  const have  = new Set((q.bank || []).map(b => b.k));
+  (q.options || []).forEach(o => {
+    if(pairs[o.k] && have.has(pairs[o.k])) return;
+    const b = { k: mtKey('b', bk), t: '' };
+    (q.bank = q.bank || []).push(b);
+    have.add(b.k);
+    pairs[o.k] = b.k;
+  });
 }
+
+/* مقابلُ البند الصحيح — الكائن لا المفتاح، فالنصُّ يُحرَّر في موضعه */
+const mtMate = (q, ik) => (q.bank || []).find(b => b.k === (q.accept?.pairs || {})[ik]);
 
 const mtBankSel = (bank, cls, val, ik, ph, locked) => `
   <select class="${cls}${val ? '' : ' miss'}" data-ik="${esc(ik)}" ${locked?'disabled':''}>
@@ -1311,34 +1337,44 @@ function mtCount(q){
       : 'بلا زائدٍ يُصيب البندَ الأخيرَ من يجهله — ولا يُسجَّل له كود.'}</span>`;
 }
 
-/* رقائقُ المقابلات — تُحرَّر في موضعها، ومفتاحُها لا يتبع حرفَها.
-   والنقطةُ تقول: أمُزاوَجٌ هذا المقابل أم زائد؟ فالزائدُ يُرى ويُقصد. */
-function mtBankChips(q, locked){
-  const used = new Set(Object.values(q.accept?.pairs || {}));
+/* المقابلاتُ الزائدة — لا بندَ لها، وهي **ميزةُ السؤال لا حشوُه**:
+   بلا زائدٍ يُحلّ البندُ الأخير بالاستبعاد، فيُصيبه من يجهله ولا
+   يُسجَّل له كود. وصمتُ التشخيص أخطر من خطئه. */
+function mtSpares(q, locked){
+  const used  = new Set(Object.values(q.accept?.pairs || {}));
+  const spare = (q.bank || []).filter(b => !used.has(b.k));
   return `
-    <div class="mt-bank">
-      <div class="mt-bank-h">
-        <label class="fl" style="margin:0">المقابلات</label>
-        <span class="mt-note">◦ الأجوفُ زائدٌ لم يُزاوَج — وهو مقصود</span>
+    <div class="mt-spare">
+      <div class="mt-spare-h">
+        <label class="fl" style="margin:0">مقابلاتٌ زائدة</label>
+        <span class="mt-note">لا بندَ لها — وهي التي تمنع حلَّ البند الأخير بالاستبعاد</span>
       </div>
-      <div class="mt-chips">
-        ${(q.bank || []).map(b => `
-          <span class="mt-chip${used.has(b.k) ? '' : ' spare'}" data-bk="${esc(b.k)}">
-            <i class="dot"></i>
-            <input class="mt-bt" dir="auto" value="${esc(b.t)}"
-                   placeholder="نصّ المقابل" ${locked?'disabled':''}
-                   aria-label="نصّ المقابل ${esc(b.k)}">
-            ${locked ? '' : `<button class="eq-x mt-rmb" title="احذف المقابل">✕</button>`}
+      <div class="mt-spares">
+        ${spare.map(b => `
+          <span class="mt-chip">
+            <input class="mt-sb${b.t.trim() ? '' : ' miss'}" data-bk="${esc(b.k)}"
+                   dir="auto" value="${esc(b.t)}" placeholder="مقابلٌ زائد"
+                   ${locked?'disabled':''} aria-label="مقابلٌ زائد">
+            ${locked ? '' : `<button class="eq-x mt-rmb" data-bk="${esc(b.k)}"
+                                     title="احذف المقابل الزائد">✕</button>`}
           </span>`).join("")}
-        ${locked ? '' : `<button class="mt-addb" id="addbank">＋ مقابل</button>`}
+        ${locked ? '' : `<button class="mt-addb" id="addbank">＋ مقابلٌ زائد</button>`}
       </div>
     </div>`;
 }
 
+/* ═══ الشبكة: صفٌّ لكلّ اقتران ═══
+   🔴 كان العرضُ عمودَ بنودٍ وقائمةَ مقابلاتٍ منفصلة، فيُنشئ المؤلّف
+      المقابلات أوّلاً ثم يعود يختار لكلّ بندٍ صوابَه من قائمةٍ منسدلة.
+      وهي **خطوةُ ربطٍ لا وجودَ لها في ذهنه**: هو يفكّر «التشبيه ←
+      مشابهةٌ بأداة» دفعةً واحدة. ⇒ الصفُّ هو الاقتران: البندُ يساره
+      مقابلُه، ويُكتبان معاً.
+   ⚠️ والترتيب هنا للتأليف وحده: get_quiz تخلط عمودَ المقابلات
+      بـ md5(بذرة‖السؤال‖مفتاح المقابل) — **بالمفتاح لا بالموضع**،
+      فلا يقفز مقابلٌ أمام الطالب إن حُرِّر نصُّه بين محاولتين. */
 function matchFields(q, locked){
-  mtEnsureKeys(q);
-  const bank  = q.bank || [];
-  const pairs = q.accept?.pairs || {};
+  mtEnsure(q);
+  const bank = q.bank || [];
 
   /* wrong_map مفتاحُها "مفتاح البند:مفتاح المقابل" ⇒ تُجمَّع تحت بندها */
   const wrongBy = {};
@@ -1347,29 +1383,38 @@ function matchFields(q, locked){
     (wrongBy[m[1]] = wrongBy[m[1]] || []).push({ b: m[2], code });
   });
 
-  const rows = (q.options || []).map((p, i) => `
+  const rows = (q.options || []).map((p, i) => {
+    const mate = mtMate(q, p.k) || { k:'', t:'' };
+    return `
     <div class="mt-item" data-ik="${esc(p.k)}">
       <div class="mt-line">
         <span class="key">${AR(i+1)}</span>
         <input class="eq-ob" data-o="${i}" dir="auto" value="${esc(p.body||'')}"
                placeholder="نصّ البند" ${locked?'disabled':''}>
-        ${mtBankSel(bank, 'mt-key', pairs[p.k] || '', p.k, 'اختر المقابل', locked)}
-        ${locked ? '<span></span>' : `<button class="eq-x" data-rmp="${esc(p.k)}" title="احذف البند">✕</button>`}
+        <span class="mt-arrow" aria-hidden="true">←</span>
+        <input class="mt-mb${(p.body||'').trim() && !mate.t.trim() ? ' miss' : ''}" data-bk="${esc(mate.k)}"
+               dir="auto" value="${esc(mate.t)}" placeholder="مقابلُه الصحيح"
+               ${locked?'disabled':''} aria-label="مقابل البند ${AR(i+1)}">
+        ${locked ? '<span></span>'
+                 : `<button class="eq-x" data-rmp="${esc(p.k)}" title="احذف البند">✕</button>`}
       </div>
       ${(wrongBy[p.k] || []).map(w => mtWrongRow(bank, p.k, w.b, w.code, locked)).join("")}
       ${locked ? '' : `<button class="mt-addw" data-aw="${esc(p.k)}">＋ خلطٌ متوقَّع</button>`}
-    </div>`).join("");
+    </div>`;
+  }).join("");
 
   return `
-    <div class="mt-meta">${mtCount(q)}</div>
-    ${mtBankChips(q, locked)}
-    ${!bank.length ? `<div class="eq-hint" style="display:block;padding:14px 0">
-        لا مقابلات بعد — أضف مقابلاً واحداً على الأقل لكلّ بند.</div>` : `
-      <div class="mt-tbl">
-        <div class="mt-hdr"><span>#</span><span>البند</span><span>صوابه</span><span></span></div>
-        ${rows}
-      </div>`}
-    ${locked ? '' : `<button class="btn ghost eq-addo" id="addprompt">＋ بند</button>`}`;
+    <div class="mt-meta">${mtCount(q)}
+      <span class="mt-note">والترتيب هنا للتأليف — يرى الطالب المقابلات مخلوطة.</span>
+    </div>
+    <div class="mt-tbl">
+      <div class="mt-hdr">
+        <span>#</span><span>البند</span><span></span><span>مقابلُه الصحيح</span><span></span>
+      </div>
+      ${rows}
+    </div>
+    ${locked ? '' : `<button class="btn ghost eq-addo" id="addprompt">＋ بند</button>`}
+    ${mtSpares(q, locked)}`;
 }
 
 /* جمع ما في الحقول إلى الكائن قبل أي إعادة رسم أو حفظ */
@@ -1407,16 +1452,16 @@ function collect(q){
        كلُّ ما يشير إلى سطرٍ عُدِّل — صامتاً. والرقاقةُ تحمل مفتاحها
        في data-bk، فتحريرُ نصّها لا يمسّ شيئاً سواه. */
     const byKey = new Map((q.bank || []).map(b => [b.k, b]));
-    main.querySelectorAll('.mt-chip').forEach(ch => {
-      const b = byKey.get(ch.dataset.bk);
-      if(b) b.t = ch.querySelector('.mt-bt')?.value ?? b.t;
+    main.querySelectorAll('.mt-mb,.mt-sb').forEach(el => {
+      const b = byKey.get(el.dataset.bk);
+      if(b) b.t = el.value;
     });
 
-    const pairs = {};
-    main.querySelectorAll('.mt-key').forEach(el => {
-      if(el.value) pairs[el.dataset.ik] = el.value;
-    });
-    q.accept = { pairs };
+    /* 🔑 و accept.pairs لا تُقرأ من الـDOM بعد اليوم: صارت **بنيةَ
+       الصفّ** لا اختياراً فيه — البندُ ومقابلُه في سطرٍ واحد، فمن
+       يملك الحقيقة هو الكائن. وكانت تُبنى من قوائمَ منسدلة، فلو
+       غابت القائمةُ من الشاشة (لأيّ سبب) لخرجت المفاتيحُ فارغة. */
+    q.accept = { pairs: { ...(q.accept?.pairs || {}) } };
 
     /* صفٌّ ناقصٌ (بلا مقابلٍ أو بلا كود) يُتجاوَز ولا يُحفَظ — فالمؤلّف
        يفتح صفّاً ثم يعدل عنه، ولا يُرفَض حفظُه لأجل نيّةٍ لم تكتمل. */
@@ -1437,8 +1482,13 @@ async function saveQ(q){
   const { data, error } = await api.saveQuestion({
     id: q.id ?? null, quiz: Z.id, kind: q.kind, body: q.body,
     position: cur + 1,
+    /* 🔴 ‎o.k‎ لازمٌ ولا يُسقَط: save_question ترفض بندَ مزاوجةٍ بلا
+       مفتاح («كل بندٍ يحتاج مفتاحاً ثابتاً»). وكان يُسقَط هنا منذ 112
+       ⇒ **لا تُحفَظ مزاوجةٌ من المحرّر قطّ**، والرفضُ يظهر إشعاراً
+       عابراً عند الحفظ وحده — فيُنسب إلى القاعدة لا إلى هذا السطر.
+       وفي سائر الأنماط ‎k‎ غيرُ معرَّف ⇒ JSON يُسقطه، فلا أثر له. */
     options: (q.options || []).map(o => ({
-      label: o.label, body: o.body, correct: !!o.correct, dx: o.dx })),
+      k: o.k, label: o.label, body: o.body, correct: !!o.correct, dx: o.dx })),
     explanation: q.explanation, model: q.model,
     passage: q.passage_id, objective: q.objective_id, section: q.section,
     points: q.points, lang: q.lang, difficulty: q.difficulty,
@@ -2081,8 +2131,10 @@ async function runImport(p){
         passage: q.passage ? (refMap[q.passage] ?? null) : null,
         explanation: q.explanation || null, model: q.model || null,
         difficulty: q.difficulty || null, lang: q.lang || 'ar',
+        /* 🔴 و‎o.k‎ هنا كذلك — والمسار الثاني كان يسقط بالعلّة نفسها.
+           parseImport تشترط المفتاح في الملفّ، ثم يُسقطه هذا السطر. */
         options: (q.options || []).map(o => ({
-          label: o.label, body: o.body, correct: !!o.correct, dx: o.dx })),
+          k: o.k, label: o.label, body: o.body, correct: !!o.correct, dx: o.dx })),
         /* 🔴 مفاتيحُ الإكمال **والمزاوجة** — تُرسَل للنمطين لا لواحد.
            وكان الشرطُ 'gap' وحده، والتصديرُ يكتبهما معاً (انظر أعلاه) ⇒
            ملفٌّ صُدِّر ثمّ استُورد يعود بلا مفتاحٍ ولا بنكٍ ولا تشخيص،
