@@ -145,11 +145,14 @@
    ⚠️ الكحليّ والفيروزيّ والذهبيّ هويةٌ لا حكم: لا تحمل معنى «اخترتَ» أو
       «أصبتَ» فتُقاس بمنطق التمايز الدلاليّ في رأس هذا الملف — استعمالها
       محصورٌ بمواضع العلامة (.gate-say ونحوها)، لا بمفردات الاختبار.
-   ⚠️ --logo-hole شفافةٌ دوماً عمداً: هي نفيُ الحبر، فتكشف عمّا خلفها
-      أياً كان — الشريط أو لوحة .gate-say الكحليّة — بلا افتراضٍ مسبق
-      عن الخلفية، وبلا حاجةٍ لقيمةٍ ثانية في الداكنة. */
+   🔴 --logo-hole **لونٌ صلب لا شفافية**: ثقوب B و A في هذا الملفّ ليست
+      نفياً بقاعدة even-odd، بل أشكالٌ تُرسم **فوق** الحرف بلون الورق.
+      فالشفافيةُ لا ترسم شيئاً ⇒ يبقى الحرف مصمتاً (وقع فعلاً: ظهرت
+      B و A كتلتين). ⇒ تُملأ بلون ما خلفها بالضبط.
+      وقيمتُها هنا var(--page) فترثُ السِمتين بلا تكرار — ومن وضع الشعار
+      على غير الورق (لوحة .gate-say الكحليّة) يُعيد تعريفها عنده. */
 :root{
-  --logo-hole:transparent;
+  --logo-hole:var(--page);
   --brand-navy:#0D345E; --brand-teal:#42B7B4; --brand-teal-2:#63AEA9;
   --brand-gold:#D6B76D; --brand-shadow:#3C5979}
 
@@ -244,6 +247,51 @@ header.bare{padding:0}
    معاً — والصورة تكرّر الاسم ولا تحمل الشعار، فيُخفى الاسم وحده. */
 .brand.has-logo .brand-name{display:none}
 .brand.has-logo .brand-text{display:flex}
+
+/* ══ مشهد الافتتاح — البوابة وحدها ══
+   الخطّ الزمنيّ كما صُمّم في معاينة splash، لكن **في مكانه** لا طبقةً
+   تحجب الشاشة: البوابة إجراءٌ متكرّرٌ لعائدٍ يعرف ما يريد (رأس البوابة
+   في screens.css) — وطبقةٌ ملء الشاشة تؤخّره ثانيتين كلَّ جلسة بلا مقابل.
+   فالنموذج صالحٌ للكتابة من اللحظة الأولى، والهوية تُكتب بجانبه.
+   🔑 **وبلا is-playing تظهر القطع كلُّها ساكنة** — فشلُ الـJS يُظهر شعاراً
+      تامّاً لا شاشةً فارغة. الحركة زينةٌ فوق حالةٍ صحيحة، لا شرطٌ لها.
+   ⚠️ والإزاحات بوحدات viewBox لا بكسلات الشاشة، فتكبر وتصغر مع الشعار
+      نفسه. وهي أرقام المعاينة مضروبةً في ١٫٦٤ — نسبةُ عرض الكلمة بين
+      الملفّين (١٦١٠ ⇐ ٢٦٤٠)، أي أن المسافة تبقى نسبةً ثابتة من الحرف. */
+.brand.hero .part{transform-box:fill-box}
+.brand.hero.is-playing .write{animation:sp-write .95s cubic-bezier(.65,0,.35,1) var(--d,0s) both}
+.brand.hero.is-playing .drop {animation:sp-drop .34s cubic-bezier(.3,.7,.4,1) var(--d) both;
+  transform-origin:center}
+.brand.hero.is-playing .grow {animation:sp-grow .6s cubic-bezier(.2,.8,.3,1.1) var(--d) both;
+  transform-origin:var(--o,center)}
+.brand.hero.is-playing .rise {animation:sp-rise .5s cubic-bezier(.2,.8,.3,1.2) var(--d) both}
+.brand.hero.is-playing .cap  {animation:sp-cap .65s cubic-bezier(.3,.7,.4,1) var(--d) both;
+  transform-origin:center bottom}
+.brand.hero.is-playing .up   {animation:sp-up .45s cubic-bezier(.2,.8,.3,1) var(--d) both}
+/* الشعار النصّيّ يلحق بالحروف — آخر ما يستقرّ */
+.brand.hero.is-playing .brand-slogan{animation:sp-slog .5s ease 2.15s both}
+
+/* الكتابة من اليمين إلى اليسار — كما يكتب الخطّاط */
+@keyframes sp-write{from{clip-path:inset(0 0 0 100%)}to{clip-path:inset(0 0 0 0)}}
+/* النقطة نقرةُ قلم: لا تُرى قبل أن يمرّ القلم فوقها، ثم تنزل وتنتفخ وتستقرّ */
+@keyframes sp-drop{0%{transform:translateY(-245px) scale(.3);opacity:0}
+  60%{transform:translateY(16px) scale(1.15);opacity:1}100%{transform:none;opacity:1}}
+/* الأقواس تنفتح من وعاء النون كصفحات كتاب */
+@keyframes sp-grow{from{transform:scale(.15);opacity:0}to{transform:none;opacity:1}}
+/* المتعلّم يطلع من بين الصفحات */
+@keyframes sp-rise{from{transform:translateY(280px) scale(.6);opacity:0}to{transform:none;opacity:1}}
+/* القبعة تهبط ثم تستقرّ */
+@keyframes sp-cap{0%{transform:translateY(-490px) rotate(-16deg);opacity:0}
+  60%{transform:translateY(20px) rotate(4deg);opacity:1}
+  82%{transform:translateY(-8px) rotate(-1.5deg)}100%{transform:none;opacity:1}}
+@keyframes sp-up{from{transform:translateY(115px);opacity:0}to{transform:none;opacity:1}}
+@keyframes sp-slog{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}
+
+/* من فعّل «تقليل الحركة» في جهازه: لا يُلغى المشهد بل يُهدَّأ — القطع
+   تظهر بالترتيب نفسه تلاشياً بلا انتقالٍ ولا ارتداد. */
+.brand.hero.is-soft.is-playing .part,
+.brand.hero.is-soft.is-playing .brand-slogan{animation:sp-fade .5s ease var(--d,0s) both}
+@keyframes sp-fade{from{opacity:0}to{opacity:1}}
 h1{font-family:'Almarai';font-weight:800;font-size:clamp(1.3rem,4.4vw,1.72rem);line-height:1.4}
 .sub{color:var(--text-muted);font-size:var(--fs-ui);margin-top:6px}
 

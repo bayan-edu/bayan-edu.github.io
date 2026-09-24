@@ -59,6 +59,22 @@ export function renderGate(msg){
     </div>
    </div>`;
 
+  /* مشهد الافتتاح — يُكتب الشعارُ بجانب النموذج لا فوقه.
+     ⚠️ مرّةً واحدة في الجلسة: renderGate تُعاد عند كل تبديلٍ بين دخولٍ
+        وتسجيل، والمشهد المتكرّر يصير عائقاً لا ترحيباً.
+     ⚠️ ولا شيء يتوقّف عليه: النموذج صالحٌ للكتابة من اللحظة الأولى،
+        وبلا is-playing يظهر الشعار تامّاً (base.css · مشهد الافتتاح). */
+  const heroEl = app.querySelector(".brand.hero");
+  if(heroEl){
+    let seen = false;
+    try{ seen = sessionStorage.getItem("bayan.splash.seen") === "1"; }catch(e){}
+    if(!seen){
+      try{ sessionStorage.setItem("bayan.splash.seen","1"); }catch(e){}
+      if(matchMedia("(prefers-reduced-motion: reduce)").matches) heroEl.classList.add("is-soft");
+      heroEl.classList.add("is-playing");
+    }
+  }
+
   document.getElementById("alt").onclick = ()=>{ S.gate = reg ? "login" : "register"; renderGate(); };
   document.getElementById("go").onclick = submitGate;
   ["em","pw","nm","kl"].forEach(id=>{

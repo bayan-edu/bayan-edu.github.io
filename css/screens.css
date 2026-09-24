@@ -19,25 +19,29 @@
    🔴 القول والعيّنة محذوفان مؤقّتاً بانتظار صياغة.
    ══════════════════════════════════════════════════════════ */
 body.gate header{display:none}
-body.gate .wrap{max-width:1000px}
+/* ⚠️ الغلاف بلا عرضٍ أقصى ولا حشوٍ جانبيّ في البوابة وحدها: اللوحة
+   الكحليّة تبلغ حافّة الشاشة، والحشو يعود إلى عمود النموذج وحده. */
+body.gate .wrap{max-width:none;padding:0}
 
-.gatex{display:grid;grid-template-columns:1fr;gap:24px;padding-top:20px;
+.gatex{display:grid;grid-template-columns:1fr;gap:0;
   grid-template-areas:"say" "form"}
-/* لوحة الهوية — كحليّةٌ، هي أوّل مواضع الكحليّ خارج الشعار (راجع
-   --brand-navy في base.css). بطاقةٌ محتواة بحشوٍ ونصف قطرٍ كبير، لا
-   لوحةٌ ملء الحافة: الشبكة الحقيقية عمودان محدودا العرض بفجوة ٦٠px
-   بينهما (أسفل)، لا انقسامٌ حادٌّ حافةً لحافة كما في مسوّدةٍ أولى.
-   والتدرّج لمسة عمقٍ خفيفة لا زخرفة: كحليٌّ إلى كحليٍّ، لا لونٌ غريب. */
-.gate-say{grid-area:say;text-align:center;
+/* لوحة الهوية — كحليّةٌ ممتدّة حافّةً لحافّة، وهي أوّل مواضع الكحليّ خارج
+   الشعار (راجع --brand-navy في base.css).
+   ⚠️ **ممتدّةٌ لا بطاقة**: البطاقة المحتواة بنصف قطرٍ وظلّ بدت مقطوعةً
+      — مستطيلٌ كحليٌّ معلَّقٌ بلا سبب. واللوحة الممتدّة تُقرأ قراراً:
+      نصفٌ للهوية ونصفٌ للإجراء، وهو نمط شاشات الدخول المعروف.
+   ⚠️ ولونٌ مصمت لا تدرّج — والسبب تقنيٌّ قبل أن يكون ذوقاً: ثقوب
+      حروف BAYAN تُملأ بلون الخلفية بالضبط (انظر --logo-hole)، والتدرّج
+      يجعل «بالضبط» مستحيلة. */
+.gate-say{grid-area:say;text-align:center;background:var(--brand-navy);
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  background:radial-gradient(140% 100% at 50% 0%, #16447a 0%, var(--brand-navy) 65%);
-  border-radius:calc(var(--r) * 2);box-shadow:var(--shadow);
-  padding:clamp(36px,8vw,64px) clamp(24px,6vw,40px)}
-/* الشعار على الكحليّ دوماً أبيض — لا يتبع سِمة الصفحة: خلفيّته المحليّة
-   كحليّةٌ ثابتة في الحالتين، خلافاً لموضعه المعتاد فوق الورق مباشرة. */
-.gate-say .brand.hero{--logo-ink:#fff}
-.gate-say .brand.hero .brand-slogan{color:rgba(255,255,255,.72)}
-.gate-form{grid-area:form;width:100%;max-width:410px;margin-inline:auto}
+  padding:clamp(40px,11vw,72px) 24px}
+/* الشعار على الكحليّ: حبرُه أبيض وثقوبُه كحليّة — ولا يتبع سِمة الصفحة،
+   لأن خلفيّته المحليّة كحليّةٌ ثابتة في السِمتين معاً. */
+.gate-say .brand.hero{--logo-ink:#fff;--logo-hole:var(--brand-navy);margin-bottom:0}
+.gate-say .brand.hero .brand-slogan{color:rgba(255,255,255,.78)}
+.gate-form{grid-area:form;width:100%;max-width:410px;margin-inline:auto;
+  padding:clamp(26px,6vw,38px) 18px 0}
 
 /* فاصلٌ لا كلمة فيه: وظيفته أن يقول «انتهى الإجراء الأول» */
 .gate-sep{height:1px;background:var(--line);margin:20px 0 16px}
@@ -52,10 +56,13 @@ body.gate .wrap{max-width:1000px}
 .gate-alt:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
 @media(min-width:900px){
-  .gatex{grid-template-columns:1.02fr .98fr;gap:60px;padding-top:0;
-    grid-template-areas:"form say";
-    align-items:center;min-height:calc(100vh - 110px)}
-  .gate-form{margin-inline:0}
+  /* نصفان يملآن الشاشة طولاً وعرضاً: الهوية يساراً والنموذج يميناً.
+     ⚠️ والنموذج وحده يتوسّط عمودَه (align-self) — اللوحة تمتدّ. */
+  .gatex{grid-template-columns:1fr 1fr;grid-template-areas:"form say";
+    align-items:stretch;min-height:100vh}
+  .gate-say{padding:48px}
+  .gate-say .brand.hero .brand-logo{height:clamp(150px,16vw,230px)}
+  .gate-form{align-self:center;padding:40px 24px}
 }
 
 /* ═══ البوابة ═══ */
