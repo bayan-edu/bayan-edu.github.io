@@ -638,3 +638,14 @@ body.gate .sbox{display:none}
 /* الاستثناء أخفت من الافتراض — واجهةٌ تعرض خيارين متساويين
    تطلب قراراً لم يكن مطلوباً. */
 .eq-alt{ opacity:.6; font-size:.85em }
+
+/* ── تذييل الموقع ──
+   رابطٌ إلى الصفحات الثابتة (سياسة الخصوصية). **محايدٌ لا عائلةَ له**:
+   لا يقول «أصبتَ» ولا «انتبه» ولا «اخترتَ» — فيأخذ --text-muted و--line،
+   ولا يمسّ --accent إلا لحظةَ التحويم حيث يصير تفاعلاً فعلاً. */
+.site-foot{text-align:center;padding:26px 18px 0;
+  font-size:var(--fs-tag);color:var(--text-muted)}
+.site-foot a{color:inherit;text-decoration:none;
+  border-bottom:1px solid var(--line);transition:color .18s,border-color .18s}
+.site-foot a:hover{color:var(--accent);border-bottom-color:var(--accent)}
+.site-foot a:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:3px}
