@@ -28,6 +28,18 @@ body.gate header{display:none}
 body.gate .wrap{max-width:none;padding:0}
 body.gate{padding-bottom:0}
 
+/* 🔴 والتذييل يقع في الفخّ نفسه: البوابة ‎100vh‎ على الشاشات الواسعة،
+   وعنصرٌ في المجرى تحتها يُضيف **شريطَ تمريرٍ لا محتوى وراءه** — وهو
+   عينُ ما صُفِّر من أجله padding السفليّ أعلاه. فيُرفع من المجرى ويُلصق
+   بأسفل **عمود النموذج وحده** لا عرضَ الشاشة: لونُه معايَرٌ على الورق،
+   ولو امتدّ تحت اللوحة الكحليّة لاختفى فيها.
+   ⚠️ و‎inset-inline-start‎ في RTL = يميناً، وهو موضع "form" في الشبكة.
+   وفي الضيّق تبقى البوابة بطولها الطبيعيّ (لا ‎100vh‎) ⇒ يبقى في المجرى. */
+@media(min-width:900px){
+  body.gate .site-foot{position:fixed;bottom:0;inset-inline-start:0;
+    width:50%;padding:0 18px 14px}
+}
+
 .gatex{display:grid;grid-template-columns:1fr;gap:0;
   grid-template-areas:"say" "form"}
 /* لوحة الهوية — كحليّةٌ ممتدّة حافّةً لحافّة، وهي أوّل مواضع الكحليّ خارج
