@@ -48,6 +48,16 @@ export const signUp = (email, password, fullName, klass, scaleId, levelId) =>
     options:{ data:{ full_name: fullName, klass,
                      scale_id: scaleId, level_id: levelId } } });
 
+/* 🆕 b90 · تسجيلُ المعلّم يقف هنا عند الاسم: بقيّةُ حقوله تحتاج قائمةَ
+   المواد، و`p_subjects_read` تشترط `auth.uid() is not null` ⇒ لا تُقرأ
+   قبل الجلسة. فتُؤجَّل إلى شاشة التفاصيل.
+   🔑 و`wants_teacher` تعبر الفجوة: من أنشأ حسابه ثمّ ترك الشاشة يعود
+      إليها عند أوّل دخول — **ولولا العلامة لَبقي طالباً بلا بابٍ يعود
+      منه**، إذ سقط رابط «انضم كمعلم». */
+export const signUpTeacher = (email, password, fullName) =>
+  db.auth.signUp({ email, password,
+    options:{ data:{ full_name: fullName, wants_teacher: true } } });
+
 
 /* ═══════════ ② الملف الشخصي والمناهج ═══════════ */
 
@@ -62,6 +72,32 @@ export const academicScales = () =>
   db.from('scales')
     .select('id,name,country,sort_order,levels(id,name,rank)')
     .eq('kind','academic').order('sort_order');
+
+/* 🆕 b90 · موادّ التسجيل — قراءةٌ مباشرة كأختها أعلاه: `subjects` مقروءةٌ
+   لـ anon بسياسة `p_subjects_read` القائمة، فلا دالّةَ جديدة تُكتب.
+   ⚠️ ولا تُخلَط بـ list_teachable_subjects: تلك تشترط is_teacher()،
+      والمسجِّلُ هنا لم يصر معلّماً بعد. */
+export const signupSubjects = () =>
+  db.from('subjects').select('id,name,family,sort_order')
+    .eq('active', true).order('sort_order');
+
+
+/* ═══════════ ②-ب تسجيل المعلّم وشهادة التأليف (120) ═══════════ */
+
+export const registerTeacher = o => db.rpc('register_teacher', {
+  p_full_name: o.fullName, p_school: o.school, p_subject: o.subject,
+  p_years: o.years, p_note: o.note, p_phone: o.phone });
+
+/* 🔒 الشهادةُ تُكتب في القاعدة بعد قراءة طريقةِ الجلسة من المصادِق —
+   والواجهةُ تطلبها ولا تمنحها. */
+export const markAuthorVerified = () => db.rpc('mark_author_verified');
+export const authClaimsPresent  = () => db.rpc('auth_claims_present');
+
+/* رمزُ بريدٍ مستقلٌّ عن تأكيد التسجيل العامّ — ولا يُنشئ حساباً */
+export const sendEmailOtp = email =>
+  db.auth.signInWithOtp({ email, options:{ shouldCreateUser:false } });
+export const verifyEmailOtp = (email, token) =>
+  db.auth.verifyOtp({ email, token, type:'email' });
 
 
 /* ═══════════ ③ المواد والدروس والمصادر ═══════════ */

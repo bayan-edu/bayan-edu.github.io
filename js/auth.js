@@ -8,17 +8,19 @@
 import * as api from './api.js';
 import { S } from './state.js';
 import { app, bar, head, toast, esc, AR, errBox, nav, registerRoutes,
-         registerCounts, registerSearch, refreshCounts, mathBoot } from './ui.js';
+         registerCounts, registerSearch, refreshCounts, mathBoot, scrollTop } from './ui.js';
 import { loadList, loadFeedback, loadChat, openSearchHit } from './student.js';
 import { loadTeacher, loadInbox, loadMySubjects } from './teacher.js';
 import { openEditor } from './editor.js';
 import { loadStudents, loadMyPerformance } from './analytics.js';
 import { loadFlashcards } from './flashcards.js';
 import { openPractice } from './practice.js';
+import { roleTabs, wireRoleTabs, teacherFields, fillSubjects, readTeacher } from './role_form.js';
 
 /* ═══════════ ① البوابة ═══════════ */
 
 export function renderGate(msg){
+  S.role ||= 'student';
   bar.innerHTML = "";
   head("", "", true);
   /* الترويسة تُخفى وتُنقَل هويتها إلى العمود — ونستنسخ #brand كما هو
@@ -35,13 +37,26 @@ export function renderGate(msg){
     <div class="gate-form">
     ${msg?`<div class="err"><b>تنبيه</b>${esc(msg)}</div>`:''}
     <div class="card">
+      ${/* 🆕 b90 · بوابةٌ واحدة: مسارُ «انضم كمعلم» المنفصل أُدمج هنا.
+            والاختيارُ أوّلُ ما يُرى — فالحقول تتبعه، ولا يُملأ نموذجٌ
+            ثمّ يُقال للمسجِّل إنّه ملأ نموذجَ غيره. */''}
+      ${reg ? roleTabs(S.role) : ''}
       <label class="fl">البريد الإلكتروني</label>
-      <input type="email" id="em" placeholder="name@example.com" autocomplete="email">
+      <input type="email" id="em" value="${esc(draft.em||'')}"
+             placeholder="name@example.com" autocomplete="email">
       <label class="fl" style="margin-top:16px">كلمة المرور</label>
       <input type="password" id="pw" placeholder="٦ أحرف على الأقل" autocomplete="${reg?'new-password':'current-password'}">
-      ${reg?`
+      ${/* 🆕 b90 · المعلّمُ يقف هنا عند الاسم — وبقيّةُ حقوله في شاشة
+            التفاصيل بعد الجلسة، لأنّ `p_subjects_read` تشترط حساباً
+            فلا تُقرأ قائمةُ المواد قبله. والفصلُ احترامٌ لسياسةٍ قائمة
+            لا التفافٌ عليها. */''}
+      ${reg && S.role === 'teacher' ? `
+      <label class="fl" style="margin-top:16px">اسمك كما يظهر لطلابك</label>
+      <input type="text" id="nm" value="${esc(draft.nm||'')}" placeholder="الاسم الثلاثي">
+      <p class="small">ثمّ نسألك عن مادّتك ومدرستك في الخطوة التالية.</p>` : ''}
+      ${reg && S.role !== 'teacher' ? `
       <label class="fl" style="margin-top:16px">اسمك كما يظهر في التقارير</label>
-      <input type="text" id="nm" placeholder="الاسم الثلاثي">
+      <input type="text" id="nm" value="${esc(draft.nm||'')}" placeholder="الاسم الثلاثي">
       <label class="fl" style="margin-top:16px">المنهج الدراسي</label>
       <select id="cur"><option value="">— اختر المنهج —</option></select>
       <div id="grwrap">
@@ -50,13 +65,14 @@ export function renderGate(msg){
       </div>
       <p class="small" id="grnote">يحدّدان المواد التي تظهر لك · يمكنك تغييرهما لاحقاً</p>
       <label class="fl" style="margin-top:16px">مدرستك <span style="opacity:.6">(اختياري)</span></label>
-      <input type="text" id="kl" placeholder="مثال: مدرسة النيل الثانوية">`:''}
+      <input type="text" id="kl" value="${esc(draft.kl||'')}" placeholder="مثال: مدرسة النيل الثانوية">`:''}
     </div>
     <div class="nav"><button class="btn primary" id="go">${reg?'إنشاء الحساب':'دخول'}</button></div>
     ${reg?'':'<p class="hint" id="fp" style="cursor:pointer;text-decoration:underline">نسيت كلمة المرور؟</p>'}
     <div class="gate-sep"></div>
     <button class="gate-alt" id="alt">${reg?'لديك حساب؟ سجّل الدخول':'إنشاء حساب جديد'}</button>
-    <div class="teachlink"><a id="tlink">انضم كمعلم ←</a></div>
+    ${/* 🔓 وسقط رابط «انضم كمعلم ←»: صار الدورُ خياراً في التسجيل
+          نفسِه، ورابطٌ ثانٍ إلى الشيء نفسِه يُنتج نموذجين يتفارقان. */''}
     </div>
    </div>`;
 
@@ -91,11 +107,24 @@ export function renderGate(msg){
     toast(error ? "تعذّر الإرسال" : "أُرسل رابط الاستعادة لبريدك");
   };
 
-  const tl = document.getElementById("tlink");
-  if(tl) tl.onclick = ()=>{ S.gate="teacher"; renderTeacherSignup(); };
+  /* 🆕 b90 · تبديلُ الدور يُعيد الرسم — **وما كُتب يُحفظ قبله**.
+     ولولا ذلك لفقد المسجِّلُ بريدَه واسمَه لأنّه صحّح دورَه، فتعلّم
+     ألّا يصحّحه. ⚠️ وكلمةُ المرور لا تُحفَظ عمداً: قيمتُها لا تُكتب
+     في HTML، ولا تُترك في كائنٍ يعيش في الذاكرة بلا داعٍ. */
+  wireRoleTabs(app, r => { keepDraft(); S.role = r; renderGate(msg); });
 
-  if(reg) fillGrades();
+  if(reg && S.role !== 'teacher') fillGrades();
+
   document.getElementById("em").focus();
+}
+
+/* مسوّدةُ البوابة — تعيش بين رسمةٍ وأخرى لا أكثر */
+let draft = {};
+function keepDraft(){
+  const g = id => document.getElementById(id)?.value ?? undefined;
+  draft = { em: g('em'), nm: g('nm'), kl: g('kl'),
+            t: { fullName: g('rf_nm'), school: g('rf_sc'),
+                 subject: g('rf_sb'), years: g('rf_yr'), note: g('rf_nt') } };
 }
 
 /* قوائم المناهج والصفوف */
@@ -163,6 +192,12 @@ async function submitGate(){
   if(!em || !pw){ toast("أكمل البريد وكلمة المرور"); return; }
   if(pw.length < 6){ toast("كلمة المرور ٦ أحرف على الأقل"); return; }
 
+  /* 🆕 b90 · مسارُ المعلّم يتفرّع هنا وحده — والدخولُ واحدٌ للدورين
+     ولا يُسأل فيه عن دور: الدورُ صفةٌ في profiles تُقرأ **بعد**
+     المصادقة، ولو سُئل عنه عند الدخول لصار سؤالاً يُجاب عنه ولا أثرَ
+     لجوابه — يختار «معلم» فيدخل طالباً، فيظنّ العطلَ في حسابه. */
+  if(reg && S.role === 'teacher') return submitTeacherGate(em, pw);
+
   const nm = (document.getElementById("nm")||{}).value || "";
   const kl = (document.getElementById("kl")||{}).value || "";
   const g  = (document.getElementById("gr")||{}).value || "";
@@ -193,8 +228,159 @@ async function submitGate(){
   await boot();
 }
 
+/* 🆕 b90 · تسجيل المعلّم من البوابة الموحّدة
+   🔓 وحلّ محلّ renderTeacherSignup/submitTeacher: لا `pending_teacher`
+      ولا «⏳ طلبك قيد المراجعة» — الدورُ يُمنح فوراً، **والتأليفُ لا
+      يُمنح إلا بشهادةٍ** (120). واللوحةُ القديمة تبقى في القاعدة. */
+async function submitTeacherGate(em, pw){
+  const nm = (document.getElementById("nm")?.value || '').trim();
+  if(!nm){ toast("اكتب اسمك كما يظهر لطلابك"); return; }
+
+  keepDraft();
+  app.innerHTML = `<div class="status">جارٍ إنشاء الحساب…</div>`;
+
+  /* بريدٌ مسجَّلٌ سلفاً: يُدخَل به بدل أن يُردّ — فمن سجّل طالباً ثمّ
+     عاد معلّماً لا يُطلب منه بريدٌ ثانٍ. وخطأُ كلمة المرور يُقال. */
+  let r = await api.signUpTeacher(em, pw, nm);
+  if(r.error && /already registered/i.test(r.error.message)){
+    r = await api.signIn(em, pw);
+    if(r.error){ renderGate("هذا البريد مسجّل — وكلمة المرور غير صحيحة"); return; }
+  } else if(r.error){ renderGate(translate(r.error.message)); return; }
+
+  /* بلا جلسةٍ لا تُقرأ قائمةُ المواد ولا تُنادى register_teacher —
+     فتُؤجَّل إلى أوّل دخول، و`wants_teacher` تحفظ النيّة. */
+  if(!r.data.session){
+    S.gate = "login";
+    renderGate("أُنشئ حسابك ✅ فعّل بريدك ثمّ سجّل الدخول لإكمال بيانات المعلّم.");
+    return;
+  }
+
+  draft = {};
+  await boot();
+}
+
+
+/* ═══════════ ②-ب تفاصيل المعلّم — بعد الجلسة لا قبلها ═══════════
+   🔑 وهي الشاشةُ نفسُها التي يصلها داخلُ Google: الدورُ يُختار في
+      البوابة أو بعد OAuth، **والحقولُ واحدة** — مكوّنٌ واحد في
+      `role_form.js` لا نسختان. */
+
+export function renderTeacherDetails(msg){
+  nav('subjects');
+  head("أكمل بيانات المعلّم", S.prof?.full_name || '');
+  app.innerHTML = `
+    ${msg ? `<div class="err"><b>تنبيه</b>${esc(msg)}</div>` : ''}
+    <div class="card">
+      <div class="line">تظهر هذه البيانات لطلابك في شاشة «اختر معلمك».</div>
+      ${teacherFields({ fullName: S.prof?.full_name }, { name:false })}
+    </div>
+    <div class="nav" style="margin-top:16px">
+      <button class="btn primary" id="td_ok">تابِع</button>
+    </div>`;
+
+  fillSubjects(app);
+  document.getElementById("td_ok").onclick = async e => {
+    const f = readTeacher(app, { name:false, fullName: S.prof?.full_name });
+    if(!f.ok){ toast(f.msg); return; }
+
+    const b = e.currentTarget; b.disabled = true; b.textContent = '…';
+    const { data, error } = await api.registerTeacher(f.v);
+    b.disabled = false; b.textContent = 'تابِع';
+
+    if(error){ toast(error.message); return; }
+    if(!data?.ok){ renderTeacherDetails(data.error); return; }
+    await boot();
+  };
+  scrollTop();
+}
+
+
+/* ═══════════ ②-ب شهادةُ التأليف — خطوةُ بريدٍ خاصّة بالمعلّم ═══════════
+
+   🔑 ولماذا خطوةٌ مستقلّة لا `email_confirmed_at`: ذاك تابعٌ لإعداد
+      `Confirm email` العامّ — لا يميّز الأدوار، وإن عُطّل صار كلُّ بريدٍ
+      «مؤكَّداً» لحظةَ التسجيل فيسقط الحارسُ. (120)
+   🔒 والواجهةُ **تطلب** الشهادة ولا تمنحها: `mark_author_verified`
+      تقرأ طريقةَ الجلسة من `auth.mfa_amr_claims` — جدولُ المصادِق. */
+
+export function renderVerifyAuthor(msg){
+  nav('subjects');
+  head("تحقّق من بريدك", S.prof?.full_name || '');
+  app.innerHTML = `
+    ${msg ? `<div class="err"><b>تنبيه</b>${esc(msg)}</div>` : ''}
+    <div class="card">
+      <div class="line" style="color:var(--text);font-size:var(--fs-read)">
+        حسابك مفعّل كمعلّم — ويبقى **التأليف** معلّقاً على خطوةٍ واحدة.</div>
+      <div class="line" style="margin-top:8px">
+        نرسل رمزاً إلى <b dir="ltr">${esc(S.user?.email || '')}</b>.
+        وهي الخطوة التي تُثبت أنّ البريد بريدُك — ولا علاقة لها بتفعيل
+        الحساب عند التسجيل.</div>
+
+      <div class="nav" style="margin-top:16px">
+        <button class="btn primary" id="va_send">أرسل الرمز</button>
+      </div>
+
+      <div id="va_step" hidden>
+        <label class="fl" style="margin-top:16px">الرمز الذي وصلك</label>
+        <input type="text" id="va_code" dir="ltr" inputmode="numeric"
+               autocomplete="one-time-code" placeholder="٦ أرقام">
+        <div class="nav" style="margin-top:12px">
+          <button class="btn primary" id="va_ok">تحقّق</button>
+          <button class="btn ghost" id="va_again">أعد الإرسال</button>
+        </div>
+      </div>
+
+      <p class="small">ويمكنك تصفّح المنصّة الآن — التأليفُ وحده ينتظر.</p>
+    </div>
+    <div class="nav" style="margin-top:14px">
+      <button class="btn ghost" id="va_skip">لاحقاً</button>
+    </div>`;
+
+  const $ = id => document.getElementById(id);
+  const send = async b => {
+    b.disabled = true;
+    const { error } = await api.sendEmailOtp(S.user.email);
+    b.disabled = false;
+    if(error){ toast(translate(error.message)); return; }
+    $('va_step').hidden = false; $('va_code').focus();
+    toast("أُرسل الرمز إلى بريدك");
+  };
+
+  $('va_send').onclick    = e => send(e.currentTarget);
+  $('va_again').onclick   = e => send(e.currentTarget);
+  $('va_skip').onclick    = () => loadTeacher();
+  $('va_code').onkeydown  = e => { if(e.key === 'Enter') $('va_ok').click(); };
+
+  $('va_ok').onclick = async e => {
+    const code = ($('va_code').value || '').replace(/\s/g, '');
+    if(!code){ toast("اكتب الرمز"); return; }
+    const b = e.currentTarget; b.disabled = true; b.textContent = '…';
+
+    const { error } = await api.verifyEmailOtp(S.user.email, code);
+    if(error){ b.disabled = false; b.textContent = 'تحقّق';
+               toast(translate(error.message)); return; }
+
+    /* 🔑 والشهادة تُطلب من القاعدة بعد أن صارت الجلسةُ جلسةَ رمز —
+       فهي التي تقرأ الطريقة، لا هذه الشاشة. */
+    const { data, error: e2 } = await api.markAuthorVerified();
+    b.disabled = false; b.textContent = 'تحقّق';
+
+    if(e2){ toast(e2.message); return; }
+    if(!data?.ok){
+      /* 🔴 ويُقال السببُ بنصّه لا «تعذّر»: الرسالةُ الغامضة تُبقي
+         المعلّم يعيد المحاولة على ما لا يُصلحه. */
+      renderVerifyAuthor(data?.error || 'تعذّر إتمام التحقّق'); return;
+    }
+    toast("اكتمل التحقّق — صار لك التأليف");
+    await boot();
+  };
+}
+
 export function translate(m){
   if(/Invalid login/i.test(m))       return "البريد أو كلمة المرور غير صحيحة";
+  if(/Token has expired|expired/i.test(m)) return "انتهت صلاحية الرمز — اطلب رمزاً جديداً";
+  if(/Invalid token|otp/i.test(m))   return "الرمز غير صحيح — تأكّد منه أو اطلب غيره";
+  if(/rate limit|too many/i.test(m)) return "أكثرتَ من الطلب — انتظر قليلاً ثمّ أعد المحاولة";
   if(/already registered/i.test(m))  return "هذا البريد مسجّل بالفعل — سجّل الدخول";
   if(/Email not confirmed/i.test(m)) return "فعّل بريدك أولاً من رابط التفعيل";
   return m;
@@ -223,9 +409,19 @@ export async function boot(){
      وبلا await عمداً: الشاشة لا تنتظر رقماً، و paintCounts تلحق بها. */
   refreshCounts();
 
+  /* 🔓 b90 · pending_teacher لم يعد يُنتَج: register_teacher تمنح الدور
+     فوراً. وتبقى الشاشة لحسابٍ قديمٍ إن وُجد — ولا يوجد اليوم. */
   if(role === 'pending_teacher') return renderPending();
-  if(role === 'admin')           return loadAdmin();
-  if(role === 'teacher')         return loadTeacher();
+  if(role === 'admin')           return loadStudents();
+  /* 🆕 b90 · والمعلّمُ بلا شهادةٍ يُساق إلى خطوتها — **ولا يُحجب عن
+     المنصّة**: التأليفُ وحده ينتظر، ومن حُجب كلُّه ظنّ حسابَه معطّلاً. */
+  if(role === 'teacher')
+    return S.prof.author_verified_at ? loadTeacher() : renderVerifyAuthor();
+
+  /* 🆕 b90 · نيّةُ التعليم تعبر الفجوة: من أنشأ حسابه معلّماً ثمّ ترك
+     شاشةَ التفاصيل يعود إليها هنا. **ولولاها لبقي طالباً بلا بابٍ
+     يعود منه** — إذ سقط رابط «انضم كمعلم» حين دُمج في البوابة. */
+  if((user.user_metadata || {}).wants_teacher) return renderTeacherDetails();
 
   // طالب بلا منهج: طبّق ما اختاره عند التسجيل، وإلا اسأله.
   if(!S.prof.scale_id){
@@ -290,7 +486,13 @@ export async function signOut(){
   renderGate();
 }
 
-/* ═══════════ ③ تسجيل المعلم ═══════════ */
+/* ═══════════ ③ تسجيل المعلم — ⛔ متقاعد (b90) ═══════════
+
+   🔓 لا يناديه شيء: الدورُ صار خياراً في البوابة الموحّدة، والتسجيلُ
+      يمرّ بـ`submitTeacherGate` ثمّ `register_teacher` (120).
+   ⚠️ **ويبقى ولا يُحذف** — تقاعدٌ رخيصٌ قابلٌ للتراجع. لكنّه **لا
+      يُعاد وصلُه**: مسارُه يُنتج `pending_teacher` ولوحةُ البتّ فيه
+      تقاعدت من شريط المدير، فمن وصله سقط في حالةٍ لا مخرجَ منها. */
 
 export function renderTeacherSignup(msg){
   bar.innerHTML = "";

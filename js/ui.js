@@ -7,7 +7,7 @@ import { S } from './state.js';
 import { mediaUrl, isManaged } from './media.js';
 
 /* ── بصمة النسخة — لمعرفة أي شيفرة يشغّلها المتصفح فعلاً ── */
-export const BUILD = "b89";
+export const BUILD = "b90";
 
 /* ── مراسي الصفحة ── */
 export const app = document.getElementById("app");
@@ -248,7 +248,14 @@ const DEST = {
             ['feedback','ملاحظاتي'], ['chat','الرسائل']],
   teacher: [['grade','التصحيح'],   ['students','الأداء'],   ['inbox','الرسائل'],
             ['mySubjects','موادّي'], ['editor','التأليف']],
-  admin:   [['requests','الطلبات'], ['students','الأداء'],  ['editor','التأليف'],
+  /* 🔓 b90 · «الطلبات» تقاعدت من شريط المدير: لم يعد أحدٌ يصل
+     `pending_teacher` — `register_teacher` تمنح الدور فوراً، والتأليفُ
+     يُحرسه تحقّقُ البريد (120). واللوحةُ وجداولُها باقيةٌ في القاعدة
+     بلا حذف — تقاعدٌ رخيصٌ قابلٌ للتراجع، لا هجرةُ بيانات.
+     🟡 وطرفٌ مكشوفٌ يُقال: `request_teacher_access` ما زالت ممنوحةً
+        ويمكن نداؤها مباشرةً فتُنتج `pending_teacher` بلا لوحةٍ تبتّ
+        فيه. لا تناديها الواجهة، ويُسحب منحُها في ملفٍّ تالٍ. */
+  admin:   [['students','الأداء'],  ['editor','التأليف'],
             ['grade','التصحيح'],    ['inbox','الرسائل'],     ['mySubjects','موادّي']]
 };
 
