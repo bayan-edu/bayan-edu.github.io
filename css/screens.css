@@ -445,6 +445,15 @@ body.gate{padding-bottom:0}
 .rc-note{opacity:.9;line-height:1.7}
 /* مراجعة msq — صفٌّ لكل خيار لا صفٌّ للسؤال.
    فيرى الطالب حدّ المفهوم كاملاً: ما أدخله وليس منه، وما أخرجه وهو منه. */
+/* 🆕 114 · رقمُ الفراغ في نصٍّ يُقرأ ولا يُجاب (المراجعة والتقارير):
+   ‎{{1}}‎ رمزُ تأليفٍ لا يخصّ الطالب، وكان يظهر خاماً منذ 63.
+   والرقمُ يقابل ترقيمَ إجاباته تحته، فيعرف أيَّ فراغٍ سقط. */
+.rev-blank{display:inline-flex;align-items:center;justify-content:center;
+  min-width:2.1em;padding:0 6px;margin:0 3px;border-radius:7px;
+  background:var(--fill-strong);color:var(--text-muted);
+  font-family:'Almarai';font-weight:800;font-size:.85em;line-height:1.75;
+  vertical-align:baseline}
+
 .jds{display:flex;flex-direction:column;gap:7px;margin:9px 0}
 .jd{display:flex;align-items:flex-start;gap:10px;padding:9px 11px;border-radius:10px;
   background:var(--fill-soft);border:1px solid var(--line);
@@ -1549,8 +1558,74 @@ body.gate{padding-bottom:0}
   .mt-line{grid-template-columns:32px minmax(0,1fr) 30px}
   .mt-line .mt-arrow{grid-column:2;justify-content:start;transform:rotate(-90deg)}
   .mt-line .mt-mb{grid-column:2}
+  /* 🔴 صفُّ الخلط كان يُسنَد تلقائياً في ثلاثة أعمدة، فتقع «فالتشخيص»
+     في عمود السكّة (٣٢px) **فتُقصّ** — تُقرأ «فالتشخي». ⇒ الطرفان
+     يُثبَّتان في الصفّ الأول، والتسميةُ والقائمةُ في العمود الأوسط،
+     والفواصلُ الفارغة تُخفى فلا تزاحم. (يُصيب المزاوجة كذلك.) */
   .mt-wrow{grid-template-columns:32px minmax(0,1fr) 30px}
-  .mt-wrow select{grid-column:2 / 4}
+  .mt-wrow > .mt-rail{grid-area:1 / 1}
+  .mt-wrow > .eq-x{grid-area:1 / 3}
+  .mt-wrow > .mt-cap,
+  .mt-wrow > select{grid-column:2}
+  .mt-wrow > span:empty{display:none}
   .mt-addw{padding-left:12px}
 }
+
+/* ═══ 113 · إكمال من قائمة ══════════════════════════════════════
+   الوحدةُ واحدة: قائمةُ الكلمات ثمّ الجملةُ بخاناتها — ولا فئاتٍ
+   موازيةً للمزاوجة. الخانةُ ‎.pair-slot‎ نفسها، يُجلَس بها في سطر
+   النثر ويُضيَّق عرضُها. فما يُصلَح في إحداهما يُصلَح في الأخرى. */
+.mq.cz .bank{margin-top:0;margin-bottom:14px}
+/* السطرُ يتّسع لخانةٍ في متنه — وبلا ذلك تتراكب الأسطر على بعضها */
+.mq.cz .cz-text{margin:0;line-height:2.7}
+
+/* ⚠️ و ‎inline-flex‎ لا ‎flex‎: الخانةُ تجلس في الجملة ولا تكسرها.
+   🔑 و ‎min-width‎ ثابتةٌ بالمحارف: خانةٌ يتبع عرضُها كلمتَها المنتظَرة
+      تُفشي طولَها — مفتاحُ إجابةٍ يُعطى بالتنسيق لا بالنصّ. */
+.cz-slot{display:inline-flex;vertical-align:baseline;
+  min-width:9ch;max-width:22ch;padding:2px 10px;margin:0 3px;
+  border-radius:9px;line-height:1.9;font-size:var(--fs-ui)}
+/* الممتلئةُ تصير مصمتة — والحدُّ المتقطّع يقول «فارغ»، وهو معناه */
+.cz-slot.filled{border-style:solid;border-color:var(--accent-line);
+  background:var(--accent-soft);color:var(--text);
+  font-family:'Almarai';font-weight:700}
+.mq.cz.ro .cz-slot{cursor:default}
+
+/* ═══ حقولُ التأليف: خليّةٌ لكلّ فراغٍ برقمه ═══
+   🔴 كان صفّاً بعرض الصفحة يتصدّره «سياقُ الفراغ» (‎…This is a ▭‎) —
+      والجملةُ مكتوبةٌ فوقه ومرسومةٌ تحته، فكانت ثالثةً لا تزيد علماً
+      وتُنفق ألفَ بكسلٍ على حقلٍ كلمتُه واحدة.
+   🔑 و ‎auto-fill‎ لا عددٌ ثابت: عمودان في الواسعة وواحدٌ في الضيّقة،
+      بلا استعلامِ وسطٍ يُكتب مرّةً ثم يُنسى عند رتبةٍ جديدة.
+   ⚠️ و ‎align-items:start‎ لازمة: خليّةٌ فيها خلطان تطول، ولولاها
+      لتمدّدت جاراتُها معها فارغةً. */
+.cz-grid{display:grid;gap:10px;align-items:start;margin-bottom:4px;
+  grid-template-columns:repeat(auto-fill,minmax(400px,1fr))}
+.cz-cell{border:1px solid var(--line);border-radius:12px;overflow:hidden;
+  background:var(--surface)}
+.cz-head{display:flex;align-items:center;gap:9px;padding:10px 12px}
+.cz-head .key{flex:none;width:30px;height:30px;border-radius:9px;
+  background:var(--fill-strong);color:var(--text-muted);
+  font-family:'Almarai';font-weight:800;font-size:var(--fs-meta);
+  display:flex;align-items:center;justify-content:center}
+/* الحدُّ الأخضر يقول «هذا هو الصواب» — وهو معناه في المزاوجة نفسها */
+.cz-head .mt-mb{flex:1;min-width:0;width:auto;padding:9px 11px;
+  font-size:var(--fs-ui);text-overflow:ellipsis;
+  border-color:var(--ok-line);background:var(--ok-soft)}
+.cz-head .mt-mb:focus{border-color:var(--ok-edge)}
+/* ⚠️ ولا يُعلَّم الفراغُ في سؤالٍ بكر — إنذارٌ دائم لا يُرى */
+.cz-head .mt-mb.miss{border-color:var(--danger-edge);background:var(--danger-soft)}
+/* «＋ خلطٌ متوقَّع» في ذيل الرأس لا في سطرٍ تحته: الحقلُ كلمةٌ واحدة
+   فيفضُل من الصفّ عرضٌ يسع الزرّ — ويُوفَّر سطرٌ في كلّ فراغ. */
+.cz-head .cz-addw{flex:none;width:auto;padding:6px 11px;border:none;border-radius:9px;
+  white-space:nowrap}
+.cz-head .cz-addw:hover{color:var(--accent);background:var(--accent-soft)}
+/* وصفُّ الخلط يُذيَّل بالخليّة ⇒ لا حدَّ سفليّاً يفصله عمّا بعده */
+.cz-cell .mt-wrow:last-child{border-bottom:none}
+
+/* المعاينة في الذيل: أعلى الشاشة موضعُ ما يُكتب، وأسفلُها ما يُراجَع */
+.cz-pv{margin-top:22px;padding-top:15px;border-top:1px dashed var(--line)}
+.cz-pv-h{font-family:'Almarai';font-weight:800;font-size:var(--fs-tag);
+  color:var(--text-muted)}
+
 }

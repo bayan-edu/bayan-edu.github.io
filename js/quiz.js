@@ -53,7 +53,7 @@ import { S } from './state.js';
 import { app, bar, head, toast, esc, fmt, AR, mmss, media, pgMedia, srcOf,
         optLabel, dirOf, ICONS, nav, scrollTop, skeleton } from './ui.js';
 import { loadList, loadLessons } from './student.js';
-import { questionText, questionBody, KIND_LABEL, gapCount } from './render_q.js';
+import { questionText, questionBody, KIND_LABEL, gapCount, bodyRead } from './render_q.js';
 import { wireMatching } from './match_dnd.js';
 
 /* مشتقّاتُ عرضٍ لا حالةَ محاولة — تُبنى كلُّها من S.quiz و S.ans عند
@@ -320,7 +320,7 @@ function renderPage(){
         ${media(q)}
         ${qAudio?`<audio controls preload="metadata" src="${esc(qAudio)}"
                    style="width:100%;margin-bottom:12px"></audio>`:''}
-        ${questionText(q, a.txt)}
+        ${questionText(q, q.kind === 'cloze' ? a.pairs : a.txt)}
         ${body}
       </div>`;
   }).join("");
@@ -411,7 +411,9 @@ function renderPage(){
         return a.kind==='mcq' ? a.o === null
          : a.kind==='msq' ? a.os.length === 0
          : a.kind==='gap' ? a.txt.every(v => !v.trim())
-         : a.kind==='matching' ? Object.values(a.pairs).every(v => !v)
+         /* 114 · و«إكمال من قائمة» كالمزاوجة: كائنٌ فارغ ⇒ لم يُسنَد شيء */
+         : (a.kind==='matching' || a.kind==='cloze')
+             ? Object.values(a.pairs).every(v => !v)
          :                  !a.essay.trim();
   });
 
@@ -467,7 +469,8 @@ async function finish(auto){
       a.kind==='mcq' ? { q:a.q, o:a.o,   sec:a.sec, chg:a.chg }
     : a.kind==='msq' ? { q:a.q, os:a.os, sec:a.sec, chg:a.chg }
     : a.kind==='gap' ? { q:a.q, txt:a.txt.map(v=>v.trim()), sec:a.sec, chg:a.chg }
-    : a.kind==='matching' ? { q:a.q, pairs:a.pairs, sec:a.sec, chg:a.chg }
+    : (a.kind==='matching' || a.kind==='cloze')
+                     ? { q:a.q, pairs:a.pairs, sec:a.sec, chg:a.chg }
     :                  { q:a.q, essay:a.essay, sec:a.sec });
 
   /* 🔒 في الجلسة: لا مراجعة ولا درجة — المحطّة التالية تُركَّب مكانها.
@@ -596,6 +599,23 @@ function renderResult(){
                 ${hit ? '' : `<span class="jd-dx">الصواب: ${fmt(kk || '—')}</span>`}
               </div></div>`;
           }).join("")}</div>`
+      /* 🆕 114 · إكمال من قائمة — صفٌّ لكلّ فراغٍ برقمه، يقابل ترقيمَ
+         الفراغات في نصّ السؤال أعلاه. ولا سطرَ بندٍ كالمزاوجة: البندُ
+         هنا **موضعٌ في الجملة** والجملةُ مقروءةٌ فوقه، فتكرارُها لكلّ
+         فراغٍ يُغرق الصفحة بما قُرئ. */
+      : x.kind==='cloze'
+      ? `<div class="jds">${(x.accept || []).map((kk, j) => {
+            const g  = String((x.given || [])[j] || '').trim();
+            const k2 = String(kk || '').trim();
+            const hit = !!g && g === k2;
+            return `<div class="jd ${hit?'hit':'err'}">
+              <span class="key">${AR(j+1)}</span>
+              <div style="flex:1">
+                <span class="jd-m">${g ? (hit ? '✔ ' + esc(g) : '✗ ' + esc(g))
+                                       : '— لم تختر كلمة —'}</span>
+                ${hit ? '' : `<span class="jd-dx">الصواب: ${fmt(k2 || '—')}</span>`}
+              </div></div>`;
+          }).join("")}</div>`
       : x.kind==='gap'
       ? `<div class="line" dir="auto">إجابتك: <b dir="auto">${
              esc((x.given||[]).filter(v=>v.trim()).join('  ·  ')) || '— لم تُجب —'}</b></div>
@@ -606,7 +626,7 @@ function renderResult(){
              k?fmt(k._l+') '+k.body):'—'}</b></div>`}`;
     return `<div class="rev ${x.is_correct?'ok':'no'}">
       <span class="tag ${x.is_correct?'ok':'no'}">${x.is_correct?'صحيحة':'خاطئة'}</span>
-      <div class="rev-q" dir="auto">${AR(i+1)}. ${fmt(x.body)}</div>
+      <div class="rev-q" dir="auto">${AR(i+1)}. ${bodyRead(x.body)}</div>
       ${answer}
       ${x.is_correct?'':`
                           <div class="trap"><strong>تشخيص الخطأ:</strong>
