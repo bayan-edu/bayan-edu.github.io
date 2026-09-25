@@ -14,6 +14,7 @@ import { loadTeacher, loadInbox, loadMySubjects } from './teacher.js';
 import { openEditor } from './editor.js';
 import { loadStudents, loadMyPerformance } from './analytics.js';
 import { loadFlashcards } from './flashcards.js';
+import { openPractice } from './practice.js';
 
 /* ═══════════ ① البوابة ═══════════ */
 
@@ -437,7 +438,31 @@ export async function loadAdmin(status){
 
 /* ═══════════ ⑥ التشغيل ═══════════ */
 
+/* 🆕 b89 · توكنُ جلسة التدرّب في العنوان: ‎#/t/‹توكن›‎
+   والنمطُ يُحكَم هنا لا في الدالّة: ما لا يشبه توكناً لا يُرسَل أصلاً. */
+const practiceToken = () => {
+  const m = /^#\/t\/([A-Za-z0-9]{16,64})$/.exec(location.hash || '');
+  return m ? m[1] : null;
+};
+
 export function start(){
+  /* 🆕 b89 · وجلسةُ التدرّب تسبق كلَّ شيء — وقبل `boot` عمداً:
+     ① زائرٌ بلا حساب، فلا بوابةَ ولا أدوارَ ولا جرس. و`boot` تُظهر
+        البوابة لمن لا حساب له — أي للزائر دائماً.
+     ② ولا مستمعَ لتغيّر الجلسة: `SIGNED_OUT` يصل كلَّ تبويبةٍ مفتوحة،
+        فيقذف الزائرَ إلى البوابة وهو لا حسابَ له يخرج منه.
+     ③ و`mathBoot` وحدها تبقى — أسئلةُ الجلسة قد تحمل معادلات. */
+  const tok = practiceToken();
+
+  /* 🆕 b89 · وتبديلُ الـhash وحده لا يُعيد تحميل الوحدات، فلصقُ رابط
+     تدرّبٍ في شريط العنوان **لا يفعل شيئاً وبصمت** (قيس). والمنصّة لا
+     تستعمل الـhash في موضعٍ آخر إطلاقاً، فالتحميلُ هنا لا يقطع مساراً. */
+  addEventListener('hashchange', () => {
+    if(practiceToken() !== tok) location.reload();
+  });
+
+  if(tok){ mathBoot(app); openPractice(tok); return; }
+
   // خريطة الوجهات — الموضع الوحيد الذي يربط الشريط بالشاشات
   /* ui.js لا تلمس القاعدة (الثابت ①) — فتُسلَّم الجالب ولا تعرف مصدره */
   registerCounts(async () => (await api.myCounts()).data || {});

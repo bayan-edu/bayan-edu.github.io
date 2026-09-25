@@ -18,6 +18,7 @@
 import * as api from './api.js';
 import { app, head, toast, esc, AR, errBox, nav, setWide, scrollTop, dirOf, shrinkFont, examples, pickExample } from './ui.js';
 import { openCourse } from './editor.js';
+import { practiceLinkBox } from './practice_links.js';
 
 let ctx = null;   // { course, lessons }
 let D   = [];     // المجموعات
@@ -188,6 +189,10 @@ function renderCards(){
       <button class="btn primary" id="paste">📋 لصق قائمة</button>
       <button class="btn" id="one">＋ بطاقة واحدة</button>
       ${C.length ? '<button class="btn" id="pv">👁 معاينة بعين الطالب</button>' : ''}
+      ${/* 🆕 b89 · ولا يظهر لرزمةٍ فارغة: create_practice_session تردّها
+            («لا بطاقة في هذه الرزمة»)، وزرٌّ لا يُنتج إلا رسالةَ رفضٍ
+            يُعلّم أنّ الأزرار تكذب. */''}
+      ${C.length ? '<button class="btn" id="plink">🔗 رابط تدرّب</button>' : ''}
       <button class="btn" id="edeck">⚙️ إعدادات المجموعة</button>
     </div>
 
@@ -203,6 +208,10 @@ function renderCards(){
   document.getElementById('one').onclick   = () => cardForm(null);
   document.getElementById('edeck').onclick = () => deckForm(cur);
   const pv = document.getElementById('pv'); if(pv) pv.onclick = preview;
+
+  const pl = document.getElementById('plink');
+  if(pl) pl.onclick = () => practiceLinkBox({
+    kind: 'cards', source: cur.id, title: cur.title });
 
   app.querySelectorAll('[data-ed]').forEach(b => b.onclick = () =>
     cardForm(C.find(x => String(x.id) === b.dataset.ed)));

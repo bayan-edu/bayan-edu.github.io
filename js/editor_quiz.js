@@ -48,6 +48,7 @@ import { attachUpload } from './upload.js';
 import { openCourse, openTools } from './editor.js';
 import { questionText, questionBody, KIND_LABEL, gapCount } from './render_q.js';
 import { wireMatching } from './match_dnd.js';
+import { practiceLinkBox } from './practice_links.js';
 
 let Z    = null;   // الاختبار المحمَّل
 let cur  = 0;      // فهرس السؤال المعروض
@@ -2692,6 +2693,12 @@ function toolbar(){
       <div class="eq-acts">
         <button class="eq-tbb" id="rdSet"><span class="eq-i">⚙</span> الإعدادات</button>
         <button class="eq-tbb" id="rdPrev" title="عِش تجربة الطالب"><span class="eq-i">👁</span> معاينة</button>
+        ${/* 🆕 b89 · الفعلُ واقعٌ على الاختبار كلِّه ⇒ موضعُه شريطُ الأوامر
+              لا بطاقةُ سؤال. ولا يشترط نشراً: النشرُ يُدخل البوّابةَ
+              والدرجة، وهذه جلسةٌ لا تُقيَّم — وحالُ الأصل يُقال في
+              الصندوق قبل التوليد، فلا يُجمَّد مسودّةٌ على غفلة. */''}
+        <button class="eq-tbb" id="rdLink"
+                title="رابطٌ يتدرّب به من لا حساب له"><span class="eq-i">🔗</span> رابط تدرّب</button>
         ${pub && !live ? `<button class="eq-tbb warn" id="rdLsn">نشر الدرس أيضاً</button>` : ''}
         <button class="eq-tbb ${pub?'':'go'}" id="rdPub" ${r.ok?'':'disabled'}
           title="${r.ok ? '' : pub
@@ -2753,6 +2760,12 @@ function wireToolbar(){
   tb.querySelector("#rdBack").onclick = leave;
   tb.querySelector("#rdSet").onclick  = quizSettings;
   tb.querySelector("#rdPrev").onclick = preview;
+
+  /* 🆕 b89 · حالُ الأصل يُقال قبل التجميد لا بعده */
+  tb.querySelector("#rdLink").onclick = () => practiceLinkBox({
+    kind: 'quiz', source: Z.id, title: Z.title,
+    note: Z.published ? null
+        : 'هذا الاختبار مسودّة — واللقطة تُجمَّد على حاله الآن.' });
 
   const pl = tb.querySelector("#rdLsn");
   /* ⚠️ pl.onclick = pubLesson كان يمرّر **حدث النقر** إلى quiet،

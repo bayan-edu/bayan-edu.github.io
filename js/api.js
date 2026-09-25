@@ -181,6 +181,21 @@ export const setSubjectCapacity = (id, cap, accepting) =>
          { p_subject: id, p_cap: cap, p_accepting: accepting });
 
 
+/* ═══════════ ⑨ جلسات التدرّب (117 · 118 · 119) ═══════════
+   🔒 الأوّلان وحدهما مفتوحان لـ anon في القاعدة كلِّها. والأخيران
+      للمعلّم. والنداءُ هنا واحدٌ في الحالين — والحارسُ في الدالّة. */
+
+export const openPractice   = tok => db.rpc('open_practice_session', { p_token: tok });
+export const answerPractice = (tok, name, ref, ans) =>
+  db.rpc('submit_practice_answer',
+         { p_token: tok, p_name: name, p_ref: String(ref), p_answer: ans });
+
+export const createPractice = (kind, source, days) =>
+  db.rpc('create_practice_session',
+         { p_kind: kind, p_source: source, p_days: days });
+export const myPractice = () => db.rpc('my_practice_sessions');
+
+
 /* ═══════════ ⑨ التأليف ═══════════ */
 
 // شجرة كاملة في نداء واحد: مناهج · صفوف · مسارات · مواد · مقرّرات

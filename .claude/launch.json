@@ -1,0 +1,13 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "bayan",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "C:\\Users\\Mahmoud\\AppData\\Local\\Temp\\claude\\D--LMS-bayan-edu-github-io\\53e4494b-2616-4ada-9351-fb1ec969d173\\scratchpad\\serve.mjs"
+      ],
+      "port": 5173
+    }
+  ]
+}
