@@ -131,6 +131,19 @@ export async function openThread(sid){
 
 /* ═══════════ ③ موادّ المعلم ═══════════ */
 
+/* 🆕 b88 · السعة — تحكّمٌ ذاتيّ فوق `set_subject_capacity` (SQL 116).
+   ⚠️ ولا تظهر إلا لمادّةٍ مختارةٍ **في القاعدة** لا في الشاشة: الحقل
+      يُحدِّث صفَّ `teacher_subjects`، والصفَّ يُنشئه زرُّ «حفظ». فمادّةٌ
+      نُقرت الآن لا صفَّ لها، ولا يُعرض حقلٌ لا يحفظ ما يُكتب فيه.
+   🔒 و«أستقبل طلاباً» (`accepting`) خارجها عمداً: `list_mentors` تكتبه
+      للطالب «اكتمل النصاب» — وهو خبرٌ كاذب لمعلّمٍ أغلق بابه وعنده
+      متّسع. القرارُ مؤجَّلٌ في STATE ⑨، ولا يُفتح مفتاحٌ يُنتج كذبة. */
+const capBox = x => !x.chosen ? '' : `
+      <div class="m-cap-set">
+        <label class="fl">السعة — كم طالباً تتابع في هذه المادة</label>
+        <input type="number" min="1" max="500" value="${x.capacity}" data-cap="${x.id}">
+      </div>`;
+
 export async function loadMySubjects(){
   nav('mySubjects');
   head("موادّي", "اختر المواد التي تتابع فيها الطلاب");
@@ -149,7 +162,12 @@ export async function loadMySubjects(){
     ${subs.map(x=>`
       <div class="mentor ${picked.has(x.id)?'cur':''}" data-i="${x.id}">
         <div class="m-n">${esc(x.name)} ${picked.has(x.id)?'<span class="badge on">مختارة</span>':''}</div>
-        <div class="m-m">${x.family?esc(x.family)+' · ':''}${AR(x.students)} طالباً · السعة ${AR(x.capacity)}</div>
+        ${/* 🆕 b88 · «السعة ٤٠» خرجت من هذا السطر: لمادّةٍ غير مختارة
+              لا صفَّ لها أصلاً، فالأربعون افتراضٌ في الدالّة لا رقمٌ
+              محفوظ — ورقمان لشيءٍ واحد يتفارقان. والسعةُ الآن في
+              حقلها، وهو موضعها الوحيد. */''}
+        <div class="m-m">${x.family?esc(x.family)+' · ':''}${AR(x.students)} طالباً</div>
+        ${capBox(x)}
       </div>`).join("")}
     ${!subs.length?'<div class="status">لا توجد مواد بعد</div>':''}
     <div class="nav" style="margin-top:16px">
@@ -163,6 +181,31 @@ export async function loadMySubjects(){
     const b = el.querySelector('.badge');
     if(picked.has(id) && !b) el.querySelector('.m-n').insertAdjacentHTML('beforeend',' <span class="badge on">مختارة</span>');
     if(!picked.has(id) && b) b.remove();
+    /* 🆕 b88 · مادّةٌ رُفع اختيارُها سيحذف «حفظ» صفَّها — فضبطُ سعتها
+       بعد ذلك كتابةٌ على ما سيُمحى. يُعطَّل الحقل ولا يُخفى: الاختفاء
+       يُقرأ عطلاً، والتعطيلُ يُقرأ نتيجةً لما فعله المعلّم للتوّ. */
+    el.querySelectorAll('input[data-cap]').forEach(i=>{ i.disabled = !picked.has(id); });
+  });
+
+  /* النقر داخل صندوق السعة ضبطٌ لا اختيار — ولولا هذا لألغت البطاقةُ
+     اختيارَها تحت إصبع المعلّم وهو يكتب رقماً فيها. */
+  app.querySelectorAll(".m-cap-set").forEach(box=>{
+    box.addEventListener('click', e => e.stopPropagation());
+  });
+
+  app.querySelectorAll("input[data-cap]").forEach(inp=>{
+    inp.onchange = async ()=>{
+      /* الحدّان يُقرآن من الحقل نفسه لا من رقمين مكتوبين هنا.
+         والقاعدة تقصّ ثانيةً على كلّ حال (116) — فهذه راحةٌ لا حراسة. */
+      const lo = Number(inp.min), hi = Number(inp.max);
+      const v  = Math.min(hi, Math.max(lo, Math.round(Number(inp.value) || lo)));
+      inp.value = v;
+      const { data, error } = await api.setSubjectCapacity(Number(inp.dataset.cap), v, null);
+      if(error){ toast(error.message); return; }
+      /* 🔑 و116 تُرجع «هل مسّ التحديثُ صفّاً» — فالصمت لا يُصدَّق */
+      if(!data){ toast("لم تُحفظ — احفظ اختيار موادّك أولاً"); return; }
+      toast(`السعة الآن ${AR(v)}`);
+    };
   });
 
   document.getElementById("save").onclick = async ()=>{

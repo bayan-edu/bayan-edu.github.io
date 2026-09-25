@@ -481,6 +481,15 @@ body.gate{padding-bottom:0}
 .m-cap{display:inline-block;background:var(--fill-strong);border-radius:8px;
   padding:2px 9px;font-size:var(--fs-tag);color:var(--text-muted);margin-top:8px}
 
+/* 🆕 b88 · صندوق السعة في بطاقة المادة (شاشة «موادّي») — ضبطٌ لا اختيار.
+   ⚠️ cursor:default لأن ‎.mentor‎ كلُّها ‎pointer‎: ومؤشّرُ اليد فوق حقل
+      كتابةٍ يَعِد بنقرةٍ تختار، لا بحقلٍ يُكتب فيه.
+   ⚠️ و‎width:auto‎ لأن ‎input‎ في base.css عرضُها ١٠٠٪ — ورقمٌ من ثلاث
+      خاناتٍ لا يأخذ عرضَ البطاقة. */
+.m-cap-set{margin-top:12px;cursor:default}
+.m-cap-set input{width:auto;max-width:140px;padding:9px 11px;text-align:center}
+.m-cap-set input:disabled{opacity:.45;cursor:not-allowed}
+
 /* ═══ المحادثة ═══ */
 .chat{display:flex;flex-direction:column;gap:10px;margin-bottom:16px}
 .msg{max-width:82%;padding:12px 15px;border-radius:14px;font-size:var(--fs-read);line-height:1.85}

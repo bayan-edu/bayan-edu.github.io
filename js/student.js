@@ -423,19 +423,22 @@ function canEmbed(i){
   return isManaged(i.url) || AUD_RX.test(i.url);
 }
 
-export function openLesson(l){
-  S.lesson = l;
-  nav('subjects');
-  head(l.title, l.unit || S.subj.name);
+/* 🆕 b87 · نسبةُ المصدر — مَن كتبه، وهل اعتمدته بيان.
+   🔑 والشارة تُضاف ولا تُبدِّل: «بيان» بجانب اسم المؤلّف لا مكانه.
+      فالاعتمادُ حكمٌ على المادّة، ولا يمحو مَن ألّفها — ولو حلَّ
+      محلَّه لَما عرف الطالبُ لمن يعود بالسؤال.
+   ⚠️ ولا لونَ لها: الاعتماد ليس «أصبتَ» ولا «اضغط هنا»، فليس له
+      عائلةُ معنًى — ومحايدٌ بنصّه أصدق من أخضرَ يُضعف الأخضر حيث
+      يُحكَم به فعلاً (طبقة الأدوار في base.css).
+   ومصادرُ المنصّة لا author لها أصلاً، فتمرّ بلا سطر. */
+const credit = i => !i.author ? ''
+  : ` · أ. ${esc(i.author)}`
+  + (i.from_my_mentor ? ' · معلّمك'       : '')
+  + (i.reviewed       ? ' · اعتمدته بيان' : '')
+  + (i.draft          ? ' · مسودّة'       : '');
 
-  const items = (l.items || []);
-  const done  = items.filter(i=>i.status==='completed').length;
-
-  app.innerHTML = `
-    <div class="crumb" id="bk">← ${esc(S.subj.name)}</div>
-    ${l.summary?`<div class="card"><div class="line" style="color:var(--text)">${esc(l.summary)}</div></div>`:''}
-    <div class="grp">📦 مصادر الدرس <span class="chip">${AR(done)} / ${AR(items.length)}</span></div>
-      ${items.map(i=>`
+/* صفٌّ واحد للرسميّ وللإضافة — ونسختان تتفارقان دائماً. */
+const itmRow = i => `
       <div class="itm ${i.kind==='quiz'?'quiz':''}" data-i="${i.id}">
         <div class="itm-ic">${ICONS[i.kind]||'•'}</div>
         <div style="flex:1">
@@ -443,18 +446,45 @@ export function openLesson(l){
           <div class="itm-m">${KINDS[i.kind]||i.kind}
             ${i.duration?` · ${AR(i.duration)} دقيقة`:''}
             ${i.is_graded?' · يُحتسب في النتيجة':''}
-            ${i.required&&!i.is_graded?' · إلزامي':''}</div>
+            ${i.required&&!i.is_graded?' · إلزامي':''}${credit(i)}</div>
         </div>
         <div class="itm-s" data-s="${i.id}">${i.status==='completed'?'✅'
           :((canEmbed(i)||isSim(i))?'▶':(i.kind==='quiz'?'←':'↗'))}</div>
       </div>
-      ${(canEmbed(i)||isSim(i))?`<div class="embed-slot" id="slot-${i.id}"></div>`:''}`).join("")}
+      ${(canEmbed(i)||isSim(i))?`<div class="embed-slot" id="slot-${i.id}"></div>`:''}`;
+
+export function openLesson(l){
+  S.lesson = l;
+  nav('subjects');
+  head(l.title, l.unit || S.subj.name);
+
+  /* 🆕 b87 · extras كانت تصل من list_lessons منذ زمنٍ ولا تُرسم —
+     فما يؤلّفه المعلّم لا يبلغ طالبه. عطلٌ صامت لم يظهر لأنّ
+     التأليف كان مقفلاً على المدير (SQL 115). */
+  const items  = (l.items  || []);
+  const extras = (l.extras || []);
+  /* والعدّاد للرسميّ وحده: الإضافة «إثراء لا يحجب» — لا تدخل
+     البوّابة، فلا تُحسب في مقامها وإلا نقصت نسبةُ طالبٍ لأنّ
+     معلّمه أضاف مصدراً. */
+  const done   = items.filter(i=>i.status==='completed').length;
+
+  app.innerHTML = `
+    <div class="crumb" id="bk">← ${esc(S.subj.name)}</div>
+    ${l.summary?`<div class="card"><div class="line" style="color:var(--text)">${esc(l.summary)}</div></div>`:''}
+    <div class="grp">📦 مصادر الدرس <span class="chip">${AR(done)} / ${AR(items.length)}</span></div>
+      ${items.map(itmRow).join("")}
     ${!items.length?'<div class="status">لم تُضف مصادر لهذا الدرس بعد</div>':''}
+    ${extras.length?`<div class="grp" style="margin-top:22px">➕ إضافات المعلمين
+        <span class="chip">${AR(extras.length)}</span></div>
+      ${extras.map(itmRow).join("")}`:''}
     <p class="hint">تحتاج ${AR(l.pass_mark)}٪ في الاختبار لإتمام الدرس</p>`;
 
   document.getElementById("bk").onclick = ()=>loadLessons(S.subj);
+  /* البحثُ في الاثنين معاً — وقصرُه على items كان يُسقط كلَّ نقرةٍ
+     على إضافةٍ في undefined بلا رسالة. */
+  const all = items.concat(extras);
   app.querySelectorAll(".itm").forEach(el=>el.onclick=()=>{
-    const i = items.find(v=>String(v.id)===el.dataset.i);
+    const i = all.find(v=>String(v.id)===el.dataset.i);
     openItem(i);
   });
      /* بطاقاتُ الدرس — تُلحَق بعد الرسم فلا تؤخّر ظهورَه.

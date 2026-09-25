@@ -174,6 +174,12 @@ export const teacherReadsThread = sid =>
 export const listTeachableSubjects = ()  => db.rpc('list_teachable_subjects');
 export const setMySubjects         = ids => db.rpc('set_my_subjects', { p_ids: ids });
 
+/* 🆕 b88 · السعة والاستقبال — تُرجع منذ 116 هل مسّ التحديثُ صفّاً.
+   فمادّةٌ نُقرت ولم تُحفظ بعدُ لا صفَّ لها ⇒ false لا «نعم» صامتة. */
+export const setSubjectCapacity = (id, cap, accepting) =>
+  db.rpc('set_subject_capacity',
+         { p_subject: id, p_cap: cap, p_accepting: accepting });
+
 
 /* ═══════════ ⑨ التأليف ═══════════ */
 

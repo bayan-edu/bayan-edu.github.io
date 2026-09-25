@@ -49,7 +49,7 @@ import { app, head, esc, fmt, AR, errBox, nav, BUILD, scrollTop,
    شخّصنا في هذه الجلسة ثلاثَ مرّات منطقاً سليماً وسببُ العطل ملفٌّ
    لم يصل. ⇒ حين يختلف الختمان يُعلَن الاختلاف في الشاشة.
    ⚠️ ويُرفع مع BUILD في كلّ نسخة — وإلّا صار إنذاراً كاذباً يُتجاهل. */
-const MOD = "b86";
+const MOD = "b88";
 
 const F = { level:null, subject:null, view:'list', search:'', opts:null };
 const M = { uid:null, forMe:false, subject:null, strand:null,

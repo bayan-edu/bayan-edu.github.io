@@ -53,6 +53,10 @@ function render(){
           ${i.required && !i.is_graded ? '<span class="chip">إلزامي</span>' : ''}
           ${i.duration ? `<span class="chip">${AR(i.duration)} د</span>` : ''}
           ${i.author ? `<span class="chip">أ. ${esc(i.author)}</span>` : ''}
+          ${/* 🆕 b87 · reviewed كانت تصل من lesson_items ولا تُقرأ.
+                والشارة تُضاف ولا تُبدِّل — بجانب اسم المؤلّف لا مكانه.
+                وبعبارة شاشة الطالب نفسِها: لفظٌ واحد لمعنًى واحد. */''}
+          ${i.reviewed ? '<span class="chip">اعتمدته بيان</span>' : ''}
           ${i.touched ? `<span class="chip">تفاعل ${AR(i.touched)}</span>` : ''}
         </div>
       </div>
