@@ -856,24 +856,27 @@ function mediaRow(q, locked){
   if(locked) return '';
   const f = (id, val, ph) => val !== null
     ? `<input class="eq-md" id="${id}" dir="ltr" value="${esc(val)}" placeholder="${ph}">` : '';
+  /* 🆕 b96 · ‎eq-tool‎ لا ‎eq-tb‎: الثاني اسمُ حاوية شريط الأوامر أعلى
+     الشاشة، وكان الصنفان واحداً فتغلّب تنسيقُ الزرّ على الشريط (انظر
+     تعليق ‎.eq-tool‎ في screens.css). */
   return `<div class="eq-tools">
-      <button class="eq-tb ${q.image?'on':''}" data-m="image">🖼️ صورة</button>
-      <button class="eq-tb ${q.audio?'on':''}" data-m="audio">🎧 صوت</button>
-      <button class="eq-tb ${q.video?'on':''}" data-m="video">🎬 فيديو</button>
+      <button class="eq-tool ${q.image?'on':''}" data-m="image">🖼️ صورة</button>
+      <button class="eq-tool ${q.audio?'on':''}" data-m="audio">🎧 صوت</button>
+      <button class="eq-tool ${q.video?'on':''}" data-m="video">🎬 فيديو</button>
             ${(q.kind === 'gap' || q.kind === 'cloze') && !locked
-        ? `<button class="eq-tb gapbtn" id="addgap" title="أدرج فراغاً">⌷ فراغ</button>` : ''}
+        ? `<button class="eq-tool gapbtn" id="addgap" title="أدرج فراغاً">⌷ فراغ</button>` : ''}
       <span class="eq-sep"></span>
-      <button class="eq-tb" data-w="**" title="غامق"><b>B</b></button>
-      <button class="eq-tb" data-w="_"  title="مائل"><i>I</i></button>
-      <button class="eq-tb" data-w="__" title="مسطَّر"><u>U</u></button>
+      <button class="eq-tool" data-w="**" title="غامق"><b>B</b></button>
+      <button class="eq-tool" data-w="_"  title="مائل"><i>I</i></button>
+      <button class="eq-tool" data-w="__" title="مسطَّر"><u>U</u></button>
                   <span class="eq-sep"></span>
-      <button class="eq-tb" data-a="\\(" data-b="\\)" title="معادلة — بترميز الكتاب العربيّ">∑</button>
-      <button class="eq-tb eq-alt" data-a="\\(\\en{" data-b="}\\)" title="معادلة بالرموز اللاتينية">∑EN</button>
-      <button class="eq-tb" data-a="\\frac{" data-b="}{}" title="كسر — داخل المعادلة">½</button>
-      <button class="eq-tb" data-a="\\sqrt{" data-b="}"   title="جذر — داخل المعادلة">√</button>
-      <button class="eq-tb" data-a="^{" data-b="}"        title="أسّ — داخل المعادلة">x²</button>
-      <button class="eq-tb" data-a="_{" data-b="}"        title="سفليّ — داخل المعادلة">xₙ</button>
-      <button class="eq-tb" data-a="\\left(" data-b="\\right)" title="قوسان يتمدّدان">( )</button>
+      <button class="eq-tool" data-a="\\(" data-b="\\)" title="معادلة — بترميز الكتاب العربيّ">∑</button>
+      <button class="eq-tool eq-alt" data-a="\\(\\en{" data-b="}\\)" title="معادلة بالرموز اللاتينية">∑EN</button>
+      <button class="eq-tool" data-a="\\frac{" data-b="}{}" title="كسر — داخل المعادلة">½</button>
+      <button class="eq-tool" data-a="\\sqrt{" data-b="}"   title="جذر — داخل المعادلة">√</button>
+      <button class="eq-tool" data-a="^{" data-b="}"        title="أسّ — داخل المعادلة">x²</button>
+      <button class="eq-tool" data-a="_{" data-b="}"        title="سفليّ — داخل المعادلة">xₙ</button>
+      <button class="eq-tool" data-a="\\left(" data-b="\\right)" title="قوسان يتمدّدان">( )</button>
     </div>
     ${f('qi', q.image ?? null, 'رابط الصورة')}
     ${f('qa', q.audio ?? null, 'رابط المقطع الصوتي')}
@@ -2580,13 +2583,13 @@ function passageForm(p, draft){
          <input id="pfTitle" value="${esc(d.title || '')}" placeholder="Reading Passage 1">
 
       <div class="eq-tools" style="margin-top:14px">
-        <button class="eq-tb" data-pw="**" title="غامق"><b>B</b></button>
-        <button class="eq-tb" data-pw="_"  title="مائل"><i>I</i></button>
-        <button class="eq-tb" data-pw="__" title="مسطَّر"><u>U</u></button>
+        <button class="eq-tool" data-pw="**" title="غامق"><b>B</b></button>
+        <button class="eq-tool" data-pw="_"  title="مائل"><i>I</i></button>
+        <button class="eq-tool" data-pw="__" title="مسطَّر"><u>U</u></button>
         <span class="eq-sep"></span>
-        <button class="eq-tb ${pk==='image'?'on':''}" data-pk="image">🖼️ صورة</button>
-        <button class="eq-tb ${pk==='audio'?'on':''}" data-pk="audio">🎧 صوت</button>
-        <button class="eq-tb ${pk==='video'?'on':''}" data-pk="video">🎬 فيديو</button>
+        <button class="eq-tool ${pk==='image'?'on':''}" data-pk="image">🖼️ صورة</button>
+        <button class="eq-tool ${pk==='audio'?'on':''}" data-pk="audio">🎧 صوت</button>
+        <button class="eq-tool ${pk==='video'?'on':''}" data-pk="video">🎬 فيديو</button>
         <span class="eq-hint">${SAFE_HOSTS}</span>
       </div>
       <textarea id="pfBody" style="min-height:240px"
@@ -2773,6 +2776,7 @@ function wireToolbar(){
   if(pl) pl.onclick = () => pubLesson(false);
 
   wireKinds(tb);
+  watchKinds(tb);   /* 🆕 b96 · الرقائق تنكمش قبل أن تُبتر */
 
   tb.querySelector("#rdPub").onclick = async () => {
     const { data, error } = await api.publishQuiz(Z.id, !Z.published);
@@ -2798,6 +2802,83 @@ function paintKinds(){
   if(!box) return;
   box.innerHTML = kindChips();
   wireKinds(box);
+  fitKinds();   /* 🆕 b96 · عددُ الرقائق وشاراتُها تتغيّر ⇒ يُعاد القياس */
+}
+
+/* ═══════════ b96 · الرقائق تنكمش قبل أن تُبتر ═══════════
+   🔴 كانت الرقائق تُقصّ صامتةً: ‎flex:1 1 0‎ جعلها بقيّةَ ما فضل،
+      وشريطُ التمرير مخفيّ ⇒ ما خرج لا أثرَ له. قيس عند ١٠١٠px
+      فسقطت رقيقةٌ كاملة وبُترت أخرى في منتصف كلمتها. والتفصيل في
+      تعليق ‎.eq-kinds‎ بـ screens.css — وهنا القياسُ وحده.
+   ⚠️ والقياسُ للاحتياج لا لعرض الشاشة: الفيض يتبع طولَ اسم الدرس
+      وعددَ الأنماط الحاضرة وحضورَ زرّ «نشر الدرس أيضاً» — فلا
+      يُحسم بنقطة قطعٍ في ‎@media‎. */
+
+/* وستّةُ بكسلاتٍ تُغتفر: حشو الرقيقة ٩px وحدُّها ١، فما دون ذلك يقصّ
+   من الفراغ لا من الحرف — ولا معلومةَ تُفقد. وبغيرها يُطوى الشريطُ
+   كلُّه لأجل بكسلين: قيس «اختيار من متعدد + اختيار متعدّد» عند أوسع
+   شاشة فاحتاج ٢٥٢px واتّسع ٢٥٠ — فتسقط التسميتان بلا مقابل.
+   🔒 وهي عتبةٌ واحدة للطيّ وللأثر: لو تسامح أحدُهما دون الآخر لرُسم
+      تلاشٍ عرضُه ٢٢px على بترٍ عرضُه اثنان — ضجيجٌ يُعلّم تجاهلَه. */
+const KTOL = 6;
+
+function fitKinds(){
+  const box = app?.querySelector('.eq-kinds');
+  if(!box) return;
+
+  /* ⚠️ يُقاس موسَّعاً دائماً: لو قيس مطويّاً لوجده يتّسع فرفع الطيَّ،
+     فيفيض فيُعاد — تذبذبٌ لا يسكن. فالسؤال «أيتّسع مبسوطاً؟» لا
+     «أيتّسع على حاله الآن؟». */
+  box.classList.remove('tight');
+  if(box.scrollWidth - box.clientWidth > KTOL) box.classList.add('tight');
+
+  edgeMark(box);
+}
+
+/* وما بقي خارجاً بعد الطيّ يترك أثراً على الجهة التي أخفته.
+   ⚠️ والمقدارُ وحده يُعوَّل عليه: ‎scrollLeft‎ في RTL اختلفت فيه
+      المتصفّحات إشارةً وأصلاً، واتّفقت على بُعده عن المبتدأ. */
+function edgeMark(box){
+  const max = box.scrollWidth - box.clientWidth;
+  const at  = Math.abs(box.scrollLeft);
+  box.classList.toggle('m-s', at > KTOL);
+  box.classList.toggle('m-e', max - at > KTOL);
+}
+
+/* ═══════════ b96 · ارتفاع الشريط يُقاس ولا يُنقل ═══════════
+   🔴 ‎--eqtb‎ كان رقماً مكتوباً بيدٍ في screens.css، وعليه يُبنى ثلاثةٌ:
+      التصاقُ عمود الأسئلة تحته · سقفُ ارتفاعه · مرساةُ التمرير. فانحرافُه
+      يُغطّي رأسَ العمود **بلا شكوى**. قيس فكان ٤٩ مكتوباً و٥٢ واقعاً —
+      ولولا تصادمُ ‎.eq-tb‎ لكان ٥٨. أي أنّ عطلاً كان يستر عطلاً.
+   ⇒ يُقرأ من الشريط نفسه كلّما تغيّر حجمُه. والقيمةُ في CSS تبقى قاعاً
+     لِما قبل أوّل قياسٍ ولِمن لا جافاسكربت عنده. */
+function syncTbH(tb){
+  const sc = tb.closest('.eq-sc');
+  if(sc) sc.style.setProperty('--eqtb',
+    Math.round(tb.getBoundingClientRect().height) + 'px');
+}
+
+/* مراقبٌ واحدٌ يُعاد توجيهه لا مراقبٌ لكلّ رسم — والشاشة تُرسم عشراتِ
+   المرّات في الجلسة. ويُراقَب الشريطُ لا الرقائق: الطيُّ يغيّر عرضَ
+   الرقائق، فمراقبتُها تستدعي القياسَ الذي غيّرها ⇒ حلقة.
+   ⚠️ والعنصرُ يُؤخذ من الحدث لا من إغلاقِ أوّل ربط: المراقب يُنشأ مرّةً
+      و‎.eq-tb‎ يُعاد بناؤه مع كلّ رسم — فإغلاقٌ يحمل الأوّل يقيس ميّتاً. */
+let kindsRO = null;
+
+function watchKinds(tb){
+  if(!kindsRO && window.ResizeObserver)
+    kindsRO = new ResizeObserver(es => { es.forEach(e => syncTbH(e.target)); fitKinds(); });
+  if(kindsRO){ kindsRO.disconnect(); kindsRO.observe(tb); }
+
+  const box = tb.querySelector('.eq-kinds');
+  if(box) box.onscroll = () => edgeMark(box);
+
+  /* والخطُّ قد لا يكون حُمِّل بعدُ، وعرضُ الرقيقة وارتفاعُ الشريط يتبعانه
+     — فيُقاس مرّةً الآن ومرّةً بعد حضوره. ‎document.fonts‎ غير مضمونةٍ في
+     كلّ متصفّح، فيُسأل عن وجودها ولا يُفترض. */
+  const tick = () => { syncTbH(tb); fitKinds(); };
+  tick();
+  document.fonts?.ready?.then(tick);
 }
 
 async function pubLesson(quiet){

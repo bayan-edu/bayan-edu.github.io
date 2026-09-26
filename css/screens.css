@@ -693,8 +693,14 @@ body.gate{padding-bottom:0}
    ⚠️ ومقاسا الالتصاق يُعرَّفان هنا مرّةً ويُقرآن في ثلاثة مواضع
       (الشريط · عمود الأسئلة · مرساة التمرير) — فلا يتباعد رقمٌ عن
       رقم. و--eqbar ارتفاعُ الشريط الأعلى (.topbar: ٣٨ + ٩×٢ + حدّ).
+   🔴 b96 · و--eqtb **قاعٌ لا حقيقة**: كان ٤٩ مكتوباً و٥٢ واقعاً، ولولا
+      تصادمُ ‎.eq-tb‎ مع زرّ أدوات السؤال لكان ٥٨ — فعطلٌ كان يستر عطلاً،
+      وما بُني عليه (التصاقُ العمود وسقفُه ومرساةُ التمرير) يُخطئ بلا
+      شكوى. ⇒ صار ‎syncTbH‎ يقرأ الارتفاعَ من الشريط نفسه ويكتبه هنا عند
+      كلّ تغيّرِ حجم. والرقم أدناه ما قِيس عند الإصلاح: يحكم اللحظةَ قبل
+      أوّل قياسٍ لا غير — **ولا يُنقل منه رقمٌ إلى موضعٍ آخر.**
    ══════════════════════════════════════════════════════════ */
-.eq-sc{--eqbar:57px;--eqtb:49px}
+.eq-sc{--eqbar:57px;--eqtb:58px}
 
 /* شريط الأوامر — لاصقٌ تحت الشريط الأعلى، وخلفيّتُه صمّاء:
    ما يمرّ تحته لا يُقرأ من خلاله.
@@ -709,7 +715,10 @@ body.gate{padding-bottom:0}
   background:var(--page);border-bottom:1px solid var(--line);
   padding:9px 0 10px;margin-bottom:13px}
 
-.eq-back{flex:0 1 auto;min-width:0;
+/* 🆕 b96 · والقاعُ على الزرّ لا على نصّه: نصٌّ بحدٍّ أدنى داخل زرٍّ
+   بـ ‎min-width:0‎ لا يوقف انكماشَ الزرّ — بل يفيض منه، والزرُّ لا
+   ‎overflow‎ له. قيس فانكمش الزرّ إلى ٣٥px واسمُ الدرس خارجَه. */
+.eq-back{flex:0 1 auto;min-width:11rem;
   display:flex;align-items:center;gap:7px;cursor:pointer;
   background:var(--fill);border:1px solid var(--line);color:var(--text);
   border-radius:10px;padding:7px 11px;
@@ -718,15 +727,52 @@ body.gate{padding-bottom:0}
 .eq-back-a{flex:0 0 auto;opacity:.7}
 /* ⚠️ واتّسع من ٢٦ إلى ٤٦ حرفاً حين حُذف وصفُ الترويسة: صار هذا
    الموضعَ الوحيد الذي يحمل اسمَ الدرس، فالقصُّ فيه يُفقده لا يختصره.
-   والانكماش يتكفّل بالضيّق — flex:0 1 auto على الزرّ. */
+   والانكماش يتكفّل بالضيّق — flex:0 1 auto على الزرّ، وقاعُه ١١rem
+   أعلاه: العنوان صار يتقاسم العجزَ مع الرقائق بعد أن كان لا يتحمّل
+   منه شيئاً (انظر أسفله)، فلولا قاعٌ يقف عنده لتلاشى. */
 .eq-back-t{min-width:0;max-width:46ch;overflow:hidden;
   text-overflow:ellipsis;white-space:nowrap}
 
 /* رقائق الأنماط — عدٌّ وفلترةٌ في عنصرٍ واحد.
-   وهي وحدها التي تُمرَّر: عدٌّ يُلمَح، وما خرج منه يصله التمرير. */
-.eq-kinds{flex:1 1 0;min-width:0;display:flex;align-items:center;gap:6px;
+   🔴 b96 · وكانت ‎flex:1 1 0‎ ⇒ الرقائق **بقيّةٌ لا حصّة**: أساسُها
+      صفرٌ تنمو بما فضل بعد العنوان والحالة والأفعال. وسائرُهم لا
+      ينكمش، فلا يقع «عجزٌ» يُلزِم العنوانَ بشيء — والرقائق وحدها
+      تدفع ثمنَ كلِّ ضيق. قيس عند ١٠١٠px فاحتاجت ٢٣٣px وظهر ٧٧:
+      سقطت «٤ مقالي» كاملةً، وبُترت «٢٤ اختيار» عند «اخت». والتمرير
+      موجودٌ وشريطُه مخفيّ ⇒ **لا أثرَ لما خرج.** قصٌّ صامت.
+   ⇒ ثلاث درجات قبل البتر، تُستنفد واحدةً بعد واحدة:
+      ① ‎flex:1 1 auto‎ — أساسٌ حقيقيّ، فيقع العجز ويتقاسمه العنوانُ
+        معها. وله نقاطُ قصٍّ مصمَّمة وحدٌّ أدنى، فالقصُّ فيه مُعلَن.
+      ② ‎.tight‎ — التسمية تُطوى والأيقونةُ والعددُ يبقيان: ستّ رقائق
+        تحتاج ٦٧٨px موسَّعةً و٣٠٨ مطويّة.
+      ③ ‎.m-s/.m-e‎ — وما خرج رغم ذلك يترك أثراً على حافّته.
+   ⚠️ ولا ‎flex-shrink:0‎ مع الطيّ — جُرِّب ليتحمّلَ العنوانُ ما بقي من
+      العجز: فخرج الفائضُ من الرقائق إلى الشريط (قيس ١٣١px بستّة
+      أنماطٍ عند ١٠١٠px)، ودافعُ الشريطِ يدفع الصفحةَ إلى تمريرٍ
+      أفقيّ — وهي العلّة المكتوبة في @media أسفله. والانكماشُ يُبقي
+      الفائضَ داخل ‎overflow‎ الرقائق، حيث يُقاس ويُعلَن.
+   ⚠️ والدرجة ② تُضاف بالقياس لا بنقطة قطعٍ في @media: الفيض يتبع
+      طولَ اسم الدرس وعددَ الأنماط الحاضرة وعددَ الأزرار — وهي العلّة
+      نفسها المكتوبة في تعليق .eq-tb أعلاه. (انظر fitKinds) */
+.eq-kinds{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:6px;
   flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
 .eq-kinds::-webkit-scrollbar{display:none}
+
+/* ② الطيّ — والعددُ هو المعلومة، والتسميةُ شرحُها. فيسقط الشرح أوّلاً
+   ويبقى ما لا يُستغنى عنه: الأيقونةُ تميّز، والرقمُ يُعدّ، و‎title‎
+   على الرقيقة يقول الاسمَ كاملاً. */
+.eq-kinds.tight .eq-kb > span{display:none}
+
+/* ③ الأثر — تلاشٍ على الحافّة التي أخفت، لا شريطَ تمريرٍ ظاهر:
+   الأفقيُّ في ويندوز يأخذ ارتفاعاً، و--eqtb مبنيٌّ عليه ما تحته.
+   والجهة تُحسب ولا تُفترض: «البداية» في RTL هي اليمين. */
+.eq-kinds.m-e{-webkit-mask-image:linear-gradient(to left,#000 calc(100% - 22px),transparent);
+              mask-image:linear-gradient(to left,#000 calc(100% - 22px),transparent)}
+.eq-kinds.m-s{-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 22px),transparent);
+              mask-image:linear-gradient(to right,#000 calc(100% - 22px),transparent)}
+.eq-kinds.m-s.m-e{
+  -webkit-mask-image:linear-gradient(to left,transparent,#000 22px,#000 calc(100% - 22px),transparent);
+          mask-image:linear-gradient(to left,transparent,#000 22px,#000 calc(100% - 22px),transparent)}
 .eq-kb{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;cursor:pointer;
   background:var(--fill-soft);border:1px solid var(--line);color:var(--text-muted);
   border-radius:9px;padding:5px 9px;font-family:inherit;font-size:var(--fs-tag)}
@@ -902,6 +948,13 @@ body.gate{padding-bottom:0}
   .eq-kinds{flex:0 1 auto;flex-wrap:wrap;overflow:visible}
   .eq-acts{flex:1 1 auto;min-width:0;flex-wrap:wrap}
   .eq-state{flex:0 1 auto;margin-inline-start:0}
+  /* 🆕 b96 · ودرجاتُ الطيّ تسقط هنا كلُّها: الالتفافُ يُغني عن الطيّ،
+     ومع overflow:visible لا فيضَ يُقاس فلا أثرَ يُرسم. وتُبطَل
+     صراحةً ولا تُترك لقياسٍ يتغيّر: صنفٌ بقي من عرضٍ أوسع يطوي
+     تسمياتٍ لا شيءَ يضيّقها — وذاك اختفاءٌ بلا سبب. */
+  .eq-kinds.tight .eq-kb > span{display:inline}
+  .eq-kinds.m-s,.eq-kinds.m-e,.eq-kinds.m-s.m-e{
+    -webkit-mask-image:none;mask-image:none}
   .eq-main{scroll-margin-top:var(--eqbar)}
 }
 
@@ -1100,12 +1153,22 @@ body.gate{padding-bottom:0}
 .eq-bs{font-size:var(--fs-tag);color:var(--text-muted);margin-left:auto}
 .eq-pgbox{border-color:var(--accent-edge)}
 
-/* شريط أدوات السؤال والفقرة */
+/* شريط أدوات السؤال والفقرة
+   🔴 b96 · وكان زرُّه يُسمّى ‎.eq-tb‎ — وهو اسمُ **حاوية شريط الأوامر**
+      أعلى الشاشة. اسمان لشيئين، والثاني لاحقٌ وبنفس الخصوصية فيفوز.
+      قيس المحسوبُ على الشريط العلويّ فإذا هو يلبس ثوبَ الزرّ: خلفيّةُ
+      ‎--fill‎ لا ‎--page‎ · إطارٌ كامل لا حدٌّ سفليّ · استدارة ٨px ·
+      حشو ‎6px 10px‎ لا ‎9px 0 10px‎ · ‎cursor:pointer‎ · ‎.76rem‎ —
+      **ويتلوّن الشريط كلُّه بلون التمييز عند المرور عليه.**
+   ⚠️ وثلاثةٌ تتقارب أسماؤها فتُفرَّق هنا مرّةً واحدة:
+        ‎.eq-tb‎    حاوية شريط الأوامر (سطر ٧٠٧)
+        ‎.eq-tbb‎   زرٌّ فيها — إعدادات · معاينة · نشر
+        ‎.eq-tool‎  زرٌّ في شريط أدوات السؤال — وهو هذا. */
 .eq-tools{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:11px}
-.eq-tb{background:var(--fill);border:1px solid var(--line);color:var(--text);
+.eq-tool{background:var(--fill);border:1px solid var(--line);color:var(--text);
   border-radius:8px;padding:6px 10px;cursor:pointer;font-family:inherit;font-size:.76rem}
-.eq-tb:hover{border-color:var(--accent);color:var(--accent)}
-.eq-tb.on{background:var(--accent-fill);border-color:var(--accent-edge);color:var(--accent)}
+.eq-tool:hover{border-color:var(--accent);color:var(--accent)}
+.eq-tool.on{background:var(--accent-fill);border-color:var(--accent-edge);color:var(--accent)}
 .eq-sep{width:1px;height:20px;background:var(--line);margin:0 4px}
 .eq-hint{font-size:var(--fs-tag);color:var(--text-muted);opacity:.7;margin-right:auto}
 .eq-md{margin-bottom:9px;padding:8px 11px;font-size:.8rem}
