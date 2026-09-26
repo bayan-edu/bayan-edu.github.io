@@ -89,6 +89,8 @@ export function teacherFields(v = {}, opts = {}){
    يظنّه المسجِّل عطلاً في اختياره. */
 export async function fillSubjects(root, selected){
   const sel = root.querySelector('#rf_sb'); if(!sel) return;
+  /* 🆕 b93 · دالّةٌ لا قراءةُ جدول (122) — وتعمل قبل الجلسة وبعدها،
+     فالمنتقي يظهر في البوابة كما يظهر في شاشة التفاصيل. */
   const { data, error } = await api.signupSubjects();
   if(error || !data?.length){
     sel.innerHTML = '<option value="">— تعذّر تحميل المواد —</option>';

@@ -91,13 +91,15 @@ export const academicScales = () =>
     .select('id,name,country,sort_order,levels(id,name,rank)')
     .eq('kind','academic').order('sort_order');
 
-/* 🆕 b90 · موادّ التسجيل — قراءةٌ مباشرة كأختها أعلاه: `subjects` مقروءةٌ
-   لـ anon بسياسة `p_subjects_read` القائمة، فلا دالّةَ جديدة تُكتب.
+/* 🆕 b93 · موادّ التسجيل — دالّةٌ لا قراءةُ جدول (122).
+   🔴 وكانت قراءةً مباشرة فسقطت: `p_subjects_read` تشترط
+      `auth.uid() is not null`، فلا تُقرأ القائمةُ قبل الجلسة —
+      وانقسم نموذجُ المعلّم خطوتين لأجل ذلك.
+   🔑 ولم تُرخَ السياسة: الجدولُ فيه `owner_id` و`placement` و`tool`.
+      فالدالّةُ تُعيد **الاسمَ والمعرّفَ فقط** — الحقُّ بقدره.
    ⚠️ ولا تُخلَط بـ list_teachable_subjects: تلك تشترط is_teacher()،
       والمسجِّلُ هنا لم يصر معلّماً بعد. */
-export const signupSubjects = () =>
-  db.from('subjects').select('id,name,family,sort_order')
-    .eq('active', true).order('sort_order');
+export const signupSubjects = () => db.rpc('signup_subjects');
 
 
 /* ═══════════ ②-ب تسجيل المعلّم وشهادة التأليف (120) ═══════════ */

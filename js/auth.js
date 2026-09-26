@@ -55,14 +55,13 @@ export function renderGate(msg){
              placeholder="name@example.com" autocomplete="email">
       <label class="fl" style="margin-top:16px">كلمة المرور</label>
       <input type="password" id="pw" placeholder="٦ أحرف على الأقل" autocomplete="${reg?'new-password':'current-password'}">
-      ${/* 🆕 b90 · المعلّمُ يقف هنا عند الاسم — وبقيّةُ حقوله في شاشة
-            التفاصيل بعد الجلسة، لأنّ `p_subjects_read` تشترط حساباً
-            فلا تُقرأ قائمةُ المواد قبله. والفصلُ احترامٌ لسياسةٍ قائمة
-            لا التفافٌ عليها. */''}
-      ${reg && S.role === 'teacher' ? `
-      <label class="fl" style="margin-top:16px">اسمك كما يظهر لطلابك</label>
-      <input type="text" id="nm" value="${esc(draft.nm||'')}" placeholder="الاسم الثلاثي">
-      <p class="small">ثمّ نسألك عن مادّتك ومدرستك في الخطوة التالية.</p>` : ''}
+      ${/* 🆕 b93 · وعاد نموذجُ المعلّم خطوةً واحدة. كان منقسماً لأنّ
+            `p_subjects_read` تشترط حساباً فلا تُقرأ قائمةُ المواد قبله
+            — **والعلاجُ بابٌ ضيّق لا سياسةٌ تُرخى** (122): دالّةٌ
+            تُعيد الاسمَ والمعرّفَ فقط، ممنوحةٌ لـ`anon`.
+            ⚠️ و`renderTeacherDetails` تبقى: هي مسلكُ من سجّل ولم تُفتح
+               له جلسةٌ (تأكيدُ البريد مفعَّل)، أو تَرَك قبل أن يُتمّ. */''}
+      ${reg && S.role === 'teacher' ? teacherFields(draft.t) : ''}
       ${reg && S.role !== 'teacher' ? `
       <label class="fl" style="margin-top:16px">اسمك كما يظهر في التقارير</label>
       <input type="text" id="nm" value="${esc(draft.nm||'')}" placeholder="الاسم الثلاثي">
@@ -135,7 +134,8 @@ export function renderGate(msg){
     /* ولا شيء بعدها: الصفحة تغادر إلى Google وتعود بجلسةٍ إلى boot. */
   };
 
-  if(reg && S.role !== 'teacher') fillGrades();
+  if(reg && S.role === 'teacher') fillSubjects(app, draft.t?.subject);
+  else if(reg)                    fillGrades();
 
   document.getElementById("em").focus();
 }
@@ -274,23 +274,24 @@ async function submitGate(){
       ولا «⏳ طلبك قيد المراجعة» — الدورُ يُمنح فوراً، **والتأليفُ لا
       يُمنح إلا بشهادةٍ** (120). واللوحةُ القديمة تبقى في القاعدة. */
 async function submitTeacherGate(em, pw){
-  const nm = (document.getElementById("nm")?.value || '').trim();
-  if(!nm){ toast("اكتب اسمك كما يظهر لطلابك"); return; }
   if(!policyOk(app)){ askPolicy(); return; }
+  const f = readTeacher(app);
+  if(!f.ok){ toast(f.msg); return; }
 
   keepDraft();
   app.innerHTML = `<div class="status">جارٍ إنشاء الحساب…</div>`;
 
   /* بريدٌ مسجَّلٌ سلفاً: يُدخَل به بدل أن يُردّ — فمن سجّل طالباً ثمّ
      عاد معلّماً لا يُطلب منه بريدٌ ثانٍ. وخطأُ كلمة المرور يُقال. */
-  let r = await api.signUpTeacher(em, pw, nm, POLICY_VERSION);
+  let r = await api.signUpTeacher(em, pw, f.v.fullName, POLICY_VERSION);
   if(r.error && /already registered/i.test(r.error.message)){
     r = await api.signIn(em, pw);
     if(r.error){ renderGate("هذا البريد مسجّل — وكلمة المرور غير صحيحة"); return; }
   } else if(r.error){ renderGate(translate(r.error.message)); return; }
 
-  /* بلا جلسةٍ لا تُقرأ قائمةُ المواد ولا تُنادى register_teacher —
-     فتُؤجَّل إلى أوّل دخول، و`wants_teacher` تحفظ النيّة. */
+  /* ⚠️ بلا جلسةٍ لا تُنادى `register_teacher` — وما كُتب في النموذج
+     يضيع. ⇒ `wants_teacher` تحفظ النيّة، و`renderTeacherDetails`
+     تستأنف عند أوّل دخول. وهي الحالةُ الوحيدة التي بقي الانقسامُ لها. */
   if(!r.data.session){
     S.gate = "login";
     renderGate("أُنشئ حسابك ✅ فعّل بريدك ثمّ سجّل الدخول لإكمال بيانات المعلّم.");
@@ -298,6 +299,15 @@ async function submitTeacherGate(em, pw){
   }
 
   await api.acceptPolicy(POLICY_VERSION);
+
+  const { data, error } = await api.registerTeacher(f.v);
+  if(error || !data?.ok){
+    /* الحسابُ أُنشئ والجلسةُ قائمة — فلا يُعاد إلى البوابة، بل إلى
+       شاشة التفاصيل برسالتها. وإعادتُه إلى البوابة تُوهمه أنّ حسابه
+       لم يُنشأ فيُعيد التسجيل بالبريد نفسه. */
+    return renderTeacherDetails(error?.message || data?.error);
+  }
+
   draft = {};
   await boot();
 }
