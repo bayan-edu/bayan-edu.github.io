@@ -63,7 +63,7 @@ function setup(mq, onChange){
     drop(); chip = el;
     el.classList.add('armed'); el.setAttribute('aria-pressed','true');
     mq.classList.add('arming');
-    say(`حُمِل «${el.textContent.trim()}» — اختر بنداً`);
+    say(`حُمِل «${el.textContent.trim()}» — يُختار بند`);
   };
 
   const armSlot = el => {
@@ -71,7 +71,7 @@ function setup(mq, onChange){
     drop(); slot = el;
     el.classList.add('armed');
     mq.classList.add('arming');
-    say(`${label(el)} — اختر مقابلاً`);
+    say(`${label(el)} — يُختار مقابل`);
   };
 
   /* الوضع: نصُّ المقابل يُكتب في الخانة، ومفتاحُه في dataset.

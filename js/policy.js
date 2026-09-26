@@ -31,4 +31,4 @@ export const policyCheck = (id = 'pol_ok') => `
 export const policyOk = (root, id = 'pol_ok') =>
   !!root.querySelector('#' + id)?.checked;
 
-export const POLICY_MSG = 'اقرأ سياسة الخصوصية ووافق عليها للمتابعة';
+export const POLICY_MSG = 'تُقرأ سياسة الخصوصية ويُوافَق عليها للمتابعة';

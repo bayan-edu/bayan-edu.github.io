@@ -7,7 +7,7 @@ import { S } from './state.js';
 import { mediaUrl, isManaged } from './media.js';
 
 /* ── بصمة النسخة — لمعرفة أي شيفرة يشغّلها المتصفح فعلاً ── */
-export const BUILD = "b96";
+export const BUILD = "b97";
 
 /* ── مراسي الصفحة ── */
 export const app = document.getElementById("app");
@@ -702,14 +702,14 @@ function paintSearch(hits, q, error){
 
   if(error){ box.innerHTML = errBox(error, 'البحث'); return; }
   if(hits === null){
-    box.innerHTML = `<div class="s-msg"><b>اكتب حرفين فأكثر</b>
+    box.innerHTML = `<div class="s-msg"><b>حرفان فأكثر</b>
       يبحث في دروسك ومصادرها وبطاقاتك — وفي أخطائك وتشخيصها.
-      وتستطيع كتابة نوع الخطأ نفسه.</div>`;
+      ويمكن كتابة نوع الخطأ نفسه.</div>`;
     return;
   }
   if(!hits.length){
     box.innerHTML = `<div class="s-msg"><b>لا شيء يطابق «${esc(q)}»</b>
-      جرّب كلمةً واحدة، أو جذر الكلمة بلا سوابقَ ولواحق.</div>`;
+      كلمةٌ واحدة، أو جذر الكلمة بلا سوابقَ ولواحق.</div>`;
     return;
   }
 

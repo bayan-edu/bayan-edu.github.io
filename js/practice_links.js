@@ -101,7 +101,7 @@ const result = d => `
     <input id="pl_u" dir="ltr" readonly value="${esc(practiceUrl(d.token))}"
            style="margin-top:10px">
     <div class="nav" style="margin-top:10px">
-      <button class="btn ghost" id="pl_c">انسخ الرابط</button>
+      <button class="btn ghost" id="pl_c">نسخُ الرابط</button>
     </div>
   </div>`;
 

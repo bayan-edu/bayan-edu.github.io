@@ -60,7 +60,7 @@ export async function openGrade(id){
       <label class="fl">درجة الأسئلة المقالية</label>
       <input type="text" id="es" inputmode="decimal" value="${a.essay_score??''}" placeholder="مثال: 4.5">
       <label class="fl" style="margin-top:16px">ملاحظاتك للطالب</label>
-      <textarea id="fb" placeholder="اكتب التشخيص والخطة العلاجية…">${esc(a.teacher_comment||'')}</textarea>
+      <textarea id="fb" placeholder="التشخيص والخطة العلاجية…">${esc(a.teacher_comment||'')}</textarea>
     </div>
     <div class="nav"><button class="btn primary" id="sv">حفظ وإرسال</button></div>`;
 
@@ -68,7 +68,7 @@ export async function openGrade(id){
   document.getElementById("sv").onclick = async ()=>{
     const es = (document.getElementById("es").value||"").trim();
     const fb = (document.getElementById("fb").value||"").trim();
-    if(!fb){ toast("اكتب ملاحظاتك أولاً"); return; }
+    if(!fb){ toast("ملاحظاتك أولاً"); return; }
     const { error } = await api.saveGrade(id, es===''?null:Number(es), fb, S.user.id);
     toast(error?"تعذّر الحفظ":"أُرسلت الملاحظات");
     if(!error) refreshCounts();    // نقص المنتظِر ⇒ ينقص الجرس
@@ -114,12 +114,12 @@ export async function openThread(sid){
     ${errBox(error,'المحادثة')}
     <div class="chat">${(data||[]).map(m=>bubble(m,m.sender_role==='teacher')).join("")}</div>
     <div class="card"><label class="fl">ردّك</label>
-      <textarea id="rt" placeholder="اكتب ردّك العلمي…"></textarea></div>
+      <textarea id="rt" placeholder="ردُّك العلميّ…"></textarea></div>
     <div class="nav"><button class="btn primary" id="sr">إرسال الرد</button></div>`;
   document.getElementById("bk").onclick = loadInbox;
   document.getElementById("sr").onclick = async ()=>{
     const t = (document.getElementById("rt").value||"").trim();
-    if(!t){ toast("اكتب ردّك أولاً"); return; }
+    if(!t){ toast("ردُّك أولاً"); return; }
     const { error } = await api.sendMessage({
       studentId:sid, senderId:S.user.id, senderRole:'teacher', body:t });
     toast(error?"تعذّر الإرسال":"أُرسل الرد"); openThread(sid);
@@ -140,13 +140,13 @@ export async function openThread(sid){
       متّسع. القرارُ مؤجَّلٌ في STATE ⑨، ولا يُفتح مفتاحٌ يُنتج كذبة. */
 const capBox = x => !x.chosen ? '' : `
       <div class="m-cap-set">
-        <label class="fl">السعة — كم طالباً تتابع في هذه المادة</label>
+        <label class="fl">السعة — كم طالباً في هذه المادة</label>
         <input type="number" min="1" max="500" value="${x.capacity}" data-cap="${x.id}">
       </div>`;
 
 export async function loadMySubjects(){
   nav('mySubjects');
-  head("موادّي", "اختر المواد التي تتابع فيها الطلاب");
+  head("موادّي", "الموادُّ التي فيها متابعتك للطلاب");
   app.innerHTML = `<div class="status">جارٍ التحميل…</div>`;
 
   const { data, error } = await api.listTeachableSubjects();
@@ -156,8 +156,8 @@ export async function loadMySubjects(){
 
   app.innerHTML = `
     <div class="warnbox">
-      تختار حتى ٣ مواد. والمادة الواحدة عبر صفوف مختلفة تُحسب مادة واحدة.
-      ستظهر للطلاب في قائمة معلمي المواد التي تختارها.
+      حتى ٣ مواد تُختار. والمادة الواحدة عبر صفوف مختلفة تُحسب مادة واحدة.
+      ستظهر للطلاب في قائمة معلمي المواد المختارة.
     </div>
     ${subs.map(x=>`
       <div class="mentor ${picked.has(x.id)?'cur':''}" data-i="${x.id}">
@@ -203,7 +203,7 @@ export async function loadMySubjects(){
       const { data, error } = await api.setSubjectCapacity(Number(inp.dataset.cap), v, null);
       if(error){ toast(error.message); return; }
       /* 🔑 و116 تُرجع «هل مسّ التحديثُ صفّاً» — فالصمت لا يُصدَّق */
-      if(!data){ toast("لم تُحفظ — احفظ اختيار موادّك أولاً"); return; }
+      if(!data){ toast("لم تُحفظ — ويُحفظ اختيار موادّك أولاً"); return; }
       toast(`السعة الآن ${AR(v)}`);
     };
   });

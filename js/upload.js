@@ -26,9 +26,9 @@ import { audioKey, AUDIO_MAX_MB } from './media.js';
 function upMsg(e){
   const m = (e?.message || "").toLowerCase();
   if(m.includes("already exists"))
-    return "يوجد ملفٌ بالاسم نفسه — أعد المحاولة (يُولَّد اسمٌ جديد)";
+    return "يوجد ملفٌ بالاسم نفسه — تُعاد المحاولة (يُولَّد اسمٌ جديد)";
   if(m.includes("row-level security") || m.includes("unauthorized") || m.includes("403"))
-    return "لا تملك صلاحية الرفع — راجع المدير";
+    return "لا صلاحيةَ رفعٍ لهذا الحساب — والمراجعةُ للمدير";
   if(m.includes("payload") || m.includes("too large") || m.includes("413"))
     return `الملف أكبر من حدّ المخزن (${AUDIO_MAX_MB} م.ب)`;
   if(m.includes("mime") || m.includes("content type"))
@@ -64,7 +64,7 @@ export function attachUpload(inputId, scope){
   const wrap = document.createElement("div");
   wrap.className = "mf";
   wrap.innerHTML =
-    `<button type="button" class="mf-up">⬆ ارفع ملفاً صوتياً</button>
+    `<button type="button" class="mf-up">⬆ رفعُ ملفٍّ صوتيّ</button>
      <span class="mf-note"></span>
      <input type="file" accept="audio/*" hidden>`;
   inp.insertAdjacentElement("afterend", wrap);
@@ -104,6 +104,6 @@ export function attachUpload(inputId, scope){
     inp.dispatchEvent(new Event("input",  { bubbles: true }));
     inp.dispatchEvent(new Event("change", { bubbles: true }));
 
-    say(note, "تمّ الرفع ✅ — احفظ لتثبيته");
+    say(note, "تمّ الرفع ✅ — ويبقى الحفظ لتثبيته");
   };
 }

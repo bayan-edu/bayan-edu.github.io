@@ -76,7 +76,7 @@ function renderDecks(){
     <div class="ed-sec">
       <div class="grp">مجموعات المقرَّر <span class="chip">${AR(off.length)}</span></div>
       ${off.length ? off.map(row).join("")
-                   : '<div class="ed-empty">لا مجموعة بعد. ابدأ بواحدة وألصق فيها قائمتك.</div>'}
+                   : '<div class="ed-empty">لا مجموعة بعد. والبدايةُ بواحدة تُلصق فيها قائمتك.</div>'}
     </div>
 
     ${own.length ? `<div class="ed-sec">
@@ -139,7 +139,7 @@ function deckForm(d){
   document.getElementById('bk').onclick = renderDecks;
   document.getElementById('sv').onclick = async () => {
     const title = document.getElementById('ti').value.trim();
-    if(!title) return toast('اكتب عنواناً', false);
+    if(!title) return toast('العنوان مطلوب', false);
     const lesson = document.getElementById('ls').value || null;
 
     const { error } = await api.saveDeck({
@@ -253,7 +253,7 @@ function pasteBox(){
           واحداً في كلّ لقاء. <b>ومثالٌ ثابت يُحفظ بنصّه</b> فيتعرّف
           الطالبُ الجملةَ لا المفهوم.</div>
         <div class="ed-hint" style="opacity:.75">🔑 <b>وأقوى وجهٍ جملةٌ
-          بفراغ:</b> اكتب <code>{{ }}</code> مكان الكلمة — فيُسترجَع
+          بفراغ:</b> يُكتب <code>{{ }}</code> مكان الكلمة — فيُسترجَع
           المصطلح في سياقه لا مجرَّداً.</div>
         <div class="ed-hint" style="opacity:.75">♻️ وإعادة اللصق
           <b>تصحيحٌ لا تكرار</b>: ما تكرّر وجهُه يُحدَّث معناه.</div>
@@ -318,10 +318,10 @@ function cardForm(c){
     <div class="crumb" id="bk">← ${esc(cur.title)}</div>
     <div class="ed-form">
       <div class="ed-side">
-        <div class="ed-hint">🔑 <b>الوجه هو ما يُسأل عنه.</b> اختره بما
+        <div class="ed-hint">🔑 <b>الوجه هو ما يُسأل عنه.</b> ويُختار بما
           سيُطلب من الطالب في الامتحان لا بما هو أسهل كتابةً.</div>
-        <div class="ed-hint" style="opacity:.75"><b>النُّطق:</b> ارفع الملفّ
-          إلى المخزن ثمّ ألصق مفتاحه — <code>audio/x.mp3</code>.
+        <div class="ed-hint" style="opacity:.75"><b>النُّطق:</b> يُرفع الملفّ
+          إلى المخزن ثمّ يُلصق مفتاحه — <code>audio/x.mp3</code>.
           ويُسمَع بعد الكشف لا قبله.</div>
         <div class="ed-hint" style="opacity:.75"><b>الصورة:</b> رابطٌ خارجيّ
           اليوم. والسؤال قبل إضافتها: أتصلح <b>بديلاً عن المعنى</b>؟
@@ -480,9 +480,9 @@ function preview(){
         '<span style="opacity:.45">______</span>')}</div>
       <div class="bf-recall">
         <textarea id="bfDraft" dir="auto"
-                  placeholder="${gap ? 'اكتب الكلمة…' : 'اكتب ما تعرفه…'}"
+                  placeholder="${gap ? 'الكلمة…' : 'ما يحضرك…'}"
                   style="min-height:56px"></textarea>
-        <button class="bf-hint" data-flip="1">اضغط لرؤية الإجابة</button>
+        <button class="bf-hint" data-flip="1">رؤية الإجابة</button>
       </div>`;
     registerFit(front, document.getElementById('bfQ'), 18.9, 15);
 
@@ -503,7 +503,7 @@ function preview(){
 
       ${draft ? `
         <div class="bf-term" dir="${dirOf(c.front)}">${esc(c.front)}</div>
-        <div class="bf-label">كتبتَ</div>
+        <div class="bf-label">كتبت</div>
         <div class="bf-mine" dir="auto">${esc(draft)}</div>
         <div class="bf-label">الصواب</div>
         <div class="bf-answer" id="bfAns" dir="${dirOf(c.back)}">${esc(c.back)}</div>`
@@ -514,7 +514,7 @@ function preview(){
           ? ` · ${AR(examples(c.note).length)}` : ''}</div>
         <div class="bf-note" dir="${dirOf(c._ex)}">${esc(c._ex)}</div>` : ''}
 
-      <button class="bf-hint" data-flip="1">اضغط للعودة للسؤال</button>
+      <button class="bf-hint" data-flip="1">العودة للسؤال</button>
       <div class="bf-btn-row">
         <button class="btn" data-g="1">لم أتذكّرها</button>
         <button class="btn" data-g="2">بصعوبة</button>

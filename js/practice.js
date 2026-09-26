@@ -55,8 +55,8 @@ function fail(msg){
   head("جلسة تدرّب", "");
   app.innerHTML = `
     <div class="err"><b>تعذّر فتح الجلسة</b>${esc(msg)}</div>
-    <p class="hint">إن كنتَ تظنّ الرابط صحيحاً فاطلب من معلّمك رابطاً جديداً —
-      روابطُ التدرّب لها مدّةٌ تنتهي.</p>`;
+    <p class="hint">ولعلّ الرابط صحيح — فيُطلب من معلّمك رابطٌ جديد،
+      إذ روابطُ التدرّب لها مدّةٌ تنتهي.</p>`;
 }
 
 
@@ -71,12 +71,12 @@ function intro(){
     <div class="card">
       <div class="line" style="color:var(--text)">
         ${P.kind === 'cards'
-          ? `${AR(n)} بطاقة — تقلبها وتحكم على نفسك.`
-          : `${AR(n)} سؤالاً — تُجيب، فيُقال لك <b>أيُّ خطأٍ وقعتَ فيه وما علاجه</b>،
-             لا «أخطأتَ» وحدها.`}
+          ? `${AR(n)} بطاقة — تُقلَب، والحكمُ على نفسك.`
+          : `${AR(n)} سؤالاً — والجوابُ يُتبَع بـ<b>أيِّ خطأٍ وقعت فيه وما علاجه</b>،
+             لا «أخطأت» وحدها.`}
       </div>
       <div class="line" style="margin-top:10px">
-        ولا حدَّ للمحاولات: أعِد السؤال حتى تفهمه.
+        ولا حدَّ للمحاولات: يُعاد السؤال حتى يُفهَم.
         ${P.expires ? `· والرابط صالحٌ حتى ${esc(new Date(P.expires)
             .toLocaleDateString('ar-EG', { year:'numeric', month:'long', day:'numeric' }))}` : ''}
       </div>
@@ -84,7 +84,7 @@ function intro(){
       <input type="text" id="pnm" maxlength="40" placeholder="يظهر لمعلّمك، ولا يُتحقَّق منه">
     </div>
     <div class="nav" style="margin-top:16px">
-      <button class="btn primary" id="pgo">ابدأ ←</button>
+      <button class="btn primary" id="pgo">بدء ←</button>
     </div>`;
 
   document.getElementById("pgo").onclick = () => {
@@ -156,7 +156,7 @@ function cardHtml(c){
       </div>
     </div>
     <div class="nav" style="margin-top:16px">
-      <button class="btn primary" id="pflip">اقلب البطاقة</button>
+      <button class="btn primary" id="pflip">قلبُ البطاقة</button>
     </div>
     <div id="rate" hidden>
       <p class="hint">كيف كانت؟</p>
@@ -258,10 +258,10 @@ async function send(){
 function feedback(r){
   const ok = r.is_correct;
   const part = (r.hits != null && r.of)
-    ? `<div class="line">أصبتَ ${AR(r.hits)} من ${AR(r.of)}</div>` : '';
+    ? `<div class="line">أصبت ${AR(r.hits)} من ${AR(r.of)}</div>` : '';
   return `
     <div class="rev ${ok ? 'ok' : 'no'}" style="margin-top:14px">
-      <span class="tag ${ok ? 'ok' : 'no'}">${ok ? 'أصبتَ' : 'أخطأتَ'}</span>
+      <span class="tag ${ok ? 'ok' : 'no'}">${ok ? 'أصبت' : 'أخطأت'}</span>
       ${part}
       ${!ok && r.correct != null
         ? `<div class="line" dir="auto">الصواب: <b>${esc(showCorrect(r))}</b></div>` : ''}
@@ -333,7 +333,7 @@ function done(){
     : `<p class="hint">لم يُسجَّل نمطُ خطأٍ متكرّر في هذه الجلسة.</p>`}
 
     <div class="nav" style="margin-top:20px">
-      <button class="btn primary" id="pagain">أعِد الجلسة</button>
+      <button class="btn primary" id="pagain">إعادة الجلسة</button>
       <a class="btn ghost" href="./" style="text-decoration:none">بيان</a>
     </div>`;
 

@@ -155,9 +155,9 @@ function render(at = 'focus'){
 const emptyCard = () => `<div class="card" style="text-align:center;padding:34px">
   <div style="font-size:2rem;margin-bottom:10px">◉</div>
   <div class="rev-q">لا أسئلة بعد</div>
-  <div class="line">ابدأ بستّة أسئلة اختيار من متعدد — وهو الحدّ الذي تبقى معه عتبة ٦٥٪ ذات معنى.</div>
+  <div class="line">البدايةُ بستّة أسئلة اختيار من متعدد — وهو الحدّ الذي تبقى معه عتبة ٦٥٪ ذات معنى.</div>
   <div class="nav" style="justify-content:center;margin-top:16px">
-    <button class="btn primary" id="add0">＋ أضِف أوّل سؤال</button>
+    <button class="btn primary" id="add0">＋ إضافة أوّل سؤال</button>
     <button class="btn ghost" id="imp0">⇪ استيراد اختبار</button>
   </div>
 </div>`;
@@ -284,7 +284,7 @@ function qCard(q){
 
   const dxSelect = (val, i) => `
     <select class="eq-dx ${val?'':'miss'}" data-o="${i}" ${locked?'disabled':''}>
-      <option value="">— اختر التشخيص —</option>
+      <option value="">— التشخيص —</option>
       ${fams.map(f => `<optgroup label="${esc(f)}">
         ${dx.filter(d => (d.family||'عام')===f).map(d =>
           `<option value="${esc(d.code)}" ${d.code===val?'selected':''}>${esc(d.name)}</option>`).join("")}
@@ -354,7 +354,7 @@ function qCard(q){
           <div class="cz-pv-h">👁️ هكذا يراه الطالب</div>
           <div class="gaplive" id="gaplive">${
             gapCount(q.body||'') ? czLive(q)
-                                 : '<span class="eq-hint">اكتب الجملة وفراغاتها أعلاه</span>'}</div>
+                                 : '<span class="eq-hint">الجملةُ وفراغاتها تُكتب أعلاه</span>'}</div>
         </div>
       ` : q.kind === 'matching' ? `
 
@@ -758,7 +758,7 @@ function pairForm(q){
         ${x.variant_key ? `<span class="chip g">⇄ ينضمّ إلى ${esc(x.variant_key)}
           · ${AR(partners(x).length + 2)} نسخ</span>` : ''}
         <span class="eq-bs">${
-          noFp ? '⬜ لا فحص آليّ — اقرأ الاثنين'
+          noFp ? '⬜ لا فحص آليّ — والاثنان يُقرآن'
         : dif.length ? '⚠️ يختلف في: ' + esc(dif.join(' · '))
         : '✅ مطابق'}</span>
       </div>
@@ -828,7 +828,7 @@ function pairForm(q){
 
 /* التكرار حركة · والاقتران إعلان — وهذا الزرّ إعلانُ الكاتب صراحةً */
 async function makeVariant(q){
-  if(!q.id){ toast("احفظ السؤال أولاً ثم اصنع بديله"); return; }
+  if(!q.id){ toast("يُحفظ السؤال أولاً ثمّ يُصنع بديله"); return; }
   if(dirty && !confirm("تغييرات غير محفوظة في هذا السؤال — أتتركها؟")) return;
 
   const d = await api.duplicateQuestion(q.id);
@@ -1047,7 +1047,7 @@ function wire(q){
       const lv = main.querySelector("#gaplive");
       if(lv) lv.innerHTML = gapCount(qb.value)
         ? (cz ? czLive(q) : questionText(q, [], true))
-        : `<span class="eq-hint">${cz ? 'اكتب الجملة وفراغاتها أعلاه'
+        : `<span class="eq-hint">${cz ? 'الجملةُ وفراغاتها تُكتب أعلاه'
                                       : '…هكذا يراه الطالب'}</span>`;
     };
 
@@ -1302,7 +1302,7 @@ function repaint(q){
 function gapFields(q, locked){
   const n = gapCount(q.body || '');
   if(!n) return `<div class="eq-hint" style="display:block;padding:14px 0">
-    لا فراغ بعد — اكتب <code>{{1}}</code> في نصّ السؤال أعلاه.</div>`;
+    لا فراغ بعد — يُكتب <code>{{1}}</code> في نصّ السؤال أعلاه.</div>`;
 
   const slots = q.accept?.slots || [];
   const rows = Array.from({length:n}, (_,i) => `
@@ -1394,7 +1394,7 @@ const mtDxSel = (val, locked) => {
   const fams = [...new Set(dx.map(d => d.family || 'عام'))];
   return `
     <select class="mt-wc${val ? '' : ' miss'}" ${locked?'disabled':''}>
-      <option value="">— اختر التشخيص —</option>
+      <option value="">— التشخيص —</option>
       ${fams.map(f => `<optgroup label="${esc(f)}">
         ${dx.filter(d => (d.family||'عام')===f).map(d =>
           `<option value="${esc(d.code)}"${d.code===val ? ' selected' : ''}>${esc(d.name)}</option>`).join("")}
@@ -1608,8 +1608,8 @@ const czMate = (q, k) => (q.bank || []).find(b => b.k === (q.accept?.pairs || {}
 function clozeFields(q, locked){
   const n = gapCount(q.body || '');
   if(!n) return `<div class="eq-hint" style="display:block;padding:14px 0">
-    لا فراغ بعد — اكتب <code>{{1}}</code> و<code>{{2}}</code> في نصّ السؤال أعلاه،
-    أو اضغط «⌷ فراغ».</div>`;
+    لا فراغ بعد — يُكتب <code>{{1}}</code> و<code>{{2}}</code> في نصّ السؤال أعلاه،
+    أو بزرّ «⌷ فراغ».</div>`;
 
   czEnsure(q);
   const bank = q.bank || [];
@@ -1827,7 +1827,7 @@ async function moveQ(dir){
   if(j === undefined) return;
 
   if(qs.some(x => !x.id)){
-    toast("احفظ السؤال الجديد أولاً — الترتيب يحتاج معرّفاً"); return; }
+    toast("يُحفظ السؤال الجديد أولاً — الترتيب يحتاج معرّفاً"); return; }
   if(dirty && !confirm("تغييرات غير محفوظة — أتتركها؟")) return;
 
   const me  = qs[cur].id;
@@ -1843,7 +1843,7 @@ async function moveQ(dir){
   reload(me);                                   // البؤرة تتبع السؤال لا الرقم
 }
 async function dupQ(q){
-  if(!q.id){ toast("احفظ السؤال أولاً ثم كرّره"); return; }
+  if(!q.id){ toast("يُحفظ السؤال أولاً ثمّ يُكرَّر"); return; }
   const { data, error } = await api.duplicateQuestion(q.id);
   if(error){ toast(error.message); return; }
   if(!data.ok){ toast(data.error); return; }
@@ -2324,17 +2324,17 @@ function importBox(){
   document.getElementById("main").innerHTML = `
     <div class="card">
       <div class="qnum">⇪ استيراد اختبار · يُضاف إلى ${AR((Z.questions||[]).length)} سؤالاً قائماً</div>
-      <div class="line" style="margin-bottom:12px">ألصق JSON — أسئلةً ونصوصاً مشتركة وأقساماً.
+      <div class="line" style="margin-bottom:12px">يُلصق JSON — أسئلةً ونصوصاً مشتركة وأقساماً.
         كل سؤال يمرّ بنفس التحقّق: كود تشخيص لكل مشتّت، وشرحٌ للخطأ.<br>
-        ولإعلان التكافؤ: أضِف <code dir="ltr">"variant": "F1"</code> إلى البندين —
-        أو ضعهما داخل <code dir="ltr">groups</code>. ويُقرنان بعد الإدراج تلقائياً.</div>
+        ولإعلان التكافؤ: تُضاف <code dir="ltr">"variant": "F1"</code> إلى البندين —
+        أو يُوضعان داخل <code dir="ltr">groups</code>. ويُقرنان بعد الإدراج تلقائياً.</div>
 
       <!-- 🔑 القائمة عند نقطة القرار: من يكتب JSON خارج المنصّة لا يرى
            أكواده، فيخترع ما يظنّه معقولاً ثم يُفاجأ بالرفض. وأرخص من
            رسالة خطأ دقيقة أن تُعرض القائمة قبل أن يُكتب الملف. -->
       <details class="eq-dxlist" style="margin-bottom:12px">
         <summary style="cursor:pointer;font-family:'Almarai';font-weight:700;font-size:.82rem">
-          أكواد التشخيص المتاحة (${AR(((S.tree?.dx)||[]).length)}) — انسخ الرمز كما هو</summary>
+          أكواد التشخيص المتاحة (${AR(((S.tree?.dx)||[]).length)}) — يُنسخ الرمز كما هو</summary>
         <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:9px">
           ${[...new Set(((S.tree?.dx)||[]).map(d => d.family || 'عام'))].map(f => `
             <div style="width:100%;margin-top:4px;font-size:.74rem;opacity:.6">${esc(f)}</div>
@@ -2346,8 +2346,8 @@ function importBox(){
       </details>
       <div class="drop" id="idz">
         <div class="drop-i">⇪</div>
-        <div>اسحب ملف JSON هنا · أو <span class="drop-a" id="ipick">اختر ملفاً</span>
-          · أو الصق أدناه</div>
+        <div>بسحب ملف JSON هنا · أو <span class="drop-a" id="ipick">باختيار ملفّ</span>
+          · أو بلصقه أدناه</div>
         <div class="drop-s">الملف يُقرأ في متصفحك — لا يُرفع إلى أي خادم · حتى ٢ ميجابايت</div>
         <input type="file" id="ifile" accept=".json,.txt,application/json" hidden>
       </div>
@@ -2593,7 +2593,7 @@ function passageForm(p, draft){
         <span class="eq-hint">${SAFE_HOSTS}</span>
       </div>
       <textarea id="pfBody" style="min-height:240px"
-        placeholder="ألصق الفقرة كاملة…">${esc(d.body || '')}</textarea>
+        placeholder="الفقرة كاملةً…">${esc(d.body || '')}</textarea>
 
         <input id="pfMedia" dir="ltr" class="eq-md" value="${esc(d.media || '')}"
              placeholder="${pk==='image'?'رابط الصورة':pk==='video'?'رابط الفيديو':'رابط المقطع الصوتي'}"
@@ -3131,7 +3131,7 @@ function sidebar(){
       </div>
 
       <input class="eq-sr" id="lsq" value="${esc(LS.q)}"
-             placeholder="ابحث في النصّ · أو اكتب رقماً واضغط Enter">
+             placeholder="بحثٌ في النصّ · أو رقمٌ ثمّ Enter">
       <div class="eq-f">
         ${fb('all','الكل', st.n)}
         ${fb('warn','⚠️ يحتاج نظرة', st.warn, 'warn')}

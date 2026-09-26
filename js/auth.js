@@ -47,7 +47,7 @@ export function renderGate(msg){
           نموذجاً لن يملأه ليبلغ زرّاً يُغنيه عنه. وهو ترتيبُ أكثر
           المنصّات: الطريقُ الأسرع أولاً، ثمّ «أو» ثمّ البريد. */''}
     ${GOOGLE_BTN}
-    <div class="gate-or">أو ${reg ? 'بالبريد الإلكتروني' : 'سجّل الدخول بالبريد'}</div>
+    <div class="gate-or">أو ${reg ? 'بالبريد الإلكتروني' : 'الدخول بالبريد'}</div>
 
     <div class="card">
       <label class="fl">البريد الإلكتروني</label>
@@ -66,10 +66,10 @@ export function renderGate(msg){
       <label class="fl" style="margin-top:16px">اسمك كما يظهر في التقارير</label>
       <input type="text" id="nm" value="${esc(draft.nm||'')}" placeholder="الاسم الثلاثي">
       <label class="fl" style="margin-top:16px">المنهج الدراسي</label>
-      <select id="cur"><option value="">— اختر المنهج —</option></select>
+      <select id="cur"><option value="">— المنهج —</option></select>
       <div id="grwrap">
         <label class="fl" style="margin-top:14px">صفّك</label>
-        <select id="gr" disabled><option value="">— اختر المنهج أولاً —</option></select>
+        <select id="gr" disabled><option value="">— يُختار المنهج أولاً —</option></select>
       </div>
       <p class="small" id="grnote">يحدّدان المواد التي تظهر لك · يمكنك تغييرهما لاحقاً</p>
       <label class="fl" style="margin-top:16px">مدرستك <span style="opacity:.6">(اختياري)</span></label>
@@ -81,7 +81,7 @@ export function renderGate(msg){
     <div class="nav"><button class="btn primary" id="go">${reg?'إنشاء الحساب':'دخول'}</button></div>
     ${reg?'':'<p class="hint" id="fp" style="cursor:pointer;text-decoration:underline">نسيت كلمة المرور؟</p>'}
     <div class="gate-sep"></div>
-    <button class="gate-alt" id="alt">${reg?'لديك حساب؟ سجّل الدخول':'إنشاء حساب جديد'}</button>
+    <button class="gate-alt" id="alt">${reg?'لديك حساب؟ دخول':'إنشاء حساب جديد'}</button>
     ${/* 🔓 وسقط رابط «انضم كمعلم ←»: صار الدورُ خياراً في التسجيل
           نفسِه، ورابطٌ ثانٍ إلى الشيء نفسِه يُنتج نموذجين يتفارقان. */''}
     </div>
@@ -113,7 +113,7 @@ export function renderGate(msg){
   const fp = document.getElementById("fp");
   if(fp) fp.onclick = async ()=>{
     const em = (document.getElementById("em").value||"").trim();
-    if(!em){ toast("اكتب بريدك أولاً"); return; }
+    if(!em){ toast("بريدك أولاً"); return; }
     const { error } = await api.sendResetLink(em);
     toast(error ? "تعذّر الإرسال" : "أُرسل رابط الاستعادة لبريدك");
   };
@@ -199,7 +199,7 @@ async function fillGrades(){
   function fillLevels(){
     const sc   = S.scales.find(x=>String(x.id)===cs.value);
     const wrap = document.getElementById("grwrap"), note = document.getElementById("grnote");
-    gs.innerHTML = '<option value="">— اختر صفّك —</option>';
+    gs.innerHTML = '<option value="">— صفّك —</option>';
     gs.disabled  = !sc;
 
     const lv = (sc && sc.levels) || [];
@@ -225,7 +225,7 @@ async function submitGate(){
   const reg = S.gate==="register";
   const em  = (document.getElementById("em").value||"").trim();
   const pw  = (document.getElementById("pw").value||"").trim();
-  if(!em || !pw){ toast("أكمل البريد وكلمة المرور"); return; }
+  if(!em || !pw){ toast("البريد وكلمة المرور مطلوبان"); return; }
   if(pw.length < 6){ toast("كلمة المرور ٦ أحرف على الأقل"); return; }
   if(reg && !policyOk(app)){ askPolicy(); return; }
 
@@ -238,8 +238,8 @@ async function submitGate(){
   const nm = (document.getElementById("nm")||{}).value || "";
   const kl = (document.getElementById("kl")||{}).value || "";
   const g  = (document.getElementById("gr")||{}).value || "";
-  if(reg && !nm.trim()){ toast("اكتب اسمك كما يظهر في التقارير"); return; }
-  if(reg && !g){ toast("اختر صفّك الدراسي"); return; }
+  if(reg && !nm.trim()){ toast("الاسم مطلوب — وهو ما يظهر في التقارير"); return; }
+  if(reg && !g){ toast("صفّك الدراسي مطلوب"); return; }
 
   const [gsc, glv] = g ? g.split('|') : [null, null];
   const scaleId = gsc ? Number(gsc) : null;
@@ -263,7 +263,7 @@ async function submitGate(){
   }
   if(reg && !r.data.session){
     S.gate = "login";
-    renderGate("تم إنشاء حسابك ✅ افتح بريدك واضغط رابط التفعيل ثم سجّل الدخول.");
+    renderGate("تم إنشاء حسابك ✅ رابطُ التفعيل في بريدك — يُضغط ثمّ يُسجَّل الدخول.");
     return;
   }
   await boot();
@@ -294,7 +294,7 @@ async function submitTeacherGate(em, pw){
      تستأنف عند أوّل دخول. وهي الحالةُ الوحيدة التي بقي الانقسامُ لها. */
   if(!r.data.session){
     S.gate = "login";
-    renderGate("أُنشئ حسابك ✅ فعّل بريدك ثمّ سجّل الدخول لإكمال بيانات المعلّم.");
+    renderGate("أُنشئ حسابك ✅ يُفعَّل بريدك ثمّ يُسجَّل الدخول لإكمال بيانات المعلّم.");
     return;
   }
 
@@ -336,12 +336,12 @@ export function renderCompleteProfile(msg){
         قبل أن نبدأ — من أنت في بيان؟</div>
       <div style="margin-top:14px">${roleTabs(S.role)}</div>
       <div class="line">${S.role === 'teacher'
-        ? 'نسألك بعدها عن مادّتك ومدرستك، وتظهر لطلابك في «اختر معلمك».'
+        ? 'نسألك بعدها عن مادّتك ومدرستك، وتظهر لطلابك في «اختيار معلمك».'
         : 'نسألك بعدها عن منهجك وصفّك، وهما يحدّدان الموادَّ التي تظهر لك.'}</div>
       ${need ? policyCheck() : ''}
     </div>
     <div class="nav" style="margin-top:16px">
-      <button class="btn primary" id="cp_go">تابِع ←</button>
+      <button class="btn primary" id="cp_go">متابعة ←</button>
     </div>`;
 
   wireRoleTabs(app, r => { S.role = r; renderCompleteProfile(msg); });
@@ -353,7 +353,7 @@ export function renderCompleteProfile(msg){
     if(need){
       const { data, error } = await api.acceptPolicy(POLICY_VERSION);
       if(error || !data?.ok){
-        b.disabled = false; b.textContent = 'تابِع ←';
+        b.disabled = false; b.textContent = 'متابعة ←';
         toast(error?.message || data?.error || 'تعذّر تسجيل الموافقة'); return;
       }
       S.prof.policy_accepted_at = data.at;
@@ -372,15 +372,15 @@ export function renderCompleteProfile(msg){
 
 export function renderTeacherDetails(msg){
   nav('subjects');
-  head("أكمل بيانات المعلّم", S.prof?.full_name || '');
+  head("إكمال بيانات المعلّم", S.prof?.full_name || '');
   app.innerHTML = `
     ${msg ? `<div class="err"><b>تنبيه</b>${esc(msg)}</div>` : ''}
     <div class="card">
-      <div class="line">تظهر هذه البيانات لطلابك في شاشة «اختر معلمك».</div>
+      <div class="line">تظهر هذه البيانات لطلابك في شاشة «اختيار معلمك».</div>
       ${teacherFields({ fullName: S.prof?.full_name }, { name:false })}
     </div>
     <div class="nav" style="margin-top:16px">
-      <button class="btn primary" id="td_ok">تابِع</button>
+      <button class="btn primary" id="td_ok">متابعة</button>
     </div>`;
 
   fillSubjects(app);
@@ -390,7 +390,7 @@ export function renderTeacherDetails(msg){
 
     const b = e.currentTarget; b.disabled = true; b.textContent = '…';
     const { data, error } = await api.registerTeacher(f.v);
-    b.disabled = false; b.textContent = 'تابِع';
+    b.disabled = false; b.textContent = 'متابعة';
 
     if(error){ toast(error.message); return; }
     if(!data?.ok){ renderTeacherDetails(data.error); return; }
@@ -422,7 +422,7 @@ export function renderVerifyAuthor(msg){
         الحساب عند التسجيل.</div>
 
       <div class="nav" style="margin-top:16px">
-        <button class="btn primary" id="va_send">أرسل الرمز</button>
+        <button class="btn primary" id="va_send">إرسال الرمز</button>
       </div>
 
       <div id="va_step" hidden>
@@ -431,7 +431,7 @@ export function renderVerifyAuthor(msg){
                autocomplete="one-time-code" placeholder="٦ أرقام">
         <div class="nav" style="margin-top:12px">
           <button class="btn primary" id="va_ok">تحقّق</button>
-          <button class="btn ghost" id="va_again">أعد الإرسال</button>
+          <button class="btn ghost" id="va_again">إعادة الإرسال</button>
         </div>
       </div>
 
@@ -458,7 +458,7 @@ export function renderVerifyAuthor(msg){
 
   $('va_ok').onclick = async e => {
     const code = ($('va_code').value || '').replace(/\s/g, '');
-    if(!code){ toast("اكتب الرمز"); return; }
+    if(!code){ toast("الرمز مطلوب"); return; }
     const b = e.currentTarget; b.disabled = true; b.textContent = '…';
 
     const { error } = await api.verifyEmailOtp(S.user.email, code);
@@ -483,11 +483,11 @@ export function renderVerifyAuthor(msg){
 
 export function translate(m){
   if(/Invalid login/i.test(m))       return "البريد أو كلمة المرور غير صحيحة";
-  if(/Token has expired|expired/i.test(m)) return "انتهت صلاحية الرمز — اطلب رمزاً جديداً";
-  if(/Invalid token|otp/i.test(m))   return "الرمز غير صحيح — تأكّد منه أو اطلب غيره";
-  if(/rate limit|too many/i.test(m)) return "أكثرتَ من الطلب — انتظر قليلاً ثمّ أعد المحاولة";
-  if(/already registered/i.test(m))  return "هذا البريد مسجّل بالفعل — سجّل الدخول";
-  if(/Email not confirmed/i.test(m)) return "فعّل بريدك أولاً من رابط التفعيل";
+  if(/Token has expired|expired/i.test(m)) return "انتهت صلاحية الرمز — يُطلب رمزٌ جديد";
+  if(/Invalid token|otp/i.test(m))   return "الرمز غير صحيح — يُراجَع أو يُطلب غيره";
+  if(/rate limit|too many/i.test(m)) return "أكثرت من الطلب — انتظارٌ قليل ثمّ إعادة المحاولة";
+  if(/already registered/i.test(m))  return "هذا البريد مسجّل بالفعل — فالدخول لا التسجيل";
+  if(/Email not confirmed/i.test(m)) return "يُفعَّل بريدك أولاً من رابط التفعيل";
   return m;
 }
 
@@ -581,13 +581,13 @@ export function renderGradePicker(msg){
     ${msg?`<div class="err"><b>تنبيه</b>${esc(msg)}</div>`:''}
     <div class="card">
       <div class="line" style="color:var(--text);margin-bottom:15px">
-        لم يُحفظ منهجك بعد — اختره الآن لتظهر لك موادّ صفّك.
+        لم يُحفظ منهجك بعد — ويُختار الآن لتظهر لك موادّ صفّك.
       </div>
       <label class="fl">المنهج الدراسي</label>
-      <select id="cur"><option value="">— اختر المنهج —</option></select>
+      <select id="cur"><option value="">— المنهج —</option></select>
       <div id="grwrap">
         <label class="fl" style="margin-top:14px">صفّك</label>
-        <select id="gr" disabled><option value="">— اختر المنهج أولاً —</option></select>
+        <select id="gr" disabled><option value="">— يُختار المنهج أولاً —</option></select>
       </div>
       <p class="small" id="grnote">يمكنك تغييرهما لاحقاً</p>
     </div>
@@ -598,7 +598,7 @@ export function renderGradePicker(msg){
   document.getElementById("out").onclick = signOut;
   document.getElementById("go").onclick  = async ()=>{
     const g = (document.getElementById("gr")||{}).value || "";
-    if(!g){ toast("اختر صفّك الدراسي"); return; }
+    if(!g){ toast("صفّك الدراسي مطلوب"); return; }
     const [sc, lv] = g.split('|');
     const { data:r, error } = await api.setMyGrade(Number(sc), lv ? Number(lv) : null);
     if(error){ renderGradePicker(error.message); return; }
@@ -660,10 +660,10 @@ async function submitTeacher(){
   const v = id => (document.getElementById(id)?.value||"").trim();
   const em=v("em"), pw=v("pw"), nm=v("nm"), sc=v("sc"), sb=v("sb"), yr=v("yr"), nt=v("nt");
 
-  if(!em || !pw){ toast("أكمل البريد وكلمة المرور"); return; }
+  if(!em || !pw){ toast("البريد وكلمة المرور مطلوبان"); return; }
   if(pw.length < 6){ toast("كلمة المرور ٦ أحرف على الأقل"); return; }
-  if(!nm){ toast("اكتب اسمك الكامل"); return; }
-  if(!sc){ toast("اكتب المدرسة أو الجهة"); return; }
+  if(!nm){ toast("الاسم الكامل مطلوب"); return; }
+  if(!sc){ toast("المدرسة أو الجهة مطلوبة"); return; }
 
   app.innerHTML = `<div class="status">جارٍ إنشاء الحساب…</div>`;
 
@@ -678,7 +678,7 @@ async function submitTeacher(){
 
   if(!r.data.session){
     S.gate = "login";
-    renderTeacherSignup("أنشئ الحساب ✅ فعّل بريدك ثم عد وسجّل الدخول لإكمال الطلب.");
+    renderTeacherSignup("أُنشئ الحساب ✅ يُفعَّل بريدك ثمّ يُسجَّل الدخول لإكمال الطلب.");
     return;
   }
 

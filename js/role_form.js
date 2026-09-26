@@ -97,7 +97,7 @@ export async function fillSubjects(root, selected){
     toast(error ? 'تعذّر تحميل المواد' : 'لا توجد مواد مُعدّة بعد');
     return;
   }
-  sel.innerHTML = '<option value="">— اختر المادة —</option>' +
+  sel.innerHTML = '<option value="">— المادة —</option>' +
     data.map(s => `<option value="${s.id}" ${String(s.id)===String(selected)?'selected':''}>${
       esc(s.name)}</option>`).join("");
 }
@@ -111,8 +111,8 @@ export function readTeacher(root, opts = {}){
   const withName = opts.name !== false;
 
   const fullName = withName ? g('rf_nm') : (opts.fullName || '');
-  if(!fullName) return { ok:false, msg:'اكتب اسمك الكامل' };
-  if(!g('rf_sb')) return { ok:false, msg:'اختر المادة التي تدرّسها' };
+  if(!fullName) return { ok:false, msg:'الاسم الكامل مطلوب' };
+  if(!g('rf_sb')) return { ok:false, msg:'مادّتك مطلوبة' };
 
   /* الهاتفُ يُركَّب من المفتاح والرقم، ويُنظَّف من الفراغات والشرطات.
      والصفرُ الأوّل يسقط: «+20» و«01012…» يُنتجان رقماً بصفرٍ زائد. */

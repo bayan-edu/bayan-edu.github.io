@@ -262,7 +262,7 @@ function renderPage(){
      «سلّم» يُفشي للطالب حدَّ المحطّة وأصلُه يقول «التالي»، ويُخبره
      أنّ ما مضى قُضي فيه — وهو ما يمنعه التسكين عمداً. */
   const LBL_NEXT  = last && !PL ? 'إنهاء وتسليم'   : 'التالي';
-  const LBL_BLANK = last && !PL ? 'سلّم دون إكمال' : 'تابع دون إجابة';
+  const LBL_BLANK = last && !PL ? 'تسليمٌ دون إكمال' : 'متابعةٌ دون إجابة';
 
   /* pgMedia تعرض الصوت في كل ما ليس صورةً ولا فيديو — فليكن
      التمييز هنا بالقاعدة نفسها، لا بقائمةٍ ثانية تتباعد عنها. */
@@ -274,12 +274,12 @@ function renderPage(){
   const lim = S.quiz.plays || null;
 
   head(S.quiz.title,
-    !many     ? "أجب بتأنٍ — كل خيار خاطئ يمثل فخاً مقصوداً"
+    !many     ? "الجوابُ بتأنٍّ — كلُّ خيار خاطئ يمثّل فخاً مقصوداً"
     : isAudio ? (lim === 1
-        ? "يُشغَّل المقطع مرّةً واحدة — اطّلع على الأسئلة قبل أن تبدأ"
-        : lim ? `يُشغَّل المقطع ${AR(lim)} مرّات — اطّلع على الأسئلة أولاً`
-              : "اطّلع على الأسئلة أولاً ثم شغّل المقطع")
-    :           "أسئلةُ نصٍّ واحد — ارجع إليه كلما احتجت");
+        ? "يُشغَّل المقطع مرّةً واحدة — والاطّلاعُ على الأسئلة قبل تشغيله"
+        : lim ? `يُشغَّل المقطع ${AR(lim)} مرّات — والاطّلاعُ على الأسئلة أولاً`
+              : "الاطّلاعُ على الأسئلة أولاً ثمّ تشغيلُ المقطع")
+    :           "أسئلةُ نصٍّ واحد — يُرجَع إليه عند الحاجة");
    
   const from = AR(N.get(qs[0].id)), to = AR(N.get(qs[qs.length-1].id));
   bar.innerHTML = `<div class="timerbar">
@@ -419,12 +419,12 @@ function renderPage(){
 
   const warnHtml = b => `<div class="q-hint">
     بلا إجابة: ${b.map(q=>'س'+AR(N.get(q.id))).join(' · ')} —
-    أجب إن كان لك ترجيح، ودعها فارغةً إن لم يكن.
+    الجوابُ إن كان لك ترجيح، وتُترك فارغةً إن لم يكن.
     التخمينُ يقع في مشتّتٍ فيُسجَّل لك تشخيصٌ لا يخصّك.</div>`;
 
   /* والتنبيهُ لا يتجمّد بعد ظهوره: كلُّ إجابةٍ تُعيد حسابه، فيضيق
      بما بقي فارغاً ويزول هو ونصُّ الزرّ معاً إذا لم يبقَ شيء.
-     ⚠️ زرٌّ يقول «تابع دون إجابة» وقد أجاب الطالب يكذّب عليه —
+     ⚠️ زرٌّ يقول «متابعةٌ دون إجابة» وقد أجاب الطالب يكذّب عليه —
      ووعدُ الشاشة أن تصف الحاضر لا ما مضى. */
   const syncWarn = () => {
     if(!warned) return;
@@ -492,7 +492,7 @@ async function finish(auto){
         <div class="line" style="margin-top:10px">
           حُدِّد بعد ${AR(data.stations || 0)} أقسام. ودروسُك صارت على مقاسك.</div>
         <div class="nav" style="margin-top:22px">
-          <button class="btn primary" id="plgo">ابدأ التعلّم ←</button></div>
+          <button class="btn primary" id="plgo">بدءُ التعلّم ←</button></div>
       </div>`;
     document.getElementById("plgo").onclick = () => loadList();
     return;
@@ -509,10 +509,10 @@ async function finish(auto){
 /* ═══════════ ⑥ النتيجة والتشخيص ═══════════ */
 
 function verdict(p){
-  if(p>=90) return "إتقان ممتاز — أنت جاهز للدرس التالي";
-  if(p>=75) return "جيد جداً — راجع الفخاخ أدناه للإتقان التام";
-  if(p>=50) return "تحتاج مراجعة مركّزة — ابدأ بالأسئلة الحمراء";
-  return "أعد قراءة الدرس ثم أعد المحاولة";
+  if(p>=90) return "إتقان ممتاز — والدرسُ التالي في متناولك";
+  if(p>=75) return "جيد جداً — ومراجعةُ الفخاخ أدناه تُتمّ الإتقان";
+  if(p>=50) return "المطلوب مراجعةٌ مركّزة — والبدايةُ بالأسئلة الحمراء";
+  return "إعادةُ قراءة الدرس ثمّ إعادةُ المحاولة";
 }
 
 function renderResult(){
@@ -544,8 +544,8 @@ function renderResult(){
     const o = opt(j.o); if(!o) return '';
     const hit  = (j.key === j.picked);
     const cls  = hit ? (j.key ? 'hit' : 'dim') : 'err';
-    const mark = j.key ? (j.picked ? '✔ صحيحة · اخترتَها' : '✗ صحيحة · أغفلتَها')
-                       : (j.picked ? '✗ خاطئة · اخترتَها' : '✔ خاطئة · تجنّبتَها');
+    const mark = j.key ? (j.picked ? '✔ صحيحة · اخترتها' : '✗ صحيحة · أغفلتها')
+                       : (j.picked ? '✗ خاطئة · اخترتها' : '✔ خاطئة · تجنّبتها');
     const txt  = j.note || (j.dx_name ? j.dx_name + (j.remedy?' — '+j.remedy:'') : '');
     const show = !hit && txt && !seen.has(txt);                // 🆕
     if(show) seen.add(txt);                                    // 🆕
@@ -566,13 +566,13 @@ function renderResult(){
      ثلاث حالات تصف ما فعله الطالب — لا ما دار في ذهنه. */
   const patternOf = (wide, narr, keys) =>
       (wide && narr) ? { t:'الحدّ مضطرب من طرفيه',
-        s:`أدخلتَ ${AR(wide)} مما ليس منه، وأغفلتَ ${AR(narr)} مما هو منه.` }
+        s:`أدخلت ${AR(wide)} مما ليس منه، وأغفلت ${AR(narr)} مما هو منه.` }
     : wide           ? { t:'توسيعٌ للمفهوم',
-        s:`عرفتَ المجموعة كلها ثم زدتَ عليها ${AR(wide)}. اسأل عن كل خيار وحده: أينتمي حقاً؟` }
+        s:`عرفت المجموعة كلها ثم زدت عليها ${AR(wide)}. والسؤالُ عن كل خيار وحده: أينتمي حقاً؟` }
     : (narr >= keys) ? { t:'الحدّ لم يتّضح بعد',
-        s:'لم تُصب من المجموعة شيئاً — أعد قراءة الشرح قبل الإعادة.' }
-    :                  { t:'توقّفتَ قبل أن تُكمل',
-        s:`لم تخطئ في حكمٍ واحد، لكنك تركتَ ${AR(narr)} من المجموعة. التعليمة تطلب كل ما ينطبق — فأكمل الخيارات كلها قبل أن تنتقل.` };
+        s:'لا صوابَ من هذه المجموعة — وتُعاد قراءة الشرح قبل الإعادة.' }
+    :                  { t:'توقُّفٌ قبل الإكمال',
+        s:`لا خطأ في حكمٍ واحد، لكن بقي ${AR(narr)} من المجموعة. والتعليمة تطلب كلَّ ما ينطبق — فتُكمَل الخيارات كلها قبل الانتقال.` };
 
   const objective = r.review.filter(x=>x.kind!=='essay').map((x,i)=>{
     const c = opt(x.chosen), k = opt(x.correct);
@@ -632,7 +632,7 @@ function renderResult(){
                           <div class="trap"><strong>تشخيص الخطأ:</strong>
           ${fmt(x.explanation||'')}
                       ${!msq && (x.note || x.remedy)?`<div style="margin-top:8px;opacity:.9">🎯 ${fmt(x.note || x.remedy)}</div>`:''}</div>
-        ${x.remedial?`<div class="remedy"><strong>راجع قبل الإعادة</strong>
+        ${x.remedial?`<div class="remedy"><strong>مراجعةٌ قبل الإعادة</strong>
           <a href="${esc(x.remedial.url||'#')}" target="_blank" rel="noopener"
              style="color:var(--accent)">${ICONS[x.remedial.kind]||'📎'} ${esc(x.remedial.title)}</a></div>`:''}`}
     </div>`;
@@ -684,7 +684,7 @@ function renderResult(){
       <div class="score-num">${AR(r.score)} / ${AR(r.total)}</div>
       <div class="score-of">الأسئلة المصحَّحة آلياً · زمن الحل ${mmss(r.secs)}</div>
       <div class="verdict">${verdict(r.pct)}</div>
-      ${r.lesson_done?'<div class="unlocked">🎉 أتممتَ هذا الدرس بنجاح</div>':''}
+      ${r.lesson_done?'<div class="unlocked">🎉 أتممت هذا الدرس بنجاح</div>':''}
       ${(r.unlocked||[]).length?`<div class="unlocked">🔓 فُتح لك الآن: ${esc(r.unlocked.join(' · '))}</div>`:''}
     </div>
     <div class="nav"><button class="btn primary" id="again">إعادة الاختبار</button></div>

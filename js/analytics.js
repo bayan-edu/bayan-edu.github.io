@@ -197,13 +197,13 @@ async function drawChart(tr){
   _chart = new C(ctx, {
     type:'line',
     data:{ labels, datasets:[
-    { label:'الإنجاز — ما قطعتَه من دروس صفّك',
+    { label:'الإنجاز — ما قطعته من دروس صفّك',
       data: pts.map(p => p.done),
       spanGaps:true, tension:.2, borderWidth:2, borderColor:MUT,
       borderDash:[5,4], fill:false, pointRadius:0, pointHoverRadius:4,
       datalabels:{ display:false } },
     {
-      label:'الإتقان — في الاختبارات التي أنجزتَها',
+      label:'الإتقان — في الاختبارات التي أنجزتها',
       data: pts.map(p => p.mastery),
       /* ⚠️ الأسبوع الفارغ لا يُوصَل بما بعده: وصلُه يرسم تعلّماً لم يقع */
       spanGaps:false, tension:.35, borderWidth:2.6, borderColor:ACC,
@@ -346,7 +346,7 @@ function trendLine(tr, forMe){
   const arr = tr || [];
   const act = arr.filter(p => p.mastery != null);
   const you = forMe ? 'ك' : 'ه';
-  if(!act.length) return forMe ? 'ابدأ — كلُّ محاولةٍ تضيف نقطةً إلى خطّك.'
+  if(!act.length) return forMe ? 'البدايةُ من أوّل محاولة — وكلُّ محاولةٍ تضيف نقطةً إلى خطّك.'
                                : 'لا محاولات مسجَّلة بعد.';
   if(arr.length && arr[arr.length-1].mastery == null){
     let gap = 0;
@@ -421,8 +421,8 @@ async function drawPerformance(title, sub, back){
   const rushBox = r => (!r || !r.gradable || (r.pct||0) < 20) ? '' : `
     <div class="an-rush">
       <b>${AR(r.rushed)} من ${AR(r.gradable)} إجابة (${AR(r.pct)}٪)</b>
-      ${you ? `أجبتَها في أقلّ من ${AR(r.threshold)} ثوانٍ — وهي أسرعُ من قراءة السؤال.
-        اقرأ الجذعَ مرّتين قبل أن تختار: هذا وحده قد يرفع نتيجتك أكثر من أيّ مراجعة.`
+      ${you ? `أجبتها في أقلّ من ${AR(r.threshold)} ثوانٍ — وهي أسرعُ من قراءة السؤال.
+        وقراءةُ الجذع مرّتين قبل الاختيار وحدها قد ترفع نتيجتك أكثر من أيّ مراجعة.`
             : `دون ${AR(r.threshold)} ثوانٍ وخاطئة. وأنماطُ الخطأ أدناه محسوبةٌ
         <b>بعد استبعادها</b> — فهي لا تصف تصوّراً خاطئاً بل نقراً.`}
     </div>`;
@@ -466,12 +466,12 @@ async function drawPerformance(title, sub, back){
       ? `<button class="an-more" data-more="${key}">عرض المزيد (${AR(arr.length-10)})</button>` : ''}`;
 
   const selBox = `<div class="an-bar">
-      <select id="mSubject" class="an-sel" aria-label="اختر المادة">
+      <select id="mSubject" class="an-sel" aria-label="المادة">
         <option value="">كلّ المواد</option>
         ${M.opts.map(s => `<option value="${s.subject_id}"
            ${String(M.subject)===String(s.subject_id)?'selected':''}>${esc(s.name)}</option>`).join("")}
       </select>
-      ${showStr ? `<select id="mStrand" class="an-sel" aria-label="اختر الفرع">
+      ${showStr ? `<select id="mStrand" class="an-sel" aria-label="الفرع">
           <option value="">كلّ الفروع</option>
           ${strOpt.map(x => `<option value="${x.strand_id}"
              ${String(M.strand)===String(x.strand_id)?'selected':''}>${esc(x.name)}</option>`).join("")}
@@ -525,7 +525,7 @@ async function drawPerformance(title, sub, back){
         ${section('ما تحسّن', up, 'gain', M.moreUp, 'up',
             'هذا وحده يقيس <b>ما فعله التعليم</b>: الفرق بين المحاولة الأولى وأحدثها.')}
         ${section('يستحقّ عودة', down, 'need', M.moreDown, 'down',
-            'دون عتبةِ النجاح التي حدّدها معلّمُ الاختبار. <b>ابدأ من أعلى القائمة.</b>')}
+            'دون عتبةِ النجاح التي حدّدها معلّمُ الاختبار. <b>والبدايةُ من أعلى القائمة.</b>')}
 
         ${nextSection(d.next || [], d.locked || [], you)}
         ${subs.length ? `<h2 class="sec">المواد — الأضعف أوّلاً</h2>
@@ -592,7 +592,7 @@ function dxSection(pats, forMe){
   const order = forMe ? ['cleared','persistent','partial','untested']
                       : ['persistent','partial','cleared','untested'];
   const head  = forMe
-    ? 'أنماطُ أخطائك — والترتيبُ يبدأ بما تجاوزتَه'
+    ? 'أنماطُ أخطائك — والترتيبُ يبدأ بما تجاوزته'
     : 'أنماطُ الخطأ — المستعصي أوّلاً';
 
   const rows = order.flatMap(st => p.filter(x => x.state === st).map(x => `
@@ -640,7 +640,7 @@ function nextSection(nx, lk, forMe){
         <div class="qz-m">${[x.subject, x.lesson].filter(Boolean).map(esc).join('، ')}</div>
       </div>`).join("")
       : `<div class="status">${forMe
-          ? 'لا شيء مفتوحٌ الآن — أتممتَ كلَّ ما فُتح لك.'
+          ? 'لا شيء مفتوحٌ الآن — أتممت كلَّ ما فُتح لك.'
           : 'لا شيء مفتوحٌ له الآن — أتمّ كلَّ ما فُتح له.'}</div>`}
     ${waiting ? `<div class="qz-m an-cen">
       وينتظر خلفها ${AR(waiting)} ${waiting === 1 ? 'اختبار' : 'اختباراً'}،
@@ -674,8 +674,8 @@ async function openQuiz(quizId, backTitle, backSub, backHas){
         <span class="an-qn">${AR(a.position)}</span>
         <span class="an-qb">${fmt(a.body || '')}</span>
       </div>
-      ${a.chosen  ? `<div class="an-qc">اخترتَ: ${fmt(a.chosen)}</div>` : ''}
-      ${a.written ? `<div class="an-qc">كتبتَ: ${esc(a.written)}</div>` : ''}
+      ${a.chosen  ? `<div class="an-qc">اخترت: ${fmt(a.chosen)}</div>` : ''}
+      ${a.written ? `<div class="an-qc">كتبت: ${esc(a.written)}</div>` : ''}
       ${a.rushed
         ? `<div class="an-qr">أُجيب في ${AR(a.seconds)} ثانية — أسرعُ من قراءة السؤال،
              فلا تشخيصَ له.</div>`

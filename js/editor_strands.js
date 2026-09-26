@@ -56,7 +56,7 @@ export function strandSelect(list, current, id = 'st'){
   const fams = [...new Set(sel.filter(x => x.parent_name).map(x => x.parent_name))];
 
   return `<select id="${id}">
-    ${current ? '' : '<option value="">— اختر الفرع —</option>'}
+    ${current ? '' : '<option value="">— الفرع —</option>'}
     ${tops.map(opt).join('')}
     ${fams.map(f => `<optgroup label="${esc(f)}">${
         sel.filter(x => x.parent_name === f).map(opt).join('')
@@ -110,8 +110,8 @@ function render(list){
       <b>أربعةٌ إلى ستّة لكلّ مادة.</b> فالتقرير لا يتكلّم عن فرعٍ قبل عشر إجاباتٍ
       فيه — وثمانيةُ فروعٍ تعني ثمانين إجابةً قبل أن يقول شيئاً.
       والفرع يُشقّ لاحقاً حين يمتلئ، أمّا جمعُ فرعين افترقا فيُعيد تصنيف تاريخٍ مضى.
-      <br>🔑 والاختبار قبل كلّ اسم: <b>لو قال التقرير إن الطالب ضعيفٌ هنا، أتعرف ماذا
-      تعطيه غداً؟</b> فإن لم تعرف، فالفرع اسمٌ لا تشخيص.</div>
+      <br>🔑 والاختبار قبل كلّ اسم: <b>لو قال التقرير إن الطالب ضعيفٌ هنا، فما الذي
+      يُعطى له غداً؟</b> فإن لم يكن ثمَّ جواب، فالفرع اسمٌ لا تشخيص.</div>
 
     ${first ? `<div class="warnbox">أوّل فرعٍ تُنشئه <b>يُفعّل حارس النشر في هذه المادة</b>:
       لن يُنشر بعده درسٌ حتى يُوسَم هو أو أحد مكوّناته. والمنشور اليوم لا يُمسّ.</div>` : ''}
@@ -156,7 +156,7 @@ function render(list){
         يُوسَم ورقُها («جبر»).</p>
 
       <div class="nav" style="margin-top:14px">
-        <button class="btn primary" id="sv">${editing ? 'حفظ' : '＋ أضِف الفرع'}</button>
+        <button class="btn primary" id="sv">${editing ? 'حفظ' : '＋ إضافة الفرع'}</button>
         ${editing ? '<button class="btn ghost" id="ca">إلغاء</button>' : ''}
       </div>
     </div>`;

@@ -37,7 +37,7 @@ const narrowNote = () => isNarrow()
 
 export async function openEditor(scaleId, levelId){
   nav('editor'); setWide(true);
-  head("التأليف", "اختر المقرَّر الذي تكتب فيه");
+  head("التأليف", "المقرَّر الذي يكون فيه التأليف");
   app.innerHTML = `<div class="status">جارٍ التحميل…</div>`;
 
   const t = await tree();
@@ -221,7 +221,7 @@ async function newStation(tools){
              placeholder="ielts_placement" value="${esc(names[0] || '')}">
       <datalist id="ns_tools">${names.map(n =>
         `<option value="${esc(n)}">`).join("")}</datalist>
-      <div class="eq-hint">اكتب اسماً قائماً لتُضاف المحطّة إليه، أو اسماً جديداً لأداةٍ جديدة.</div>
+      <div class="eq-hint">يُكتب اسمٌ قائم لتُضاف المحطّة إليه، أو اسمٌ جديد لأداةٍ جديدة.</div>
 
       <label class="fl" style="margin-top:14px">عنوان المحطّة</label>
       <input id="ns_title" dir="auto" placeholder="التوجيه · اللوحة L · فحص الحدّ ١">
@@ -459,7 +459,7 @@ export async function openCourse(course){
       </div>
       <button class="it-b wide" data-it="${l.id}">📦 المصادر (${AR(l.official_items)})</button>
       <button class="eq-go ${l.has_quiz?'':'warn'}" data-q="${l.id}">
-        ${l.has_quiz ? '📝 الاختبار' : '⚠️ أضِف اختباراً'}</button>
+        ${l.has_quiz ? '📝 الاختبار' : '⚠️ إضافةُ اختبار'}</button>
       <div class="qz-go">تحرير ←</div>
     </div>`;
 
@@ -484,7 +484,7 @@ export async function openCourse(course){
     ${group(null).length || !units.length ? block('دروس بلا وحدة', null) : ''}
 
     ${!lessons.length && course.curate
-      ? `<p class="hint">ابدأ بوحدة ثم درس — أو درساً مباشرة.</p>` : ''}`;
+      ? `<p class="hint">البدايةُ بوحدة ثمّ درس — أو بدرسٍ مباشرة.</p>` : ''}`;
 
    document.getElementById("bk").onclick = () => openEditor(
     (byId(t.subjects, course.subject_id) || {}).scale_id ?? 'free', course.level_id);

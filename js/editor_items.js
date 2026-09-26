@@ -87,7 +87,7 @@ function render(){
         ونتائجها تُسجَّل في سجلّ الطالب.</p>` : ''}
 
     ${!D.curate ? `<div class="nav" style="margin-top:16px">
-        <button class="btn primary" id="addx">＋ أضِف مصدراً باسمي</button>
+        <button class="btn primary" id="addx">＋ إضافة مصدرٍ باسمي</button>
       </div>` : ''}`;
 
   document.getElementById("bk").onclick = () => openCourse(ctx.course);
@@ -121,7 +121,7 @@ function form(item, official){
             ? '📦 <b>مصدر معتمد</b> — جزء من المنهج، ويمكن أن يكون شرط انتقال.'
             : '➕ <b>مصدر إضافي باسمك</b> — إثراء لا يحجب ولا يدخل البوّابة.'}</div>
           ${k.needs === 'url' ? `<div class="ed-hint" style="opacity:.75">
-            <b>الصوت:</b> ارفعه إلى المخزن ثم ألصق مفتاحه — <code>audio/l1-a1.mp3</code>
+            <b>الصوت:</b> يُرفع إلى المخزن ثمّ يُلصق مفتاحه — <code>audio/l1-a1.mp3</code>
             — فيُشغَّل داخل الدرس.<br>
             ${k.code === 'simulation'
               ? '<b>المحاكاة:</b> ملفٌّ مستقلّ في مستودع الموقع نفسه — الصق مساره النسبي (مثلاً <code>sims/الاسم.html</code>) أو رابطه الكامل. يُضمَّن داخل الدرس، لا يُفتح في تبويب. زرّ الرفع أعلاه للصوت وحده — تجاهله هنا.'

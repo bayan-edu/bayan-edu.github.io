@@ -80,11 +80,11 @@ function todayStrip(){
   const back = lastSubject();
 
   if(back && bulk(back) > 0 && !isDone(back) && !back.needs_placement)
-    acts.push(['go-resume', 'resume',   'ta-accent', 'تابِع',   back.name]);
+    acts.push(['go-resume', 'resume',   'ta-accent', 'متابعة',  back.name]);
   if((c.due || 0) > 0)
-    acts.push(['go-cards',  'cards',    'ta-ok',     'استرجِع', `${AR(c.due)} بطاقة استحقّت`]);
+    acts.push(['go-cards',  'cards',    'ta-ok',     'استرجاع', `${AR(c.due)} بطاقة استحقّت`]);
   if((c.feedback || 0) > 0)
-    acts.push(['go-fb',     'feedback', 'ta-dx',     'عالِج',   `${AR(c.feedback)} ملاحظة جديدة`]);
+    acts.push(['go-fb',     'feedback', 'ta-dx',     'معالجة',  `${AR(c.feedback)} ملاحظة جديدة`]);
 
   if(!acts.length) return '';
   return `<div class="today">${acts.map(([id, ic, fam, lbl, val]) => `
@@ -116,7 +116,7 @@ export async function loadList(){
   /* الشريط يُبنى قبل الترويسة: وجودُه يغيّر ما تقوله. */
   const strip = todayStrip();
   head("أهلًا " + S.prof.full_name,
-       strip ? "ابدأ بما ينتظرك، أو اختر مادة" : "اختر المادة التي تريد التعلّم فيها");
+       strip ? "البدايةُ بما ينتظرك، أو باختيار مادة" : "اختيارُ المادة التي يبدأ فيها التعلّم");
 
   /* ثلاث مجموعات: صفّي · صفوف سابقة · مهارات */
   const grade  = S.subjects.filter(x => x.group_key === '1_grade');
@@ -213,7 +213,7 @@ export async function loadList(){
     el.onkeydown = e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); go(); } };
   });
 
-  /* ⚠️ زرُّ «تابِع» يُعيد قراءة المادة لا يلتقطها من الإغلاق: بين
+  /* ⚠️ زرُّ «متابعة» يُعيد قراءة المادة لا يلتقطها من الإغلاق: بين
      الرسم والنقر قد تُعاد الشبكةُ، فمرجعٌ قديم يفتح دروساً قديمة. */
   const on = (id, fn) => { const el = document.getElementById(id); if(el) el.onclick = fn; };
   on('go-resume', () => { const x = lastSubject(); if(x) loadLessons(x); else loadList(); });
@@ -281,7 +281,7 @@ export async function openSearchHit(hit){
 export async function loadMentors(subj, switching){
   S.subj = subj;
   nav('subjects');
-  head(switching?"الانضمام إلى معلم آخر":"اختر معلمك", subj.name);
+  head(switching?"الانضمام إلى معلم آخر":"اختيار معلمك", subj.name);
   app.innerHTML = skeleton('mentors');
 
   const [mRes, sRes] = await Promise.all([
@@ -298,7 +298,7 @@ export async function loadMentors(subj, switching){
         <b style="font-family:'Almarai';font-weight:800;display:block;margin-bottom:6px">
           فرص الانتقال في هذه المادة استُوفيت</b>
         الاستمرار مع معلم واحد يمنحه صورة أوضح عن تقدّمك، ويجعل متابعته لك أدق.
-        اعرض ما يشكل عليك على معلمك الحالي — فهو الأقدر على مساعدتك.</div>
+        وما يشكل عليك يُعرَض على معلمك الحالي — فهو الأقدر على مساعدتك.</div>
       <div class="nav"><button class="btn primary" id="go">متابعة الدروس</button></div>`;
     document.getElementById("bk").onclick = loadList;
     document.getElementById("go").onclick = ()=>loadLessons(subj);
@@ -318,28 +318,28 @@ export async function loadMentors(subj, switching){
     <div class="crumb" id="bk">← رجوع للمواد</div>
     ${errBox(eMentor,'قائمة المعلمين')}
     <div class="warnbox">
-      المعلم الذي تنضم إليه سيتابع تقدّمك في هذه المادة، ويصحّح إجاباتك المقالية،
-      ويجيب عن أسئلتك.
+      الانضمامُ إلى معلم يعني أنه سيتابع تقدّمك في هذه المادة، ويصحّح إجاباتك
+      المقالية، ويجيب عن أسئلتك.
     </div>
     ${mentors.length?mentors.map(card).join(""):''}
     <div class="mentor self" data-t="">
       <div class="m-n">📖 المتابعة الذاتية</div>
       <div class="m-m">${mentors.length
-        ? 'تدرس بنفسك، ويمكنك الانضمام إلى معلم متى شئت'
-        : 'لم ينضم معلمون لهذه المادة بعد — ابدأ بنفسك وسنُعلمك عند توفّرهم'}</div>
+        ? 'الدراسةُ بنفسك، ويمكنك الانضمام إلى معلم متى شئت'
+        : 'لم ينضم معلمون لهذه المادة بعد — والبدايةُ بنفسك، ونُعلمك عند توفّرهم'}</div>
     </div>`;
 
   document.getElementById("bk").onclick = loadList;
   app.querySelectorAll(".mentor").forEach(el=>el.onclick=async()=>{
-    if(el.classList.contains('full')){ toast("اكتمل نصاب هذا المعلم — اختر معلماً آخر"); return; }
+    if(el.classList.contains('full')){ toast("اكتمل نصاب هذا المعلم — فيُختار معلمٌ آخر"); return; }
     const tid = el.dataset.t || null;
     if(tid && tid !== state.teacher_id){
       const name  = (mentors.find(x=>x.id===tid)||{}).name || 'هذا المعلم';
       const tried = state.teachers_tried || 0;
 
-      let msg = `هل ترغب في الانضمام إلى أ. ${name} في مادة «${subj.name}»؟`;
+      let msg = `الانضمام إلى أ. ${name} في مادة «${subj.name}»؟`;
       if(tried === 1) msg += "\n\nبعد هذا الانضمام تبقى لك فرصة واحدة للانضمام إلى معلم آخر.";
-      else if(tried >= 2) msg += "\n\nهذه آخر فرصة — لن تتمكن بعدها من الانضمام إلى معلم آخر في هذه المادة.";
+      else if(tried >= 2) msg += "\n\nهذه آخر فرصة — ولا انضمامَ بعدها إلى معلم آخر في هذه المادة.";
 
       if(!confirm(msg)) return;
     }
@@ -348,7 +348,7 @@ export async function loadMentors(subj, switching){
     if(error){ toast(error.message); return; }
     if(!r.ok){ toast(r.error); return; }
 
-    toast(r.self_study ? "ستتابع دروسك بنفسك" : "انضممتَ إلى أ. "+r.teacher);
+    toast(r.self_study ? "متابعةُ دروسك بنفسك" : "انضممت إلى أ. "+r.teacher);
     subj.mentor_chosen = true; subj.mentor_name = r.teacher || null;
     loadLessons(subj);
   });
@@ -360,7 +360,7 @@ export async function loadMentors(subj, switching){
 export async function loadLessons(subj){
   S.subj = subj;
   /* الأثرُ يُكتب هنا لا في openLesson: المادةُ هي وحدةُ الاستئناف،
-     ودرسٌ بعينه قد يُتمّ فيصير «تابِع» يفتح ما فُرغ منه. */
+     ودرسٌ بعينه قد يُتمّ فيصير «متابعة» يفتح ما فُرغ منه. */
   rememberSubject(subj);
   nav('subjects');
   head(subj.name, subj.my_level ? "مستواك: "+subj.my_level : "");
@@ -477,7 +477,7 @@ export function openLesson(l){
     ${extras.length?`<div class="grp" style="margin-top:22px">➕ إضافات المعلمين
         <span class="chip">${AR(extras.length)}</span></div>
       ${extras.map(itmRow).join("")}`:''}
-    <p class="hint">تحتاج ${AR(l.pass_mark)}٪ في الاختبار لإتمام الدرس</p>`;
+    <p class="hint">المطلوب ${AR(l.pass_mark)}٪ في الاختبار لإتمام الدرس</p>`;
 
   document.getElementById("bk").onclick = ()=>loadLessons(S.subj);
   /* البحثُ في الاثنين معاً — وقصرُه على items كان يُسقط كلَّ نقرةٍ
@@ -634,13 +634,13 @@ function renderChat(msgs, error){
   app.innerHTML = `
     ${errBox(error,'المحادثة')}
     ${msgs.length?`<div class="chat">${msgs.map(m=>bubble(m,m.sender_role==='student')).join("")}</div>`
-      :'<div class="status">لا توجد رسائل بعد — اكتب سؤالك أدناه</div>'}
+      :'<div class="status">لا توجد رسائل بعد — وسؤالك يُكتب أدناه</div>'}
     <div class="card"><label class="fl">رسالتك</label>
-      <textarea id="mt" placeholder="اكتب سؤالك العلمي…"></textarea></div>
+      <textarea id="mt" placeholder="سؤالك العلميّ…"></textarea></div>
     <div class="nav"><button class="btn primary" id="snd">إرسال</button></div>`;
   document.getElementById("snd").onclick = async ()=>{
     const t = (document.getElementById("mt").value||"").trim();
-    if(!t){ toast("اكتب رسالتك أولاً"); return; }
+    if(!t){ toast("رسالتك أولاً"); return; }
     const { error } = await api.sendMessage({
       studentId:S.user.id, senderId:S.user.id, senderRole:'student', body:t });
     toast(error?"تعذّر الإرسال":"أُرسلت رسالتك"); loadChat();

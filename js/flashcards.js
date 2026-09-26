@@ -64,16 +64,16 @@ function openSubjectCards(subject){
       <div class="card" style="text-align:center;padding:28px 18px">
         <div style="font-size:var(--fs-h);font-weight:700;margin-bottom:6px">${AR(subject.due)}</div>
         <div class="ed-m" style="justify-content:center;margin-bottom:16px">مستحقّة اليوم</div>
-        <button class="btn primary" id="go" style="width:100%">ابدأ</button>
+        <button class="btn primary" id="go" style="width:100%">بدء</button>
       </div>`
     : `
       <div class="card" style="text-align:center;padding:28px 18px">
-        <div style="font-size:1.05rem;margin-bottom:4px">حفظتَها كلها. لن تعود قريباً</div>
+        <div style="font-size:1.05rem;margin-bottom:4px">حفظتها كلها. لن تعود قريباً</div>
       </div>`}
 
     <div class="nav" style="margin:16px 0">
-      <button class="btn" id="add">＋ أضِف كلمة</button>
-      <button class="btn" id="play" hidden>⚔️ تدرّب على كلماتك</button>
+      <button class="btn" id="add">＋ إضافة كلمة</button>
+      <button class="btn" id="play" hidden>⚔️ التدرّب على كلماتك</button>
     </div>`;
 
   document.getElementById('bk').onclick = loadFlashcards;
@@ -235,9 +235,9 @@ export function openSession(subject, opts = {}){
           >${esc(c.front).replace(/\{\{\s*\}\}/g, '<span style="opacity:.45">______</span>')}</div>
         <div class="bf-recall">
           <textarea id="bfDraft" dir="auto"
-                    placeholder="${gap ? 'اكتب الكلمة…' : 'اكتب ما تعرفه…'}"
+                    placeholder="${gap ? 'الكلمة…' : 'ما يحضرك…'}"
                     style="min-height:56px"></textarea>
-          <button class="bf-hint" data-flip="1">اضغط لرؤية الإجابة</button>
+          <button class="bf-hint" data-flip="1">رؤية الإجابة</button>
         </div>`;
       registerFit(el("bfFront"), document.getElementById('bfQ'), 18.9, 15);
 
@@ -259,7 +259,7 @@ export function openSession(subject, opts = {}){
 
         ${compare ? `
           <div class="bf-term" dir="${dirOf(c.front)}">${esc(c.front)}</div>
-          <div class="bf-label">${draft ? 'كتبتَ' : 'طريقتك في تذكّرها'}</div>
+          <div class="bf-label">${draft ? 'كتبت' : 'طريقتك في تذكّرها'}</div>
           <div class="bf-mine" dir="auto">${esc(draft || c.my_note)}</div>
           <div class="bf-label">الصواب</div>
           <div class="bf-answer" id="bfAns" dir="${dirOf(c.back)}">${esc(c.back)}</div>`
@@ -270,7 +270,7 @@ export function openSession(subject, opts = {}){
             ? ` · ${AR(examples(c.note).length)}` : ''}</div>
           <div class="bf-note" dir="${dirOf(c._ex)}">${esc(c._ex)}</div>` : ''}
 
-        <button class="bf-hint" data-flip="1">اضغط للعودة للسؤال</button>
+        <button class="bf-hint" data-flip="1">العودة للسؤال</button>
         <div class="bf-btn-row">
           <button class="btn" data-g="1">لم أتذكّرها</button>
           <button class="btn" data-g="2">بصعوبة</button>
@@ -343,7 +343,7 @@ export function openSession(subject, opts = {}){
               <div class="bf-label" style="margin-bottom:4px">تعود اليوم</div>
               <div style="font-weight:700;margin-bottom:14px" dir="${dirOf(c.front)}"
                 >${esc(c.front)}</div>
-              <div class="bf-label" style="margin-bottom:4px">كيف تتذكّرها؟ اكتب بطريقتك</div>
+              <div class="bf-label" style="margin-bottom:4px">طريقتك في تذكّرها</div>
               <textarea id="mn" dir="auto" style="min-height:64px"
                 >${esc(draft && draft !== c.my_note ? '' : (c.my_note || ''))}</textarea>
               <div class="nav" style="margin-top:14px">
@@ -372,12 +372,12 @@ export function openSession(subject, opts = {}){
       unbindResize();                     // وإلا تراكمت مستمعاتٌ على نافذةٍ واحدة
       const failed = counts[1] > 0;
       const line = failed
-        ? { t: 'ما نسيته اليوم، ستتذكره غداً', thumb: true }
+        ? { t: 'ما نسيته اليوم يعود غداً — وعندها يثبت', thumb: true }
         : firstTimers === total
-        ? { t: 'بدايةٌ جيدة. عُد غداً وسترى الفرق', thumb: false }
+        ? { t: 'بدايةٌ جيدة. والعودةُ غداً تُري الفرق', thumb: false }
         : counts[2] >= counts[3]
         ? { t: 'أصعبُ ما راجعته، سيكون الأكثر ثباتاً', thumb: true }
-        : { t: 'حفظتَها كلها. لن تعود قريباً', thumb: false };
+        : { t: 'حفظتها كلها. لن تعود قريباً', thumb: false };
 
       const reviewed = counts[1] + counts[2] + counts[3];
       /* 🔑 الدعوة **بعد** الجلسة لا بدلها: المطابقة تعرّفٌ لا استرجاع،
@@ -391,11 +391,11 @@ export function openSession(subject, opts = {}){
             <div style="font-size:1.05rem;font-weight:500;margin-bottom:6px">
               ${line.thumb ? '<span style="opacity:.8">👍</span> ' : ''}${esc(line.t)}
             </div>
-            <div class="ed-m" style="justify-content:center;margin:14px 0">راجعتَ ${AR(reviewed)} بطاقة</div>
+            <div class="ed-m" style="justify-content:center;margin:14px 0">راجعت ${AR(reviewed)} بطاقة</div>
             <button class="btn primary" id="back" style="width:100%">عودة</button>
             ${playable.length >= 4 ? `
               <button class="btn" id="play" style="width:100%;margin-top:8px"
-                >⚔️ جرّب تمييزها · ${AR(playable.length)} بطاقة</button>` : ''}
+                >⚔️ لعبةُ التمييز · ${AR(playable.length)} بطاقة</button>` : ''}
           </div>
         </div>`;
 
@@ -442,14 +442,14 @@ function openAdd(subject){
           <span style="opacity:.6">(إن كانت جديدة)</span></label>
         <textarea id="bk2" dir="auto" style="min-height:70px"></textarea>
         <div class="nav" style="margin-top:14px">
-          <button class="btn primary" id="sv">أضِف</button>
+          <button class="btn primary" id="sv">إضافة</button>
         </div>
         <div id="out" style="margin-top:10px"></div>
       </div>
 
       ${decks.length ? `
         <div class="ed-sec">
-          <div class="grp">أو اختر من مجموعات ${esc(subject.name)}</div>
+          <div class="grp">أو من مجموعات ${esc(subject.name)}</div>
           ${decks.map(d => `
             <div class="ed-row" data-deck="${d.id}">
               <div style="flex:1"><div class="ed-t">${esc(d.title)}</div></div>
@@ -468,7 +468,7 @@ function openAdd(subject){
 async function addByWriting(subject){
   const front = document.getElementById('fr').value.trim();
   const back  = document.getElementById('bk2').value.trim() || null;
-  if(!front) return toast('اكتب الكلمة أولاً', false);
+  if(!front) return toast('الكلمة أولاً', false);
 
   const { data, error } = await api.addMyCard({ subject: subject.id, front, back });
   if(error) return toast(error.message, false);
@@ -515,14 +515,14 @@ function openBrowseDeck(subject, deck){
         ${cards.map(row).join("")}
       </div>
       <div class="nav" style="margin-top:16px;position:sticky;bottom:12px">
-        <button class="btn primary" id="sub" style="width:100%">اشترك بالمُختار</button>
+        <button class="btn primary" id="sub" style="width:100%">اشتراكٌ بالمُختار</button>
       </div>`;
 
     document.getElementById('bk').onclick = () => openAdd(subject);
     document.getElementById('sub').onclick = async () => {
       const ids = [...app.querySelectorAll('[data-c]:checked:not(:disabled)')]
                     .map(i => +i.dataset.c);
-      if(!ids.length) return toast('اختر بطاقةً واحدةً على الأقل', false);
+      if(!ids.length) return toast('بطاقةٌ واحدةٌ على الأقل', false);
 
       const { data, error } = await api.subscribeCards(ids);
       if(error) return toast(error.message, false);
