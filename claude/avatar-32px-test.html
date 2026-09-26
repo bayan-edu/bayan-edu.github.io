@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>بيان — اختبار ٣٢ بكسل: الحرف مقابل الشخصية</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700;800&family=Readex+Pro:wght@400;600&display=swap" rel="stylesheet">
+
+<!-- ══════════════════════════════════════════════════════════
+     صفحةُ حكمٍ لا صفحةُ عرض — المهمّة ٦ من avatar-profile-plan.md
+
+     🔑 **كلُّ ما هنا رمادٌ محايد عمداً.** معايرةُ الألوان مهمّةُ المالك
+        (٠·٢)، والغرضُ هنا **الشكلُ لا اللون**. ولو لُوّن لاختلط
+        معيارُ ① (٣٢ بكسل) بمعيار ③ (التباين) فلم يُحسم أحدهما.
+
+     🔑 **والقماشُ لا المتجه.** رسمُ SVG عند ٣٢px يُظهر ما ينبغي أن
+        يكون؛ والقماشُ يُظهر **ما بقي من البكسلات فعلاً** حين يُكبَّر
+        بلا تنعيم. وهذا هو الدليلُ الذي يُرى.
+
+     ⚠️ والخطُّ Almarai لا Cairo: الوثيقةُ تقيس `LETTER_METRICS` من
+        مِداد Cairo، **والمشروع لا يحمّل Cairo أصلاً** (index.html:19).
+     ══════════════════════════════════════════════════════════ -->
+<style>
+  :root{
+    --page-l:#F5F5F4; --text-l:#292524; --muted-l:#57534E; --line-l:#D6D3D1;
+    --page-d:#171717; --text-d:#E5E5E5; --muted-d:#A3A3A3; --line-d:rgba(255,255,255,.12);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:26px 20px 70px;background:#0b0b0b;color:#E5E5E5;
+       font-family:'Readex Pro','Almarai',system-ui,Tahoma,sans-serif;line-height:1.8}
+  h1{font-family:'Almarai';font-weight:800;font-size:1.5rem;margin:0 0 4px}
+  h2{font-family:'Almarai';font-weight:800;font-size:1.05rem;margin:34px 0 10px}
+  .sub{color:#A3A3A3;font-size:.85rem;margin:0 0 6px}
+  .panes{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px;margin-top:12px}
+  .verdict{background:#F5F5F4;color:#292524;border-radius:14px;padding:18px;margin-top:14px}
+  .vgrid{display:flex;gap:26px;flex-wrap:wrap;justify-content:center;margin-top:10px}
+  .vcol{text-align:center}
+  .vlab{font-family:'Almarai';font-weight:800;font-size:.8rem;margin-bottom:9px}
+  .vpair{display:flex;gap:10px}
+  .pane{border-radius:14px;padding:16px;border:1px solid transparent}
+  .pane.l{background:var(--page-l);color:var(--text-l);border-color:var(--line-l)}
+  .pane.d{background:var(--page-d);color:var(--text-d);border-color:var(--line-d)}
+  .pane h3{font-family:'Almarai';font-weight:800;font-size:.8rem;margin:0 0 12px;opacity:.65}
+  .row{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin-bottom:6px}
+  .cell{text-align:center}
+  .cap{font-size:.62rem;opacity:.6;margin-top:5px;font-family:'Almarai'}
+  .sysname{font-family:'Almarai';font-weight:800;font-size:.72rem;margin:14px 0 7px;opacity:.8}
+  canvas{display:block;image-rendering:pixelated}
+  .n32{width:32px;height:32px}
+  .note{background:#1c1c1c;border:1px solid #2e2e2e;border-radius:12px;
+        padding:12px 14px;font-size:.8rem;margin-top:14px}
+  .tbl{width:100%;border-collapse:collapse;font-size:.78rem;margin-top:10px}
+  .tbl th,.tbl td{border:1px solid #2e2e2e;padding:7px 9px;text-align:right}
+  .tbl th{font-family:'Almarai';font-weight:800;background:#1c1c1c}
+</style>
+</head>
+<body>
+
+<h1>اختبار ٣٢ بكسل — نظام الحرف مقابل نظام الشخصية</h1>
+<p class="sub">المعيار ① من المهمّة ٦. الألوان رمادٌ محايد عمداً: الغرضُ الشكلُ لا اللون.</p>
+
+<div id="out"></div>
+
+<script>
+/* ═══════════ الرماد المحايد — لا عائلةَ معنًى ولا لونَ هوية ═══════════ */
+const G = {
+  l: { disc:'#8A8681', ink:'#FFFFFF', ink2:'rgba(255,255,255,.62)',
+       skin:'#C9C4BE', garment:'#5F5B57', collar:'#EDEBE8', page:'#F5F5F4' },
+  d: { disc:'#6E6A66', ink:'#F5F5F4', ink2:'rgba(245,245,244,.60)',
+       skin:'#A8A29C', garment:'#43403D', collar:'#D6D3D1', page:'#171717' }
+};
+/* أسوأُ حالةٍ للمعيار ③: فاتحٌ على فاتح */
+const WORST = {
+  l: { disc:'#E7E5E4', ink:'#57534E', ink2:'rgba(87,83,78,.55)',
+       skin:'#EDEBE8', garment:'#DCD9D5', collar:'#F5F5F4', page:'#F5F5F4' },
+  d: { disc:'#E7E5E4', ink:'#57534E', ink2:'rgba(87,83,78,.55)',
+       skin:'#EDEBE8', garment:'#DCD9D5', collar:'#F5F5F4', page:'#171717' }
+};
+
+/* ═══════════ قرصٌ: دائرة أو مربّعٌ مستدير ═══════════ */
+function disc(c, shape){
+  c.beginPath();
+  if(shape === 'circle') c.arc(50,50,50,0,Math.PI*2);
+  else c.roundRect(0,0,100,100,30);
+  c.closePath();
+}
+
+/* ═══════════ ① نظام الحرف ═══════════
+   الأطر الأربعة: نجمة ثمانية (مربّعان متقاطعان) · مثمّن ·
+   عِقد دوائر · بلا إطار. */
+function poly(c, n, R, rot){
+  c.beginPath();
+  for(let i=0;i<n;i++){
+    const a = rot + i*2*Math.PI/n;
+    const x = 50 + R*Math.cos(a), y = 50 + R*Math.sin(a);
+    i ? c.lineTo(x,y) : c.moveTo(x,y);
+  }
+  c.closePath();
+}
+
+function drawLetter(c, s, o){
+  const p = o.pal;
+  c.save(); c.scale(s/100, s/100);
+
+  c.fillStyle = p.disc; disc(c, o.shape); c.fill();
+
+  c.strokeStyle = p.ink2; c.lineWidth = 3.4;
+  c.lineJoin = 'round';
+  const R = 38;
+  if(o.frame === 'star'){           /* ۞ مربّعان متقاطعان */
+    poly(c, 4, R, Math.PI/4); c.stroke();
+    poly(c, 4, R, 0);         c.stroke();
+  } else if(o.frame === 'oct'){     /* مثمّن */
+    poly(c, 8, R, Math.PI/8); c.stroke();
+  } else if(o.frame === 'ring'){    /* عِقد دوائر */
+    for(let i=0;i<8;i++){
+      const a = i*Math.PI/4;
+      c.beginPath();
+      c.arc(50 + R*Math.cos(a), 50 + R*Math.sin(a), 6.2, 0, Math.PI*2);
+      c.stroke();
+    }
+  }
+
+  c.fillStyle = p.ink;
+  c.font = '800 54px Almarai, sans-serif';
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText(o.letter, 50, 52);
+  c.restore();
+}
+
+/* ═══════════ ② نظام الشخصية — بلا ملامح إطلاقاً ═══════════
+   ستُّ طبقاتٍ متداخلة: قرص · كتفان · ياقة · عنق · رأسٌ بيضويّ
+   بلا ملامح · غطاءُ رأس. وهي البنيةُ التي تُقاس. */
+function drawFigure(c, s, o){
+  const p = o.pal;
+  c.save(); c.scale(s/100, s/100);
+
+  c.fillStyle = p.disc; disc(c, o.shape); c.fill();
+  disc(c, o.shape); c.clip();
+
+  /* الكتفان — ولونُ اللباس محورُ هويةٍ (o.gtone) يعمل حتى بلا غطاء */
+  const garm = o.gtone || p.garment;
+  c.fillStyle = garm;
+  c.beginPath(); c.ellipse(50, 112, 40, 40, 0, 0, Math.PI*2); c.fill();
+
+  /* الياقة */
+  c.fillStyle = p.collar;
+  c.beginPath(); c.moveTo(38,80); c.lineTo(50,96); c.lineTo(62,80);
+  c.quadraticCurveTo(50,86,38,80); c.closePath(); c.fill();
+
+  /* العنق */
+  c.fillStyle = p.skin;
+  c.beginPath(); c.roundRect(42,62,16,22,5); c.fill();
+
+  /* الرأس — بيضويٌّ عامّ، بلا عينٍ ولا أنفٍ ولا فم */
+  c.beginPath(); c.ellipse(50, 45, 20, 23.5, 0, 0, Math.PI*2); c.fill();
+
+  /* غطاءُ الرأس */
+  c.fillStyle = garm;
+  if(o.cover === 'cap'){            /* طاقية */
+    c.beginPath(); c.ellipse(50, 33, 21, 15, 0, Math.PI, 0); c.fill();
+    c.beginPath(); c.roundRect(28, 30, 44, 7, 3.5); c.fill();
+  } else if(o.cover === 'scarf'){   /* خمار — يغطّي ويهبط إلى الكتف */
+    c.beginPath();
+    c.moveTo(27,52); c.quadraticCurveTo(27,20,50,20);
+    c.quadraticCurveTo(73,20,73,52);
+    c.quadraticCurveTo(73,74,62,80); c.lineTo(66,96); c.lineTo(34,96);
+    c.lineTo(38,80); c.quadraticCurveTo(27,74,27,52); c.closePath(); c.fill();
+    c.fillStyle = p.skin;           /* فتحةُ الوجه — بلا ملامح */
+    c.beginPath(); c.ellipse(50, 47, 14.5, 18, 0, 0, Math.PI*2); c.fill();
+  } else if(o.cover === 'kufi'){    /* عمامةٌ ملفوفة */
+    c.beginPath(); c.ellipse(50, 30, 23, 13, 0, Math.PI, 0); c.fill();
+    c.beginPath(); c.roundRect(26, 26, 48, 11, 5.5); c.fill();
+    c.fillStyle = p.collar;
+    c.beginPath(); c.roundRect(26, 30, 48, 3, 1.5); c.fill();
+  }
+  c.restore();
+}
+
+/* ═══════════ الرسم: قماشٌ بدقّة الجهاز ═══════════ */
+const DPR = window.devicePixelRatio || 1;
+function make(fn, size, o, magnify){
+  const cv = document.createElement('canvas');
+  if(magnify){
+    /* ⚠️ يُرسَم عند ٣٢ حقيقيّةً (بلا DPR) ثمّ يُكبَّر بلا تنعيم —
+       فيُرى ما بقي من البكسلات لا ما كان ينبغي أن يكون. */
+    const src = document.createElement('canvas');
+    src.width = src.height = 32;
+    fn(src.getContext('2d'), 32, o);
+    cv.width = cv.height = 32*magnify;
+    const g = cv.getContext('2d');
+    g.imageSmoothingEnabled = false;
+    g.drawImage(src, 0, 0, 32*magnify, 32*magnify);
+    cv.style.width = cv.style.height = (32*magnify) + 'px';
+  } else {
+    cv.width = cv.height = Math.round(size*DPR);
+    const g = cv.getContext('2d');
+    g.scale(DPR, DPR);
+    fn(g, size, o);
+    cv.style.width = cv.style.height = size + 'px';
+    cv.style.imageRendering = 'auto';
+  }
+  return cv;
+}
+
+const LETTERS = [
+  {letter:'ه', frame:'star',  shape:'circle',   cap:'نجمة · ه'},
+  {letter:'م', frame:'oct',   shape:'circle',   cap:'مثمّن · م'},
+  {letter:'ع', frame:'ring',  shape:'circle',   cap:'عِقد · ع'},
+  {letter:'ا', frame:'none',  shape:'circle',   cap:'بلا إطار · ا'},
+  {letter:'ر', frame:'star',  shape:'squircle', cap:'نجمة · ر · مربّع'},
+  {letter:'س', frame:'oct',   shape:'squircle', cap:'مثمّن · س · مربّع'},
+  {letter:'ن', frame:'ring',  shape:'circle',   cap:'عِقد · ن'},
+  {letter:'ح', frame:'star',  shape:'circle',   cap:'نجمة · ح'}
+];
+const FIGURES = [
+  {cover:'none',  shape:'circle',   cap:'بلا غطاء'},
+  {cover:'cap',   shape:'circle',   cap:'طاقية'},
+  {cover:'scarf', shape:'circle',   cap:'خمار'},
+  {cover:'kufi',  shape:'circle',   cap:'عمامة'},
+  {cover:'scarf', shape:'squircle', cap:'خمار · مربّع'},
+  {cover:'cap',   shape:'squircle', cap:'طاقية · مربّع'},
+  {cover:'none',  shape:'squircle', cap:'بلا غطاء · مربّع'},
+  {cover:'kufi',  shape:'squircle', cap:'عمامة · مربّع'}
+];
+
+function block(title, subtitle, size, magnify, palSet){
+  const wrap = document.createElement('div');
+  wrap.innerHTML = `<h2>${title}</h2><p class="sub">${subtitle}</p>`;
+  const panes = document.createElement('div'); panes.className = 'panes';
+
+  for(const th of ['l','d']){
+    const pane = document.createElement('div');
+    pane.className = 'pane ' + th;
+    pane.innerHTML = `<h3>${th==='l'?'السِمة الفاتحة':'السِمة الداكنة'}</h3>`;
+    const pal = palSet[th];
+
+    for(const [name, list, fn] of [['نظام الحرف', LETTERS, drawLetter],
+                                   ['نظام الشخصية', FIGURES, drawFigure]]){
+      const t = document.createElement('div');
+      t.className = 'sysname'; t.textContent = name; pane.appendChild(t);
+      const row = document.createElement('div'); row.className = 'row';
+      for(const o of list){
+        const cell = document.createElement('div'); cell.className = 'cell';
+        cell.appendChild(make(fn, size, Object.assign({pal}, o), magnify));
+        const cap = document.createElement('div');
+        cap.className = 'cap'; cap.textContent = o.cap;
+        cell.appendChild(cap); row.appendChild(cell);
+      }
+      pane.appendChild(row);
+    }
+    panes.appendChild(pane);
+  }
+  wrap.appendChild(panes);
+  return wrap;
+}
+
+/* ═══════════ الحكمُ في نظرة — أربعةٌ عند ٣٢ مكبَّرةً ٥× ═══════════ */
+function verdictStrip(){
+  const w = document.createElement('div');
+  w.innerHTML = `<h2>⓪ الحكمُ في نظرة</h2>
+    <p class="sub">أربعةٌ رُسمت عند ٣٢ بكسل ثمّ كُبّرت ٥× بلا تنعيم.
+    كلُّ مربّعٍ بكسلٌ واحد في الدرج.</p>`;
+  const box = document.createElement('div'); box.className = 'verdict';
+  const grid = document.createElement('div'); grid.className = 'vgrid';
+  const pairs = [
+    ['نظام الحرف', drawLetter, [LETTERS[0], LETTERS[2]]],
+    ['نظام الشخصية', drawFigure, [FIGURES[2], FIGURES[3]]]
+  ];
+  for(const [name, fn, items] of pairs){
+    const col = document.createElement('div'); col.className = 'vcol';
+    col.innerHTML = `<div class="vlab">${name}</div>`;
+    const p = document.createElement('div'); p.className = 'vpair';
+    for(const o of items){
+      const c = document.createElement('div'); c.className = 'cell';
+      c.appendChild(make(fn, 32, Object.assign({pal:G.l}, o), 5));
+      const cap = document.createElement('div');
+      cap.className = 'cap'; cap.textContent = o.cap; c.appendChild(cap);
+      p.appendChild(c);
+    }
+    col.appendChild(p); grid.appendChild(col);
+  }
+  box.appendChild(grid); w.appendChild(box);
+  return w;
+}
+
+document.fonts.ready.then(() => {
+  const out = document.getElementById('out');
+  out.appendChild(verdictStrip());
+  out.appendChild(block(
+    '① الحجم الحقيقيّ — ٣٢ بكسل كما يقع في الدرج',
+    'هذا ما تراه العين فعلاً. ولا يُحكَم منه وحده: الشاشةُ عالية الكثافة تُجمّل.',
+    32, 0, G));
+
+  out.appendChild(block(
+    '② ما بقي من البكسلات — يُرسَم عند ٣٢ ثمّ يُكبَّر ٦× بلا تنعيم',
+    'هذا هو الدليل. كلُّ مربّعٍ هنا بكسلٌ واحدٌ في الدرج — لا تنعيمَ يُجمّل ولا كثافةَ تستر.',
+    32, 4, G));
+
+  out.appendChild(block(
+    '③ عند ١٨٠ بكسل — حيث يحسن النظامان معاً',
+    'وهنا مكمنُ الخداع: القرارُ يُتَّخذ عند هذا الحجم ويُعاش عند ٣٢.',
+    180, 0, G));
+
+  out.appendChild(block(
+    '④ المعيار ③ — أسوأ حالة: فاتحٌ على فاتح',
+    'لباسٌ فاتح على قرصٍ فاتح. الحرفُ حبرٌ واحد، والشخصيةُ ستُّ طبقاتٍ متقاربة.',
+    32, 4, WORST));
+
+  /* ═══ القياس: كم بكسلاً مميَّزاً بقي؟ ═══ */
+  const tally = [];
+  for(const [name, list, fn] of [['الحرف', LETTERS, drawLetter],
+                                 ['الشخصية', FIGURES, drawFigure]]){
+    let sum = 0, n = 0;
+    for(const o of list){
+      const cv = document.createElement('canvas'); cv.width = cv.height = 32;
+      fn(cv.getContext('2d'), 32, Object.assign({pal:G.l}, o));
+      const px = cv.getContext('2d').getImageData(0,0,32,32).data;
+      const seen = new Set();
+      for(let i=0;i<px.length;i+=4){
+        if(px[i+3] < 40) continue;
+        /* تكميمٌ خشن: ألوانٌ متقاربة تُعدّ لوناً واحداً — كما تراها العين */
+        seen.add((px[i]>>4)+'-'+(px[i+1]>>4)+'-'+(px[i+2]>>4));
+      }
+      sum += seen.size; n++;
+    }
+    tally.push([name, (sum/n).toFixed(1)]);
+  }
+  /* ═══ ⑥ القياسُ الحاسم: أيُميَّز صاحبُ العلامة عن جاره؟ ═══
+     الأفاتارُ لا يُراد منه أن يُرى، بل أن **يُفرِّق**. فالسؤالُ الصحيح:
+     علامتان متجاورتان في قائمةٍ **باللون نفسِه** — كم بكسلاً يفصلهما؟ */
+  /* ⚠️ **ثمانيةٌ مقابل ثمانية، والقرصُ واللونُ ثابتان** — وإلّا قيس
+     محورٌ لا يخصّ الهوية. والأولى أُفسدت بإجبار الشكل على «دائرة»
+     فصارت أزواجٌ نسخاً متطابقة، فأعطت «٠٪» لا معنى له. */
+  const ID_LETTERS = ['ا','ب','ح','م','ع','ن','ه','ر']
+    .map(l => ({ letter:l, frame:'star', shape:'circle' }));
+  const ID_FIGURES = [];
+  for(const cover of ['none','cap','scarf','kufi'])
+    for(const gtone of ['#5F5B57','#918C87'])
+      ID_FIGURES.push({ cover, shape:'circle', gtone });
+
+  function distinct(list, fn){
+    const imgs = list.map(o => {
+      const cv = document.createElement('canvas'); cv.width = cv.height = 32;
+      fn(cv.getContext('2d'), 32, Object.assign({pal:G.l}, o));
+      return cv.getContext('2d').getImageData(0,0,32,32).data;
+    });
+    let sum = 0, n = 0, worst = 1;
+    for(let i=0;i<imgs.length;i++) for(let j=i+1;j<imgs.length;j++){
+      let diff = 0;
+      for(let k=0;k<imgs[i].length;k+=4){
+        const d = Math.abs(imgs[i][k]-imgs[j][k]) + Math.abs(imgs[i][k+1]-imgs[j][k+1])
+                + Math.abs(imgs[i][k+2]-imgs[j][k+2]);
+        if(d > 30) diff++;            /* فرقٌ تراه العين لا فرقٌ يقيسه الحاسوب */
+      }
+      const r = diff/1024; sum += r; n++; if(r < worst) worst = r;
+    }
+    return { avg:(100*sum/n).toFixed(1), worst:(100*worst).toFixed(1) };
+  }
+  const dL = distinct(ID_LETTERS, drawLetter);
+  const dF = distinct(ID_FIGURES, drawFigure);
+
+  /* 🔑 وعزلُ محور الشكل وحده — وهو لبُّ السؤال. فمتوسّطُ الشخصية يعلو
+     بسبب **لون اللباس**، وهو مساحةٌ واسعةٌ تُعاد صباغتها — لكنّ نظام
+     الحرف يملك المحورَ نفسَه أصلاً (لونُ القرص × ٨). فما تضيفه الشخصيةُ
+     حقّاً هو **الشكلُ**: غطاءُ الرأس. فيُقاس وحده. */
+  const dFcover = distinct(
+    ['none','cap','scarf','kufi'].map(cover => ({cover, shape:'circle', gtone:'#5F5B57'})),
+    drawFigure);
+
+  /* المعيار ③ — أسوأ حالةٍ لونية: فاتحٌ على فاتح، بالقياس لا بالنظر */
+  function distinctW(list, fn){
+    const imgs = list.map(o => {
+      const cv = document.createElement('canvas'); cv.width = cv.height = 32;
+      fn(cv.getContext('2d'), 32, Object.assign({pal:WORST.l}, o));
+      return cv.getContext('2d').getImageData(0,0,32,32).data;
+    });
+    let sum=0,n=0,worst=1;
+    for(let i=0;i<imgs.length;i++) for(let j=i+1;j<imgs.length;j++){
+      let d=0;
+      for(let k=0;k<imgs[i].length;k+=4){
+        const t=Math.abs(imgs[i][k]-imgs[j][k])+Math.abs(imgs[i][k+1]-imgs[j][k+1])
+               +Math.abs(imgs[i][k+2]-imgs[j][k+2]);
+        if(t>30) d++;
+      }
+      const r=d/1024; sum+=r; n++; if(r<worst) worst=r;
+    }
+    return { avg:(100*sum/n).toFixed(1), worst:(100*worst).toFixed(1) };
+  }
+  const wL = distinctW(ID_LETTERS, drawLetter);
+  const wF = distinctW(['none','cap','scarf','kufi']
+    .map(cover => ({cover, shape:'circle'})), drawFigure);
+
+  const t2 = document.createElement('div');
+  t2.innerHTML = `<h2>⑥ القياسُ الحاسم — أيُميَّز صاحبُ العلامة عن جاره؟</h2>
+    <p class="sub">علامتان في قائمةٍ واحدة <b>باللون نفسِه</b>: كم بكسلاً من ١٠٢٤
+    يختلف بينهما اختلافاً تراه العين؟ الأفاتارُ لا يُراد أن يُرى بل أن <b>يُفرِّق</b>.</p>
+    <table class="tbl">
+      <tr><th>النظام</th><th>متوسّط الاختلاف</th><th>أسوأ زوج</th></tr>
+      <tr><td>الحرف — ٨ حروف، الإطارُ واللونُ ثابتان</td><td>${dL.avg}٪</td><td><b>${dL.worst}٪</b></td></tr>
+      <tr><td>الشخصية — ٤ أغطية × لونَي لباس</td><td>${dF.avg}٪</td><td><b>${dF.worst}٪</b></td></tr>
+      <tr><td>الشخصية — الغطاءُ وحده، اللباسُ ثابت</td><td>${dFcover.avg}٪</td><td><b>${dFcover.worst}٪</b></td></tr>
+      <tr><td>③ أسوأ حالةٍ لونية — الحرف</td><td>${wL.avg}٪</td><td><b>${wL.worst}٪</b></td></tr>
+      <tr><td>③ أسوأ حالةٍ لونية — الشخصية</td><td>${wF.avg}٪</td><td><b>${wF.worst}٪</b></td></tr>
+    </table>
+    <div class="note">🔴 <b>والنتيجةُ تنقض الفرضية — فتُكتب كما هي.</b>
+    توقّعت الوثيقةُ أن يحسم اختبارُ ٣٢ بكسل وحدَه («قد تتحوّل إلى لطخة»).
+    <b>ولم يقع ذلك:</b> الشخصيةُ تصمد عند ٣٢، ومتوسّطُ تمايز غطاء الرأس
+    (${dFcover.avg}٪) <b>يفوق</b> متوسّطَ تمايز الحروف (${dL.avg}٪).
+    <br><br>🔑 <b>والفارقُ الحقيقيّ ليس في الجودة بل في الكلفة لكلّ قيمة.</b>
+    نظامُ الحرف يُخرج ${dL.avg}٪ من <b>٢٨ قيمةً لا تُرسم</b> — الهجاءُ
+    يأتي من الخطّ. والشخصيةُ تُخرج ${dFcover.avg}٪ من <b>أربعةِ أغطيةٍ
+    تُرسم وتُصان وتُفحَص مع كلّ لباس</b>. النتيجةُ متقاربة، والمدخلُ ليس كذلك.
+    <br><br>⚠️ وأسوأُ زوجٍ يميل للحرف (${dL.worst}٪ مقابل ${dFcover.worst}٪)،
+    <b>لكنّه فرقٌ لا يحمل قراراً وحده.</b></div>`;
+  out.appendChild(t2);
+
+  const t = document.createElement('div');
+  t.innerHTML = `<h2>⑤ قياسٌ لا انطباع — عددُ الدرجات المميَّزة داخل ٣٢×٣٢</h2>
+    <p class="sub">بعد تكميمٍ خشن (٤ بتّات للقناة): كم درجةً تفصلها العينُ فعلاً؟
+    العددُ الأعلى ليس أفضل — بل يعني <b>ازدحاماً في مساحةٍ لا تتّسع</b>.</p>
+    <table class="tbl"><tr><th>النظام</th><th>متوسّط الدرجات المميَّزة</th></tr>
+    ${tally.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('')}</table>
+    <div class="note">📐 ٣٢×٣٢ = ١٠٢٤ بكسلاً. نظامُ الحرف يُنفقها على
+    <b>ثلاث مساحات</b>: قرصٌ وإطارٌ وحرف. ونظامُ الشخصية يُنفقها على
+    <b>ستٍّ متداخلة</b>: قرصٌ وكتفٌ وياقةٌ وعنقٌ ورأسٌ وغطاء — وكلُّ حدٍّ
+    بينها يحتاج بكسلاً واحداً على الأقلّ ليُرى.</div>`;
+  out.appendChild(t);
+
+  /* ═══ ⑦ المعيار ② — انفجارُ التوليفات · والمعيار ⑤ — الأصول ═══ */
+  const t3 = document.createElement('div');
+  t3.innerHTML = `<h2>⑦ المعيار ② — انفجارُ التوليفات · والمعيار ⑤ — الأصول</h2>
+    <p class="sub">المحاورُ المستقلّة تُجمع، والمتداخلةُ تُضرَب. وهذا فرقُ بنيةٍ
+    لا فرقُ درجة.</p>
+    <table class="tbl">
+      <tr><th></th><th>نظام الحرف</th><th>نظام الشخصية</th></tr>
+      <tr><td>بنيةُ المحاور</td><td>مستقلّة (تُجمع)</td><td>متداخلة (تُضرَب)</td></tr>
+      <tr><td>أصولٌ تُرسم لنسخةٍ أولى</td><td><b>٦</b><br>٤ أطر + قرصان</td>
+          <td><b>٢٣</b><br>رأس·عنق·كتف + ٨ أغطية + ٦ ألبسة + ٦ ملحقات</td></tr>
+      <tr><td>قيمُ الهوية المجّانية</td><td><b>٢٨ حرفاً من الخطّ</b> — لا تُرسم</td>
+          <td>صفر — كلُّ قيمةٍ تُرسم</td></tr>
+      <tr><td>أزواجٌ تحتاج فحصاً بصرياً فعلياً</td><td><b>٨</b><br>٤ أطر × قرصان</td>
+          <td><b>٢٦٤</b><br>(غطاء×لباس ٤٨ + لباس×ملحقة ٣٦ + غطاء×ملحقة ٤٨) × قرصين</td></tr>
+      <tr><td>كلفةُ إضافةِ خيارٍ واحد بعد سنة</td><td>O(1) — <b>فحصان</b></td>
+          <td>O(n×m) — <b>٧٢ فحصاً</b></td></tr>
+    </table>
+    <div class="note">🔑 <b>ولماذا تتداخل الشخصيةُ بنيةً لا صدفة:</b> الغطاءُ
+    يلامس الرأسَ والكتف، واللباسُ يلامس الياقةَ والكتف، والملحقةُ تلامس
+    الكتفَ وحافّةَ القرص. فكلُّ زوجٍ <b>موضعُ تصادمٍ محتمل</b> يُفحص بالعين.
+    أمّا الإطارُ في نظام الحرف فحلقةٌ عند نصف قطر ٣٨ والحرفُ داخل ٢٥ —
+    <b>لا يلتقيان هندسياً</b>، فلا زوجَ يُفحص.</div>`;
+  out.appendChild(t3);
+
+  /* ═══ ⑧ التوصية ═══ */
+  const t4 = document.createElement('div');
+  t4.innerHTML = `<h2>⑧ التوصية</h2>
+    <div class="note" style="border-color:#5a4a1e;background:#1e1a10">
+    <b style="font-size:1rem">لا يُبنى.</b>
+    <br><br><b>والسببُ الحاكم هو المعيار ③ لا ①.</b> تحت أسوأ حالةٍ لونية
+    (فاتحٌ على فاتح) يفقد نظامُ الشخصية <b>٣٢٪ من تمايزه</b>
+    (${dFcover.avg}٪ ⇐ ${wF.avg}٪) وينزل أسوأُ زوجٍ إلى ${wF.worst}٪،
+    بينما <b>لا يتأثّر نظامُ الحرف</b> (${dL.avg}٪ ⇐ ${wL.avg}٪).
+    والعلّةُ بنيويّة: الحرفُ <b>علاقةُ تباينٍ واحدة</b> (حبرٌ على قرص) تُضبط
+    مرّةً وتصحّ في الألوان الثمانية؛ والشخصيةُ <b>خمسُ علاقاتٍ متجاورة</b>
+    تُضبط كلُّها أو ينهار التمييز.
+    <br><br>🔴 <b>والمعيار ① لم يحسم — خلافاً لما توقّعته الوثيقة.</b>
+    الشخصيةُ تصمد عند ٣٢ بكسل، ومتوسّطُ تمايزها (${dFcover.avg}٪)
+    <b>يفوق</b> متوسّطَ الحروف (${dL.avg}٪). ولو وُقف عند هذا المعيار
+    وحدَه لكانت التوصيةُ بالبناء.
+    <br><br>📐 <b>ويسنده المعيار ②:</b> ٢٣ أصلاً و٢٦٤ زوجاً تُفحص، مقابل
+    ٦ أصولٍ و٨ أزواج — لتمايزٍ <b>ليس أفضل</b>. والفرقُ ليس في الجودة
+    بل في <b>الكلفة لكلّ قيمةِ هوية</b>: الهجاءُ يأتي من الخطّ مجّاناً،
+    والأغطيةُ تُرسم وتُصان وتُفحَص.
+    </div>`;
+  out.appendChild(t4);
+});
+</script>
+</body>
+</html>
