@@ -507,8 +507,45 @@ function initials(name){
   return (String(name || '').trim()[0]) || '؟';
 }
 
-const ROLE_AR = { student:'طالب', teacher:'معلّم', admin:'مدير',
-                  pending_teacher:'طلبٌ قيد المراجعة' };
+/* ═══════════ صيغةُ المخاطبة — طبقةُ النصّ (123 · 124) ═══════════
+
+   `G(g, m, f, n)` — دالّةٌ نقيّة: `g` قيمةُ `gram_gender` لا ملفٌّ شخصيّ.
+
+   🔑 **ولماذا قيمةٌ لا ملفّ:** الجملةُ الواحدة قد تحتاج صيغتين معاً —
+      «انضممتِ إلى أ. هدى» فيها صيغةُ الطالبة وصيغةُ المعلّمة. فلا ملفَّ
+      واحدٌ يسعهما، والحقلُ يُقرأ في اتّجاهين: عن صاحبه، وعنه في نصّ غيره.
+      ولذلك حُمل `g` في حمولات `list_mentors` و`my_mentor` و`list_subjects`
+      و`choose_mentor` (124).
+
+   🔑 **والقاعدة الحاكمة: حيث تُمكن المحايدةُ تُكتب محايدةً من الأصل،
+      ولا تُستدعى هذه الدالّةُ أصلاً.** كلُّ نداءٍ هنا **ضريبةُ كتابةٍ
+      دائمة**: كلُّ نصٍّ جديد بعده يتضاعف. وليست مهمّةً تُنجَز مرّة.
+
+   🔴 **والغيابُ يُصاح به ولا يُسكَت عنه.** لو رُدَّ المذكَّرُ صامتاً عند
+      `null` لعاد الافتراضُ الذي بُني العمودُ كلُّه لمنعه — فمن نسي كتابة
+      المحايدة يُقال له، مرّةً لكلّ نصّ. **والخطأ الصاخب يُصلَح، والصامت
+      يُصدَّق.** */
+const _gWarned = new Set();
+export function G(g, m, f, n){
+  if(g === 'f') return f;
+  if(g === 'm') return m;
+  if(n !== undefined) return n;
+  if(!_gWarned.has(m)){
+    _gWarned.add(m);
+    console.warn('[بيان · 123] نصٌّ بلا صيغةٍ محايدة، فرُدَّ المذكّر:', m);
+  }
+  return m;
+}
+
+/* اسمُ الدور — ومحايدُه **فراغ** لا مذكّر: الدرجُ يعرض تحته الصفَّ أو
+   المدرسة، فيبقى السطرُ ذا معنًى بلا كلمة الدور. ولو رُدَّ «طالب» عند
+   الغياب لخاطب تسعةَ عشرَ حساباً قائماً بصيغةٍ لم يختاروها. */
+const roleWord = (role, g) =>
+  role === 'student'         ? G(g, 'طالب', 'طالبة', '')
+: role === 'teacher'         ? G(g, 'معلّم', 'معلّمة', '')
+: role === 'admin'           ? G(g, 'مدير', 'مديرة', '')
+: role === 'pending_teacher' ? 'طلبٌ قيد المراجعة'
+:                              '';
 
 function bellHtml(){
   const c = S.counts || {}, keys = destsOf().map(([k]) => k);
@@ -563,14 +600,19 @@ function renderDrawer(active){
   const d = document.getElementById('drawer');
   if(!d) return;
   const prof = S.prof || {};
+  /* 🆕 123 · سطرُ الهوية: الدورُ بصيغة صاحبه، ثمّ ما يُعرِّفه — الصفُّ
+     للطالب والمدرسةُ للمعلّم. ومن لم يُسأل بعدُ يسقط دورُه ويبقى
+     تعريفُه، **فلا يُخاطَب بصيغةٍ لم يخترها**. والسطرُ يُخفى إن خلا
+     الاثنان معاً، وإلا حجز حشوَه فارغاً. */
+  const sub = [roleWord(roleOf(), prof.gram_gender),
+               prof.klass || prof.school].filter(Boolean).join(' · ');
   d.innerHTML = `
     <div class="drawer-head">
       <div class="who">
         <span class="avatar lg">${esc(initials(prof.full_name))}</span>
         <span class="who-t">
           <b dir="auto">${esc(prof.full_name || 'حسابك')}</b>
-          <span>${esc(ROLE_AR[roleOf()] || '')}${
-            prof.klass ? ' · ' + esc(prof.klass) : ''}</span>
+          ${sub ? `<span>${esc(sub)}</span>` : ''}
         </span>
       </div>
       <button class="iconbtn" id="drawerX" aria-label="إغلاق القائمة">${svg('close')}</button>

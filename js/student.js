@@ -9,7 +9,7 @@ import * as api from './api.js';
 import { S } from './state.js';
 import { app, head, toast, esc, AR, ICONS, KINDS, bubble, errBox, nav,
          refreshCounts, scrollTop, scrollBottom, shape, icon,
-         skeleton } from './ui.js';
+         skeleton, G } from './ui.js';
 import { startQuiz } from './quiz.js';
 import { mediaUrl, isManaged } from './media.js';
 import { isSim, openSim } from './simulations.js';
@@ -308,7 +308,12 @@ export async function loadMentors(subj, switching){
   const card = m => `
     <div class="mentor ${m.full?'full':''} ${state.teacher_id===m.id?'cur':''}" data-t="${m.id}">
       <div class="m-n">أ. ${esc(m.name)}
-        ${state.teacher_id===m.id?'<span class="badge on">معلمك الحالي</span>':''}</div>
+        ${/* 🆕 124 · الشارةُ بصيغة المعلّم لا بصيغة الطالب — و`m.g` تصل
+              من `list_mentors`. ومحايدُها «اختيارك الحالي»: اسمٌ عن
+              الطالب لا عن معلّمه، فيصحّ قبل أن يُسأل أحدهما. */''}
+        ${state.teacher_id===m.id
+          ? `<span class="badge on">${G(m.g,'معلمك الحالي','معلمتك الحالية','اختيارك الحالي')}</span>`
+          : ''}</div>
       <div class="m-m">${esc(m.school||'—')}${m.years?` · ${AR(m.years)} سنوات خبرة`:''}</div>
       ${m.bio?`<div class="m-b">${esc(m.bio)}</div>`:''}
       <span class="m-cap">${m.full?'اكتمل النصاب':`يتابع ${AR(m.students)} من ${AR(m.capacity)} طالباً`}</span>
