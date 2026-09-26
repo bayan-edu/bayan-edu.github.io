@@ -37,11 +37,19 @@ export function renderGate(msg){
 
     <div class="gate-form">
     ${msg?`<div class="err"><b>تنبيه</b>${esc(msg)}</div>`:''}
+    ${/* 🆕 b90 · بوابةٌ واحدة: مسارُ «انضم كمعلم» المنفصل أُدمج هنا.
+          والاختيارُ أوّلُ ما يُرى — فالحقول تتبعه، ولا يُملأ نموذجٌ
+          ثمّ يُقال للمسجِّل إنّه ملأ نموذجَ غيره. */''}
+    ${reg ? roleTabs(S.role) : ''}
+
+    ${/* 🆕 b92 · وطريقُ المزوّد يتصدّر ولا يُذيَّل — وكان تحت النموذج
+          كلِّه: **من قصده لم يكن ليقرأ حقلاً واحداً**، فكان يُمرِّر
+          نموذجاً لن يملأه ليبلغ زرّاً يُغنيه عنه. وهو ترتيبُ أكثر
+          المنصّات: الطريقُ الأسرع أولاً، ثمّ «أو» ثمّ البريد. */''}
+    ${GOOGLE_BTN}
+    <div class="gate-or">أو ${reg ? 'بالبريد الإلكتروني' : 'سجّل الدخول بالبريد'}</div>
+
     <div class="card">
-      ${/* 🆕 b90 · بوابةٌ واحدة: مسارُ «انضم كمعلم» المنفصل أُدمج هنا.
-            والاختيارُ أوّلُ ما يُرى — فالحقول تتبعه، ولا يُملأ نموذجٌ
-            ثمّ يُقال للمسجِّل إنّه ملأ نموذجَ غيره. */''}
-      ${reg ? roleTabs(S.role) : ''}
       <label class="fl">البريد الإلكتروني</label>
       <input type="email" id="em" value="${esc(draft.em||'')}"
              placeholder="name@example.com" autocomplete="email">
@@ -72,7 +80,6 @@ export function renderGate(msg){
           يوم سجّل. وعرضُها عند كلّ دخولٍ يُعلّم النقرَ بلا قراءة. */''}
     ${reg ? policyCheck() : ''}
     <div class="nav"><button class="btn primary" id="go">${reg?'إنشاء الحساب':'دخول'}</button></div>
-    ${GOOGLE_BTN}
     ${reg?'':'<p class="hint" id="fp" style="cursor:pointer;text-decoration:underline">نسيت كلمة المرور؟</p>'}
     <div class="gate-sep"></div>
     <button class="gate-alt" id="alt">${reg?'لديك حساب؟ سجّل الدخول':'إنشاء حساب جديد'}</button>
@@ -121,7 +128,7 @@ export function renderGate(msg){
   /* 🆕 b91 · والموافقةُ شرطٌ قبل الانطلاق إلى Google أيضاً — التسجيلُ
      بمزوّدٍ تسجيلٌ. أمّا في الدخول فلا مربّعَ ولا شرط. */
   document.getElementById("goog").onclick = async e => {
-    if(reg && !policyOk(app)){ toast(POLICY_MSG); return; }
+    if(reg && !policyOk(app)){ askPolicy(); return; }
     const b = e.currentTarget; b.disabled = true;
     const { error } = await api.signInWithGoogle();
     if(error){ b.disabled = false; toast(translate(error.message)); }
@@ -131,6 +138,20 @@ export function renderGate(msg){
   if(reg && S.role !== 'teacher') fillGrades();
 
   document.getElementById("em").focus();
+}
+
+/* 🆕 b92 · نداءٌ على مربّع الموافقة حين يُردّ فعلٌ لأجله.
+   🔴 وسببُه أنّ زرّ Google صار يتصدّر الصفحة والمربّعُ تحت النموذج ⇒
+      **رسالةٌ عابرة تُشير إلى ما لا يراه المستخدم**، فيقرأ «وافق» ولا
+      يجد على ماذا. ⇒ يُمرَّر إليه ويُومَض ويأخذ التركيز.
+   ⚠️ والإيماضُ يُعاد تشغيله: إزالةُ الصنف وحدها لا تُعيد الحركة —
+      المتصفّح لا يُعيد تشغيل animation إلا بعد إعادة حساب التخطيط. */
+function askPolicy(){
+  toast(POLICY_MSG);
+  const box = app.querySelector('.pol-ck'); if(!box) return;
+  box.scrollIntoView({ behavior:'smooth', block:'center' });
+  box.classList.remove('ask'); void box.offsetWidth; box.classList.add('ask');
+  app.querySelector('#pol_ok')?.focus({ preventScroll:true });
 }
 
 /* مسوّدةُ البوابة — تعيش بين رسمةٍ وأخرى لا أكثر */
@@ -206,7 +227,7 @@ async function submitGate(){
   const pw  = (document.getElementById("pw").value||"").trim();
   if(!em || !pw){ toast("أكمل البريد وكلمة المرور"); return; }
   if(pw.length < 6){ toast("كلمة المرور ٦ أحرف على الأقل"); return; }
-  if(reg && !policyOk(app)){ toast(POLICY_MSG); return; }
+  if(reg && !policyOk(app)){ askPolicy(); return; }
 
   /* 🆕 b90 · مسارُ المعلّم يتفرّع هنا وحده — والدخولُ واحدٌ للدورين
      ولا يُسأل فيه عن دور: الدورُ صفةٌ في profiles تُقرأ **بعد**
@@ -255,7 +276,7 @@ async function submitGate(){
 async function submitTeacherGate(em, pw){
   const nm = (document.getElementById("nm")?.value || '').trim();
   if(!nm){ toast("اكتب اسمك كما يظهر لطلابك"); return; }
-  if(!policyOk(app)){ toast(POLICY_MSG); return; }
+  if(!policyOk(app)){ askPolicy(); return; }
 
   keepDraft();
   app.innerHTML = `<div class="status">جارٍ إنشاء الحساب…</div>`;

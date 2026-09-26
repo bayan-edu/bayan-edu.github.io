@@ -30,14 +30,38 @@ body.gate{padding-bottom:0}
 
 /* 🔴 والتذييل يقع في الفخّ نفسه: البوابة ‎100vh‎ على الشاشات الواسعة،
    وعنصرٌ في المجرى تحتها يُضيف **شريطَ تمريرٍ لا محتوى وراءه** — وهو
-   عينُ ما صُفِّر من أجله padding السفليّ أعلاه. فيُرفع من المجرى ويُلصق
-   بأسفل **عمود النموذج وحده** لا عرضَ الشاشة: لونُه معايَرٌ على الورق،
-   ولو امتدّ تحت اللوحة الكحليّة لاختفى فيها.
-   ⚠️ و‎inset-inline-start‎ في RTL = يميناً، وهو موضع "form" في الشبكة.
-   وفي الضيّق تبقى البوابة بطولها الطبيعيّ (لا ‎100vh‎) ⇒ يبقى في المجرى. */
+   عينُ ما صُفِّر من أجله padding السفليّ أعلاه. ويُلصق بأسفل **عمود
+   النموذج وحده** لا عرضَ الشاشة: لونُه معايَرٌ على الورق، ولو امتدّ
+   تحت اللوحة الكحليّة لاختفى فيها.
+
+   🔴 **وكان `position:fixed` فطفا (b92):** المثبَّتُ مربوطٌ بالشاشة لا
+      بالمستند. فإذا كُبِّر العرضُ أو صَغُر صار عمودُ النموذج أطولَ من
+      الشاشة، **فلا يتحرّك التذييل مع ما تحته** — يبقى معلّقاً فوق
+      الحقول ولا يثبت في موضعه من الصفحة.
+   ⇒ **عمودٌ مرن بدل التثبيت:** `body` يملأ الشاشة، والبوّابة تأخذ ما
+     بقي منها، والتذييل يتبعها في المجرى. فالمجموع ‎100vh‎ بالضبط حين
+     يتّسع — **فلا شريط تمرير، وهي علّة التثبيت الأصلية** — ويكبر
+     الجميعُ معاً حين يضيق فيُمرَّر كما يُمرَّر أيُّ محتوى.
+   ⚠️ و‎margin-inline-end:auto‎ تُبقيه في جهة "form": في RTL البدايةُ
+      يميناً، وهي موضع النموذج في الشبكة. */
 @media(min-width:900px){
-  body.gate .site-foot{position:fixed;bottom:0;inset-inline-start:0;
-    width:50%;padding:0 18px 14px}
+  body.gate{display:flex;flex-direction:column;min-height:100vh}
+  body.gate .wrap{flex:1 1 auto;display:flex;flex-direction:column;min-height:0}
+  body.gate .gatex{flex:1 1 auto;min-height:0}
+  body.gate .site-foot{flex:0 0 auto;width:50%;padding:0 18px 14px;
+    margin-inline-end:auto}
+
+  /* 🔴 وثمنٌ ظهر بالقياس فدُفع: التذييلُ في المجرى يأخذ شريطاً أسفلَ
+     الشبكة، فتقصر اللوحة الكحليّة عن حافّة الشاشة (قيس: ٦٣٦ من ٧٢٠)
+     **فيظهر تحتها شريطٌ شاحب** — وهو بعينه ما صُفِّر من أجله padding
+     السفليّ في رأس هذا الملفّ.
+     ⇒ خلفيّةُ body تُكمل النصفَ الكحليّ تحت الشبكة.
+     ⚠️ وليست تدرّجاً وإن كُتبت بـ‎linear-gradient‎: حدٌّ قاطعٌ عند ٥٠٪
+        ⇒ نصفان مصمتان. والشعارُ يبقى على ‎.gate-say‎ المصمتة، فثقوبُه
+        تُملأ بلونٍ **مطابقٍ بالضبط** كما يوجب ‎--logo-hole‎.
+     ⚠️ و‎to left‎ لأنّ "say" يقع يساراً في شبكة RTL (‎"form say"‎). */
+  body.gate{background:linear-gradient(to left,
+    var(--page) 0 50%, var(--brand-navy) 50% 100%)}
 }
 
 .gatex{display:grid;grid-template-columns:1fr;gap:0;
@@ -74,6 +98,13 @@ body.gate{padding-bottom:0}
 .gate-alt:hover{background:var(--accent-fill)}
 .gate-alt:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
+/* 🆕 b92 · فاصلُ الطريقين — سطرٌ بكلمةٍ في وسطه.
+   🔑 وهو غيرُ `.gate-sep`: ذاك يقول «انتهى الإجراء»، وهذا يقول «طريقٌ
+      آخر لنفس الإجراء». وفرقٌ في المعنى يستحقّ فرقاً في الشكل. */
+.gate-or{display:flex;align-items:center;gap:12px;margin:14px 0;
+  color:var(--text-muted);font-size:var(--fs-tag)}
+.gate-or::before,.gate-or::after{content:"";flex:1;height:1px;background:var(--line)}
+
 /* 🆕 b91 · مربّعُ الموافقة على سياسة الخصوصية.
    ⚠️ width:auto لازمة: input في base.css عرضُها ١٠٠٪، ومربّعُ اختيارٍ
       بعرض النموذج يُقرأ حقلَ كتابةٍ فارغاً لا مربّعاً يُنقَر.
@@ -83,6 +114,20 @@ body.gate{padding-bottom:0}
   margin:14px 0 0;font-size:var(--fs-meta);color:var(--text-muted);line-height:1.8}
 .pol-ck input{width:auto;flex:0 0 auto;margin-top:5px;cursor:pointer}
 .pol-ck a{color:var(--accent);text-decoration:underline}
+
+/* 🆕 b92 · ونداءٌ على المربّع حين يُردّ فعلٌ لأجله: صار الزرّ الأول
+   (Google) يتصدّر الصفحة والمربّعُ تحت النموذج، **فرسالةٌ عابرة تُشير
+   إلى ما لا يراه المستخدم**. ⇒ يُمرَّر إليه ويُومَض.
+   🔑 واللون `warn` لا `danger`: الجملةُ «انتبه» لا «أخطأتَ» — لم يُخطئ
+      أحدٌ، بقي شرطٌ لم يُستوفَ بعد (طبقة الأدوار). */
+.pol-ck.ask{animation:polask 1.6s ease-out 1}
+@keyframes polask{
+  0%,100%{box-shadow:0 0 0 0 transparent}
+  12%,62%{box-shadow:0 0 0 3px var(--warn-fill);border-radius:9px}
+}
+@media(prefers-reduced-motion:reduce){
+  .pol-ck.ask{animation:none;box-shadow:0 0 0 3px var(--warn-fill);border-radius:9px}
+}
 
 /* «الدخول بحساب Google» — إجراءٌ موازٍ لا منافس: محايدُ اللون كزرّ
    ثانويّ، والشعارُ يُميّزه. ولا يأخذ --accent فيزاحم الفعل الأول. */
