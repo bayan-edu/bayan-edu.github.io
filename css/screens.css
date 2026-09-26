@@ -46,7 +46,15 @@ body.gate{padding-bottom:0}
       يميناً، وهي موضع النموذج في الشبكة. */
 @media(min-width:900px){
   body.gate{display:flex;flex-direction:column;min-height:100vh}
-  body.gate .wrap{flex:1 1 auto;display:flex;flex-direction:column;min-height:0}
+  /* 🔴 و`margin-inline:0` ليست زينة — قِيس أنّ غيابها يكسر الصفحة:
+     `.wrap` تحمل `margin:0 auto` من base.css. ولمّا صار `body.gate`
+     عموداً مرناً صارت `.wrap` عنصراً مرناً، **والهوامشُ التلقائية في
+     المحور العرضيّ تُلغي `stretch`** ⇒ تنكمش إلى عرض محتواها وتتوسّط.
+     فانكمشت الشبكةُ (قيس: ٢٢٤←١١٧٦ في شاشة ١٤٠٠)، فلم تبلغ اللوحةُ
+     الكحليّة الحافّة، **ولم يعد نصفُ الصفحة يطابق عمودَ النموذج** —
+     فبدا التذييل موسَّطاً على الصفحة لا على عموده (انحراف ١١٢px). */
+  body.gate .wrap{flex:1 1 auto;display:flex;flex-direction:column;
+    min-height:0;width:100%;margin-inline:0}
   body.gate .gatex{flex:1 1 auto;min-height:0}
   body.gate .site-foot{flex:0 0 auto;width:50%;padding:0 18px 14px;
     margin-inline-end:auto}
