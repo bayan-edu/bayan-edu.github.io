@@ -16,6 +16,7 @@ import { loadStudents, loadMyPerformance } from './analytics.js';
 import { loadFlashcards } from './flashcards.js';
 import { openPractice } from './practice.js';
 import { roleTabs, wireRoleTabs, teacherFields, fillSubjects, readTeacher } from './role_form.js';
+import { POLICY_VERSION, policyCheck, policyOk, POLICY_MSG } from './policy.js';
 
 /* ═══════════ ① البوابة ═══════════ */
 
@@ -67,7 +68,11 @@ export function renderGate(msg){
       <label class="fl" style="margin-top:16px">مدرستك <span style="opacity:.6">(اختياري)</span></label>
       <input type="text" id="kl" value="${esc(draft.kl||'')}" placeholder="مثال: مدرسة النيل الثانوية">`:''}
     </div>
+    ${/* 🆕 b91 · الموافقة شرطُ تسجيلٍ لا شرطُ دخول: من دخل فقد وافق
+          يوم سجّل. وعرضُها عند كلّ دخولٍ يُعلّم النقرَ بلا قراءة. */''}
+    ${reg ? policyCheck() : ''}
     <div class="nav"><button class="btn primary" id="go">${reg?'إنشاء الحساب':'دخول'}</button></div>
+    ${GOOGLE_BTN}
     ${reg?'':'<p class="hint" id="fp" style="cursor:pointer;text-decoration:underline">نسيت كلمة المرور؟</p>'}
     <div class="gate-sep"></div>
     <button class="gate-alt" id="alt">${reg?'لديك حساب؟ سجّل الدخول':'إنشاء حساب جديد'}</button>
@@ -112,6 +117,16 @@ export function renderGate(msg){
      ألّا يصحّحه. ⚠️ وكلمةُ المرور لا تُحفَظ عمداً: قيمتُها لا تُكتب
      في HTML، ولا تُترك في كائنٍ يعيش في الذاكرة بلا داعٍ. */
   wireRoleTabs(app, r => { keepDraft(); S.role = r; renderGate(msg); });
+
+  /* 🆕 b91 · والموافقةُ شرطٌ قبل الانطلاق إلى Google أيضاً — التسجيلُ
+     بمزوّدٍ تسجيلٌ. أمّا في الدخول فلا مربّعَ ولا شرط. */
+  document.getElementById("goog").onclick = async e => {
+    if(reg && !policyOk(app)){ toast(POLICY_MSG); return; }
+    const b = e.currentTarget; b.disabled = true;
+    const { error } = await api.signInWithGoogle();
+    if(error){ b.disabled = false; toast(translate(error.message)); }
+    /* ولا شيء بعدها: الصفحة تغادر إلى Google وتعود بجلسةٍ إلى boot. */
+  };
 
   if(reg && S.role !== 'teacher') fillGrades();
 
@@ -191,6 +206,7 @@ async function submitGate(){
   const pw  = (document.getElementById("pw").value||"").trim();
   if(!em || !pw){ toast("أكمل البريد وكلمة المرور"); return; }
   if(pw.length < 6){ toast("كلمة المرور ٦ أحرف على الأقل"); return; }
+  if(reg && !policyOk(app)){ toast(POLICY_MSG); return; }
 
   /* 🆕 b90 · مسارُ المعلّم يتفرّع هنا وحده — والدخولُ واحدٌ للدورين
      ولا يُسأل فيه عن دور: الدورُ صفةٌ في profiles تُقرأ **بعد**
@@ -210,10 +226,14 @@ async function submitGate(){
 
   app.innerHTML = `<div class="status">جارٍ التحقق…</div>`;
   const r = reg
-    ? await api.signUp(em, pw, nm.trim(), kl.trim(), scaleId, levelId)
+    ? await api.signUp(em, pw, nm.trim(), kl.trim(), scaleId, levelId, POLICY_VERSION)
     : await api.signIn(em, pw);
 
   if(r.error){ renderGate(translate(r.error.message)); return; }
+
+  /* 🆕 b91 · الختمُ يقع ساعةَ توجد الجلسة — وقبل أيّ شاشةٍ تالية.
+     وبلا جلسةٍ يُؤجَّل إلى أوّل دخول: `boot` تختمه لمن لم يُختم له. */
+  if(reg && r.data.session) await api.acceptPolicy(POLICY_VERSION);
 
   // جلسة فورية (تأكيد البريد معطّل) → احفظ الصف الآن
   if(reg && r.data.session && scaleId){
@@ -235,13 +255,14 @@ async function submitGate(){
 async function submitTeacherGate(em, pw){
   const nm = (document.getElementById("nm")?.value || '').trim();
   if(!nm){ toast("اكتب اسمك كما يظهر لطلابك"); return; }
+  if(!policyOk(app)){ toast(POLICY_MSG); return; }
 
   keepDraft();
   app.innerHTML = `<div class="status">جارٍ إنشاء الحساب…</div>`;
 
   /* بريدٌ مسجَّلٌ سلفاً: يُدخَل به بدل أن يُردّ — فمن سجّل طالباً ثمّ
      عاد معلّماً لا يُطلب منه بريدٌ ثانٍ. وخطأُ كلمة المرور يُقال. */
-  let r = await api.signUpTeacher(em, pw, nm);
+  let r = await api.signUpTeacher(em, pw, nm, POLICY_VERSION);
   if(r.error && /already registered/i.test(r.error.message)){
     r = await api.signIn(em, pw);
     if(r.error){ renderGate("هذا البريد مسجّل — وكلمة المرور غير صحيحة"); return; }
@@ -255,8 +276,61 @@ async function submitTeacherGate(em, pw){
     return;
   }
 
+  await api.acceptPolicy(POLICY_VERSION);
   draft = {};
   await boot();
+}
+
+
+/* ═══════════ ②-أ إكمالُ الملفّ بعد الدخول بمزوّد ═══════════
+
+   🔑 شاشةُ اختيارٍ لا نموذج: الدورُ يُسأل عنه هنا كما يُسأل في البوابة
+      — **بالمكوّن نفسِه** (`roleTabs`) — ثمّ يُساق صاحبُه إلى الشاشة
+      التي تخصّه. ولا تُنسخ حقولُ الطالب ولا المعلّم هنا: لكلٍّ شاشتُه
+      القائمة، وهذه تختار بينهما.
+   ⚠️ والموافقةُ تُعرض **إن لم تكن قد خُتمت** — فمن نقرها في البوابة ثمّ
+      انطلق إلى Google لا يُسأل مرّتين، ومن دخل من زرّ «الدخول» بلا
+      مربّعٍ يُسأل هنا. */
+
+export function renderCompleteProfile(msg){
+  S.role ||= 'student';
+  nav('subjects');
+  head("أهلاً بك في بيان", S.prof?.full_name || '');
+  const need = !S.prof?.policy_accepted_at;
+
+  app.innerHTML = `
+    ${msg ? `<div class="err"><b>تنبيه</b>${esc(msg)}</div>` : ''}
+    <div class="card">
+      <div class="line" style="color:var(--text);font-size:var(--fs-read)">
+        قبل أن نبدأ — من أنت في بيان؟</div>
+      <div style="margin-top:14px">${roleTabs(S.role)}</div>
+      <div class="line">${S.role === 'teacher'
+        ? 'نسألك بعدها عن مادّتك ومدرستك، وتظهر لطلابك في «اختر معلمك».'
+        : 'نسألك بعدها عن منهجك وصفّك، وهما يحدّدان الموادَّ التي تظهر لك.'}</div>
+      ${need ? policyCheck() : ''}
+    </div>
+    <div class="nav" style="margin-top:16px">
+      <button class="btn primary" id="cp_go">تابِع ←</button>
+    </div>`;
+
+  wireRoleTabs(app, r => { S.role = r; renderCompleteProfile(msg); });
+
+  document.getElementById("cp_go").onclick = async e => {
+    if(need && !policyOk(app)){ toast(POLICY_MSG); return; }
+    const b = e.currentTarget; b.disabled = true; b.textContent = '…';
+
+    if(need){
+      const { data, error } = await api.acceptPolicy(POLICY_VERSION);
+      if(error || !data?.ok){
+        b.disabled = false; b.textContent = 'تابِع ←';
+        toast(error?.message || data?.error || 'تعذّر تسجيل الموافقة'); return;
+      }
+      S.prof.policy_accepted_at = data.at;
+    }
+    if(S.role === 'teacher') return renderTeacherDetails();
+    renderGradePicker();
+  };
+  scrollTop();
 }
 
 
@@ -404,6 +478,15 @@ export async function boot(){
   }
   S.roleInfo = ri || { role: S.prof.role };
   const role = S.roleInfo.role;
+  const meta = user.user_metadata || {};
+
+  /* 🆕 b91 · موافقةٌ وقعت ولم تُختَم: حين يكون «تأكيد البريد» مفعَّلاً
+     لا توجد جلسةٌ لحظةَ التسجيل. فالنيّةُ عبرت في البيانات الوصفية،
+     وتُختَم هنا عند أوّل جلسة. **وإلا ضاعت موافقةٌ وقعت فعلاً.** */
+  if(!S.prof.policy_accepted_at && meta.policy_version){
+    await api.acceptPolicy(meta.policy_version);
+    S.prof.policy_accepted_at = new Date().toISOString();
+  }
 
   /* الأعداد تُجلب مرّةً هنا لا في كل شاشة — والشارات تُدهَن حين تصل.
      وبلا await عمداً: الشاشة لا تنتظر رقماً، و paintCounts تلحق بها. */
@@ -415,17 +498,33 @@ export async function boot(){
   if(role === 'admin')           return loadStudents();
   /* 🆕 b90 · والمعلّمُ بلا شهادةٍ يُساق إلى خطوتها — **ولا يُحجب عن
      المنصّة**: التأليفُ وحده ينتظر، ومن حُجب كلُّه ظنّ حسابَه معطّلاً. */
-  if(role === 'teacher')
+  if(role === 'teacher'){
+    /* 🆕 b91 · محاولةٌ صامتةٌ واحدة قبل عرض شاشة الرمز: جلسةٌ نشأت
+       بمزوّدٍ (Google) أو برمزِ بريدٍ تُمنح الشهادةَ من نفسها.
+       🔑 **ولا استثناءَ في الواجهة لـGoogle:** الدالّة تقرأ طريقةَ
+          الجلسة من `auth.mfa_amr_claims` فتقرّر — والعميلُ لا يقول
+          «أنا Google»، وقولُه لا يُصدَّق أصلاً. وجلسةُ كلمةِ المرور
+          تُردّ فتظهر الشاشة كما ينبغي. */
+    if(!S.prof.author_verified_at){
+      const { data: mv } = await api.markAuthorVerified();
+      if(mv?.ok) S.prof.author_verified_at = mv.at;
+    }
     return S.prof.author_verified_at ? loadTeacher() : renderVerifyAuthor();
+  }
 
   /* 🆕 b90 · نيّةُ التعليم تعبر الفجوة: من أنشأ حسابه معلّماً ثمّ ترك
      شاشةَ التفاصيل يعود إليها هنا. **ولولاها لبقي طالباً بلا بابٍ
      يعود منه** — إذ سقط رابط «انضم كمعلم» حين دُمج في البوابة. */
-  if((user.user_metadata || {}).wants_teacher) return renderTeacherDetails();
+  if(meta.wants_teacher) return renderTeacherDetails();
+
+  /* 🆕 b91 · داخلٌ بمزوّدٍ لم يختر دوره بعد ⇒ شاشةُ الاختيار.
+     🔑 والشرطُ بالمزوّد لا بنقص الصفّ: مسجِّلُ البريد اختار دورَه في
+        البوابة، فسؤالُه ثانيةً يُقرأ شكّاً فيما قاله. */
+  if((user.app_metadata || {}).provider !== 'email' && !S.prof.scale_id)
+    return renderCompleteProfile();
 
   // طالب بلا منهج: طبّق ما اختاره عند التسجيل، وإلا اسأله.
   if(!S.prof.scale_id){
-    const meta = user.user_metadata || {};
     if(meta.scale_id){
       const { data:g } = await api.setMyGrade(
         Number(meta.scale_id), meta.level_id ? Number(meta.level_id) : null);
@@ -639,6 +738,20 @@ export async function loadAdmin(status){
 }
 
 /* ═══════════ ⑥ التشغيل ═══════════ */
+
+/* 🆕 b91 · شعارُ Google مضمَّنٌ لا مرتبط — ملفٌّ خارجيّ طلبٌ ثانٍ
+   يتأخّر أو يسقط، فيظهر زرٌّ بلا علامةٍ تُعرف بها الطريقة.
+   ⚠️ وألوانُه ألوانُ المزوّد لا ألوانَ الهوية: لا تُبدَّل — هي علامةٌ
+      مسجَّلة، وتغييرُها يخالف إرشادات Google ويُربك من يعرفها. */
+const GOOGLE_SVG = `<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+  <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.9 2.4 30.400 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.2C12.4 13.7 17.7 9.5 24 9.5z"/>
+  <path fill="#4285F4" d="M46.1 24.6c0-1.6-.1-3.1-.4-4.6H24v9.1h12.4c-.5 2.9-2.2 5.3-4.7 6.9l7.2 5.6c4.2-3.9 6.6-9.6 6.6-16.3z"/>
+  <path fill="#FBBC05" d="M10.5 28.6c-.5-1.4-.8-2.9-.8-4.6s.3-3.2.8-4.6l-7.9-6.2C1 16.3 0 20 0 24s1 7.7 2.6 10.8l7.9-6.2z"/>
+  <path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.2-5.6c-2 1.4-4.6 2.2-8.7 2.2-6.3 0-11.6-4.2-13.5-10l-7.9 6.2C6.5 42.6 14.6 48 24 48z"/>
+</svg>`;
+
+const GOOGLE_BTN = `<button type="button" class="gate-oauth" id="goog">
+  ${GOOGLE_SVG}<span>المتابعة بحساب Google</span></button>`;
 
 /* 🆕 b89 · توكنُ جلسة التدرّب في العنوان: ‎#/t/‹توكن›‎
    والنمطُ يُحكَم هنا لا في الدالّة: ما لا يشبه توكناً لا يُرسَل أصلاً. */

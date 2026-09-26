@@ -39,14 +39,31 @@ export const currentUser    = ()                => db.auth.getUser();
 export const signIn         = (email, password) => db.auth.signInWithPassword({ email, password });
 export const signOutSession = ()                => db.auth.signOut();
 export const sendResetLink  = email             => db.auth.resetPasswordForEmail(email);
+
+/* 🆕 b91 · الدخول بحساب Google — نداءٌ واحد، وسوبابيس يتولّى OAuth كلَّه.
+   ويبقى العهد: «Supabase مباشرة، لا خادمَ وسيط».
+   ⚠️ و`redirectTo` يُبنى من الصفحة الحاضرة **بلا hash ولا استعلام** —
+      وعنوانُ العودة يجب أن يكون مسموحاً في لوحة Supabase، وإلا رُدّ
+      المستخدمُ إلى الموقع الافتراضيّ لا إلى حيث انطلق. */
+export const signInWithGoogle = () => db.auth.signInWithOAuth({
+  provider: 'google',
+  options: { redirectTo: location.origin + location.pathname } });
+
+/* ختمُ الموافقة على سياسة الخصوصية (121) */
+export const acceptPolicy = version => db.rpc('accept_policy', { p_version: version });
 export const onAuthChange   = cb                => db.auth.onAuthStateChange(cb);
 
 // scale/level يُحملان في البيانات الوصفية لا في profiles:
 // بين التسجيل وتأكيد البريد لا توجد جلسة، والبيانات الوصفية تعبر الفجوة.
-export const signUp = (email, password, fullName, klass, scaleId, levelId) =>
+/* 🆕 b91 · و`policy_version` تعبر الفجوة كأختيها: حين يكون «تأكيد
+   البريد» مفعَّلاً لا توجد جلسةٌ لحظةَ التسجيل، فلا يُختَم شيء —
+   والنيّةُ تُحفَظ في البيانات الوصفية ويختمها `boot` عند أوّل دخول.
+   **وإلا ضاعت موافقةٌ وقعت فعلاً.** */
+export const signUp = (email, password, fullName, klass, scaleId, levelId, policyVersion) =>
   db.auth.signUp({ email, password,
     options:{ data:{ full_name: fullName, klass,
-                     scale_id: scaleId, level_id: levelId } } });
+                     scale_id: scaleId, level_id: levelId,
+                     policy_version: policyVersion } } });
 
 /* 🆕 b90 · تسجيلُ المعلّم يقف هنا عند الاسم: بقيّةُ حقوله تحتاج قائمةَ
    المواد، و`p_subjects_read` تشترط `auth.uid() is not null` ⇒ لا تُقرأ
@@ -54,9 +71,10 @@ export const signUp = (email, password, fullName, klass, scaleId, levelId) =>
    🔑 و`wants_teacher` تعبر الفجوة: من أنشأ حسابه ثمّ ترك الشاشة يعود
       إليها عند أوّل دخول — **ولولا العلامة لَبقي طالباً بلا بابٍ يعود
       منه**، إذ سقط رابط «انضم كمعلم». */
-export const signUpTeacher = (email, password, fullName) =>
+export const signUpTeacher = (email, password, fullName, policyVersion) =>
   db.auth.signUp({ email, password,
-    options:{ data:{ full_name: fullName, wants_teacher: true } } });
+    options:{ data:{ full_name: fullName, wants_teacher: true,
+                     policy_version: policyVersion } } });
 
 
 /* ═══════════ ② الملف الشخصي والمناهج ═══════════ */
