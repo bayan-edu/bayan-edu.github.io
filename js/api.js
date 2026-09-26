@@ -59,11 +59,17 @@ export const onAuthChange   = cb                => db.auth.onAuthStateChange(cb)
    البريد» مفعَّلاً لا توجد جلسةٌ لحظةَ التسجيل، فلا يُختَم شيء —
    والنيّةُ تُحفَظ في البيانات الوصفية ويختمها `boot` عند أوّل دخول.
    **وإلا ضاعت موافقةٌ وقعت فعلاً.** */
-export const signUp = (email, password, fullName, klass, scaleId, levelId, policyVersion) =>
+/* 🆕 123 · و`gram_gender` تعبر الفجوة كأخواتها — ولم يُمَسّ المحفِّز
+   `handle_new_user` لأجلها: هو الذي يعبره كلُّ تسجيل، وخطأٌ فيه يُغلق
+   البابَ على الجميع. **ومسلكٌ قائمٌ مُجرَّب آثرُ من محفِّزٍ يُستبدل.**
+   ⚠️ والختمُ في `sealGram` أدناه — فما لا يُختَم يبقى `null`، وهو
+      المعنى الصحيح: «لم يُسأل بعد» لا «مذكّر». */
+export const signUp = (email, password, fullName, klass, scaleId, levelId, policyVersion, gramGender) =>
   db.auth.signUp({ email, password,
     options:{ data:{ full_name: fullName, klass,
                      scale_id: scaleId, level_id: levelId,
-                     policy_version: policyVersion } } });
+                     policy_version: policyVersion,
+                     gram_gender: gramGender || null } } });
 
 /* 🆕 b90 · تسجيلُ المعلّم يقف هنا عند الاسم: بقيّةُ حقوله تحتاج قائمةَ
    المواد، و`p_subjects_read` تشترط `auth.uid() is not null` ⇒ لا تُقرأ
@@ -71,10 +77,11 @@ export const signUp = (email, password, fullName, klass, scaleId, levelId, polic
    🔑 و`wants_teacher` تعبر الفجوة: من أنشأ حسابه ثمّ ترك الشاشة يعود
       إليها عند أوّل دخول — **ولولا العلامة لَبقي طالباً بلا بابٍ يعود
       منه**، إذ سقط رابط «انضم كمعلم». */
-export const signUpTeacher = (email, password, fullName, policyVersion) =>
+export const signUpTeacher = (email, password, fullName, policyVersion, gramGender) =>
   db.auth.signUp({ email, password,
     options:{ data:{ full_name: fullName, wants_teacher: true,
-                     policy_version: policyVersion } } });
+                     policy_version: policyVersion,
+                     gram_gender: gramGender || null } } });
 
 
 /* ═══════════ ② الملف الشخصي والمناهج ═══════════ */
@@ -85,6 +92,30 @@ export const myRole    = ()  => db.rpc('my_role');
 // دالة لا UPDATE: تتحقّق أن الصف ينتمي للمنهج، وتُعيد {ok,error}
 export const setMyGrade = (scaleId, levelId) =>
   db.rpc('set_my_grade', { p_scale: scaleId, p_level: levelId });
+
+/* 🆕 123 · صيغةُ المخاطبة — `update` مباشر لا دالّة، ومنحٌ عموديّ
+   يحرسه (على غرار ٥٠). والقيدُ في القاعدة هو كلُّ التحقّق المطلوب،
+   فلا حكمَ تحرسه دالّة — **ودالّةٌ بلا حكمٍ طبقةٌ تُصان بلا مقابل.**
+   ⚠️ وهذه **الكاتبُ الوحيد** للعمود: يعبرها مسلكُ Google ومسلكُ
+      «يُسأل مرّةً» وختمُ البيانات الوصفية جميعاً. ونسختان تتفارقان.
+   📌 والمعرّفُ يُمرَّر ولا يُقرأ من `S`: هذه الوحدةُ لا تعرف الحالةَ
+      المشتركة (كما `myProfile(uid)` فوقها) — ووحدةٌ تقرأ حالةً تصير
+      مرتبطةً بترتيب التحميل. */
+export const setMyGram = (uid, g) =>
+  db.from('profiles').update({ gram_gender: g }).eq('id', uid).select('gram_gender');
+
+/* ختمُ ما عبر في البيانات الوصفية — يُنادى من boot.
+   🔑 **ولا يكتب إلا على فراغ:** من غيّر صيغتَه من قائمة الحساب تبقى
+      البياناتُ الوصفية تحمل الأولى إلى الأبد، فلو كُتبت في كلّ دخولٍ
+      **لرُدَّ تصحيحُه عليه في كلّ مرّة** — وهو عطلٌ صامت: يُصحّح
+      فيُقبَل، ثمّ يعود غداً كما كان. */
+export const sealGram = async (uid, profile, meta) => {
+  const g = meta?.gram_gender;
+  if(profile?.gram_gender || (g !== 'm' && g !== 'f')) return null;
+  const { data, error } = await setMyGram(uid, g);
+  if(!error && data?.length) profile.gram_gender = g;
+  return error;
+};
 
 export const academicScales = () =>
   db.from('scales')

@@ -15,13 +15,16 @@ import { openEditor } from './editor.js';
 import { loadStudents, loadMyPerformance } from './analytics.js';
 import { loadFlashcards } from './flashcards.js';
 import { openPractice } from './practice.js';
-import { roleTabs, wireRoleTabs, teacherFields, fillSubjects, readTeacher } from './role_form.js';
+import { roleTabs, wireRoleTabs, teacherFields, fillSubjects, readTeacher, GRAM_MSG } from './role_form.js';
 import { POLICY_VERSION, policyCheck, policyOk, POLICY_MSG } from './policy.js';
 
 /* ═══════════ ① البوابة ═══════════ */
 
 export function renderGate(msg){
   S.role ||= 'student';
+  /* 🆕 123 · `S.gramG` تبقى `undefined` حتى يقع اختيار — فلا زرَّ مضغوطاً
+     ولا افتراضَ مذكّر. وشكلُ النموذج يتبع `S.role` وحده (حقولاً لا
+     مخاطبةً)، ولذلك لم تُدمَج القيمتان في حقلٍ واحد. */
   bar.innerHTML = "";
   head("", "", true);
   /* الترويسة تُخفى وتُنقَل هويتها إلى العمود — ونستنسخ #brand كما هو
@@ -40,7 +43,7 @@ export function renderGate(msg){
     ${/* 🆕 b90 · بوابةٌ واحدة: مسارُ «انضم كمعلم» المنفصل أُدمج هنا.
           والاختيارُ أوّلُ ما يُرى — فالحقول تتبعه، ولا يُملأ نموذجٌ
           ثمّ يُقال للمسجِّل إنّه ملأ نموذجَ غيره. */''}
-    ${reg ? roleTabs(S.role) : ''}
+    ${reg ? roleTabs(S.role, S.gramG ?? null) : ''}
 
     ${/* 🆕 b92 · وطريقُ المزوّد يتصدّر ولا يُذيَّل — وكان تحت النموذج
           كلِّه: **من قصده لم يكن ليقرأ حقلاً واحداً**، فكان يُمرِّر
@@ -122,7 +125,7 @@ export function renderGate(msg){
      ولولا ذلك لفقد المسجِّلُ بريدَه واسمَه لأنّه صحّح دورَه، فتعلّم
      ألّا يصحّحه. ⚠️ وكلمةُ المرور لا تُحفَظ عمداً: قيمتُها لا تُكتب
      في HTML، ولا تُترك في كائنٍ يعيش في الذاكرة بلا داعٍ. */
-  wireRoleTabs(app, r => { keepDraft(); S.role = r; renderGate(msg); });
+  wireRoleTabs(app, (r, g) => { keepDraft(); S.role = r; S.gramG = g; renderGate(msg); });
 
   /* 🆕 b91 · والموافقةُ شرطٌ قبل الانطلاق إلى Google أيضاً — التسجيلُ
      بمزوّدٍ تسجيلٌ. أمّا في الدخول فلا مربّعَ ولا شرط. */
@@ -229,6 +232,10 @@ async function submitGate(){
   if(pw.length < 6){ toast("كلمة المرور ٦ أحرف على الأقل"); return; }
   if(reg && !policyOk(app)){ askPolicy(); return; }
 
+  /* 🆕 123 · الامتناعُ **قبل تفرّع الدور**: الأربعةُ تجمع الدورَ والصيغة،
+     فلو فُحصت في كلّ فرعٍ وحده لسقطت من أحدهما يوماً. */
+  if(reg && !S.gramG){ toast(GRAM_MSG); return; }
+
   /* 🆕 b90 · مسارُ المعلّم يتفرّع هنا وحده — والدخولُ واحدٌ للدورين
      ولا يُسأل فيه عن دور: الدورُ صفةٌ في profiles تُقرأ **بعد**
      المصادقة، ولو سُئل عنه عند الدخول لصار سؤالاً يُجاب عنه ولا أثرَ
@@ -247,7 +254,7 @@ async function submitGate(){
 
   app.innerHTML = `<div class="status">جارٍ التحقق…</div>`;
   const r = reg
-    ? await api.signUp(em, pw, nm.trim(), kl.trim(), scaleId, levelId, POLICY_VERSION)
+    ? await api.signUp(em, pw, nm.trim(), kl.trim(), scaleId, levelId, POLICY_VERSION, S.gramG)
     : await api.signIn(em, pw);
 
   if(r.error){ renderGate(translate(r.error.message)); return; }
@@ -283,7 +290,7 @@ async function submitTeacherGate(em, pw){
 
   /* بريدٌ مسجَّلٌ سلفاً: يُدخَل به بدل أن يُردّ — فمن سجّل طالباً ثمّ
      عاد معلّماً لا يُطلب منه بريدٌ ثانٍ. وخطأُ كلمة المرور يُقال. */
-  let r = await api.signUpTeacher(em, pw, f.v.fullName, POLICY_VERSION);
+  let r = await api.signUpTeacher(em, pw, f.v.fullName, POLICY_VERSION, S.gramG);
   if(r.error && /already registered/i.test(r.error.message)){
     r = await api.signIn(em, pw);
     if(r.error){ renderGate("هذا البريد مسجّل — وكلمة المرور غير صحيحة"); return; }
@@ -334,7 +341,7 @@ export function renderCompleteProfile(msg){
     <div class="card">
       <div class="line" style="color:var(--text);font-size:var(--fs-read)">
         قبل أن نبدأ — من أنت في بيان؟</div>
-      <div style="margin-top:14px">${roleTabs(S.role)}</div>
+      <div style="margin-top:14px">${roleTabs(S.role, S.gramG ?? S.prof?.gram_gender ?? null)}</div>
       <div class="line">${S.role === 'teacher'
         ? 'نسألك بعدها عن مادّتك ومدرستك، وتظهر لطلابك في «اختيار معلمك».'
         : 'نسألك بعدها عن منهجك وصفّك، وهما يحدّدان الموادَّ التي تظهر لك.'}</div>
@@ -344,9 +351,13 @@ export function renderCompleteProfile(msg){
       <button class="btn primary" id="cp_go">متابعة ←</button>
     </div>`;
 
-  wireRoleTabs(app, r => { S.role = r; renderCompleteProfile(msg); });
+  wireRoleTabs(app, (r, g) => { S.role = r; S.gramG = g; renderCompleteProfile(msg); });
 
   document.getElementById("cp_go").onclick = async e => {
+    /* 🆕 123 · **المدخلُ الثاني — وهو الذي يُغفل لأنّه حديث (⑤).** من
+       سجّل بـGoogle ولم يُسأل هنا يخرج بـ`null` إلى الأبد، والمحفِّزُ
+       لا يعرف صيغتَه: لا بياناتِ وصفية عبرت، إنّما مطالبةُ المزوّد. */
+    if(!S.gramG){ toast(GRAM_MSG); return; }
     if(need && !policyOk(app)){ toast(POLICY_MSG); return; }
     const b = e.currentTarget; b.disabled = true; b.textContent = '…';
 
@@ -358,6 +369,16 @@ export function renderCompleteProfile(msg){
       }
       S.prof.policy_accepted_at = data.at;
     }
+
+    /* والصيغةُ تُكتب **قبل** الانتقال — والشاشةُ التالية تخاطب صاحبَها،
+       فكتابتُها بعدها تعني أنّ أوّل ما يقرؤه محايدٌ ثمّ يتغيّر. */
+    const { error: eg } = await api.setMyGram(S.user.id, S.gramG);
+    if(eg){
+      b.disabled = false; b.textContent = 'متابعة ←';
+      toast('تعذّر حفظ صيغة المخاطبة — ' + eg.message); return;
+    }
+    S.prof.gram_gender = S.gramG;
+
     if(S.role === 'teacher') return renderTeacherDetails();
     renderGradePicker();
   };
@@ -518,6 +539,14 @@ export async function boot(){
     await api.acceptPolicy(meta.policy_version);
     S.prof.policy_accepted_at = new Date().toISOString();
   }
+
+  /* 🆕 123 · وصيغةُ المخاطبة تُختَم بالمسلك نفسِه وللسبب نفسِه —
+     وهو ما أغنى عن تعديل `handle_new_user` (رأس `sql/123`).
+     ⚠️ **وقبل أوّل رسم:** كلُّ شاشةٍ بعدها تخاطب صاحبَها، فلو خُتمت
+        بعد الرسم لقرأ أوّلَ سطرٍ بصيغةٍ ثمّ رآه يتغيّر.
+     🔑 وتُنتظَر (`await`) خلافاً لـ`refreshCounts` أدناه: الرقمُ يلحق
+        بالشاشة، **والخطابُ لا يلحق بها**. */
+  await api.sealGram(user.id, S.prof, meta);
 
   /* الأعداد تُجلب مرّةً هنا لا في كل شاشة — والشارات تُدهَن حين تصل.
      وبلا await عمداً: الشاشة لا تنتظر رقماً، و paintCounts تلحق بها. */

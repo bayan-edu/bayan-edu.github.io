@@ -29,25 +29,52 @@ const DIAL = [
 ];
 
 
-/* ═══════════ ① اختيار الدور ═══════════
-   زرّان أصيلان بـ aria-pressed — لا صندوقٌ منسدل: الخياران اثنان
-   ويُقرآن معاً، والمنسدلةُ تُخفي أحدهما خلف نقرة. */
-export const roleTabs = (role = 'student') => `
-  <div class="nav" id="rf_tabs" style="margin-bottom:16px">
-    <button type="button" class="btn ${role==='student'?'primary':'ghost'}"
-            data-role="student" aria-pressed="${role==='student'}">أنا طالب</button>
-    <button type="button" class="btn ${role==='teacher'?'primary':'ghost'}"
-            data-role="teacher" aria-pressed="${role==='teacher'}">أنا معلّم</button>
+/* ═══════════ ① اختيار الدور وصيغة المخاطبة ═══════════
+   أزرارٌ أصيلة بـ aria-pressed — لا صندوقٌ منسدل: الخياراتُ تُقرأ معاً،
+   والمنسدلةُ تُخفيها خلف نقرة.
+
+   🔑 **سؤالٌ واحدٌ لا سؤالان (123).** العربية تُلزم بالصيغة في كلّ
+      مخاطبة، وسؤالٌ ثانٍ منفصل يُقرأ استمارةً ويُتجاوَز. فالشبكةُ
+      ٢×٢: الصفُّ دورٌ، والعمودُ صيغة — تُقرأ بنظرةٍ واحدة.
+      ونقرةٌ واحدة تكتب قيمتين: `role` و`gram_gender`.
+
+   ⛔ **ولا يُوسَّع `role` إلى أربع قيم.** القيمتان تُرسَلان مفصولتين
+      إلى عمودين مفصولين — تفصيلُه في رأس `sql/123`.
+
+   🔴 **ولا زرَّ مضغوطاً في البداية — وهذا لبُّ المكوّن.** لو سبق
+      «أنا طالب» مضغوطاً لصار المذكّرُ افتراضاً، فمن لم تنتبه سُجّلت
+      `m` **وخوطبت خطأً في كلّ تفاعلٍ بعدها بصمت**. ⇒ `g=null` ⇒
+      لا ضغطَ، والإرسالُ يُمتنع حتى يقع اختيار.
+      ⚠️ أمّا شكلُ النموذج فيتبع `role` وحده، وافتراضُه 'student'
+         حقولاً لا مخاطبةً: حقولُ الطالب تظهر ولا زرَّ مضغوطاً. */
+const ROLE_OPTS = [
+  ['student', 'm', 'أنا طالب'],
+  ['student', 'f', 'أنا طالبة'],
+  ['teacher', 'm', 'أنا معلّم'],
+  ['teacher', 'f', 'أنا معلّمة']
+];
+
+export const roleTabs = (role = 'student', g = null) => `
+  <div class="rf-tabs" id="rf_tabs" role="group"
+       aria-label="الدور وصيغة المخاطبة" style="margin-bottom:16px">
+    ${ROLE_OPTS.map(([r, gg, label]) => {
+      const on = g !== null && role === r && g === gg;
+      return `<button type="button" class="btn ${on?'primary':'ghost'}"
+            data-role="${r}" data-g="${gg}" aria-pressed="${on}">${label}</button>`;
+    }).join('')}
   </div>`;
 
-/* يُركَّب مرّةً على الحاوية، ويُنادي onPick عند التبديل */
+/* يُركَّب مرّةً على الحاوية، ويُنادي onPick(role, g) عند التبديل */
 export function wireRoleTabs(root, onPick){
   const box = root.querySelector('#rf_tabs'); if(!box) return;
   box.querySelectorAll('[data-role]').forEach(b => b.onclick = () => {
     if(b.getAttribute('aria-pressed') === 'true') return;   // لا رسمَ بلا تغيير
-    onPick(b.dataset.role);
+    onPick(b.dataset.role, b.dataset.g);
   });
 }
+
+/* رسالةُ الامتناع — واحدةٌ في كلّ المواضع، فلا تتفارق نسختان */
+export const GRAM_MSG = 'الدور وصيغة المخاطبة — يُختار أحد الأربعة أعلاه';
 
 
 /* ═══════════ ② حقول المعلّم ═══════════
