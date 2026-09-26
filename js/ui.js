@@ -7,7 +7,7 @@ import { S } from './state.js';
 import { mediaUrl, isManaged } from './media.js';
 
 /* ── بصمة النسخة — لمعرفة أي شيفرة يشغّلها المتصفح فعلاً ── */
-export const BUILD = "b94";
+export const BUILD = "b95";
 
 /* ── مراسي الصفحة ── */
 export const app = document.getElementById("app");
@@ -117,8 +117,13 @@ export function shrinkFont(face, target, basePx, minPx){
 /* ── الترويسة ── */
 export function head(t, s, hero){
   /* البوابة وحدها تُخفي الترويسة. وإزالة الصنف هنا لا في كل شاشة:
-     head() تُستدعى في كل عرض، فهي المكان الوحيد الذي لا يُنسى. */
+     head() تُستدعى في كل عرض، فهي المكان الوحيد الذي لا يُنسى.
+     🆕 b95 · و`screen` تُضاف معها — معناها «شاشةٌ رسمتها الشيفرة».
+     وبها يُخفى تذييلُ الخصوصية خارج البوّابة **إثباتاً لا نفياً**،
+     فيبقى الرابط في HTML الساكن إن تعطّلت جافاسكربت أو قبل أن تعمل.
+     التعليل كاملاً عند `.site-foot` في base.css. */
   document.body.classList.remove("gate");
+  document.body.classList.add("screen");
   const b = document.getElementById("brand"), h = document.getElementById("head");
   b.classList.toggle("hero", !!hero);
   h.textContent = t || "";

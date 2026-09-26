@@ -645,6 +645,21 @@ body.gate .sbox{display:none}
    ولا يمسّ --accent إلا لحظةَ التحويم حيث يصير تفاعلاً فعلاً. */
 .site-foot{text-align:center;padding:26px 18px 0;
   font-size:var(--fs-tag);color:var(--text-muted)}
+
+/* 🆕 b95 · ولا يظهر إلا في البوّابة — الدخول والتسجيل.
+   موضعُه هناك: حيث يُنشأ الحساب تُقرأ شروطُه. أمّا في شاشات العمل
+   فسطرٌ يتذيّل كلَّ درسٍ واختبارٍ ولا يُنقر مرّةً في عمر الحساب.
+
+   🔑 والشرط **إثباتٌ لا نفي** — `body.screen:not(.gate)` لا
+      `body:not(.gate)`. والفرق ليس أناقة: كلا الصنفين تضيفه جافاسكربت،
+      فالنفيُ يُخفي التذييل **قبل** أن تعمل الشيفرة وإن تعطّلت أصلاً.
+      وهذا الرابط لا يُعلَّق على شيفرة: بُني عمداً «لا يحتاج دخولاً ولا
+      جافاسكربت» (تعليقه في index.html)، وهو عقدٌ مع المستخدم **وشرطُ
+      Google لنشر تطبيق OAuth** (رأس privacy.html).
+   ⇒ الساكنُ يُظهر، والشيفرةُ تُخفي حيث لا يلزم. فإن تعطّلت بقي الرابط.
+   ⚠️ و`screen` تُضاف في `head()` وحدها — وهي تُنادى في كل شاشة، فلا
+      تُنسى في شاشةٍ جديدة. */
+body.screen:not(.gate) .site-foot{display:none}
 .site-foot a{color:inherit;text-decoration:none;
   border-bottom:1px solid var(--line);transition:color .18s,border-color .18s}
 .site-foot a:hover{color:var(--accent);border-bottom-color:var(--accent)}
