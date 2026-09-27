@@ -43,7 +43,7 @@ async function finishSim(itemId){
 
   const note = document.querySelector(`#slot-${itemId} .sim-note`);
   const { error } = await api.markItemCompleted(itemId);
-  if(error){ if(note) note.textContent = "لم يُسجَّل — تحقّق من الاتصال"; return; }
+  if(error){ if(note) note.textContent = "لم يُسجَّل — ربما تكون المشكلة في الاتصال"; return; }
 
   if(item) item.status = 'completed';
   const s = document.querySelector(`[data-s="${itemId}"]`);

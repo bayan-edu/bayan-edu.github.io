@@ -138,7 +138,7 @@ export async function loadList(){
        في toast عند النقر، وفي شاشة المادة. */
     const meta  =
         empty             ? 'قيد الإعداد'
-      : x.needs_placement ? 'اعرف مستواك'
+      : x.needs_placement ? 'تحديد المستوى'
       : isPast            ? `${AR(x.lessons_review)} للمراجعة`
       : `${AR(x.lessons_done)} / ${AR(x.lessons_total)} درساً`;
     /* ⚠️ ولا شارةَ «قريباً»: البطاقةُ الفارغة تحمل أصلاً حدّاً متقطّعاً
@@ -189,7 +189,7 @@ export async function loadList(){
         <span class="chip">${AR(past.length)}</span><span class="caret">▾</span></div>
       <div id="pastBox" hidden>${past.map(x => card(x,true)).join("")}</div>`:''}
 
-    ${skills.length?`<div class="grp">🚀 طوّر مهاراتك</div>${skills.map(x => card(x,false)).join("")}`:''}
+    ${skills.length?`<div class="grp">🚀 مهاراتي</div>${skills.map(x => card(x,false)).join("")}`:''}
 
     ${!S.subjects.length?`<div class="card" style="text-align:center;padding:28px">
         <div style="font-size:2rem;margin-bottom:10px">📚</div>
@@ -588,7 +588,7 @@ function toggleAudio(i){
 
   au.onerror = () => {
     note.className = "aud-err";
-    note.textContent = "تعذّر تشغيل الملف — أبلغ معلّمك";
+    note.textContent = "تعذّر تشغيل الملف — يمكنك إبلاغ معلّمك";
     console.warn("[media] فشل التشغيل:", i.url, "→", src);
   };
 
@@ -598,7 +598,7 @@ function toggleAudio(i){
     note.textContent = "سُجّل استماعك ✅";
     if(i.status === 'completed') return;
     const { error } = await api.markItemCompleted(i.id);
-    if(error){ note.textContent = "لم يُسجَّل — تحقّق من الاتصال"; return; }
+    if(error){ note.textContent = "لم يُسجَّل — ربما تكون المشكلة في الاتصال"; return; }
     i.status = 'completed';
     const s = document.querySelector(`[data-s="${i.id}"]`);
     if(s) s.textContent = '✅';

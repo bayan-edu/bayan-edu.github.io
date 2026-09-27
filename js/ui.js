@@ -8,7 +8,7 @@ import { mediaUrl, isManaged } from './media.js';
 import { renderMark, whenReady as avatarReady } from './avatar.js';
 
 /* ── بصمة النسخة — لمعرفة أي شيفرة يشغّلها المتصفح فعلاً ── */
-export const BUILD = "b104";
+export const BUILD = "b105";
 
 /* ── مراسي الصفحة ── */
 export const app = document.getElementById("app");
@@ -787,7 +787,7 @@ function ensureSearch(){
       <div class="sbar">
         ${svg('search')}
         <input class="sin" id="sin" type="search" dir="auto" autocomplete="off"
-               placeholder="ابحث في الدروس والمصادر والبطاقات وأخطائك"
+               placeholder="دروسك ومصادرك وبطاقاتك وأخطائك"
                aria-label="نصّ البحث" aria-controls="sres">
         <button class="iconbtn" id="sx" aria-label="إغلاق البحث">${svg('close')}</button>
       </div>

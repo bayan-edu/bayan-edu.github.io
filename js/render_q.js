@@ -151,7 +151,7 @@ export function questionBody(q, opts = {}){
               <span class="slot-t" data-ph="${esc(PH)}">${v ? esc(txt(v)) : esc(PH)}</span>
             </button>
             ${ro ? '' : `<button type="button" class="slot-x"
-                                 aria-label="أزل مقابل البند ${AR(j+1)}">✕</button>`}
+                                 aria-label="إزالة مقابل البند ${AR(j+1)}">✕</button>`}
           </div>`;
         }).join("")}</div>
 

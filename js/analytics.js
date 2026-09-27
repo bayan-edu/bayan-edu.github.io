@@ -49,7 +49,7 @@ import { app, head, esc, fmt, AR, errBox, nav, BUILD, scrollTop,
    شخّصنا في هذه الجلسة ثلاثَ مرّات منطقاً سليماً وسببُ العطل ملفٌّ
    لم يصل. ⇒ حين يختلف الختمان يُعلَن الاختلاف في الشاشة.
    ⚠️ ويُرفع مع BUILD في كلّ نسخة — وإلّا صار إنذاراً كاذباً يُتجاهل. */
-const MOD = "b93";
+const MOD = "b105";
 
 const F = { level:null, subject:null, view:'list', search:'', opts:null };
 const M = { uid:null, forMe:false, subject:null, strand:null,
@@ -166,7 +166,7 @@ async function drawChart(tr){
   let C;
   try { C = await ensureChart(); }
   catch(e){ const box = cv.closest('.an-chart');
-    if(box) box.innerHTML = `<div class="qz-m">تعذّر تحميل مكتبة الرسم — تحقّق من الاتصال.</div>`;
+    if(box) box.innerHTML = `<div class="qz-m">تعذّر تحميل مكتبة الرسم — ربما تكون المشكلة في الاتصال.</div>`;
     return; }
 
   const css = getComputedStyle(document.documentElement);

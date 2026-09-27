@@ -434,7 +434,7 @@ export function renderTeacherDetails(msg){
 
 export function renderVerifyAuthor(msg){
   nav('subjects');
-  head("تحقّق من بريدك", S.prof?.full_name || '');
+  head("بريدك", S.prof?.full_name || '');
   app.innerHTML = `
     ${msg ? `<div class="err"><b>تنبيه</b>${esc(msg)}</div>` : ''}
     <div class="card">
@@ -454,7 +454,7 @@ export function renderVerifyAuthor(msg){
         <input type="text" id="va_code" dir="ltr" inputmode="numeric"
                autocomplete="one-time-code" placeholder="٦ أرقام">
         <div class="nav" style="margin-top:12px">
-          <button class="btn primary" id="va_ok">تحقّق</button>
+          <button class="btn primary" id="va_ok">تأكيد</button>
           <button class="btn ghost" id="va_again">إعادة الإرسال</button>
         </div>
       </div>
@@ -486,13 +486,13 @@ export function renderVerifyAuthor(msg){
     const b = e.currentTarget; b.disabled = true; b.textContent = '…';
 
     const { error } = await api.verifyEmailOtp(S.user.email, code);
-    if(error){ b.disabled = false; b.textContent = 'تحقّق';
+    if(error){ b.disabled = false; b.textContent = 'تأكيد';
                toast(translate(error.message)); return; }
 
     /* 🔑 والشهادة تُطلب من القاعدة بعد أن صارت الجلسةُ جلسةَ رمز —
        فهي التي تقرأ الطريقة، لا هذه الشاشة. */
     const { data, error: e2 } = await api.markAuthorVerified();
-    b.disabled = false; b.textContent = 'تحقّق';
+    b.disabled = false; b.textContent = 'تأكيد';
 
     if(e2){ toast(e2.message); return; }
     if(!data?.ok){
@@ -602,13 +602,13 @@ export async function boot(){
   loadList();
 }
 
-/* ═══════════ شاشة «حدّد صفّك» ═══════════
+/* ═══════════ شاشة «صفّك الدراسي» ═══════════
    شبكة الأمان: تصلح الحسابات القائمة والقادمة معاً — بموافقة
    الطالب لا بإسناد صفٍّ عنه. */
 
 export function renderGradePicker(msg){
   bar.innerHTML = "";
-  head("حدّد صفّك الدراسي", S.prof.full_name);
+  head("صفّك الدراسي", S.prof.full_name);
   app.innerHTML = `
     ${msg?`<div class="err"><b>تنبيه</b>${esc(msg)}</div>`:''}
     <div class="card">

@@ -73,7 +73,7 @@ function openSubjectCards(subject){
 
     <div class="nav" style="margin:16px 0">
       <button class="btn" id="add">＋ إضافة كلمة</button>
-      <button class="btn" id="play" hidden>⚔️ التدرّب على كلماتك</button>
+      <button class="btn" id="play" hidden>⚔️ كلمة × معنى</button>
     </div>`;
 
   document.getElementById('bk').onclick = loadFlashcards;
@@ -92,7 +92,7 @@ function openSubjectCards(subject){
     const b = document.getElementById('play');
     if(!b) return;
     b.hidden = false;
-    b.textContent = `⚔️ تدرّب على كلماتك · ${AR(pool.length)}`;
+    b.textContent = `⚔️ كلمة × معنى · ${AR(pool.length)}`;
     b.onclick = () => openMatchGame({
       subject, cards: pool,
       onExit: () => openSubjectCards(subject) });
@@ -395,7 +395,7 @@ export function openSession(subject, opts = {}){
             <button class="btn primary" id="back" style="width:100%">عودة</button>
             ${playable.length >= 4 ? `
               <button class="btn" id="play" style="width:100%;margin-top:8px"
-                >⚔️ لعبةُ التمييز · ${AR(playable.length)} بطاقة</button>` : ''}
+                >⚔️ كلمة × معنى · ${AR(playable.length)} بطاقة</button>` : ''}
           </div>
         </div>`;
 

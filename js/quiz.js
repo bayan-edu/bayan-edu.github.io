@@ -674,7 +674,7 @@ function renderResult(){
     <div class="rev">
       <div class="rev-q" dir="auto">${fmt(x.body)}</div>
       <div class="line" dir="auto">إجابتك: <b>${x.essay?esc(x.essay).replace(/\n/g,"<br>"):'— لم تُكتب —'}</b></div>
-      <div class="model"><strong>الإجابة النموذجية — قارن بنفسك</strong>${fmt(x.model||'')}</div>
+      <div class="model"><strong>الإجابة النموذجية — للمقارنة</strong>${fmt(x.model||'')}</div>
     </div>`).join("");
 
   app.innerHTML = `

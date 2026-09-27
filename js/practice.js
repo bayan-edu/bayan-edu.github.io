@@ -138,7 +138,7 @@ function quizHtml(q){
     </div>
     <div id="fb"></div>
     <div class="nav" style="margin-top:16px">
-      <button class="btn primary" id="psend">تحقّق</button>
+      <button class="btn primary" id="psend">التحقّق</button>
     </div>`;
 }
 
@@ -240,8 +240,8 @@ async function send(){
   const { data, error } = await api.answerPractice(P.token, P.name, q.id, payload(q, P.a));
   btn.disabled = false;
 
-  if(error){ btn.textContent = 'تحقّق'; toast(error.message); return; }
-  if(!data?.ok){ btn.textContent = 'تحقّق'; toast(data.error || 'تعذّر التحقّق'); return; }
+  if(error){ btn.textContent = 'التحقّق'; toast(error.message); return; }
+  if(!data?.ok){ btn.textContent = 'التحقّق'; toast(data.error || 'تعذّر التحقّق'); return; }
 
   P.shown = true;
   /* ما تكرّر يُجمع على **نصّ التشخيص** لا على كوده — لأنّ النصّ هو ما
@@ -251,7 +251,7 @@ async function send(){
   document.getElementById("fb").innerHTML = feedback(data);
   app.querySelectorAll('.opt, .gap-in, .pair-slot, .bank-w, .slot-x')
      .forEach(el => { el.disabled = true; });
-  btn.textContent = P.i + 1 < P.items.length ? 'التالي ←' : 'أنهِ الجلسة';
+  btn.textContent = P.i + 1 < P.items.length ? 'التالي ←' : 'إنهاء';
   document.getElementById("fb").scrollIntoView({ behavior:'smooth', block:'nearest' });
 }
 
