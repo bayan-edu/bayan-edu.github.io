@@ -554,6 +554,29 @@ h2.sec{font-family:'Almarai';font-weight:800;font-size:var(--fs-h);margin:24px 0
   border-radius:14px;box-shadow:var(--shadow);padding:6px;
   max-height:min(78vh,560px);overflow-y:auto}
 .acct-head{padding:8px 8px 12px;margin-bottom:5px;border-bottom:1px solid var(--line)}
+
+/* ── قلمُ العلامة  (b107) ──
+   🔑 **الفعلُ يسكن الشيءَ الذي يغيّره** — التعليلُ عند الوسم في ui.js.
+   ⚠️ **وخفيفٌ لا صائح:** العلامةُ هويّةٌ لا زرّ، والقلمُ يُرى عند النظر
+      إليها ولا يزاحمها. ⇒ قرصٌ بخلفيّة السطح وحدٍّ رفيع، ولا يلبس
+      الأزرقَ إلا عند اللمس — وكلُّ أزرقَ خارج التفاعل يُضعف الأزرقَ
+      حين يُنقَر عليه فعلاً (رأس طبقة الأدوار).
+   📌 **ومساحةُ الإصابة العلامةُ كلُّها (٤٠px) لا القرصُ (١٩).** إصبعٌ
+      على تسعةَ عشرَ بكسلاً يخطئ، والقرصُ علامةٌ تقول «هذه تُعدَّل»
+      لا هدفٌ يُصاب وحده.
+   ⚠️ **والقلمُ أخو `.av-slot` لا ابنُها:** `syncMarks` تُعيد ملءَ كلّ
+      `.av-slot` عند جاهزية الخطّ، فقلمٌ داخلَها يُمحى بعد لحظة. */
+.av-edit{position:relative;display:flex;flex:0 0 auto;padding:0;background:none;
+  border:none;border-radius:50%;cursor:pointer;color:var(--text-muted)}
+.av-pen{position:absolute;inset-block-end:-3px;inset-inline-end:-3px;
+  width:19px;height:19px;border-radius:50%;display:flex;
+  align-items:center;justify-content:center;
+  background:var(--surface);border:1px solid var(--line);
+  transition:color .18s,background .18s,border-color .18s}
+.av-pen .ic{width:12px;height:12px;stroke-width:2}
+.av-edit:hover .av-pen{color:var(--accent);background:var(--accent-fill);
+  border-color:var(--accent-edge)}
+.av-edit:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 /* وكتلةُ السؤال داخل لوحةٍ حشوُها ٦px تأخذ هامشَ الدرج فتضيق — فتُعدَّل */
 .acctpanel .gram-ask{margin:4px 2px 9px}
 
@@ -615,10 +638,7 @@ body.gate .drawer,body.gate .scrim{display:none}
   background:none;border:1px solid transparent;border-radius:11px;padding:11px 12px;
   cursor:pointer;color:var(--text-muted);font-family:'Almarai';font-weight:700;
   font-size:var(--fs-ui);transition:color .18s,background .18s,border-color .18s}
-/* ⚠️ و`.av-ico` تُستثنى: هي أيقونةٌ لا نصّ، ولولا الاستثناء لأخذت
-   `flex:1` فتقاسمت العرضَ مع الكلمة — فانزاح «تغيير صورتي» وحده عن
-   صفّ إخوته. عيبٌ قديمٌ ظهر في الدرج ولم يُرَ حتى ضاقت اللوحة. */
-.menu-item > span:not(.bdg):not(.av-ico){flex:1}
+.menu-item > span:not(.bdg){flex:1}
 .menu-item:hover{color:var(--text);background:var(--fill)}
 .menu-item.on{color:var(--accent);background:var(--accent-fill);
   border-color:var(--accent-edge)}

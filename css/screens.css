@@ -1685,9 +1685,6 @@ body.gate{padding-bottom:0}
 .av-letter input{width:74px;text-align:center;font-family:'Almarai';
   font-weight:800;font-size:var(--fs-h);padding:10px}
 
-/* أيقونةُ بند الدرج — العلامةُ نفسُها مصغَّرةً */
-.av-ico{display:flex;flex:0 0 auto;line-height:0;width:22px;justify-content:center}
-
 
 /* ══ الملفّ الشخصيّ (127) ══
    🔑 **صفٌّ من طرفين: الاسمُ يميناً والقيمةُ يساراً** — القارئُ يمسح
