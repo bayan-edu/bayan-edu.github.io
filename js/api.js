@@ -40,7 +40,7 @@ export const signIn         = (email, password) => db.auth.signInWithPassword({ 
 export const signOutSession = ()                => db.auth.signOut();
 export const sendResetLink  = email             => db.auth.resetPasswordForEmail(email);
 
-/* 🆕 127 · تغييرُ كلمة المرور من الملفّ — **يقع فوراً ولا ينتظر بريداً**،
+/* 🆕 b103 · تغييرُ كلمة المرور من الملفّ — **يقع فوراً ولا ينتظر بريداً**،
    بخلاف `sendResetLink` التي تُرسل رابطاً لمن نسيها وهو خارج الجلسة.
    ⚠️ **والبريدُ لا يُغيَّر من هنا عمداً:** `updateUser({email})` تُرسل
       تأكيداً إلى العنوان الجديد ولا يقع التغييرُ حتى يُضغط — فشاشةٌ
@@ -101,14 +101,14 @@ export const myRole    = ()  => db.rpc('my_role');
 export const setMyGrade = (scaleId, levelId) =>
   db.rpc('set_my_grade', { p_scale: scaleId, p_level: levelId });
 
-/* 🆕 127 · الاسم — `update` مباشر ومنحٌ عموديّ يحرسه (٥٠). ولا دالّةَ
+/* 🆕 b103 · الاسم — `update` مباشر ومنحٌ عموديّ يحرسه (٥٠). ولا دالّةَ
    له: لا حكمَ يُحرس، بخلاف الصفّ الذي يُتحقَّق انتماؤه للسلّم.
    ⚠️ و`.select()` ليست زينة — بها يُعرف **عددُ ما تغيّر**، وRLS تحجب
       بصفر صفوفٍ **بلا خطأ** (درسُ ١٠٦). */
 export const setMyName = (uid, name) =>
   db.from('profiles').update({ full_name: name }).eq('id', uid).select('id');
 
-/* 🆕 127 · حقولُ المعلّم الثلاثة — **كتابةٌ واحدة لا ثلاث.** ثلاثةُ
+/* 🆕 b103 · حقولُ المعلّم الثلاثة — **كتابةٌ واحدة لا ثلاث.** ثلاثةُ
    نداءاتٍ متتابعة تُنتج نجاحاً جزئياً عند انقطاعٍ في الوسط: يُحفظ
    الاسمُ وتسقط النبذة، **ولا يعرف صاحبُها أيُّهما وقع.**
    ⚠️ و`register_teacher` تفحص هذه الحقول عند التسجيل، وهذه تحرّرها
