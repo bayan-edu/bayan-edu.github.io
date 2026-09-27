@@ -108,6 +108,18 @@ export const setMyGrade = (scaleId, levelId) =>
 export const setMyName = (uid, name) =>
   db.from('profiles').update({ full_name: name }).eq('id', uid).select('id');
 
+/* 🆕 127 · حقولُ المعلّم الثلاثة — **كتابةٌ واحدة لا ثلاث.** ثلاثةُ
+   نداءاتٍ متتابعة تُنتج نجاحاً جزئياً عند انقطاعٍ في الوسط: يُحفظ
+   الاسمُ وتسقط النبذة، **ولا يعرف صاحبُها أيُّهما وقع.**
+   ⚠️ و`register_teacher` تفحص هذه الحقول عند التسجيل، وهذه تحرّرها
+      بعده — والحارسُ هناك **منحٌ عموديّ** هنا (٥٠)، لا دالّةَ ثانية. */
+export const setMyTeacherInfo = (uid, o) =>
+  db.from('profiles').update({
+    school:    o.school ?? null,
+    bio:       o.bio    ?? null,
+    years_exp: o.years  ?? null
+  }).eq('id', uid).select('id');
+
 /* 🆕 123 · صيغةُ المخاطبة — `update` مباشر لا دالّة، ومنحٌ عموديّ
    يحرسه (على غرار ٥٠). والقيدُ في القاعدة هو كلُّ التحقّق المطلوب،
    فلا حكمَ تحرسه دالّة — **ودالّةٌ بلا حكمٍ طبقةٌ تُصان بلا مقابل.**

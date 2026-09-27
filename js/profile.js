@@ -1,7 +1,15 @@
 /* ══════════════════════════════════════════════════════════
-   بيان — profile.js  ·  الملفّ الشخصيّ للطالب
+   بيان — profile.js  ·  الملفّ الشخصيّ — للطالب وللمعلّم
 
-   ثلاثةُ أقسام: **الهوية** · **الحساب** · **تعلّمي**.
+   ثلاثةُ أقسام: **الهوية** · القسمُ الخاصُّ بالدور · **الحساب**.
+     الطالب:  الاسم · الصفّ · الصورة   ‖  تعلّمي
+     المعلّم: الاسم · المدرسة · الخبرة · النبذة · الصورة  ‖  تدريسي
+
+   🔑 **وشاشةٌ واحدةٌ تتفرّع لا شاشتان — وهذا قرارُ الملفّ الأوّل.**
+      قسمُ «الحساب» واحدٌ حرفاً للدورين (بريدٌ وكلمةُ مرورٍ وسياسةٌ
+      وحذف)، ونسختان منه **تتفارقان عند أوّل إضافةِ حقل**. وهو داءٌ وقع
+      في هذا المشروع ثلاث مرّات (KEYED · F_KIND · L_MATCH/L_CLOZE)
+      ولأجله كُتب `role_form.js` مكوّناً واحداً — **فلا يُعاد رابعةً.**
 
    🔑 **وهذه الشاشةُ تُوفي وعداً مكتوباً لا تضيف ميزة:** سياسةُ الخصوصية
       (§٩ · «حقوقك») تقول للطالب صراحةً: «**تصحّح بيانات حسابك من صفحة
@@ -20,7 +28,7 @@
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
 import { S } from './state.js';
-import { app, head, toast, esc, AR, errBox, nav, scrollTop, G } from './ui.js';
+import { app, head, toast, esc, AR, errBox, nav, scrollTop, G, goRoute } from './ui.js';
 import { renderMark } from './avatar.js';
 import { POLICY_URL } from './policy.js';
 import { openAvatarEdit } from './avatar_edit.js';
@@ -33,65 +41,89 @@ const fmtDate = d => d ? new Date(d).toLocaleDateString('ar-EG',
 /* حالةُ الشاشة — تُجلب مرّةً ولا تُعاد مع كلّ رسم */
 let Z = null;
 
+const isTeacher = () => ['teacher','admin'].includes(S.roleInfo?.role || S.prof?.role);
+
 export async function loadProfile(){
   nav('subjects');
   head('ملفّي', S.prof?.full_name || '');
   app.innerHTML = `<div class="status">جارٍ التحميل…</div>`;
 
-  /* السلالمُ للصفّ، والموادُّ للمعلّمين والمستوى — نداءان لا أكثر */
-  const [scRes, sbRes] = await Promise.all([ api.academicScales(), api.listSubjects() ]);
-  Z = { scales: scRes.data || [], subjects: sbRes.data || [],
-        err: scRes.error || sbRes.error };
+  /* 🔑 كلُّ دورٍ يجلب ما يعرضه وحدَه — ولا يُجلب للطالب جدولُ موادّ
+     التدريس ولا للمعلّم سلالمُ الصفوف. نداءٌ لا يُعرض ناتجُه ثمنٌ بلا
+     مقابل، وشاشةُ الملفّ تُفتح كثيراً. */
+  if(isTeacher()){
+    const { data, error } = await api.listTeachableSubjects();
+    Z = { teach: data || [], err: error };
+  } else {
+    const [scRes, sbRes] = await Promise.all([ api.academicScales(), api.listSubjects() ]);
+    Z = { scales: scRes.data || [], subjects: sbRes.data || [],
+          err: scRes.error || sbRes.error };
+  }
   render();
   scrollTop();
 }
 
-function render(){
-  const p = S.prof || {};
-  const subs = Z.subjects.filter(x => x.group_key === '1_grade');
-  const mentors = Z.subjects.filter(x => x.mentor_name);
+/* ═══ ترويسةُ الهوية — واحدةٌ للدورين، وسطرُها يتبع الدور ═══ */
+function idHead(p){
+  const sub = isTeacher()
+    ? [G(p.gram_gender,'معلّم','معلّمة',''), p.school].filter(Boolean).join(' · ')
+    : [G(p.gram_gender,'طالب','طالبة',''), p.klass].filter(Boolean).join(' · ');
+  return `
+    <div class="pf-id">
+      <span class="pf-mark">${renderMark(p, 64)}</span>
+      <div class="pf-id-t">
+        <b dir="auto">${esc(p.full_name || '')}</b>
+        ${sub ? `<span class="line">${esc(sub)}</span>` : ''}
+      </div>
+      <button class="btn ghost" id="pfAv">تغيير صورتي</button>
+    </div>`;
+}
 
-  /* الصفّ: القيمةُ المختارة «سلّم|صفّ» كما في البوابة — صيغةٌ واحدة
-     في الموضعين، فلا تتفارق قراءتان لشيءٍ واحد. */
-  const gradeOpts = Z.scales.map(sc => `
+/* ═══ حقولُ الهوية — لكلّ دورٍ ما يخصّه ═══ */
+function studentFields(p){
+  /* الصفّ: القيمةُ «سلّم|صفّ» كما في البوابة — صيغةٌ واحدة في الموضعين،
+     فلا تتفارق قراءتان لشيءٍ واحد. */
+  const opts = Z.scales.map(sc => `
     <optgroup label="${esc(sc.name)}">
-      ${(sc.levels || []).sort((a,b)=>a.rank-b.rank).map(l => `
+      ${(sc.levels || []).slice().sort((a,b)=>a.rank-b.rank).map(l => `
         <option value="${sc.id}|${l.id}" ${
           String(p.scale_id)===String(sc.id) && String(p.level_id)===String(l.id)
             ? 'selected' : ''}>${esc(l.name)}</option>`).join('')}
     </optgroup>`).join('');
+  return `
+    <label class="fl" style="margin-top:18px">اسمك كما يظهر في التقارير</label>
+    <input type="text" id="pfName" dir="auto" value="${esc(p.full_name || '')}">
 
-  app.innerHTML = `
-    ${Z.err ? errBox(Z.err, 'ملفّك') : ''}
+    <label class="fl" style="margin-top:16px">صفّك الدراسيّ</label>
+    <select id="pfGrade"><option value="">— الصفّ —</option>${opts}</select>
+    ${/* 🔑 والتنبيهُ يُقال قبل الحفظ لا بعده: تغييرُ الصفّ يُبدّل
+          الموادَّ المعروضة، وهو أثرٌ يُفاجئ من ظنّه تصحيحَ بيان. */''}
+    <p class="small">تغييرُ الصفّ يُبدّل الموادَّ التي تظهر لك.</p>`;
+}
 
-    ${/* ═══ ① الهوية ═══ */''}
-    <h2 class="sec">الهوية</h2>
-    <div class="card">
-      <div class="pf-id">
-        <span class="pf-mark">${renderMark(p, 64)}</span>
-        <div class="pf-id-t">
-          <b dir="auto">${esc(p.full_name || '')}</b>
-          <span class="line">${esc(
-            [G(p.gram_gender,'طالب','طالبة',''), p.klass].filter(Boolean).join(' · '))}</span>
-        </div>
-        <button class="btn ghost" id="pfAv">تغيير صورتي</button>
-      </div>
+function teacherFields(p){
+  /* ⚠️ وهذه الحقولُ **يراها الطلاب** في بطاقة «اختيار معلمك» — فيُقال
+     ذلك هنا، وإلا ظنّها صاحبُها بياناتٍ إدارية لا يقرؤها أحد. */
+  return `
+    <label class="fl" style="margin-top:18px">اسمك كما يظهر لطلابك</label>
+    <input type="text" id="pfName" dir="auto" value="${esc(p.full_name || '')}">
 
-      <label class="fl" style="margin-top:18px">اسمك كما يظهر في التقارير</label>
-      <input type="text" id="pfName" dir="auto" value="${esc(p.full_name || '')}">
+    <label class="fl" style="margin-top:16px">المدرسة أو الجهة</label>
+    <input type="text" id="pfSchool" dir="auto" value="${esc(p.school || '')}">
 
-      <label class="fl" style="margin-top:16px">صفّك الدراسيّ</label>
-      <select id="pfGrade"><option value="">— الصفّ —</option>${gradeOpts}</select>
-      ${/* 🔑 والتنبيهُ يُقال قبل الحفظ لا بعده: تغييرُ الصفّ يُبدّل
-            الموادَّ المعروضة، وهو أثرٌ يُفاجئ من ظنّه تصحيحَ بيان. */''}
-      <p class="small">تغييرُ الصفّ يُبدّل الموادَّ التي تظهر لك.</p>
+    <label class="fl" style="margin-top:16px">سنوات الخبرة</label>
+    <input type="text" id="pfYears" inputmode="numeric" value="${esc(p.years_exp ?? '')}">
 
-      <div class="nav" style="margin-top:14px">
-        <button class="btn primary" id="pfSave">حفظ الهوية</button>
-      </div>
-    </div>
+    <label class="fl" style="margin-top:16px">تعريفٌ موجز بك</label>
+    <textarea id="pfBio" dir="auto">${esc(p.bio || '')}</textarea>
+    <p class="small">الاسمُ والمدرسةُ والخبرةُ والتعريف تظهر لطلابك في شاشة «اختيار معلمك».</p>`;
+}
 
-    ${/* ═══ ② تعلّمي ═══ */''}
+/* ═══ القسمُ الخاصُّ بالدور ═══ */
+function learnCard(p){
+  const subs    = Z.subjects.filter(x => x.group_key === '1_grade');
+  const mentors = Z.subjects.filter(x => x.mentor_name);
+  return `
     <h2 class="sec">تعلّمي</h2>
     <div class="card">
       <div class="pf-row"><span>الصفّ الحاليّ</span>
@@ -108,9 +140,51 @@ function render(){
       <div class="nav" style="margin-top:16px">
         <button class="btn ghost" id="pfPerf">تقدّمي بالتفصيل ←</button>
       </div>
-    </div>
+    </div>`;
+}
 
-    ${/* ═══ ③ الحساب ═══ */''}
+function teachCard(){
+  const mine = (Z.teach || []).filter(x => x.chosen);
+  const load = mine.reduce((s,x) => s + (x.students || 0), 0);
+  const cap  = mine.reduce((s,x) => s + (x.capacity || 0), 0);
+  return `
+    <h2 class="sec">تدريسي</h2>
+    <div class="card">
+      <div class="pf-row"><span>الموادُّ المختارة</span><b>${AR(mine.length)}</b></div>
+      <div class="pf-row"><span>الطلابُ الآن</span>
+        <b>${AR(load)}${cap ? ' من ' + AR(cap) : ''}</b></div>
+
+      <div class="grp" style="margin-top:18px">موادّي وسعتُها</div>
+      ${mine.length ? mine.map(x => `
+        <div class="pf-row"><span>${esc(x.name)}</span>
+          <b>${AR(x.students || 0)} / ${AR(x.capacity || 0)}</b></div>`).join('')
+        : `<div class="pf-row"><span class="line">لم تُختَر موادُّ بعد — تُختار من شاشة «موادّي».</span></div>`}
+
+      ${/* 🔑 والسعةُ تُعرَض هنا ولا تُحرَّر: موضعُها الوحيد شاشةُ «موادّي»
+            (b88 · «ورقمان لشيءٍ واحد يتفارقان»). وحقلان لقيمةٍ واحدة في
+            شاشتين يُنتجان حفظَين يتسابقان. */''}
+      <div class="nav" style="margin-top:16px">
+        <button class="btn ghost" data-go="mySubjects">موادّي وسعتُها ←</button>
+        <button class="btn ghost" data-go="students">لوحة التحليلات ←</button>
+      </div>
+    </div>`;
+}
+
+function render(){
+  const p = S.prof || {};
+
+  app.innerHTML = `
+    ${Z.err ? errBox(Z.err, 'ملفّك') : ''}
+    <h2 class="sec">الهوية</h2>
+    <div class="card">
+      ${idHead(p)}
+      ${isTeacher() ? teacherFields(p) : studentFields(p)}
+      <div class="nav" style="margin-top:14px">
+        <button class="btn primary" id="pfSave">حفظ الهوية</button>
+      </div>
+    </div>
+    ${isTeacher() ? teachCard() : learnCard(p)}
+
     <h2 class="sec">الحساب</h2>
     <div class="card">
       <div class="pf-row"><span>البريد</span><b dir="ltr">${esc(S.user?.email || '—')}</b></div>
@@ -149,12 +223,15 @@ function render(){
 function wire(){
   document.getElementById('pfAv').onclick = openAvatarEdit;
 
-  document.getElementById('pfPerf').onclick = loadMyPerformance;
+  const perf = document.getElementById('pfPerf');
+  if(perf) perf.onclick = loadMyPerformance;
+
+  /* وجهاتُ المعلّم تمرّ بالمُوجِّه نفسِه الذي يخدم الدرج — لا نسخةَ ثانية */
+  app.querySelectorAll('[data-go]').forEach(b => b.onclick = () => goRoute(b.dataset.go));
 
   document.getElementById('pfSave').onclick = async e => {
     const b = e.currentTarget;
     const name = document.getElementById('pfName').value.trim();
-    const g    = document.getElementById('pfGrade').value;
     if(!name){ toast('الاسم الكامل مطلوب'); return; }
 
     b.disabled = true; b.textContent = '…';
@@ -170,7 +247,30 @@ function wire(){
       S.prof.full_name = name; changed++;
     }
 
-    /* ② الصفّ — دالّةٌ لا UPDATE: تتحقّق أنّ الصفّ ينتمي للسلّم */
+    /* ①ب حقولُ المعلّم — **كتابةٌ واحدة لا ثلاث.** ثلاثةُ نداءاتٍ
+       متتابعة تُنتج نجاحاً جزئياً عند انقطاعٍ في الوسط: يُحفظ الاسمُ
+       وتسقط النبذة، ولا يعرف صاحبُها أيُّهما وقع. */
+    if(isTeacher()){
+      const school = document.getElementById('pfSchool').value.trim() || null;
+      const bio    = document.getElementById('pfBio').value.trim() || null;
+      const yrRaw  = document.getElementById('pfYears').value.replace(/[^\d]/g, '');
+      const years  = yrRaw === '' ? null : Number(yrRaw);
+      const same = school === (S.prof.school ?? null)
+                && bio    === (S.prof.bio ?? null)
+                && years  === (S.prof.years_exp ?? null);
+      if(!same){
+        const { data, error } = await api.setMyTeacherInfo(S.user.id, { school, bio, years });
+        if(error || !data?.length){
+          b.disabled = false; b.textContent = 'حفظ الهوية';
+          toast('تعذّر الحفظ — ' + (error?.message || 'لم يمسَّ صفَّك شيء')); return;
+        }
+        S.prof.school = school; S.prof.bio = bio; S.prof.years_exp = years; changed++;
+      }
+    }
+
+    /* ② الصفّ — دالّةٌ لا UPDATE: تتحقّق أنّ الصفّ ينتمي للسلّم.
+       وللطالب وحده: المعلّمُ لا صفَّ له، والحقلُ غيرُ مرسومٍ عنده. */
+    const g = document.getElementById('pfGrade')?.value || '';
     if(g){
       const [sc, lv] = g.split('|');
       if(String(sc) !== String(S.prof.scale_id) || String(lv) !== String(S.prof.level_id)){

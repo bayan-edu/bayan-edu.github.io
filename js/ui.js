@@ -8,7 +8,7 @@ import { mediaUrl, isManaged } from './media.js';
 import { renderMark, whenReady as avatarReady } from './avatar.js';
 
 /* ── بصمة النسخة — لمعرفة أي شيفرة يشغّلها المتصفح فعلاً ── */
-export const BUILD = "b103";
+export const BUILD = "b104";
 
 /* ── مراسي الصفحة ── */
 export const app = document.getElementById("app");
@@ -248,6 +248,14 @@ export function bubble(m, mine){
    ══════════════════════════════════════════════ */
 const ROUTES = {};
 export function registerRoutes(map){ Object.assign(ROUTES, map); }
+
+/* 🆕 127 · وجهةٌ تُطلب من داخل شاشة — بالمُوجِّه نفسِه الذي يخدم الدرج.
+   ولولاها لاستوردت كلُّ شاشةٍ شاشةَ وجهتها مباشرةً، **فتنشأ دوراتُ
+   استيرادٍ يوم تُشير إحداهما إلى الأخرى.** */
+export function goRoute(key){
+  const go = ROUTES[key];
+  if(go) go();
+}
 
 const DEST = {
   student: [['subjects','المواد'], ['cards','تذكّرها'], ['perf','الأداء'],
@@ -691,12 +699,9 @@ function renderDrawer(active){
             مع السِمة والخروج لا قائمةُ الوجهات. والأيقونةُ علامتُه نفسُها
             مصغَّرةً — **وأصدقُ أيقونةٍ للفعل نتيجتُه.** */''}
       ${/* 🆕 127 · «ملفّي» قبل «تغيير صورتي»: الأعمُّ يسبق الأخصّ، والصورةُ
-            بابُها من الملفّ أيضاً. ⚠️ وللطالب وحده اليوم — وملفُّ المعلّم
-            شاشةٌ أخرى (المهمّة ١٠)، **وبندٌ يُحيل إلى ما لم يُبنَ أسوأُ من
-            غيابه.** */''}
-      ${roleOf() === 'student'
-        ? `<button class="drawer-item" data-r="profile">${svg('profile')}<span>ملفّي</span></button>`
-        : ''}
+            بابُها من الملفّ أيضاً. **وشاشةٌ واحدةٌ للدورين** تتفرّع
+            بالدور — قسمُ الحساب فيها واحدٌ حرفاً، ونسختان تتفارقان. */''}
+      <button class="drawer-item" data-r="profile">${svg('profile')}<span>ملفّي</span></button>
       <button class="drawer-item" data-r="avatar"
         ><span class="av-ico">${renderMark(prof, 20)}</span><span>تغيير صورتي</span></button>
       <button class="drawer-item" id="themeBtn">${svg('theme')}<span>تبديل السِمة</span></button>
