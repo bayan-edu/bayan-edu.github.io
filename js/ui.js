@@ -8,7 +8,7 @@ import { mediaUrl, isManaged } from './media.js';
 import { renderMark, whenReady as avatarReady } from './avatar.js';
 
 /* ── بصمة النسخة — لمعرفة أي شيفرة يشغّلها المتصفح فعلاً ── */
-export const BUILD = "b102";
+export const BUILD = "b103";
 
 /* ── مراسي الصفحة ── */
 export const app = document.getElementById("app");
@@ -331,6 +331,9 @@ const ICO = {
   mySubjects:'<path d="M7.5 3.5h9A1.5 1.5 0 0118 5v15.3l-6-3.5-6 3.5V5a1.5 1.5 0 011.5-1.5z"/>',
   editor:    '<path d="M4.5 19.5l.9-3.6L16 5.3a2 2 0 012.8 0l.9.9a2 2 0 010 2.8L9.1 19.6l-3.6.9z"/><path d="M14.6 6.7l2.7 2.7"/>',
   requests:  '<circle cx="10" cy="8" r="3.2"/><path d="M4.3 19.2a5.7 5.7 0 0111.4 0"/><path d="M18.5 7v5M21 9.5h-5"/>',
+  /* 🆕 127 · الملفّ — شخصٌ مفردٌ لا مجموعة: `students` جماعةٌ يراها
+     المعلّم، و`perf` مخطَّطٌ. وأيقونةٌ واحدةٌ لبندين تُربك أكثر ممّا تُوفّر. */
+  profile:   '<circle cx="12" cy="8" r="3.6"/><path d="M5.2 19.4a6.8 6.8 0 0113.6 0"/>',
   theme:     '<circle cx="12" cy="12" r="8.2"/><path d="M12 3.8a8.2 8.2 0 010 16.4z" fill="currentColor" stroke="none"/>',
   /* الاستئناف — مثلَّثٌ محدَّدٌ لا ممتلئ: يجاور أيقوناتٍ خطّيةً كلَّها،
      وقرصٌ أسودُ بينها يُقرأ حالةً لا فعلاً. */
@@ -687,6 +690,13 @@ function renderDrawer(active){
       ${/* 🆕 125 · «تغيير صورتي» بندُ حسابٍ لا وجهةَ عمل، فمكانه التذييل
             مع السِمة والخروج لا قائمةُ الوجهات. والأيقونةُ علامتُه نفسُها
             مصغَّرةً — **وأصدقُ أيقونةٍ للفعل نتيجتُه.** */''}
+      ${/* 🆕 127 · «ملفّي» قبل «تغيير صورتي»: الأعمُّ يسبق الأخصّ، والصورةُ
+            بابُها من الملفّ أيضاً. ⚠️ وللطالب وحده اليوم — وملفُّ المعلّم
+            شاشةٌ أخرى (المهمّة ١٠)، **وبندٌ يُحيل إلى ما لم يُبنَ أسوأُ من
+            غيابه.** */''}
+      ${roleOf() === 'student'
+        ? `<button class="drawer-item" data-r="profile">${svg('profile')}<span>ملفّي</span></button>`
+        : ''}
       <button class="drawer-item" data-r="avatar"
         ><span class="av-ico">${renderMark(prof, 20)}</span><span>تغيير صورتي</span></button>
       <button class="drawer-item" id="themeBtn">${svg('theme')}<span>تبديل السِمة</span></button>

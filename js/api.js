@@ -40,6 +40,14 @@ export const signIn         = (email, password) => db.auth.signInWithPassword({ 
 export const signOutSession = ()                => db.auth.signOut();
 export const sendResetLink  = email             => db.auth.resetPasswordForEmail(email);
 
+/* 🆕 127 · تغييرُ كلمة المرور من الملفّ — **يقع فوراً ولا ينتظر بريداً**،
+   بخلاف `sendResetLink` التي تُرسل رابطاً لمن نسيها وهو خارج الجلسة.
+   ⚠️ **والبريدُ لا يُغيَّر من هنا عمداً:** `updateUser({email})` تُرسل
+      تأكيداً إلى العنوان الجديد ولا يقع التغييرُ حتى يُضغط — فشاشةٌ
+      تقول «حُفظ» تكذب، ومسارُ العودة من الرابط غيرُ مبنيّ. **وعدٌ لا
+      يُنجَز خيرٌ من وعدٍ يُنقَض.** */
+export const updatePassword = password => db.auth.updateUser({ password });
+
 /* 🆕 b91 · الدخول بحساب Google — نداءٌ واحد، وسوبابيس يتولّى OAuth كلَّه.
    ويبقى العهد: «Supabase مباشرة، لا خادمَ وسيط».
    ⚠️ و`redirectTo` يُبنى من الصفحة الحاضرة **بلا hash ولا استعلام** —
@@ -92,6 +100,13 @@ export const myRole    = ()  => db.rpc('my_role');
 // دالة لا UPDATE: تتحقّق أن الصف ينتمي للمنهج، وتُعيد {ok,error}
 export const setMyGrade = (scaleId, levelId) =>
   db.rpc('set_my_grade', { p_scale: scaleId, p_level: levelId });
+
+/* 🆕 127 · الاسم — `update` مباشر ومنحٌ عموديّ يحرسه (٥٠). ولا دالّةَ
+   له: لا حكمَ يُحرس، بخلاف الصفّ الذي يُتحقَّق انتماؤه للسلّم.
+   ⚠️ و`.select()` ليست زينة — بها يُعرف **عددُ ما تغيّر**، وRLS تحجب
+      بصفر صفوفٍ **بلا خطأ** (درسُ ١٠٦). */
+export const setMyName = (uid, name) =>
+  db.from('profiles').update({ full_name: name }).eq('id', uid).select('id');
 
 /* 🆕 123 · صيغةُ المخاطبة — `update` مباشر لا دالّة، ومنحٌ عموديّ
    يحرسه (على غرار ٥٠). والقيدُ في القاعدة هو كلُّ التحقّق المطلوب،

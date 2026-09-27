@@ -14,6 +14,7 @@ import { loadList, loadFeedback, loadChat, openSearchHit } from './student.js';
 import { loadTeacher, loadInbox, loadMySubjects } from './teacher.js';
 import { openEditor } from './editor.js';
 import { openAvatarEdit } from './avatar_edit.js';
+import { loadProfile } from './profile.js';
 import { loadStudents, loadMyPerformance } from './analytics.js';
 import { loadFlashcards } from './flashcards.js';
 import { openPractice } from './practice.js';
@@ -874,6 +875,7 @@ export function start(){
        الجرسُ ويضع لها الشريطُ أيقونة. والعلامةُ إعدادُ حسابٍ يُفتح
        من الدرج، **ووجهةٌ في الشريط لا عدد لها تُقرأ عملاً ينتظر.** */
     avatar:     openAvatarEdit,
+    profile:    loadProfile,
     out:        signOut
   });
 
