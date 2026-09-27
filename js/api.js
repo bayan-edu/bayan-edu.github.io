@@ -104,6 +104,22 @@ export const setMyGrade = (scaleId, levelId) =>
 export const setMyGram = (uid, g) =>
   db.from('profiles').update({ gram_gender: g }).eq('id', uid).select('gram_gender');
 
+/* 🆕 125 · اختياراتُ العلامة — `update` مباشر ومنحٌ عموديّ يحرسه.
+   🔑 **والفراغُ يُرسَل صراحةً `null` ولا يُحذف من الحمولة:** «أرجِعه
+      إلى المشتقّ» فعلٌ له معنًى، ولو أُسقط المفتاحُ من الكائن لبقيت
+      القيمةُ القديمة في القاعدة — **فيرى صاحبُها اختياراً ألغاه.**
+   ⚠️ و`avatar_motif` يُرسَل مع `avatar_kind` دائماً: القاعدة ترفض
+      نوعَ «زخرفة» بلا زخرفة، وإرسالُ أحدهما وحده يُسقط الحفظ كلَّه. */
+export const setMyAvatar = (uid, o) =>
+  db.from('profiles').update({
+    avatar_kind:   o.avatar_kind   ?? null,
+    avatar_motif:  o.avatar_motif  ?? null,
+    avatar_frame:  o.avatar_frame  ?? null,
+    avatar_color:  o.avatar_color  ?? null,
+    avatar_shape:  o.avatar_shape  ?? null,
+    avatar_letter: o.avatar_letter ?? null
+  }).eq('id', uid).select('avatar_frame');
+
 /* ختمُ ما عبر في البيانات الوصفية — يُنادى من boot.
    🔑 **ولا يكتب إلا على فراغ:** من غيّر صيغتَه من قائمة الحساب تبقى
       البياناتُ الوصفية تحمل الأولى إلى الأبد، فلو كُتبت في كلّ دخولٍ

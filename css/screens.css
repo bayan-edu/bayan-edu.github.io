@@ -1644,6 +1644,50 @@ body.gate{padding-bottom:0}
 .mt-count.warn{background:var(--warn-fill);color:var(--warn-text);border-color:var(--warn-line)}
 .mt-note{font-size:var(--fs-tag);color:var(--text-muted);line-height:1.7}
 
+
+/* ══ شاشةُ تخصيص العلامة (125) ══
+   🔴 **والمعاينةُ حجمان جنباً إلى جنب — وهو قرارُ الشاشة لا زينتُها.**
+      القرارُ يُتَّخذ عند ١٤٠px ويُعاش عند ٣٢ في الدرج، وعرضُ الكبير
+      وحده **يُغري باختيارٍ ينهار حيث يُستعمل**.
+   🔑 وكلُّ الألوان هنا من لوحة `--av-*` — والخياراتُ محايدةٌ لا عائلةَ
+      لها: اختيارُ صورةٍ ليس حكماً ولا حذراً. والمختارُ يُعرَف بحدٍّ
+      داكن وعلامةِ ضغط، لا بلونٍ يقول شيئاً من الخمس. */
+.av-prev{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.av-prev-big{flex:0 0 auto;line-height:0}
+.av-prev-side{display:flex;align-items:center;gap:12px;min-width:0;flex:1}
+.av-prev-sm{flex:0 0 auto;line-height:0}
+
+.av-ax{margin-top:20px}
+.av-note{font-family:'Readex Pro';font-weight:400;font-size:var(--fs-meta);
+  color:var(--text-muted);margin-inline-start:9px}
+.av-opts{display:flex;gap:10px;flex-wrap:wrap}
+
+/* رقاقةُ لون — مربّعٌ لا دائرة: الدائرةُ تُقرأ علامةً جاهزة، والمربّعُ
+   يُقرأ خياراً. والحدُّ يكفي للاختيار فلا يُستدعى لونُ تفاعل. */
+.av-sw{width:38px;height:38px;border-radius:10px;cursor:pointer;
+  background:var(--sw);border:2px solid transparent;
+  outline-offset:2px;transition:transform .12s,border-color .15s}
+.av-sw:hover{transform:translateY(-1px)}
+.av-sw[aria-pressed="true"]{border-color:var(--text);
+  box-shadow:0 0 0 2px var(--surface) inset}
+
+.av-opt{display:flex;flex-direction:column;align-items:center;gap:6px;
+  background:none;border:1px solid var(--line);border-radius:12px;
+  padding:9px 12px;cursor:pointer;color:var(--text-muted);
+  font-family:'Almarai';font-weight:700;font-size:var(--fs-tag);
+  transition:border-color .15s,background .15s}
+.av-opt:hover{background:var(--fill)}
+.av-opt[aria-pressed="true"]{border-color:var(--text);color:var(--text);
+  background:var(--fill)}
+.av-opt svg{display:block}
+
+.av-letter{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.av-letter input{width:74px;text-align:center;font-family:'Almarai';
+  font-weight:800;font-size:var(--fs-h);padding:10px}
+
+/* أيقونةُ بند الدرج — العلامةُ نفسُها مصغَّرةً */
+.av-ico{display:flex;flex:0 0 auto;line-height:0;width:22px;justify-content:center}
+
 /* جدولُ الاقترانات — خمسةُ أعمدة: رقم · بند · سهم · مقابل · حذف */
 .mt-tbl{border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:12px}
 .mt-hdr,.mt-line{display:grid;gap:9px;align-items:center;

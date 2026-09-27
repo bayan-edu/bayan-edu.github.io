@@ -8,7 +8,7 @@ import { mediaUrl, isManaged } from './media.js';
 import { renderMark, whenReady as avatarReady } from './avatar.js';
 
 /* ── بصمة النسخة — لمعرفة أي شيفرة يشغّلها المتصفح فعلاً ── */
-export const BUILD = "b101";
+export const BUILD = "b102";
 
 /* ── مراسي الصفحة ── */
 export const app = document.getElementById("app");
@@ -684,6 +684,11 @@ function renderDrawer(active){
         </button>`).join('')}
     </nav>
     <div class="drawer-foot">
+      ${/* 🆕 125 · «تغيير صورتي» بندُ حسابٍ لا وجهةَ عمل، فمكانه التذييل
+            مع السِمة والخروج لا قائمةُ الوجهات. والأيقونةُ علامتُه نفسُها
+            مصغَّرةً — **وأصدقُ أيقونةٍ للفعل نتيجتُه.** */''}
+      <button class="drawer-item" data-r="avatar"
+        ><span class="av-ico">${renderMark(prof, 20)}</span><span>تغيير صورتي</span></button>
       <button class="drawer-item" id="themeBtn">${svg('theme')}<span>تبديل السِمة</span></button>
       <button class="drawer-item danger" data-r="out">${svg('out')}<span>خروج</span></button>
     </div>`;

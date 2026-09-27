@@ -13,6 +13,7 @@ import { app, bar, head, toast, esc, AR, errBox, nav, registerRoutes,
 import { loadList, loadFeedback, loadChat, openSearchHit } from './student.js';
 import { loadTeacher, loadInbox, loadMySubjects } from './teacher.js';
 import { openEditor } from './editor.js';
+import { openAvatarEdit } from './avatar_edit.js';
 import { loadStudents, loadMyPerformance } from './analytics.js';
 import { loadFlashcards } from './flashcards.js';
 import { openPractice } from './practice.js';
@@ -850,8 +851,11 @@ export function start(){
   /* 🆕 125 · وكاتبُ صيغة المخاطبة كذلك: الدرجُ يسأل، و`api` تكتب،
      و`ui.js` لا تعرف أيَّهما. ويُعيد الخطأَ ولا يبتلعه. */
   registerGram(async g => {
-    const { error } = await api.setMyGram(S.user.id, g);
-    return error || null;
+    const { data, error } = await api.setMyGram(S.user.id, g);
+    if(error) return error;
+    /* 🔴 وصفرُ صفوفٍ ليس نجاحاً — RLS تحجب بلا خطأ (نظير `106`) */
+    if(!data?.length) return { message:'لم يمسَّ الحفظُ صفَّك' };
+    return null;
   });
 
   registerRoutes({
@@ -866,6 +870,10 @@ export function start(){
     mySubjects: loadMySubjects,
     editor:     openEditor,
     requests:   loadAdmin,
+    /* 🆕 125 · وليست في DEST عمداً: تلك وجهاتُ العمل التي يعدّ لها
+       الجرسُ ويضع لها الشريطُ أيقونة. والعلامةُ إعدادُ حسابٍ يُفتح
+       من الدرج، **ووجهةٌ في الشريط لا عدد لها تُقرأ عملاً ينتظر.** */
+    avatar:     openAvatarEdit,
     out:        signOut
   });
 
