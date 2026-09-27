@@ -69,12 +69,12 @@ function render(){
   app.innerHTML = `
     <div class="crumb" id="bk">← رجوع</div>
 
-    ${''}/* 🔴 الحجمان معاً — القرارُ عند الكبير والعيشُ عند الصغير */
+    ${/* 🔴 الحجمان معاً — القرارُ عند الكبير والعيشُ عند الصغير */''}
     <div class="card av-prev">
       <div class="av-prev-big">${renderMark(p, 140)}</div>
       <div class="av-prev-side">
         <div class="av-prev-sm">${renderMark(p, 32)}</div>
-        <div class="line">هكذا تظهر في الشريط وقائمة حسابك — وهو حجمُها الذي تُعاش فيه.</div>
+        <div class="line">هكذا تظهر في الشريط وقائمة حسابك.</div>
       </div>
     </div>
 
@@ -95,7 +95,7 @@ function render(){
 
     <div class="nav" style="margin-top:20px">
       <button class="btn primary" id="avSave">حفظ</button>
-      <button class="btn ghost" id="avReset">إرجاع الكلّ إلى المشتقّ</button>
+      <button class="btn ghost" id="avReset">إعادة الضبط الافتراضي</button>
     </div>`;
 
   wire();
@@ -154,7 +154,10 @@ function wire(){
 
 export async function openAvatarEdit(){
   nav('subjects');
-  head('صورتي', 'أربعة محاور — والمعاينة حيّة قبل الحفظ');
+  /* 🔓 b107 · بلا وصفٍ تحت العنوان: «أربعة محاور» **عدٌّ لما تحت العين**،
+     و«المعاينة حيّة» وعدٌ تفي به الشاشةُ نفسُها في أوّل نقرة. وسطرٌ
+     يشرح ما يُرى يُقرأ مرّةً ثمّ يصير حشواً في كلّ فتحةٍ بعدها. */
+  head('صورتي');
   app.innerHTML = `<div class="status">جار التحميل…</div>`;
   await whenReady();                 // الخطُّ قبل أوّل قياس (١٢٥)
   const p = S.prof || {};

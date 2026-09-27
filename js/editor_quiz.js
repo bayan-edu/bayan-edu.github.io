@@ -2395,7 +2395,7 @@ function importBox(){
                 : p.issues.slice(0,14).map(x => `<div class="eq-iss">⚠️ ${esc(x)}</div>`).join("")
                   + (p.issues.length > 14 ? `<div class="eq-iss">… و${AR(p.issues.length-14)} غيرها</div>` : '')}
       </div>
-      ${''}/* تحذيرٌ لا حجب — يُعرض ولا يمنع الزرّ */
+      ${/* تحذيرٌ لا حجب — يُعرض ولا يمنع الزرّ */''}
       ${p.warns.length ? `<div class="warnbox" style="margin-top:10px">
         ${p.warns.map(x => `<div>⚠️ ${esc(x)}</div>`).join('')}
         <div style="margin-top:7px;opacity:.85">الاستيراد ممكن — لكن صحّح <b>الخيارات</b> بعده،

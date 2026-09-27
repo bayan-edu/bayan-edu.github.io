@@ -217,7 +217,7 @@ function render(){
         <b dir="ltr">${esc(p.policy_version)}</b></div>` : ''}
       <p class="small"><a href="${POLICY_URL}" target="_blank" rel="noopener">قراءة السياسة</a></p>
 
-      ${''}/* 🔑 الحذفُ كما وعدت به السياسة — نصّاً ومدّةً، لا زرّاً يوهم */
+      ${/* 🔑 الحذفُ كما وعدت به السياسة — نصّاً ومدّةً، لا زرّاً يوهم */''}
       <div class="grp" style="margin-top:20px">حذف الحساب</div>
       <p class="small">
         لك أن تطلب حذف حسابك وبياناتك الشخصية. يُطلب بالمراسلة على

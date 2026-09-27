@@ -456,7 +456,7 @@ async function drawPerformance(title, sub, back){
         x.attempts>1 ? `${N(x.attempts,'محاولة','محاولتان','محاولات','محاولة')}، من ${pct(x.first)} إلى ${pct(x.mastery)}`
                      : `محاولة واحدة، ${N(x.answered,'إجابة','إجابتان','إجابات','إجابة')}`}${
         mode==='need' ? `، عتبة النجاح ${pct(x.pass)}` : ''}</div>
-      ${''}/* 🎓 الذروةُ تُقال حين يكون الحاضرُ دونها: gain وحده يخفي انحداراً */
+      ${/* 🎓 الذروةُ تُقال حين يكون الحاضرُ دونها: gain وحده يخفي انحداراً */''}
       ${x.since_best != null && x.since_best < -2
         ? `<div class="an-drop">بلغ ${pct(x.best)} في المحاولة ${AR(x.best_no)}،
              ثمّ نزل ${N(Math.abs(x.since_best),'نقطة','نقطتين','نقاط','نقطة')}</div>` : ''}
