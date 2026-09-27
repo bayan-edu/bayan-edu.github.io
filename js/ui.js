@@ -7,7 +7,7 @@ import { S } from './state.js';
 import { mediaUrl, isManaged } from './media.js';
 
 /* ── بصمة النسخة — لمعرفة أي شيفرة يشغّلها المتصفح فعلاً ── */
-export const BUILD = "b98";
+export const BUILD = "b99";
 
 /* ── مراسي الصفحة ── */
 export const app = document.getElementById("app");
@@ -459,8 +459,11 @@ const NCOUNT = { cards:'due', feedback:'feedback', chat:'messages',
 /* بنودُ الجرس — [الوجهة · الحقل · النصّ]. ولا يُعرض بندٌ لوجهةٍ ليست
    في دور المستخدم، فيُفرز chat عن inbox بلا شرطٍ على الدور. */
 const BELL = [
-  ['feedback', 'feedback', n => `${AR(n)} ملاحظة جديدة من معلّمك`],
-  ['chat',     'messages', n => `${AR(n)} رسالة جديدة من معلّمك`],
+  /* 🆕 124 · «من معلّمك» سقطت — **ولا صيغةَ لها أصلاً**: الجرسُ عامٌّ
+     على المواد كلّها، وللطالب معلّمٌ في كلّ مادة. فواحدٌ مفردٌ خبرٌ
+     غيرُ صادق قبل أن يكون صيغةً خاطئة. ⇒ يُسمّى **موضعُ الجديد**. */
+  ['feedback', 'feedback', n => `${AR(n)} ملاحظة جديدة على إجاباتك`],
+  ['chat',     'messages', n => `${AR(n)} رسالة جديدة في مراسلاتك`],
   ['inbox',    'messages', n => `${AR(n)} رسالة من طلابك`],
   ['grade',    'grading',  n => `${AR(n)} إجابة مقالية تنتظر تصحيحك`],
   ['requests', 'requests', n => `${AR(n)} طلب انضمام معلّم`]

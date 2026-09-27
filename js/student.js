@@ -297,8 +297,15 @@ export async function loadMentors(subj, switching){
       <div class="warnbox" style="font-size:.85rem">
         <b style="font-family:'Almarai';font-weight:800;display:block;margin-bottom:6px">
           فرص الانتقال في هذه المادة استُوفيت</b>
-        الاستمرار مع معلم واحد يمنحه صورة أوضح عن تقدّمك، ويجعل متابعته لك أدق.
-        وما يشكل عليك يُعرَض على معلمك الحالي — فهو الأقدر على مساعدتك.</div>
+        ${/* 🆕 124 · جملةٌ كاملةٌ بصيغتين لا خمسةُ نداءاتٍ متشابكة: الضميرُ
+              والصفةُ والمضافُ إليه تتبع صيغةً واحدة، وتقطيعُها يُنتج
+              نصّاً يُقرأ استمارة. و`teacher_g` تصل من `my_mentor`.
+              ومحايدُها يتجنّب الضمير الغائب أصلاً — إذ لا ضميرَ محايدَ
+              في العربية، فالمخرجُ أن يُصاغ النصّ بلا ضمير. */''}
+        ${G(state.teacher_g,
+          'الاستمرار مع معلّمٍ واحد يمنحه صورةً أوضح عن تقدّمك، ويجعل متابعته لك أدقّ. وما يشكل عليك يُعرَض على معلّمك الحالي — فهو الأقدر على مساعدتك.',
+          'الاستمرار مع معلّمةٍ واحدة يمنحها صورةً أوضح عن تقدّمك، ويجعل متابعتها لك أدقّ. وما يشكل عليك يُعرَض على معلّمتك الحالية — فهي الأقدر على مساعدتك.',
+          'الاستمرار في إرشادٍ واحد يعطي صورةً أوضح عن تقدّمك، ويجعل المتابعة أدقّ. وما يشكل عليك يُعرَض في المراسلة — فهي أقربُ من الانتقال.')}</div>
       <div class="nav"><button class="btn primary" id="go">متابعة الدروس</button></div>`;
     document.getElementById("bk").onclick = loadList;
     document.getElementById("go").onclick = ()=>loadLessons(subj);
@@ -316,7 +323,13 @@ export async function loadMentors(subj, switching){
           : ''}</div>
       <div class="m-m">${esc(m.school||'—')}${m.years?` · ${AR(m.years)} سنوات خبرة`:''}</div>
       ${m.bio?`<div class="m-b">${esc(m.bio)}</div>`:''}
-      <span class="m-cap">${m.full?'اكتمل النصاب':`يتابع ${AR(m.students)} من ${AR(m.capacity)} طالباً`}</span>
+      ${/* 🆕 124 · ومحايدُ السعة **بلا فعل**: الرقمان يقولان ما يقوله
+            «يتابع/تتابع» بلا صيغة. وهو نموذجُ القاعدة — حيث تُمكن
+            المحايدةُ تُكتب محايدةً، ولا تُستدعى الدالّةُ أصلاً. */''}
+      <span class="m-cap">${m.full ? 'اكتمل النصاب' : G(m.g,
+        `يتابع ${AR(m.students)} من ${AR(m.capacity)} طالباً`,
+        `تتابع ${AR(m.students)} من ${AR(m.capacity)} طالباً`,
+        `${AR(m.students)} من ${AR(m.capacity)} طالباً`)}</span>
     </div>`;
 
   app.innerHTML = `
@@ -336,15 +349,21 @@ export async function loadMentors(subj, switching){
 
   document.getElementById("bk").onclick = loadList;
   app.querySelectorAll(".mentor").forEach(el=>el.onclick=async()=>{
-    if(el.classList.contains('full')){ toast("اكتمل نصاب هذا المعلم — فيُختار معلمٌ آخر"); return; }
+    const mo = mentors.find(x => x.id === el.dataset.t) || {};
+    if(el.classList.contains('full')){
+      toast(G(mo.g, 'اكتمل نصاب هذا المعلم — فيُختار غيره',
+                    'اكتمل نصاب هذه المعلمة — فيُختار غيرها',
+                    'اكتمل النصاب هنا — ويُختار من بقي')); return; }
     const tid = el.dataset.t || null;
     if(tid && tid !== state.teacher_id){
-      const name  = (mentors.find(x=>x.id===tid)||{}).name || 'هذا المعلم';
+      const name  = mo.name || G(mo.g, 'هذا المعلم', 'هذه المعلمة', 'هذا الحساب');
       const tried = state.teachers_tried || 0;
 
+      /* 🆕 124 · «معلم آخر» هنا **مستقبلٌ لم يُختَر بعد** — لا صيغةَ له
+         أصلاً، فالمحايدةُ هي الصواب لا البديل. ⇒ «انتقال». */
       let msg = `الانضمام إلى أ. ${name} في مادة «${subj.name}»؟`;
-      if(tried === 1) msg += "\n\nبعد هذا الانضمام تبقى لك فرصة واحدة للانضمام إلى معلم آخر.";
-      else if(tried >= 2) msg += "\n\nهذه آخر فرصة — ولا انضمامَ بعدها إلى معلم آخر في هذه المادة.";
+      if(tried === 1) msg += "\n\nبعد هذا الانضمام تبقى لك فرصةُ انتقالٍ واحدة.";
+      else if(tried >= 2) msg += "\n\nهذه آخر فرصة — ولا انتقالَ بعدها في هذه المادة.";
 
       if(!confirm(msg)) return;
     }
@@ -395,8 +414,11 @@ export async function loadLessons(subj){
     <div class="crumb" id="bk">← رجوع للمواد</div>
     <div class="nav" style="margin-bottom:14px">
       <button class="btn ghost" id="mnt" style="font-size:.8rem;padding:9px">
+        ${/* 🆕 124 · `mentor_g` تصل من `list_subjects`. و«الانتقال» بلا
+              مفعولٍ عمداً: الوجهةُ لم تُختَر بعد فلا صيغةَ لها. */''}
         ${subj.mentor_name
-            ? '👤 معلمك: أ. '+esc(subj.mentor_name)+' · الانضمام إلى معلم آخر'
+            ? G(subj.mentor_g, '👤 معلمك: أ. ', '👤 معلمتك: أ. ', '👤 مع أ. ')
+              + esc(subj.mentor_name) + ' · انتقال'
             : '👤 الانضمام إلى معلم'}
       </button>
     </div>
@@ -438,7 +460,10 @@ function canEmbed(i){
    ومصادرُ المنصّة لا author لها أصلاً، فتمرّ بلا سطر. */
 const credit = i => !i.author ? ''
   : ` · أ. ${esc(i.author)}`
-  + (i.from_my_mentor ? ' · معلّمك'       : '')
+  /* 🆕 124 · والصيغةُ تُقرأ من المادة الحاضرة لا من المصدر: `list_items`
+     لا تحمل صيغةَ المؤلّف، و`S.subj.mentor_g` هي نفسُها — إذ الشارةُ
+     لا تُرفع إلا لمن يتابع الطالبَ في هذه المادة بعينها. */
+  + (i.from_my_mentor ? G(S.subj?.mentor_g, ' · معلّمك', ' · معلّمتك', ' · مَن يتابعك') : '')
   + (i.reviewed       ? ' · اعتمدته بيان' : '')
   + (i.draft          ? ' · مسودّة'       : '');
 
@@ -597,7 +622,10 @@ function toggleAudio(i){
 /* ═══════════ ⑤ ملاحظات المعلم ═══════════ */
 
 export async function loadFeedback(){
-  nav('feedback'); head("ملاحظات معلمي", S.prof.full_name);
+  /* 🆕 124 · «ملاحظات معلمي» ⇐ «ملاحظاتٌ على إجاباتي»: الشاشةُ تجمع
+     ملاحظاتِ المواد كلّها، ولكلّ مادةٍ معلّمُها. فالمفردُ خبرٌ غيرُ
+     صادق — والصيغةُ فرعٌ عن ذلك لا أصلُ المسألة. */
+  nav('feedback'); head("ملاحظاتٌ على إجاباتي", S.prof.full_name);
   app.innerHTML = skeleton('rows');
   const { data, error } = await api.myFeedback(S.user.id);
 
