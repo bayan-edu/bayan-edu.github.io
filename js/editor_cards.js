@@ -16,7 +16,7 @@
       يُلصق بمفتاحه كما في بقية الشاشات (ثابت ②).
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
-import { app, head, toast, esc, AR, errBox, nav, setWide, scrollTop, dirOf, shrinkFont, examples, pickExample } from './ui.js';
+import { app, head, toast, esc, AR, errBox, nav, setWide, scrollTop, dirOf, shrinkFont, examples, pickExample, N } from './ui.js';
 import { openCourse } from './editor.js';
 import { practiceLinkBox } from './practice_links.js';
 
@@ -32,7 +32,7 @@ export async function openCards(course){
   ctx = { course, lessons: [] };
   nav('editor'); setWide(true);
   head("البطاقات", course.title || '');
-  app.innerHTML = `<div class="status">جارٍ التحميل…</div>`;
+  app.innerHTML = `<div class="status">جار التحميل…</div>`;
 
   const [decks, lessons] = await Promise.all([
     api.subjectDecks(course.subject_id),
@@ -58,7 +58,8 @@ function renderDecks(){
       <div style="flex:1;min-width:0">
         <div class="ed-t">${esc(d.title)}</div>
         <div class="ed-m">
-          <span class="chip ${d.cards ? 'g' : ''}">${AR(d.cards)} بطاقة</span>
+          <span class="chip ${d.cards ? 'g' : ''}">${
+            N(d.cards,'بطاقة','بطاقتان','بطاقات','بطاقة')}</span>
           ${d.lesson ? `<span class="chip">${esc(d.lesson)}</span>` : ''}
         </div>
       </div>
@@ -76,13 +77,13 @@ function renderDecks(){
     <div class="ed-sec">
       <div class="grp">مجموعات المقرَّر <span class="chip">${AR(off.length)}</span></div>
       ${off.length ? off.map(row).join("")
-                   : '<div class="ed-empty">لا مجموعة بعد. والبدايةُ بواحدة تُلصق فيها قائمتك.</div>'}
+                   : '<div class="ed-empty">لا مجموعة بعد. والبداية بواحدة تُلصق فيها قائمتك.</div>'}
     </div>
 
     ${own.length ? `<div class="ed-sec">
       <div class="grp">مجموعات الطلاب <span class="chip">${AR(own.length)}</span></div>
-      <div class="ed-empty">${AR(own.length)} مجموعةً شخصية — تُعرض عدداً ولا تُفتح.
-        محتواها ملكُ صاحبه.</div>
+      <div class="ed-empty">${AR(own.length)} مجموعة شخصية — تُعرض عدداً ولا تُفتح.
+        محتواها ملك صاحبه.</div>
     </div>` : ''}`;
 
   document.getElementById('bk').onclick = () => openCourse(ctx.course);
@@ -110,10 +111,10 @@ function deckForm(d){
     <div class="ed-form">
       <div class="ed-side">
         <div class="ed-hint">💡 <b>المجموعة</b> تتبع المادة والصفّ.
-          وربطُها بدرسٍ اختياريّ — فإن رُبطت دخلت بطاقاتُها صندوقَ
+          وربطُها بدرس اختياريّ — فإن رُبطت دخلت بطاقاتُها صندوق
           الطالب حين يفتح ذلك الدرس.</div>
-        <div class="ed-hint" style="opacity:.75">وبلا درس: تبقى مجموعةَ
-          المقرَّر كلِّه، ولا تدخل إلا بإضافة الطالب أو بخطأٍ مشخَّص.</div>
+        <div class="ed-hint" style="opacity:.75">وبلا درس: تبقى مجموعة
+          المقرَّر كلِّه، ولا تدخل إلا بإضافة الطالب أو بخطأ مشخَّص.</div>
       </div>
 
       <div class="card" style="flex:1">
@@ -157,7 +158,7 @@ function deckForm(d){
 async function openDeck(d){
   cur = d;
   head("البطاقات", d.title);
-  app.innerHTML = `<div class="status">جارٍ التحميل…</div>`;
+  app.innerHTML = `<div class="status">جار التحميل…</div>`;
   const { data, error } = await api.deckCards(d.id);
   if(error){ app.innerHTML = errBox(error, 'بطاقات المجموعة'); return; }
   C = data || [];
@@ -245,27 +246,27 @@ function pasteBox(){
     <div class="crumb" id="bk">← ${esc(cur.title)}</div>
     <div class="ed-form">
       <div class="ed-side">
-        <div class="ed-hint">📋 <b>سطرٌ لكلّ بطاقة.</b> الوجه ثمّ المعنى،
-          والفاصل <b>Tab</b> — وهو ما ينتجه النسخُ من جدول Word أو Excel.
+        <div class="ed-hint">📋 <b>سطر لكلّ بطاقة.</b> الوجه ثمّ المعنى،
+          والفاصل <b>Tab</b> — وهو ما ينتجه النسخ من جدول Word أو Excel.
           ويقبل <code>|</code> و<code>—</code> أيضاً.</div>
-        <div class="ed-hint" style="opacity:.75"><b>عمودٌ ثالث — المثال:</b>
-          وتُكتب عدّةُ أمثلةٍ مفصولةً بـ<code>؛</code>، فتختار البطاقة
-          واحداً في كلّ لقاء. <b>ومثالٌ ثابت يُحفظ بنصّه</b> فيتعرّف
-          الطالبُ الجملةَ لا المفهوم.</div>
-        <div class="ed-hint" style="opacity:.75">🔑 <b>وأقوى وجهٍ جملةٌ
+        <div class="ed-hint" style="opacity:.75"><b>عمود ثالث — المثال:</b>
+          وتُكتب عدّة أمثلة مفصولة بـ<code>؛</code>، فتختار البطاقة
+          واحداً في كلّ لقاء. <b>ومثال ثابت يُحفظ بنصّه</b> فيتعرّف
+          الطالب الجملة لا المفهوم.</div>
+        <div class="ed-hint" style="opacity:.75">🔑 <b>وأقوى وجه جملة
           بفراغ:</b> يُكتب <code>{{ }}</code> مكان الكلمة — فيُسترجَع
           المصطلح في سياقه لا مجرَّداً.</div>
         <div class="ed-hint" style="opacity:.75">♻️ وإعادة اللصق
-          <b>تصحيحٌ لا تكرار</b>: ما تكرّر وجهُه يُحدَّث معناه.</div>
+          <b>تصحيح لا تكرار</b>: ما تكرّر وجهُه يُحدَّث معناه.</div>
       </div>
 
       <div class="card" style="flex:1">
         <label class="fl">القائمة</label>
         <textarea id="tx" dir="auto" style="min-height:220px;font-family:var(--font-mono,monospace)"
-          placeholder="الاستعارة المكنية&#9;تشبيهٌ حُذف فيه المشبَّه به وبقيت قرينةٌ من لوازمه"></textarea>
+          placeholder="الاستعارة المكنية&#9;تشبيه حُذف فيه المشبَّه به وبقيت قرينة من لوازمه"></textarea>
 
         <div class="nav" style="margin-top:14px">
-          <button class="btn" id="chk">فحصُ ما سيُحفظ</button>
+          <button class="btn" id="chk">فحص ما سيُحفظ</button>
           <button class="btn primary" id="sv" disabled>حفظ</button>
         </div>
 
@@ -319,27 +320,27 @@ function cardForm(c){
     <div class="ed-form">
       <div class="ed-side">
         <div class="ed-hint">🔑 <b>الوجه هو ما يُسأل عنه.</b> ويُختار بما
-          سيُطلب من الطالب في الامتحان لا بما هو أسهل كتابةً.</div>
+          سيُطلب من الطالب في الامتحان لا بما هو أسهل كتابة.</div>
         <div class="ed-hint" style="opacity:.75"><b>النُّطق:</b> يُرفع الملفّ
           إلى المخزن ثمّ يُلصق مفتاحه — <code>audio/x.mp3</code>.
           ويُسمَع بعد الكشف لا قبله.</div>
-        <div class="ed-hint" style="opacity:.75"><b>الصورة:</b> رابطٌ خارجيّ
+        <div class="ed-hint" style="opacity:.75"><b>الصورة:</b> رابط خارجيّ
           اليوم. والسؤال قبل إضافتها: أتصلح <b>بديلاً عن المعنى</b>؟
-          فإن كانت زينةً حوله فلا تُضَف.</div>
+          فإن كانت زينة حوله فلا تُضَف.</div>
       </div>
 
       <div class="card" style="flex:1">
         <label class="fl">الوجه *</label>
         <input type="text" id="fr" value="${esc(c?.front || '')}"
-               placeholder="المصطلح · أو جملةٌ فيها {{ }}">
+               placeholder="المصطلح · أو جملة فيها {{ }}">
 
         <label class="fl" style="margin-top:16px">المعنى *</label>
         <textarea id="bk2" style="min-height:90px">${esc(c?.back || '')}</textarea>
 
         <label class="fl" style="margin-top:16px">أمثلة
-          <span style="opacity:.6">(سطرٌ لكلّ مثال)</span></label>
+          <span style="opacity:.6">(سطر لكلّ مثال)</span></label>
         <textarea id="nt" dir="auto" style="min-height:80px"
-          placeholder="مثالٌ في سطر&#10;وآخرُ في سطرٍ تالٍ">${esc(c?.note || '')}</textarea>
+          placeholder="مثال في سطر&#10;وآخر في سطر تال">${esc(c?.note || '')}</textarea>
 
         <div class="ed-3">
           <div>

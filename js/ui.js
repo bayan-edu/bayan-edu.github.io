@@ -8,7 +8,7 @@ import { mediaUrl, isManaged } from './media.js';
 import { renderMark, whenReady as avatarReady } from './avatar.js';
 
 /* ── بصمة النسخة — لمعرفة أي شيفرة يشغّلها المتصفح فعلاً ── */
-export const BUILD = "b105";
+export const BUILD = "b107";
 
 /* ── مراسي الصفحة ── */
 export const app = document.getElementById("app");
@@ -89,11 +89,17 @@ export const optLabel = (o, i) =>
    ثابتة لواجهة الطالب لتفادي نداء شبكةٍ إضافي عند فتح كل درس. أُبقيت
    يدوية عمداً حتى الآن، فإن أُضيف نمطٌ سادس عشر يوماً ولم يُحدَّث هنا،
    يظهر بأيقونة '•' — لا يكسر شيئاً، لكنه صامتٌ وجب أن يُرى:
-   الإصلاح الجذريّ (قراءةٌ من item_kinds مباشرة) مؤجَّلٌ لا مقرَّر. */
-export const ICONS = { pdf:'📄', video:'🎬', audio:'🎧', image:'🖼️', link:'🔗',
-                       text:'📃', quiz:'📝', recording:'🎤',
-                       mindmap:'🧠', infographic:'📊', slides:'🖥️',
-                       worksheet:'📋', simulation:'⚗️' };
+   الإصلاح الجذريّ (قراءةٌ من item_kinds مباشرة) مؤجَّلٌ لا مقرَّر.
+
+   🆕 b106 · وكانت إيموجي (📄 🎬 🎧 …) فصارت متجهاتٍ من `ICO`. والحجّة
+   مكتوبةٌ عند `ICO` منذ كُتبت: **الإيموجي يرسمه نظام التشغيل**، فوزنُه
+   يختلف بين المنصّات وينكسر الصفّ، ولونُه مخبوزٌ في المحرف فلا يتبع
+   السِمة ولا حالةَ البند — وهو خارج عائلات المعنى الخمس كلِّها.
+   ⚠️ والبديلُ عند نمطٍ مجهول يبقى '•' نصّاً: `ICONS[k] || '•'` منتشرةٌ
+   في ثلاثة مواضع، والفراغُ فيها يُسقط الصفّ بلا صوت.
+   📌 **وتُبنى تحت `ICO` لا هنا** — فهي مشتقّةٌ منها، ومصدرٌ واحد لرسمٍ
+   واحد. وموضعُ التعليق هنا لأنّ القارئ يبحث عنها مع `KINDS`. */
+export let ICONS;
 
 export const KINDS = { pdf:'ملف للقراءة', video:'شرح مرئي', audio:'مقطع صوتي',
                        image:'صورة', link:'مرجع خارجي', text:'نص',
@@ -348,7 +354,25 @@ const ICO = {
   resume:    '<circle cx="12" cy="12" r="8.6"/><path d="M10.4 8.9l4.8 3.1-4.8 3.1z"/>',
   search:    '<circle cx="11" cy="11" r="6.6"/><path d="M15.7 15.7L20 20"/>',
   /* الخروج يتبع اتجاه الصفحة: السهم إلى اليسار لأن العربية تخرج يساراً */
-  out:       '<path d="M10.5 4.5H17A2 2 0 0119 6.5v11a2 2 0 01-2 2h-6.5"/><path d="M7.5 15L4.5 12l3-3M4.5 12h8.5"/>'
+  out:       '<path d="M10.5 4.5H17A2 2 0 0119 6.5v11a2 2 0 01-2 2h-6.5"/><path d="M7.5 15L4.5 12l3-3M4.5 12h8.5"/>',
+
+  /* ── أنماط المصادر (b106) — كانت إيموجي في ICONS، والتعليق فوقها
+     يقول لماذا لا تصلح: وزنُها يختلف بين المنصّات فينكسر الصفّ،
+     ولونُها مخبوزٌ في المحرف فلا يتبع السِمة ولا حالةَ البند.
+     🔑 ومفاتيحها أسماءُ `item_kinds` نفسها، فلا خريطةَ ثانية بينهما. */
+  pdf:        '<path d="M6.5 3.5h7L18.5 8v12a1.5 1.5 0 01-1.5 1.5H6.5A1.5 1.5 0 015 20V5a1.5 1.5 0 011.5-1.5z"/><path d="M13.3 3.6V8h4.9"/><path d="M8.3 12.4h5.6M8.3 15.6h5.6M8.3 18.2h3.4"/>',
+  video:      '<rect x="3.2" y="5" width="17.6" height="14" rx="2.6"/><path d="M10.3 9.4l5 2.6-5 2.6z"/>',
+  audio:      '<path d="M4.6 14.4v-2.6a7.4 7.4 0 0114.8 0v2.6"/><path d="M4.6 13.4h1.9a1 1 0 011 1v3.2a1 1 0 01-1 1H5.8a1.2 1.2 0 01-1.2-1.2z"/><path d="M19.4 13.4h-1.9a1 1 0 00-1 1v3.2a1 1 0 001 1h.7a1.2 1.2 0 001.2-1.2z"/>',
+  image:      '<rect x="3.4" y="4.8" width="17.2" height="14.4" rx="2.4"/><circle cx="8.6" cy="9.8" r="1.7"/><path d="M3.6 16.7l4.3-4a2 2 0 012.7 0l3.2 3 2-1.8a2 2 0 012.7 0l2.1 2"/>',
+  link:       '<path d="M10.2 13.8a3.6 3.6 0 005.4.4l2.6-2.6a3.6 3.6 0 00-5.1-5.1l-1.5 1.5"/><path d="M13.8 10.2a3.6 3.6 0 00-5.4-.4l-2.6 2.6a3.6 3.6 0 005.1 5.1l1.5-1.5"/>',
+  text:       '<path d="M5.5 5.2h13"/><path d="M12 5.4v13.4"/><path d="M9.2 18.8h5.6"/>',
+  quiz:       '<rect x="4.4" y="4" width="15.2" height="16" rx="2.4"/><path d="M8 9.6l1.5 1.5 2.6-2.8"/><path d="M8 15.4l1.5 1.5 2.6-2.8"/><path d="M14.4 10h2.4M14.4 15.8h2.4"/>',
+  recording:  '<rect x="9" y="3.2" width="6" height="10.4" rx="3"/><path d="M5.8 11.6a6.2 6.2 0 0012.4 0"/><path d="M12 17.8v3"/>',
+  mindmap:    '<circle cx="12" cy="12" r="2.8"/><circle cx="5" cy="5.6" r="2.1"/><circle cx="19" cy="5.6" r="2.1"/><circle cx="19" cy="18.4" r="2.1"/><path d="M6.6 7.2l3.5 3.1M17.4 7.2l-3.5 3.1M17.5 16.9l-3.6-3"/>',
+  infographic:'<path d="M4 20h16"/><rect x="5.6" y="12" width="3.4" height="6" rx="1"/><rect x="10.3" y="7.6" width="3.4" height="10.4" rx="1"/><rect x="15" y="10" width="3.4" height="8" rx="1"/>',
+  slides:     '<rect x="3.2" y="4.2" width="17.6" height="12" rx="2.2"/><path d="M12 16.4v3.4"/><path d="M8.8 19.8h6.4"/>',
+  worksheet:  '<path d="M6.6 3.6h10.8A1.4 1.4 0 0118.8 5v14a1.4 1.4 0 01-1.4 1.4H6.6A1.4 1.4 0 015.2 19V5a1.4 1.4 0 011.4-1.4z"/><path d="M8.4 8h7.2M8.4 11.6h7.2M8.4 15.2h4.2"/>',
+  simulation: '<path d="M10.2 3.6v5.5L5.6 17a2.2 2.2 0 001.9 3.4h9a2.2 2.2 0 001.9-3.4l-4.6-7.9V3.6"/><path d="M9 3.6h6"/><path d="M7.7 14.2h8.6"/>'
 };
 
 const svg = k => `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -357,6 +381,13 @@ const svg = k => `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="curren
 /* اسمٌ عامٌّ لنفس الدالّة — تستعمله الشاشات، ويبقى svg داخلياً قصيراً.
    ولا نسخةَ ثانية: نفس المرجع باسمين، فلا يفترق الرسمان يوماً. */
 export const icon = svg;
+
+/* أيقونات أنماط المصادر — مشتقّةٌ من ICO لا مكتوبةٌ ثانية (التعليل عند
+   تصريحها فوق، مع KINDS حيث يبحث عنها القارئ). */
+ICONS = Object.fromEntries(
+  ['pdf','video','audio','image','link','text','quiz','recording',
+   'mindmap','infographic','slides','worksheet','simulation']
+  .map(k => [k, svg(k)]));
 
 /* ══════════════════════════════════════════════════════════════
    أشكال المواد — هويةٌ ثابتة لا حالة  (b66)
@@ -459,7 +490,7 @@ const SKEL = {
 /* ⚠️ النطقُ عنصرٌ مستقلّ لا غلافٌ حولها: بطاقاتُ المواد يجب أن تبقى
    أبناءً مباشرين لـ`#app` وإلا سقطت عنها الشبكة (screens.css ⁶⁶). */
 export function skeleton(kind = 'rows', n){
-  return `<span class="sr-only" role="status">جارٍ التحميل…</span>`
+  return `<span class="sr-only" role="status">جار التحميل…</span>`
        + (SKEL[kind] || SKEL.rows)(n);
 }
 
@@ -474,11 +505,11 @@ const BELL = [
   /* 🆕 124 · «من معلّمك» سقطت — **ولا صيغةَ لها أصلاً**: الجرسُ عامٌّ
      على المواد كلّها، وللطالب معلّمٌ في كلّ مادة. فواحدٌ مفردٌ خبرٌ
      غيرُ صادق قبل أن يكون صيغةً خاطئة. ⇒ يُسمّى **موضعُ الجديد**. */
-  ['feedback', 'feedback', n => `${AR(n)} ملاحظة جديدة على إجاباتك`],
-  ['chat',     'messages', n => `${AR(n)} رسالة جديدة في مراسلاتك`],
-  ['inbox',    'messages', n => `${AR(n)} رسالة من طلابك`],
-  ['grade',    'grading',  n => `${AR(n)} إجابة مقالية تنتظر تصحيحك`],
-  ['requests', 'requests', n => `${AR(n)} طلب انضمام معلّم`]
+  ['feedback', 'feedback', n => `${N(n,'ملاحظة جديدة','ملاحظتان جديدتان','ملاحظات جديدة','ملاحظة جديدة')} على إجاباتك`],
+  ['chat',     'messages', n => `${N(n,'رسالة جديدة','رسالتان جديدتان','رسائل جديدة','رسالة جديدة')} في مراسلاتك`],
+  ['inbox',    'messages', n => `${N(n,'رسالة','رسالتان','رسائل','رسالة')} من طلابك`],
+  ['grade',    'grading',  n => `${N(n,'إجابة مقالية','إجابتان مقاليتان','إجابات مقالية','إجابة مقالية')} تنتظر تصحيحك`],
+  ['requests', 'requests', n => `${N(n,'طلب','طلبان','طلبات','طلب')} انضمام معلّم`]
 ];
 
 let countsFetcher = null;
@@ -568,9 +599,43 @@ export function G(g, m, f, n){
   if(n !== undefined) return n;
   if(!_gWarned.has(m)){
     _gWarned.add(m);
-    console.warn('[بيان · 123] نصٌّ بلا صيغةٍ محايدة، فرُدَّ المذكّر:', m);
+    console.warn('[بيان · 123] نصّ بلا صيغة محايدة، فرُدّ المذكّر:', m);
   }
   return m;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   N · العدد والمعدود — دالّةٌ نقيّةٌ ثانية بجانب G()  (b106)
+
+   🔑 **تحسم عند كتابة الرقم ما حسمته G() عند كتابة الصيغة.** وكانت
+      الشيفرة تكتب المعدودَ مفرداً منصوباً لكلّ عدد — «٧ درساً» ·
+      «٣ طالباً» — وهو خطأٌ نحويٌّ **يقرؤه الطالب** في بطاقة المادّة
+      وفي كلّ لوحة.
+
+   والصوابُ يتبع العدد:  ١ بلا عدد · ٢ مثنّى · ٣–١٠ جمعٌ مجرور ·
+   ١١–٩٩ مفردٌ منصوب · ١٠٠ فصاعداً مفردٌ مجرور. والمركَّبُ يتبع
+   آخرَه: ١٠٥ ⇒ «دروس» · ١١٥ ⇒ «درساً» — ولهذا `% 100`.
+
+   📌 **وسابقتُها في المستودع لا خارجَه:** `card_game_match.js:59`
+      فرّقت أربعَ حالاتٍ بيدها (بلا خدش · خدشٌ واحد · خدشان · خدوش).
+      فهذه تعميمُ ما عمل هناك، لا اختراعُ نمطٍ جديد.
+
+   ⚠️ **ولا تُستدعى حيث لا معدود:** «٧٥٪» و«٥ / ٧» ليسا عدداً ومعدوداً.
+   ══════════════════════════════════════════════════════════════ */
+
+/* الكلمةُ وحدها — لمن كتب الرقمَ بنفسه (كسرٌ · «س من ص» · صفٌّ ضيّق) */
+export const NW = (n, one, two, few, many) => {
+  const r = Math.abs(Number(n) || 0) % 100;
+  return r >= 3 && r <= 10 ? few : r < 3 ? one : many;
+};
+
+/* العبارةُ كاملةً — وهي الأصل. والواحدُ والاثنان بلا رقمٍ لأنّ العربية
+   لا تقول «١ درس» ولا «٢ درسان»: الصيغةُ نفسُها تحمل العدد. */
+export function N(n, one, two, few, many){
+  const v = Math.abs(Number(n) || 0);
+  if(v === 1) return one;
+  if(v === 2) return two;
+  return `${AR(n)} ${NW(v, one, two, few, many)}`;
 }
 
 /* اسمُ الدور — ومحايدُه **فراغ** لا مذكّر: الدرجُ يعرض تحته الصفَّ أو
@@ -580,19 +645,83 @@ const roleWord = (role, g) =>
   role === 'student'         ? G(g, 'طالب', 'طالبة', '')
 : role === 'teacher'         ? G(g, 'معلّم', 'معلّمة', '')
 : role === 'admin'           ? G(g, 'مدير', 'مديرة', '')
-: role === 'pending_teacher' ? 'طلبٌ قيد المراجعة'
+: role === 'pending_teacher' ? 'طلب قيد المراجعة'
 :                              '';
 
 function bellHtml(){
   const c = S.counts || {}, keys = destsOf().map(([k]) => k);
   const rows = BELL.filter(([dest, field]) => keys.includes(dest) && (c[field] || 0) > 0);
   if(!rows.length)
-    return `<div class="bell-empty">لا جديد — وهذا خبرٌ طيّب</div>`;
+    return `<div class="bell-empty">لا جديد — وهذا خبر طيّب</div>`;
   return rows.map(([dest, field, text]) =>
     `<button class="bell-item" data-r="${dest}" role="menuitem">
        <span class="bell-ic">${svg(dest)}</span>
        <span>${text(c[field])}</span>
      </button>`).join('');
+}
+
+/* الشعار — يُستنسخ من `#brand` حيث لزم: الشريطُ ورأسُ الدرج (b107).
+   ⚠️ ولا نقرأ صنفَ العنصر كما هو: `nav()` تسبق `head()` في أكثر
+      الشاشات، فقد نلتقط `hero` عالقةً من البوّابة. ⇒ الأصنافُ تُكتب
+      هنا صراحةً، ولا يُؤخذ من الوسم إلا متّجهُه.
+   📌 و`has-logo` مقصودةٌ لا غائبة: الشعار متّجهٌ حقيقيّ بنسخةٍ
+      `compact` مبسّطة لأجل الأحجام الصغيرة، فيبقى حادّاً عند ٢٥px
+      بلا حاجةٍ إلى الوردمارك النصّيّ الذي كان يعوّض عن الصورة القديمة. */
+const brandMark = () =>
+  `<div class="brand topbrand has-logo">${document.getElementById('brand')?.innerHTML || ''}</div>`;
+
+/* ══════════════════════════════════════════════════════════════
+   اللوحتان المتدلّيتان — الجرس وقائمة الحساب  (b107)
+
+   🔓 **بابان لغرفتين، بعد أن كانا باباً لغرفةٍ واحدة.** كان زرُّ الحساب
+      يفتح الدرجَ نفسَه، وعلّلناه بـ«بابان لغرفةٍ واحدة لا قائمتان».
+      والنقضُ أنّ الغرفتين اثنتان لا واحدة: من نقر ☰ يسأل **أين أذهب**،
+      ومن نقر صورتَه يسأل **ما شأن حسابي**. فكان الثاني يُفتح له درجُ
+      الوجهات ويبحث عن «ملفّي» في ذيله. ⇒ الوجهةُ تُطلب من ☰،
+      والحسابُ يُطلب من صورته.
+
+   ⚠️ **ولوحةٌ تُفتح تطوي أختَها.** اللوحتان تتدلّيان من طرفي الشريط
+      وعرضُ كلٍّ منهما ٣٠٠px، فشريطُ جوّالٍ لا يسعهما معاً.
+
+   📌 والجرسُ يبقى **خارج** الاثنين كما كان (القرار ①): يُخفى الطريق
+      لا النداء.
+   ══════════════════════════════════════════════════════════════ */
+const POP = {
+  bell: ['bellPanel', 'bellBtn', '.bellwrap'],
+  acct: ['acctPanel', 'acctBtn', '.acctwrap']
+};
+
+const popOpen = k => {
+  const p = document.getElementById(POP[k][0]);
+  return !!p && !p.hidden;
+};
+
+/* refocus: يُعاد التركيز إلى زرّها — لمن أغلق بـEsc، وإلا ضاع تركيزُه
+   في أوّل الصفحة بلا خبر. ولا يُعاد عند النقر خارجها: الفأرةُ ذهبت
+   إلى ما نقرته، فسحبُ التركيز منه يخطف ما قصده. */
+function shutPop(k, refocus){
+  if(!popOpen(k)) return;
+  document.getElementById(POP[k][0]).hidden = true;
+  const b = document.getElementById(POP[k][1]);
+  b?.setAttribute('aria-expanded', 'false');
+  if(refocus) b?.focus();
+}
+
+function closePops(){ Object.keys(POP).forEach(k => shutPop(k)); }
+
+function togglePop(k, render){
+  const show = !popOpen(k);
+  closePops();
+  if(!show) return;
+  const p = document.getElementById(POP[k][0]);
+  if(!p) return;
+  render(p);
+  p.hidden = false;
+  document.getElementById(POP[k][1])?.setAttribute('aria-expanded', 'true');
+  /* ⚠️ أوّلُ **بند** لا أوّلُ زرّ: قائمةُ الحساب قد تحمل سؤالَ الصيغة
+     قبل بنودها، وإنزالُ التركيز على «أنا طالب» يجعل مسافةً واحدة
+     جواباً عن سؤالٍ لم يُقرأ. */
+  (p.querySelector('.menu-item') || p.querySelector('button'))?.focus();
 }
 
 /* الدرج يُبنى مرّةً في body — انظر القرار ③ */
@@ -608,19 +737,22 @@ function ensureDrawer(){
   d.setAttribute('aria-label', 'القائمة');
   document.body.append(scrim, d);
 
-  /* نقرةٌ خارج لوحة الجرس تطويها. والدرج له غطاؤه فلا يشترك معها.
+  /* نقرةٌ خارج لوحةٍ متدلّية تطويها — وللدرج غطاؤه فلا يشترك معهما.
      ⚠️ وموضعُه هنا لا في nav(): تلك تُنادى في كلّ شاشة، فمستمعٌ فيها
         يتراكم حتى يصير على المستند عشرون مستمعاً لحدثٍ واحد. */
   document.addEventListener('click', e => {
-    const p = document.getElementById('bellPanel');
-    if(p && !p.hidden && !e.target.closest('.bellwrap')){
-      p.hidden = true;
-      document.getElementById('bellBtn')?.setAttribute('aria-expanded', 'false');
-    }
+    const t = e.target;
+    if(!(t instanceof Element)) return;
+    Object.keys(POP).forEach(k => { if(!t.closest(POP[k][2])) shutPop(k); });
   });
 
   /* حبسُ التركيز والإغلاق بـEsc — على المستند لأن الدرج قد يُعاد رسمه */
   document.addEventListener('keydown', e => {
+    /* واللوحةُ المتدلّية أولى بالإغلاق: التركيزُ فيها، وهي لا تُفتح
+       مع الدرج أصلاً. ولذلك تسبق حارسَ `drawer-open` أدناه. */
+    if(e.key === 'Escape')
+      for(const k of Object.keys(POP))
+        if(popOpen(k)){ shutPop(k, true); return; }
     if(!document.body.classList.contains('drawer-open')) return;
     if(e.key === 'Escape'){ closeDrawer(); return; }
     if(e.key !== 'Tab') return;
@@ -646,8 +778,10 @@ function ensureDrawer(){
       المسجِّلُ رأى هذه العبارةَ يوم سجّل، **ومفردةٌ ثانية لشيءٍ واحد
       تُقرأ شيئاً آخر.**
 
-   📌 **ولا زرَّ صرفٍ ولا تذكيرٌ متكرّر:** الكتلةُ تسكن الدرجَ ولا تسبق
-      شاشة، ولا تُرى إلا حين يفتحه صاحبُها بنفسه. وتختفي بالجواب. */
+   📌 **ولا زرَّ صرفٍ ولا تذكيرٌ متكرّر:** الكتلةُ لا تسبق شاشةً، ولا
+      تُرى إلا حين يفتح صاحبُها قائمتَه بنفسه. وتختفي بالجواب.
+   🔓 **وموضعُها انتقل من الدرج إلى قائمة الحساب (b107)**، والمبدأ لم
+      يتغيّر بل اشتدّ: صيغةُ المخاطبة شأنُ حسابٍ لا وجهةُ تنقّل. */
 function gramAsk(prof){
   if(prof.gram_gender || !prof.id) return '';
   const r = roleOf();
@@ -656,7 +790,7 @@ function gramAsk(prof){
   return `
     <div class="gram-ask" id="gramAsk">
       <b>كيف نخاطبك؟</b>
-      <p>لتصحّ صيغةُ الجُمَل — «أحسنتَ» أم «أحسنتِ». إعدادٌ لغويٌّ
+      <p>لتصحّ صيغة الجُمَل — «أحسنتَ» أم «أحسنتِ». إعداد لغويّ
          يُقرأ في النصّ وحده، ولا يُستعمل في غيره.</p>
       <div class="nav">
         <button class="btn ghost" data-g="m">${m}</button>
@@ -665,9 +799,35 @@ function gramAsk(prof){
     </div>`;
 }
 
+/* الدرج — وجهاتٌ وحدها بعد `b107`. ورأسُه الشعارُ لا الهويّة: الهويّةُ
+   صارت رأسَ قائمة الحساب، **وسطرٌ واحدٌ في موضعين يُضعف كليهما**.
+   والدرجُ يغطّي الشعارَ في الشريط حين ينفتح، فيحمله بدله. */
 function renderDrawer(active){
   const d = document.getElementById('drawer');
   if(!d) return;
+  d.innerHTML = `
+    <div class="drawer-head">
+      ${brandMark()}
+      <button class="iconbtn" id="drawerX" aria-label="إغلاق القائمة">${svg('close')}</button>
+    </div>
+    <nav class="drawer-nav">
+      ${destsOf().map(([k, label]) => `
+        <button class="menu-item ${k === active ? 'on' : ''}" data-r="${k}">
+          ${svg(k)}<span>${label}</span>
+          ${NCOUNT[k] ? `<span class="bdg soft" data-n="${NCOUNT[k]}" hidden></span>` : ''}
+        </button>`).join('')}
+    </nav>`;
+  d.querySelector('#drawerX').onclick = closeDrawer;
+  wire(d);
+}
+
+/* ═══════════ قائمة الحساب — ما يخصّ صاحبَها لا وجهتَه  (b107) ═══════════
+
+   ⚠️ **ولا `role="menu"` عليها.** فيها ما ليس ببند: سطرُ الهويّة وسؤالُ
+      الصيغة. ولوحةٌ تُعلن نفسَها قائمةَ بنودٍ ثمّ تحمل غيرَها **تكذب على
+      قارئ الشاشة**، وهو لا يرى ما يصحّح لها. والجرسُ بنودٌ خُلَّص فبقي
+      على `role="menu"` — الفرقُ في المحتوى لا في الذوق. */
+function renderAcct(p){
   const prof = S.prof || {};
   /* 🆕 123 · سطرُ الهوية: الدورُ بصيغة صاحبه، ثمّ ما يُعرِّفه — الصفُّ
      للطالب والمدرسةُ للمعلّم. ومن لم يُسأل بعدُ يسقط دورُه ويبقى
@@ -675,47 +835,35 @@ function renderDrawer(active){
      الاثنان معاً، وإلا حجز حشوَه فارغاً. */
   const sub = [roleWord(roleOf(), prof.gram_gender),
                prof.klass || prof.school].filter(Boolean).join(' · ');
-  d.innerHTML = `
-    <div class="drawer-head">
-      <div class="who">
-        ${markSlot(prof, 44)}
-        <span class="who-t">
-          <b dir="auto">${esc(prof.full_name || 'حسابك')}</b>
-          ${sub ? `<span>${esc(sub)}</span>` : ''}
-        </span>
-      </div>
-      <button class="iconbtn" id="drawerX" aria-label="إغلاق القائمة">${svg('close')}</button>
+  p.innerHTML = `
+    <div class="who acct-head">
+      ${markSlot(prof, 40)}
+      <span class="who-t">
+        <b dir="auto">${esc(prof.full_name || 'حسابك')}</b>
+        ${sub ? `<span>${esc(sub)}</span>` : ''}
+      </span>
     </div>
     ${gramAsk(prof)}
-    <nav class="drawer-nav">
-      ${destsOf().map(([k, label]) => `
-        <button class="drawer-item ${k === active ? 'on' : ''}" data-r="${k}">
-          ${svg(k)}<span>${label}</span>
-          ${NCOUNT[k] ? `<span class="bdg soft" data-n="${NCOUNT[k]}" hidden></span>` : ''}
-        </button>`).join('')}
-    </nav>
-    <div class="drawer-foot">
-      ${/* 🆕 125 · «تغيير صورتي» بندُ حسابٍ لا وجهةَ عمل، فمكانه التذييل
-            مع السِمة والخروج لا قائمةُ الوجهات. والأيقونةُ علامتُه نفسُها
-            مصغَّرةً — **وأصدقُ أيقونةٍ للفعل نتيجتُه.** */''}
-      ${/* 🆕 b103 · «ملفّي» قبل «تغيير صورتي»: الأعمُّ يسبق الأخصّ، والصورةُ
-            بابُها من الملفّ أيضاً. **وشاشةٌ واحدةٌ للدورين** تتفرّع
-            بالدور — قسمُ الحساب فيها واحدٌ حرفاً، ونسختان تتفارقان. */''}
-      <button class="drawer-item" data-r="profile">${svg('profile')}<span>ملفّي</span></button>
-      <button class="drawer-item" data-r="avatar"
-        ><span class="av-ico">${renderMark(prof, 20)}</span><span>تغيير صورتي</span></button>
-      <button class="drawer-item" id="themeBtn">${svg('theme')}<span>تبديل السِمة</span></button>
-      <button class="drawer-item danger" data-r="out">${svg('out')}<span>خروج</span></button>
-    </div>`;
-  d.querySelector('#drawerX').onclick = closeDrawer;
-  d.querySelector('#themeBtn').onclick = toggleTheme;
+    ${/* 🆕 125 · «تغيير صورتي» بندُ حسابٍ لا وجهةَ عمل. والأيقونةُ علامتُه
+          نفسُها مصغَّرةً — **وأصدقُ أيقونةٍ للفعل نتيجتُه.** */''}
+    ${/* 🆕 b103 · «ملفّي» قبل «تغيير صورتي»: الأعمُّ يسبق الأخصّ، والصورةُ
+          بابُها من الملفّ أيضاً. **وشاشةٌ واحدةٌ للدورين** تتفرّع
+          بالدور — قسمُ الحساب فيها واحدٌ حرفاً، ونسختان تتفارقان. */''}
+    <button class="menu-item" data-r="profile">${svg('profile')}<span>ملفّي</span></button>
+    <button class="menu-item" data-r="avatar"
+      ><span class="av-ico">${renderMark(prof, 20)}</span><span>تغيير صورتي</span></button>
+    <button class="menu-item" id="themeBtn">${svg('theme')}<span>تبديل السِمة</span></button>
+    <button class="menu-item danger" data-r="out">${svg('out')}<span>خروج</span></button>`;
+
+  /* والسِمةُ لا تطوي اللوحة: من بدّلها قد يبدّلها ثانيةً ليقارن. */
+  p.querySelector('#themeBtn').onclick = toggleTheme;
 
   /* 🔴 **والفشلُ يُقال ولا يُبتلع.** لو أُخفيت الكتلةُ بمجرّد النقر ثمّ
      رُدّ الحفظ لظنّ صاحبُها أنّه أجاب، ثمّ وجد السؤالَ عائداً غداً بلا
      سبب. ⇒ يُعطَّل الزرّان ريثما يُردّ الجواب، ويُرجَعان عند الخطأ. */
-  d.querySelectorAll('#gramAsk [data-g]').forEach(b => b.onclick = async () => {
+  p.querySelectorAll('#gramAsk [data-g]').forEach(b => b.onclick = async () => {
     if(!gramSetter) return;
-    const btns = d.querySelectorAll('#gramAsk [data-g]');
+    const btns = p.querySelectorAll('#gramAsk [data-g]');
     btns.forEach(x => x.disabled = true);
     const err = await gramSetter(b.dataset.g);
     if(err){
@@ -723,10 +871,10 @@ function renderDrawer(active){
       toast('تعذّر الحفظ — ' + (err.message || '')); return;
     }
     S.prof.gram_gender = b.dataset.g;
-    renderDrawer(active);          // السطرُ والكتلةُ يتبعان الجواب فوراً
+    renderAcct(p);                 // السطرُ والكتلةُ يتبعان الجواب فوراً
   });
 
-  wire(d);
+  wire(p);
 }
 
 export function closeDrawer(){
@@ -739,6 +887,7 @@ export function closeDrawer(){
 
 function openDrawer(){
   ensureDrawer();
+  closePops();                     // لوحةٌ متدلّيةٌ تحت الغطاء تُنقر ولا تُرى
   document.body.classList.add('drawer-open');
   document.getElementById('menuBtn')?.setAttribute('aria-expanded', 'true');
   /* بعد الرسم لا قبله، وإلا ذهب التركيز إلى عنصرٍ لم يظهر بعد */
@@ -847,7 +996,7 @@ function paintSearch(hits, q, error){
   }
   if(!hits.length){
     box.innerHTML = `<div class="s-msg"><b>لا شيء يطابق «${esc(q)}»</b>
-      كلمةٌ واحدة، أو جذر الكلمة بلا سوابقَ ولواحق.</div>`;
+      كلمة واحدة، أو جذر الكلمة بلا سوابق ولواحق.</div>`;
     return;
   }
 
@@ -877,7 +1026,7 @@ function paintSearch(hits, q, error){
 export function openSearch(){
   ensureSearch();
   closeDrawer();
-  const p = document.getElementById('bellPanel'); if(p) p.hidden = true;
+  closePops();
   document.body.classList.add('search-open');
   /* بعد الرسم لا قبله: عنصرٌ ما زال visibility:hidden لا يقبل التركيز */
   requestAnimationFrame(() => {
@@ -911,14 +1060,8 @@ function bindSlash(){
   });
 }
 
-function toggleBell(){
-  const p = document.getElementById('bellPanel'), b = document.getElementById('bellBtn');
-  if(!p) return;
-  const show = p.hidden;
-  p.hidden = !show;
-  b.setAttribute('aria-expanded', String(show));
-  if(show){ p.innerHTML = bellHtml(); wire(p); p.querySelector('button')?.focus(); }
-}
+const toggleBell = () => togglePop('bell', p => { p.innerHTML = bellHtml(); wire(p); });
+const toggleAcct = () => togglePop('acct', renderAcct);
 
 /* ممرٌّ واحد للتوجيه: كلُّ [data-r] يُغلق ما فُتح ثم يذهب.
    والإغلاق قبل الذهاب لا بعده — فالشاشة الجديدة تُرسم وقد خلا الطريق. */
@@ -926,8 +1069,7 @@ function wire(root){
   root.querySelectorAll('[data-r]').forEach(b => b.onclick = () => {
     const go = ROUTES[b.dataset.r];
     closeDrawer();
-    const p = document.getElementById('bellPanel');
-    if(p) p.hidden = true;
+    closePops();
     if(go) go();
   });
 }
@@ -935,18 +1077,10 @@ function wire(root){
 // active = مفتاح الوجهة الحالية · النقر على النشط يُعيد التحميل
 export function nav(active){
   setWide(false);
-  /* ⚠️ لا نقرأ hero من className: nav() تسبق head() في أكثر الشاشات،
-     فقد نلتقط hero عالقةً من البوابة. نأخذ has-logo وحدها صراحةً. */
-  const bEl  = document.getElementById("brand");
-  /* has-logo صار مقصوداً هنا — لا غائباً كالسابق: الشعار متجهٌ حقيقيّ
-     الآن بنسخةٍ compact مبسّطة لأجل الأحجام الصغيرة، فيبقى حادّاً عند
-     ٢٥px بلا حاجةٍ للوردمارك النصّيّ الذي كان يعوّض عن الصورة القديمة. */
-  const mark = `<div class="brand topbrand has-logo">${bEl.innerHTML}</div>`;
-
-  bar.innerHTML = `<div class="topbar">
-    <button class="iconbtn" id="menuBtn" aria-label="القائمة"
+  bar.innerHTML =`<div class="topbar">
+    <button class="iconbtn" id="menuBtn" aria-label="التنقّل"
             aria-expanded="false" aria-controls="drawer">${svg('menu')}</button>
-    ${mark}
+    ${brandMark()}
     <span class="topgap"></span>
     <button class="iconbtn" id="searchBtn" aria-label="البحث">${svg('search')}</button>
     <span class="bellwrap">
@@ -955,10 +1089,14 @@ export function nav(active){
         class="bdg" id="bellBdg" hidden></span></button>
       <div class="bellpanel" id="bellPanel" role="menu" hidden></div>
     </span>
-    <button class="acct" id="acctBtn" aria-label="حسابك والقائمة">
-      ${markSlot(S.prof || {}, 30)}
-      <span class="acct-n" dir="auto">${esc((S.prof?.full_name || '').split(/\s+/)[0] || '')}</span>
-    </button>
+    <span class="acctwrap">
+      <button class="acct" id="acctBtn" aria-label="حسابك"
+              aria-expanded="false" aria-haspopup="true">
+        ${markSlot(S.prof || {}, 30)}
+        <span class="acct-n" dir="auto">${esc((S.prof?.full_name || '').split(/\s+/)[0] || '')}</span>
+      </button>
+      <div class="acctpanel" id="acctPanel" aria-label="حسابك" hidden></div>
+    </span>
   </div>`;
 
   ensureDrawer();
@@ -970,7 +1108,7 @@ export function nav(active){
 
   bar.querySelector('#searchBtn').onclick = openSearch;
   bar.querySelector('#menuBtn').onclick = openDrawer;
-  bar.querySelector('#acctBtn').onclick = openDrawer;   // بابان لغرفةٍ واحدة — لا قائمتان
+  bar.querySelector('#acctBtn').onclick = toggleAcct;   // غرفتان وبابان (b107)
   bar.querySelector('#bellBtn').onclick = toggleBell;
 }
 

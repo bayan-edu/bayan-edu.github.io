@@ -51,7 +51,11 @@
 import * as api from './api.js';
 import { S } from './state.js';
 import { app, bar, head, toast, esc, fmt, AR, mmss, media, pgMedia, srcOf,
-        optLabel, dirOf, ICONS, nav, scrollTop, skeleton } from './ui.js';
+        optLabel, dirOf, ICONS, nav, scrollTop, skeleton,
+        /* `N` محجوزةٌ هنا لخريطة أرقام الأسئلة (السطر ٦٦) — فتُستورد
+           دالّةُ العدد والمعدود باسمٍ آخر، ولا يُعاد تسميةُ المحلّية:
+           هي في أربعة عشر موضعاً وتلك في موضعٍ واحد. */
+        N as عدد } from './ui.js';
 import { loadList, loadLessons } from './student.js';
 import { questionText, questionBody, KIND_LABEL, gapCount, bodyRead } from './render_q.js';
 import { wireMatching } from './match_dnd.js';
@@ -262,7 +266,7 @@ function renderPage(){
      «سلّم» يُفشي للطالب حدَّ المحطّة وأصلُه يقول «التالي»، ويُخبره
      أنّ ما مضى قُضي فيه — وهو ما يمنعه التسكين عمداً. */
   const LBL_NEXT  = last && !PL ? 'إنهاء وتسليم'   : 'التالي';
-  const LBL_BLANK = last && !PL ? 'تسليمٌ دون إكمال' : 'متابعةٌ دون إجابة';
+  const LBL_BLANK = last && !PL ? 'تسليم دون إكمال' : 'متابعة دون إجابة';
 
   /* pgMedia تعرض الصوت في كل ما ليس صورةً ولا فيديو — فليكن
      التمييز هنا بالقاعدة نفسها، لا بقائمةٍ ثانية تتباعد عنها. */
@@ -274,12 +278,12 @@ function renderPage(){
   const lim = S.quiz.plays || null;
 
   head(S.quiz.title,
-    !many     ? "الجوابُ بتأنٍّ — كلُّ خيار خاطئ يمثّل فخاً مقصوداً"
+    !many     ? "الجواب بتأنّ — كلّ خيار خاطئ يمثّل فخاً مقصوداً"
     : isAudio ? (lim === 1
-        ? "يُشغَّل المقطع مرّةً واحدة — والاطّلاعُ على الأسئلة قبل تشغيله"
-        : lim ? `يُشغَّل المقطع ${AR(lim)} مرّات — والاطّلاعُ على الأسئلة أولاً`
-              : "الاطّلاعُ على الأسئلة أولاً ثمّ تشغيلُ المقطع")
-    :           "أسئلةُ نصٍّ واحد — يُرجَع إليه عند الحاجة");
+        ? "يُشغَّل المقطع مرّة واحدة — والاطّلاع على الأسئلة قبل تشغيله"
+        : lim ? `يُشغَّل المقطع ${AR(lim)} مرّات — والاطّلاع على الأسئلة أولاً`
+              : "الاطّلاع على الأسئلة أولاً ثمّ تشغيل المقطع")
+    :           "أسئلة نصّ واحد — يُرجَع إليه عند الحاجة");
    
   const from = AR(N.get(qs[0].id)), to = AR(N.get(qs[qs.length-1].id));
   bar.innerHTML = `<div class="timerbar">
@@ -419,8 +423,8 @@ function renderPage(){
 
   const warnHtml = b => `<div class="q-hint">
     بلا إجابة: ${b.map(q=>'س'+AR(N.get(q.id))).join(' · ')} —
-    الجوابُ إن كان لك ترجيح، وتُترك فارغةً إن لم يكن.
-    التخمينُ يقع في مشتّتٍ فيُسجَّل لك تشخيصٌ لا يخصّك.</div>`;
+    الجواب إن كان لك ترجيح، وتُترك فارغة إن لم يكن.
+    التخمين يقع في مشتّت فيُسجَّل لك تشخيص لا يخصّك.</div>`;
 
   /* والتنبيهُ لا يتجمّد بعد ظهوره: كلُّ إجابةٍ تُعيد حسابه، فيضيق
      بما بقي فارغاً ويزول هو ونصُّ الزرّ معاً إذا لم يبقَ شيء.
@@ -463,7 +467,7 @@ async function finish(auto){
      وهنا لا يُنتظر محتوى بل **حكم**. والطالبُ الذي سلّم للتوّ يسأل
      «ماذا يجري الآن؟» لا «أين سيقع النصّ؟» — فـ«جارٍ التصحيح» جوابٌ،
      وقضبانٌ رماديةٌ تمحوه. ⇒ الشبح للتحميل، والنصُّ للمعالجة. */
-  app.innerHTML = `<div class="status">جارٍ التصحيح…</div>`; bar.innerHTML = "";
+  app.innerHTML = `<div class="status">جار التصحيح…</div>`; bar.innerHTML = "";
 
     const payload = S.ans.map(a =>
       a.kind==='mcq' ? { q:a.q, o:a.o,   sec:a.sec, chg:a.chg }
@@ -487,12 +491,11 @@ async function finish(auto){
     PL = null;
     app.innerHTML = `
       <div class="card" style="text-align:center;padding:34px;max-width:520px;margin:0 auto">
-        <div style="font-size:2.4rem;margin-bottom:12px">🎯</div>
         <div class="rev-q">مستواك: ${esc(data.level || '')}</div>
         <div class="line" style="margin-top:10px">
-          حُدِّد بعد ${AR(data.stations || 0)} أقسام. ودروسُك صارت على مقاسك.</div>
+          حُدِّد بعد ${عدد(data.stations || 0,'قسم','قسمين','أقسام','قسماً')}. ودروسك صارت على مقاسك.</div>
         <div class="nav" style="margin-top:22px">
-          <button class="btn primary" id="plgo">بدءُ التعلّم ←</button></div>
+          <button class="btn primary" id="plgo">بدء التعلّم ←</button></div>
       </div>`;
     document.getElementById("plgo").onclick = () => loadList();
     return;
@@ -509,10 +512,10 @@ async function finish(auto){
 /* ═══════════ ⑥ النتيجة والتشخيص ═══════════ */
 
 function verdict(p){
-  if(p>=90) return "إتقان ممتاز — والدرسُ التالي في متناولك";
-  if(p>=75) return "جيد جداً — ومراجعةُ الفخاخ أدناه تُتمّ الإتقان";
-  if(p>=50) return "المطلوب مراجعةٌ مركّزة — والبدايةُ بالأسئلة الحمراء";
-  return "إعادةُ قراءة الدرس ثمّ إعادةُ المحاولة";
+  if(p>=90) return "إتقان ممتاز — والدرس التالي في متناولك";
+  if(p>=75) return "جيد جداً — ومراجعة الفخاخ أدناه تُتمّ الإتقان";
+  if(p>=50) return "المطلوب مراجعة مركّزة — والبداية بالأسئلة الحمراء";
+  return "إعادة قراءة الدرس ثمّ إعادة المحاولة";
 }
 
 function renderResult(){
@@ -567,12 +570,12 @@ function renderResult(){
   const patternOf = (wide, narr, keys) =>
       (wide && narr) ? { t:'الحدّ مضطرب من طرفيه',
         s:`أدخلت ${AR(wide)} مما ليس منه، وأغفلت ${AR(narr)} مما هو منه.` }
-    : wide           ? { t:'توسيعٌ للمفهوم',
-        s:`عرفت المجموعة كلها ثم زدت عليها ${AR(wide)}. والسؤالُ عن كل خيار وحده: أينتمي حقاً؟` }
+    : wide           ? { t:'توسيع للمفهوم',
+        s:`عرفت المجموعة كلها ثم زدت عليها ${AR(wide)}. والسؤال عن كل خيار وحده: أينتمي حقاً؟` }
     : (narr >= keys) ? { t:'الحدّ لم يتّضح بعد',
-        s:'لا صوابَ من هذه المجموعة — وتُعاد قراءة الشرح قبل الإعادة.' }
-    :                  { t:'توقُّفٌ قبل الإكمال',
-        s:`لا خطأ في حكمٍ واحد، لكن بقي ${AR(narr)} من المجموعة. والتعليمة تطلب كلَّ ما ينطبق — فتُكمَل الخيارات كلها قبل الانتقال.` };
+        s:'لا صواب من هذه المجموعة — وتُعاد قراءة الشرح قبل الإعادة.' }
+    :                  { t:'توقُّف قبل الإكمال',
+        s:`لا خطأ في حكم واحد، لكن بقي ${AR(narr)} من المجموعة. والتعليمة تطلب كلّ ما ينطبق — فتُكمَل الخيارات كلها قبل الانتقال.` };
 
   const objective = r.review.filter(x=>x.kind!=='essay').map((x,i)=>{
     const c = opt(x.chosen), k = opt(x.correct);
@@ -631,8 +634,8 @@ function renderResult(){
       ${x.is_correct?'':`
                           <div class="trap"><strong>تشخيص الخطأ:</strong>
           ${fmt(x.explanation||'')}
-                      ${!msq && (x.note || x.remedy)?`<div style="margin-top:8px;opacity:.9">🎯 ${fmt(x.note || x.remedy)}</div>`:''}</div>
-        ${x.remedial?`<div class="remedy"><strong>مراجعةٌ قبل الإعادة</strong>
+                      ${!msq && (x.note || x.remedy)?`<div style="margin-top:8px;opacity:.9">${fmt(x.note || x.remedy)}</div>`:''}</div>
+        ${x.remedial?`<div class="remedy"><strong>مراجعة قبل الإعادة</strong>
           <a href="${esc(x.remedial.url||'#')}" target="_blank" rel="noopener"
              style="color:var(--accent)">${ICONS[x.remedial.kind]||'📎'} ${esc(x.remedial.title)}</a></div>`:''}`}
     </div>`;
@@ -684,8 +687,8 @@ function renderResult(){
       <div class="score-num">${AR(r.score)} / ${AR(r.total)}</div>
       <div class="score-of">الأسئلة المصحَّحة آلياً · زمن الحل ${mmss(r.secs)}</div>
       <div class="verdict">${verdict(r.pct)}</div>
-      ${r.lesson_done?'<div class="unlocked">🎉 أتممت هذا الدرس بنجاح</div>':''}
-      ${(r.unlocked||[]).length?`<div class="unlocked">🔓 فُتح لك الآن: ${esc(r.unlocked.join(' · '))}</div>`:''}
+      ${r.lesson_done?'<div class="unlocked">أتممت هذا الدرس</div>':''}
+      ${(r.unlocked||[]).length?`<div class="unlocked">فُتح لك الآن: ${esc(r.unlocked.join(' · '))}</div>`:''}
     </div>
     <div class="nav"><button class="btn primary" id="again">إعادة الاختبار</button></div>
     <h2 class="sec">المراجعة التشخيصية</h2>${objective}${recur}

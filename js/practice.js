@@ -20,7 +20,7 @@
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
 import { app, bar, head, toast, esc, fmt, AR, media, pgMedia, srcOf,
-         scrollTop } from './ui.js';
+         scrollTop, N } from './ui.js';
 import { questionText, questionBody, KIND_LABEL } from './render_q.js';
 import { wireMatching } from './match_dnd.js';
 
@@ -35,8 +35,8 @@ const PLEDGE = 'جلسة تدرّب — لا تُقيَّم ولا تُسجَّ�
 
 export async function openPractice(token){
   bar.innerHTML = "";
-  head("جلسة تدرّب", "جارٍ فتح الرابط…");
-  app.innerHTML = `<div class="status">جارٍ فتح الرابط…</div>`;
+  head("جلسة تدرّب", "جار فتح الرابط…");
+  app.innerHTML = `<div class="status">جار فتح الرابط…</div>`;
 
   const { data, error } = await api.openPractice(token);
   if(error){ return fail(error.message); }
@@ -55,8 +55,8 @@ function fail(msg){
   head("جلسة تدرّب", "");
   app.innerHTML = `
     <div class="err"><b>تعذّر فتح الجلسة</b>${esc(msg)}</div>
-    <p class="hint">ولعلّ الرابط صحيح — فيُطلب من معلّمك رابطٌ جديد،
-      إذ روابطُ التدرّب لها مدّةٌ تنتهي.</p>`;
+    <p class="hint">ولعلّ الرابط صحيح — فيُطلب من معلّمك رابط جديد،
+      إذ روابط التدرّب لها مدّة تنتهي.</p>`;
 }
 
 
@@ -71,13 +71,13 @@ function intro(){
     <div class="card">
       <div class="line" style="color:var(--text)">
         ${P.kind === 'cards'
-          ? `${AR(n)} بطاقة — تُقلَب، والحكمُ على نفسك.`
-          : `${AR(n)} سؤالاً — والجوابُ يُتبَع بـ<b>أيِّ خطأٍ وقعت فيه وما علاجه</b>،
+          ? `${N(n,'بطاقة','بطاقتان','بطاقات','بطاقة')} — تُقلَب، والحكم على نفسك.`
+          : `${N(n,'سؤال','سؤالان','أسئلة','سؤالاً')} — والجواب يُتبَع بـ<b>أيّ خطأ وقعت فيه وما علاجه</b>،
              لا «أخطأت» وحدها.`}
       </div>
       <div class="line" style="margin-top:10px">
-        ولا حدَّ للمحاولات: يُعاد السؤال حتى يُفهَم.
-        ${P.expires ? `· والرابط صالحٌ حتى ${esc(new Date(P.expires)
+        ولا حدّ للمحاولات: يُعاد السؤال حتى يُفهَم.
+        ${P.expires ? `· والرابط صالح حتى ${esc(new Date(P.expires)
             .toLocaleDateString('ar-EG', { year:'numeric', month:'long', day:'numeric' }))}` : ''}
       </div>
       <label class="fl" style="margin-top:16px">اسمك <span style="opacity:.6">(اختياري)</span></label>
@@ -156,7 +156,7 @@ function cardHtml(c){
       </div>
     </div>
     <div class="nav" style="margin-top:16px">
-      <button class="btn primary" id="pflip">قلبُ البطاقة</button>
+      <button class="btn primary" id="pflip">قلب البطاقة</button>
     </div>
     <div id="rate" hidden>
       <p class="hint">كيف كانت؟</p>
@@ -236,7 +236,7 @@ async function send(){
 
   if(P.shown){ P.i++; draw(); return; }        // الزرُّ نفسُه يصير «التالي»
 
-  btn.disabled = true; btn.textContent = 'جارٍ التحقّق…';
+  btn.disabled = true; btn.textContent = 'جار التحقّق…';
   const { data, error } = await api.answerPractice(P.token, P.name, q.id, payload(q, P.a));
   btn.disabled = false;
 
@@ -261,7 +261,7 @@ function feedback(r){
     ? `<div class="line">أصبت ${AR(r.hits)} من ${AR(r.of)}</div>` : '';
   return `
     <div class="rev ${ok ? 'ok' : 'no'}" style="margin-top:14px">
-      <span class="tag ${ok ? 'ok' : 'no'}">${ok ? 'أصبت' : 'أخطأت'}</span>
+      <span class="tag ${ok ? 'ok' : 'no'}">${ok ? 'صحيحة' : 'خاطئة'}</span>
       ${part}
       ${!ok && r.correct != null
         ? `<div class="line" dir="auto">الصواب: <b>${esc(showCorrect(r))}</b></div>` : ''}
@@ -320,17 +320,17 @@ function done(){
       <div class="line" style="color:var(--text);font-size:var(--fs-read)">
         انتهت الجلسة${P.name ? ` يا ${esc(P.name)}` : ''}.</div>
       <div class="line" style="margin-top:8px">${PLEDGE}.
-        ومن أراد قياساً حقيقياً ومتابعةَ معلّمٍ فليسجّل في بيان.</div>
+        ومن أراد قياساً حقيقياً ومتابعة معلّم فليسجّل في بيان.</div>
     </div>
 
     ${rows.length ? `
       <h2 class="sec">ما تكرّر معك</h2>
-      <p class="hint">يوصف الوقوعُ ولا يُضاف إليك — والمرّةُ الواحدة صدفةٌ لا نمط.</p>
+      <p class="hint">يوصف الوقوع ولا يُضاف إليك — والمرّة الواحدة صدفة لا نمط.</p>
       ${rows.map(([note, n]) => `
         <div class="rev no"><span class="tag no">${AR(n)}</span>
           <div class="line" dir="auto" style="color:var(--text)">${fmt(note)}</div>
         </div>`).join("")}`
-    : `<p class="hint">لم يُسجَّل نمطُ خطأٍ متكرّر في هذه الجلسة.</p>`}
+    : `<p class="hint">لم يُسجَّل نمط خطأ متكرّر في هذه الجلسة.</p>`}
 
     <div class="nav" style="margin-top:20px">
       <button class="btn primary" id="pagain">إعادة الجلسة</button>

@@ -17,7 +17,7 @@ import { S } from './state.js';
 import { openMatchGame, eligible } from './card_game_match.js';
 import { app, head, toast, esc, AR, errBox, nav, scrollTop,
          dirOf, shrinkFont, examples, pickExample,
-         skeleton } from './ui.js';
+         skeleton, N } from './ui.js';
 
 let subjects = [];   // { id, name, due }
 
@@ -73,7 +73,7 @@ function openSubjectCards(subject){
 
     <div class="nav" style="margin:16px 0">
       <button class="btn" id="add">＋ إضافة كلمة</button>
-      <button class="btn" id="play" hidden>⚔️ كلمة × معنى</button>
+      <button class="btn" id="play" hidden>كلمة × معنى</button>
     </div>`;
 
   document.getElementById('bk').onclick = loadFlashcards;
@@ -92,7 +92,7 @@ function openSubjectCards(subject){
     const b = document.getElementById('play');
     if(!b) return;
     b.hidden = false;
-    b.textContent = `⚔️ كلمة × معنى · ${AR(pool.length)}`;
+    b.textContent = `كلمة × معنى · ${AR(pool.length)}`;
     b.onclick = () => openMatchGame({
       subject, cards: pool,
       onExit: () => openSubjectCards(subject) });
@@ -121,7 +121,7 @@ export function openSession(subject, opts = {}){
   const missing = ['dueCards','reviewCard','saveMyNote']
     .filter(f => typeof api[f] !== 'function');
   if(missing.length){
-    app.innerHTML = `<div class="err"><b>ناقصٌ في api.js</b>
+    app.innerHTML = `<div class="err"><b>ناقص في api.js</b>
       لم تُضَف: ${missing.join(' · ')}</div>`;
     return;
   }
@@ -229,7 +229,7 @@ export function openSession(subject, opts = {}){
       el("bfCard").classList.remove('flipped');
 
       el("bfFront").innerHTML = `
-        ${c.entry === 'dx' ? '<div class="ed-m"><span class="chip">📍 من إجابةٍ سابقة</span></div>' : ''}
+        ${c.entry === 'dx' ? '<div class="ed-m"><span class="chip">من إجابة سابقة</span></div>' : ''}
         ${gap ? '<div class="bf-prompt">ما الكلمة الناقصة؟</div>' : ''}
         <div class="bf-front-q" id="bfQ" dir="${dirOf(c.front)}"
           >${esc(c.front).replace(/\{\{\s*\}\}/g, '<span style="opacity:.45">______</span>')}</div>
@@ -251,10 +251,10 @@ export function openSession(subject, opts = {}){
 
       el("bfBack").innerHTML = `
         ${c.audio ? `<div style="display:flex;justify-content:flex-end;margin-bottom:6px">
-            <span class="chip">🔊 نُطق</span></div>` : ''}
+            <span class="chip">نُطق</span></div>` : ''}
 
         ${c.entry === 'dx' && c.dx_note ? `
-          <div class="bf-label">🎯 سبب المراجعة</div>
+          <div class="bf-label">سبب المراجعة</div>
           <div class="bf-note" style="margin-bottom:12px">${esc(c.dx_note)}</div>` : ''}
 
         ${compare ? `
@@ -374,9 +374,9 @@ export function openSession(subject, opts = {}){
       const line = failed
         ? { t: 'ما نسيته اليوم يعود غداً — وعندها يثبت', thumb: true }
         : firstTimers === total
-        ? { t: 'بدايةٌ جيدة. والعودةُ غداً تُري الفرق', thumb: false }
+        ? { t: 'بداية جيدة. والعودة غداً تُري الفرق', thumb: false }
         : counts[2] >= counts[3]
-        ? { t: 'أصعبُ ما راجعته، سيكون الأكثر ثباتاً', thumb: true }
+        ? { t: 'أصعب ما راجعته، سيكون الأكثر ثباتاً', thumb: true }
         : { t: 'حفظتها كلها. لن تعود قريباً', thumb: false };
 
       const reviewed = counts[1] + counts[2] + counts[3];
@@ -391,11 +391,12 @@ export function openSession(subject, opts = {}){
             <div style="font-size:1.05rem;font-weight:500;margin-bottom:6px">
               ${line.thumb ? '<span style="opacity:.8">👍</span> ' : ''}${esc(line.t)}
             </div>
-            <div class="ed-m" style="justify-content:center;margin:14px 0">راجعت ${AR(reviewed)} بطاقة</div>
+            <div class="ed-m" style="justify-content:center;margin:14px 0">راجعت ${
+              N(reviewed,'بطاقة','بطاقتين','بطاقات','بطاقة')}</div>
             <button class="btn primary" id="back" style="width:100%">عودة</button>
             ${playable.length >= 4 ? `
               <button class="btn" id="play" style="width:100%;margin-top:8px"
-                >⚔️ كلمة × معنى · ${AR(playable.length)} بطاقة</button>` : ''}
+                >كلمة × معنى · ${N(playable.length,'بطاقة','بطاقتان','بطاقات','بطاقة')}</button>` : ''}
           </div>
         </div>`;
 
@@ -411,7 +412,7 @@ export function openSession(subject, opts = {}){
             const { data } = await api.dueCounts();
             const rest = (data || []).filter(x => x.subject_id !== subject.id)
                                       .reduce((a, x) => a + x.due, 0);
-            if(rest > 0) toast(`متبقٍّ اليوم: ${AR(rest)} في موادّ أخرى`);
+            if(rest > 0) toast(`متبقّ اليوم: ${AR(rest)} في موادّ أخرى`);
           }catch(e){}
         }
         goBack();
@@ -475,11 +476,12 @@ async function addByWriting(subject){
 
   const out = document.getElementById('out');
   if(data.action === 'already')
-    out.innerHTML = `<div class="ed-empty">✅ هذه عندك منذ فترة — تعود بعد ${AR(data.due_in_days)} يوماً</div>`;
+    out.innerHTML = `<div class="ed-empty">✔ هذه عندك منذ فترة — تعود بعد ${
+      N(data.due_in_days,'يوم','يومين','أيام','يوماً')}</div>`;
   else if(data.action === 'attached')
-    out.innerHTML = `<div class="ed-empty">✅ موجودةٌ في «${esc(data.deck)}» — أُضيفت إلى مراجعتك</div>`;
+    out.innerHTML = `<div class="ed-empty">✔ موجودة في «${esc(data.deck)}» — أُضيفت إلى مراجعتك</div>`;
   else
-    out.innerHTML = `<div class="ed-empty">✅ أُضيفت إلى «${esc(data.deck)}»</div>`;
+    out.innerHTML = `<div class="ed-empty">✔ أُضيفت إلى «${esc(data.deck)}»</div>`;
 
   document.getElementById('fr').value = '';
   document.getElementById('bk2').value = '';
@@ -515,14 +517,14 @@ function openBrowseDeck(subject, deck){
         ${cards.map(row).join("")}
       </div>
       <div class="nav" style="margin-top:16px;position:sticky;bottom:12px">
-        <button class="btn primary" id="sub" style="width:100%">اشتراكٌ بالمُختار</button>
+        <button class="btn primary" id="sub" style="width:100%">اشتراك بالمُختار</button>
       </div>`;
 
     document.getElementById('bk').onclick = () => openAdd(subject);
     document.getElementById('sub').onclick = async () => {
       const ids = [...app.querySelectorAll('[data-c]:checked:not(:disabled)')]
                     .map(i => +i.dataset.c);
-      if(!ids.length) return toast('بطاقةٌ واحدةٌ على الأقل', false);
+      if(!ids.length) return toast('بطاقة واحدة على الأقل', false);
 
       const { data, error } = await api.subscribeCards(ids);
       if(error) return toast(error.message, false);

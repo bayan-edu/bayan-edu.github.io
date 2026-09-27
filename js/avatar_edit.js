@@ -68,7 +68,7 @@ function render(){
   app.innerHTML = `
     <div class="crumb" id="bk">← رجوع</div>
 
-    ${/* 🔴 الحجمان معاً — القرارُ عند الكبير والعيشُ عند الصغير */''}
+    ${''}/* 🔴 الحجمان معاً — القرارُ عند الكبير والعيشُ عند الصغير */
     <div class="card av-prev">
       <div class="av-prev-big">${renderMark(p, 140)}</div>
       <div class="av-prev-side">
@@ -88,13 +88,13 @@ function render(){
                inputmode="text" aria-label="حرف العلامة">
         ${D.avatar_letter
           ? `<button type="button" class="btn ghost" id="avLrst">إرجاعُه إلى «${esc(derived)}»</button>`
-          : `<span class="line">مشتقٌّ من «${esc(S.prof?.full_name || '')}»</span>`}
+          : `<span class="line">مشتقّ من «${esc(S.prof?.full_name || '')}»</span>`}
       </div>
     </div>
 
     <div class="nav" style="margin-top:20px">
       <button class="btn primary" id="avSave">حفظ</button>
-      <button class="btn ghost" id="avReset">إرجاعُ الكلّ إلى المشتقّ</button>
+      <button class="btn ghost" id="avReset">إرجاع الكلّ إلى المشتقّ</button>
     </div>`;
 
   wire();
@@ -140,7 +140,7 @@ function wire(){
     /* 🔴 **وصفرُ صفوفٍ ليس نجاحاً.** سياسةُ RLS تحجب فتُعيد صفراً **بلا
        خطأ**، فتقول الشاشةُ «حُفظت» ولم يُحفظ شيء — وهو عينُ العطل الذي
        كلّف `106` (تعليمُ الملاحظة مقروءةً). ⇒ يُقرأ عددُ ما تغيّر. */
-    if(!data?.length){ toast('لم يقع الحفظ — لم يمسَّ صفَّك شيء'); return; }
+    if(!data?.length){ toast('لم يقع الحفظ — لم يمسّ صفَّك شيء'); return; }
     /* 🔑 والملفُّ الحيُّ يتبع المحفوظ فوراً: العلامةُ في الشريط والدرج
        تُرسم من `S.prof`، ولو لم يُحدَّث لبقيت القديمةَ حتى إعادة تحميل
        — **فيظنّ صاحبُها أنّ الحفظ لم يقع.** */
@@ -153,8 +153,8 @@ function wire(){
 
 export async function openAvatarEdit(){
   nav('subjects');
-  head('صورتي', 'أربعةُ محاور — والمعاينةُ حيّةٌ قبل الحفظ');
-  app.innerHTML = `<div class="status">جارٍ التحميل…</div>`;
+  head('صورتي', 'أربعة محاور — والمعاينة حيّة قبل الحفظ');
+  app.innerHTML = `<div class="status">جار التحميل…</div>`;
   await whenReady();                 // الخطُّ قبل أوّل قياس (١٢٥)
   const p = S.prof || {};
   D = { avatar_kind:p.avatar_kind ?? null, avatar_motif:p.avatar_motif ?? null,

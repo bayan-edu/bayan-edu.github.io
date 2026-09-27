@@ -23,7 +23,7 @@ export async function openItems(course, lesson){
   ctx = { course, lesson };
   nav('editor'); setWide(true);
   head("مصادر الدرس", lesson.title);
-  app.innerHTML = `<div class="status">جارٍ التحميل…</div>`;
+  app.innerHTML = `<div class="status">جار التحميل…</div>`;
 
   const { data, error } = await api.lessonItems(lesson.id);
   if(error){ app.innerHTML = errBox(error, 'مصادر الدرس'); return; }
@@ -87,7 +87,7 @@ function render(){
         ونتائجها تُسجَّل في سجلّ الطالب.</p>` : ''}
 
     ${!D.curate ? `<div class="nav" style="margin-top:16px">
-        <button class="btn primary" id="addx">＋ إضافة مصدرٍ باسمي</button>
+        <button class="btn primary" id="addx">＋ إضافة مصدر باسمي</button>
       </div>` : ''}`;
 
   document.getElementById("bk").onclick = () => openCourse(ctx.course);
@@ -124,8 +124,8 @@ function form(item, official){
             <b>الصوت:</b> يُرفع إلى المخزن ثمّ يُلصق مفتاحه — <code>audio/l1-a1.mp3</code>
             — فيُشغَّل داخل الدرس.<br>
             ${k.code === 'simulation'
-              ? '<b>المحاكاة:</b> ملفٌّ مستقلّ في مستودع الموقع نفسه — الصق مساره النسبي (مثلاً <code>sims/الاسم.html</code>) أو رابطه الكامل. يُضمَّن داخل الدرس، لا يُفتح في تبويب. زرّ الرفع أعلاه للصوت وحده — تجاهله هنا.'
-              : '<b>غيره:</b> رابطٌ يُفتح في تبويب جديد. تأكّد أنه متاح للطلاب.'}</div>` : ''}
+              ? '<b>المحاكاة:</b> ملفّ مستقلّ في مستودع الموقع نفسه — الصق مساره النسبي (مثلاً <code>sims/الاسم.html</code>) أو رابطه الكامل. يُضمَّن داخل الدرس، لا يُفتح في تبويب. زرّ الرفع أعلاه للصوت وحده — تجاهله هنا.'
+              : '<b>غيره:</b> رابط يُفتح في تبويب جديد. تأكّد أنه متاح للطلاب.'}</div>` : ''}
         </div>
 
         <div class="card" style="flex:1">

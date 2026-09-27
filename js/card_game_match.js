@@ -28,7 +28,7 @@
    ④ لا مكتبة صوت: نغماتٌ من Web Audio.
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
-import { app, esc, AR, toast, scrollTop, dirOf, examples, pickExample } from './ui.js';
+import { app, esc, AR, toast, scrollTop, dirOf, examples, pickExample, N } from './ui.js';
 
 const SHIELDS   = 3;
 const PER_ROUND = 5;
@@ -43,20 +43,20 @@ const L = {
     dir: 'rtl',
     title:  s => 'فرسان ' + s,
     sound:  'الصوت',
-    need:   'تحتاج أربع بطاقاتٍ لها أمثلة',
+    need:   'تحتاج أربع بطاقات لها أمثلة',
     broke:  'انكسرت الدروع الثلاثة',
     confused: 'التبس عليك',
-    board:  n => `لوحة الأسبوع · ${AR(n)} لاعب`,
+    board:  n => `لوحة الأسبوع · ${N(n,'لاعب','لاعبان','لاعبون','لاعباً')}`,
     first:  'كن أوّل من يسجّل',
     streak: n => `أطول سلسلة ${AR(n)}`,
-    again:  'مرّةً أخرى',
+    again:  'مرّة أخرى',
     out:    'عودة',
     failed: m => `تعذّر حفظ النتيجة: ${m}`,
     sec:    n => `${AR(n)} ث`,
     num:    AR,
-    toPrince: 'أسرعُ قليلاً وتبلغ الإمارة',
-    toKnight: 'بلا خدشٍ وتبلغ الفروسية',
-    scratch: n => n === 0 ? 'بلا خدش' : n === 1 ? 'خدشٌ واحد'
+    toPrince: 'أسرع قليلاً وتبلغ الإمارة',
+    toKnight: 'بلا خدش وتبلغ الفروسية',
+    scratch: n => n === 0 ? 'بلا خدش' : n === 1 ? 'خدش واحد'
                 : n === 2 ? 'خدشان'   : `${AR(n)} خدوش`,
     ranks: [
       { t: 'أمير البيان', i: '👑' },

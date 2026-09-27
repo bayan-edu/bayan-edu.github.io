@@ -13,7 +13,7 @@
         ومتى سُمّي صار فئةً، ومتى صار فئةً سكنه المحتوى وبقي.
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
-import { app, head, toast, esc, AR, errBox, nav, setWide, scrollTop } from './ui.js';
+import { app, head, toast, esc, AR, errBox, nav, setWide, scrollTop, N } from './ui.js';
 import { openCourse } from './editor.js';
 
 /* ── ذاكرةٌ لكل مادة ──────────────────────────────────────────
@@ -75,7 +75,7 @@ export async function openStrands(course, subject){
   editing = null;
   nav('editor'); setWide(true);
   head("فروع المادة", subject?.name || course.title);
-  app.innerHTML = `<div class="status">جارٍ التحميل…</div>`;
+  app.innerHTML = `<div class="status">جار التحميل…</div>`;
   clearStrands(subject.id);
   render(await strandsOf(subject.id));
 }
@@ -92,7 +92,8 @@ function render(list){
           <span class="chip">${esc(x.code)}</span>
           ${x.selectable
             ? `<span class="chip${(x.lessons + x.items) ? ' g' : ''}">${
-                 AR(x.lessons)} درساً · ${AR(x.items)} مكوّناً</span>`
+                 N(x.lessons,'درس','درسان','دروس','درساً')} · ${
+                 N(x.items,'مكوّن','مكوّنان','مكوّنات','مكوّناً')}</span>`
             : `<span class="chip">حاوية — يُوسَم ورقُها لا هي</span>`}
         </div>
       </div>
@@ -104,23 +105,23 @@ function render(list){
     <div class="crumb" id="bk">← دروس المقرَّر</div>
 
     <div class="ed-hint">🌿 الفرع يجيب عمّا لا تجيب عنه الدرجة: <b>أين يسكن الضعف؟</b>
-      و«٦٢٪ في المادة» لا تُترجَم إلى فعلٍ غداً، أمّا «نحو ٨٨٪ · بلاغة ٤١٪» فتُترجَم.</div>
+      و«٦٢٪ في المادة» لا تُترجَم إلى فعل غداً، أمّا «نحو ٨٨٪ · بلاغة ٤١٪» فتُترجَم.</div>
 
     <div class="ed-hint" style="opacity:.85">
-      <b>أربعةٌ إلى ستّة لكلّ مادة.</b> فالتقرير لا يتكلّم عن فرعٍ قبل عشر إجاباتٍ
-      فيه — وثمانيةُ فروعٍ تعني ثمانين إجابةً قبل أن يقول شيئاً.
-      والفرع يُشقّ لاحقاً حين يمتلئ، أمّا جمعُ فرعين افترقا فيُعيد تصنيف تاريخٍ مضى.
-      <br>🔑 والاختبار قبل كلّ اسم: <b>لو قال التقرير إن الطالب ضعيفٌ هنا، فما الذي
-      يُعطى له غداً؟</b> فإن لم يكن ثمَّ جواب، فالفرع اسمٌ لا تشخيص.</div>
+      <b>أربعة إلى ستّة لكلّ مادة.</b> فالتقرير لا يتكلّم عن فرع قبل عشر إجابات
+      فيه — وثمانية فروع تعني ثمانين إجابة قبل أن يقول شيئاً.
+      والفرع يُشقّ لاحقاً حين يمتلئ، أمّا جمع فرعين افترقا فيُعيد تصنيف تاريخ مضى.
+      <br>🔑 والاختبار قبل كلّ اسم: <b>لو قال التقرير إن الطالب ضعيف هنا، فما الذي
+      يُعطى له غداً؟</b> فإن لم يكن ثمّ جواب، فالفرع اسم لا تشخيص.</div>
 
-    ${first ? `<div class="warnbox">أوّل فرعٍ تُنشئه <b>يُفعّل حارس النشر في هذه المادة</b>:
-      لن يُنشر بعده درسٌ حتى يُوسَم هو أو أحد مكوّناته. والمنشور اليوم لا يُمسّ.</div>` : ''}
+    ${first ? `<div class="warnbox">أوّل فرع تُنشئه <b>يُفعّل حارس النشر في هذه المادة</b>:
+      لن يُنشر بعده درس حتى يُوسَم هو أو أحد مكوّناته. والمنشور اليوم لا يُمسّ.</div>` : ''}
 
     <div class="grp">الفروع <span class="chip">${AR(list.length)}</span></div>
     ${list.length ? list.map(row).join('') : '<div class="ed-empty">لا فروع بعد</div>'}
 
     <div class="card" style="margin-top:18px">
-      <div class="grp" style="margin-top:0">${editing ? 'تحرير فرع' : 'فرعٌ جديد'}</div>
+      <div class="grp" style="margin-top:0">${editing ? 'تحرير فرع' : 'فرع جديد'}</div>
 
       <label class="fl">الاسم *</label>
       <input type="text" id="nm" value="${esc(editing?.name || '')}"
@@ -129,8 +130,8 @@ function render(list){
       <label class="fl" style="margin-top:14px">الكود *</label>
       <input type="text" id="cd" value="${esc(editing?.code || '')}"
              placeholder="BL" style="max-width:180px">
-      <p class="small">حروفٌ لاتينية كبيرة: <code>NH · BL · ALG</code> — تُعرض للمؤلّف
-        لا للطالب، وتبقى ثابتةً وإن تغيّر الاسم.</p>
+      <p class="small">حروف لاتينية كبيرة: <code>NH · BL · ALG</code> — تُعرض للمؤلّف
+        لا للطالب، وتبقى ثابتة وإن تغيّر الاسم.</p>
 
       <div class="ed-3" style="margin-top:14px">
         <div>
@@ -138,7 +139,7 @@ function render(list){
           ${editing && !editing.selectable
             ? `<div class="chip">لهذا الفرع أبناء — فلا يصير فرعاً لغيره</div>`
             : `<select id="pa">
-                 <option value="">— فرعٌ رئيس —</option>
+                 <option value="">— فرع رئيس —</option>
                  ${list.filter(x => !x.parent_id && String(x.id) !== String(editing?.id))
                        .map(x => `<option value="${x.id}"${
                          String(editing?.parent_id) === String(x.id) ? ' selected' : ''
@@ -152,7 +153,7 @@ function render(list){
         </div>
         <div></div>
       </div>
-      <p class="small">الشجرة طبقتان: فرعٌ وفرعُه. و«بحتة» حاويةٌ لا تُوسَم —
+      <p class="small">الشجرة طبقتان: فرع وفرعُه. و«بحتة» حاوية لا تُوسَم —
         يُوسَم ورقُها («جبر»).</p>
 
       <div class="nav" style="margin-top:14px">

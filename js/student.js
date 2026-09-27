@@ -9,7 +9,7 @@ import * as api from './api.js';
 import { S } from './state.js';
 import { app, head, toast, esc, AR, ICONS, KINDS, bubble, errBox, nav,
          refreshCounts, scrollTop, scrollBottom, shape, icon,
-         skeleton, G } from './ui.js';
+         skeleton, G, N, NW } from './ui.js';
 import { startQuiz } from './quiz.js';
 import { mediaUrl, isManaged } from './media.js';
 import { isSim, openSim } from './simulations.js';
@@ -82,9 +82,9 @@ function todayStrip(){
   if(back && bulk(back) > 0 && !isDone(back) && !back.needs_placement)
     acts.push(['go-resume', 'resume',   'ta-accent', 'متابعة',  back.name]);
   if((c.due || 0) > 0)
-    acts.push(['go-cards',  'cards',    'ta-ok',     'استرجاع', `${AR(c.due)} بطاقة استحقّت`]);
+    acts.push(['go-cards',  'cards',    'ta-ok',     'استرجاع', `${N(c.due,'بطاقة','بطاقتان','بطاقات','بطاقة')} استحقّت`]);
   if((c.feedback || 0) > 0)
-    acts.push(['go-fb',     'feedback', 'ta-dx',     'معالجة',  `${AR(c.feedback)} ملاحظة جديدة`]);
+    acts.push(['go-fb',     'feedback', 'ta-dx',     'معالجة',  N(c.feedback,'ملاحظة جديدة','ملاحظتان جديدتان','ملاحظات جديدة','ملاحظة جديدة')]);
 
   if(!acts.length) return '';
   return `<div class="today">${acts.map(([id, ic, fam, lbl, val]) => `
@@ -101,7 +101,7 @@ export async function loadList(){
 
   const { data, error } = await api.listSubjects();
   if(error){
-    head("أهلًا "+S.prof.full_name, "");
+    head("أهلاً "+S.prof.full_name, "");
     app.innerHTML = `<div class="err"><b>تعذّر التحميل</b>${esc(error.message)}</div>`; return; }
   S.subjects = data || [];
 
@@ -115,8 +115,8 @@ export async function loadList(){
 
   /* الشريط يُبنى قبل الترويسة: وجودُه يغيّر ما تقوله. */
   const strip = todayStrip();
-  head("أهلًا " + S.prof.full_name,
-       strip ? "البدايةُ بما ينتظرك، أو باختيار مادة" : "اختيارُ المادة التي يبدأ فيها التعلّم");
+  head("أهلاً " + S.prof.full_name,
+       strip ? "البداية بما ينتظرك، أو باختيار مادة" : "اختيار المادة التي يبدأ فيها التعلّم");
 
   /* ثلاث مجموعات: صفّي · صفوف سابقة · مهارات */
   const grade  = S.subjects.filter(x => x.group_key === '1_grade');
@@ -140,7 +140,8 @@ export async function loadList(){
         empty             ? 'قيد الإعداد'
       : x.needs_placement ? 'تحديد المستوى'
       : isPast            ? `${AR(x.lessons_review)} للمراجعة`
-      : `${AR(x.lessons_done)} / ${AR(x.lessons_total)} درساً`;
+      : `${AR(x.lessons_done)} / ${AR(x.lessons_total)} ${
+            NW(x.lessons_total,'درس','درسان','دروس','درساً')}`;
     /* ⚠️ ولا شارةَ «قريباً»: البطاقةُ الفارغة تحمل أصلاً حدّاً متقطّعاً
        وبهتاناً وشكلاً رمادياً و«قيد الإعداد» — خمسُ إشاراتٍ لمعنىً
        واحد في ١٥٠px. والإفراطُ في الإشارة يُدرِّب على تجاهلها. */
@@ -181,15 +182,15 @@ export async function loadList(){
 
   app.innerHTML = `
     ${strip}
-    ${grade.length?`<div class="grp">📚 موادّ صفّي</div>
+    ${grade.length?`<div class="grp">موادّ صفّي</div>
       ${live.map(x => card(x,false)).join("")}
       ${done.length?`<div class="fold-lbl">أتممتها · ${AR(done.length)}</div>${done.map(mini).join("")}`:''}`:''}
 
-    ${past.length?`<div class="grp fold" id="pastHdr">🔄 موادّ صفوف سابقة
+    ${past.length?`<div class="grp fold" id="pastHdr">موادّ صفوف سابقة
         <span class="chip">${AR(past.length)}</span><span class="caret">▾</span></div>
       <div id="pastBox" hidden>${past.map(x => card(x,true)).join("")}</div>`:''}
 
-    ${skills.length?`<div class="grp">🚀 مهاراتي</div>${skills.map(x => card(x,false)).join("")}`:''}
+    ${skills.length?`<div class="grp">مهاراتي</div>${skills.map(x => card(x,false)).join("")}`:''}
 
     ${!S.subjects.length?`<div class="card" style="text-align:center;padding:28px">
         <div style="font-size:2rem;margin-bottom:10px">📚</div>
@@ -303,16 +304,19 @@ export async function loadMentors(subj, switching){
               ومحايدُها يتجنّب الضمير الغائب أصلاً — إذ لا ضميرَ محايدَ
               في العربية، فالمخرجُ أن يُصاغ النصّ بلا ضمير. */''}
         ${G(state.teacher_g,
-          'الاستمرار مع معلّمٍ واحد يمنحه صورةً أوضح عن تقدّمك، ويجعل متابعته لك أدقّ. وما يشكل عليك يُعرَض على معلّمك الحالي — فهو الأقدر على مساعدتك.',
-          'الاستمرار مع معلّمةٍ واحدة يمنحها صورةً أوضح عن تقدّمك، ويجعل متابعتها لك أدقّ. وما يشكل عليك يُعرَض على معلّمتك الحالية — فهي الأقدر على مساعدتك.',
-          'الاستمرار في إرشادٍ واحد يعطي صورةً أوضح عن تقدّمك، ويجعل المتابعة أدقّ. وما يشكل عليك يُعرَض في المراسلة — فهي أقربُ من الانتقال.')}</div>
+          'الاستمرار مع معلّم واحد يمنحه صورة أوضح عن تقدّمك، ويجعل متابعته لك أدقّ. وما يشكل عليك يُعرَض على معلّمك الحالي — فهو الأقدر على مساعدتك.',
+          'الاستمرار مع معلّمة واحدة يمنحها صورة أوضح عن تقدّمك، ويجعل متابعتها لك أدقّ. وما يشكل عليك يُعرَض على معلّمتك الحالية — فهي الأقدر على مساعدتك.',
+          'الاستمرار في إرشاد واحد يعطي صورة أوضح عن تقدّمك، ويجعل المتابعة أدقّ. وما يشكل عليك يُعرَض في المراسلة — فهي أقرب من الانتقال.')}</div>
       <div class="nav"><button class="btn primary" id="go">متابعة الدروس</button></div>`;
     document.getElementById("bk").onclick = loadList;
     document.getElementById("go").onclick = ()=>loadLessons(subj);
     return;
   }
 
-  const card = m => `
+  const card = m => {
+    /* المعدودُ يتبع السعةَ لا عددَ المتابَعين: «٣ من ٢٠ طالباً» */
+    const cap = NW(m.capacity,'طالب','طالبان','طلاب','طالباً');
+    return `
     <div class="mentor ${m.full?'full':''} ${state.teacher_id===m.id?'cur':''}" data-t="${m.id}">
       <div class="m-n">أ. ${esc(m.name)}
         ${/* 🆕 124 · الشارةُ بصيغة المعلّم لا بصيغة الطالب — و`m.g` تصل
@@ -321,30 +325,32 @@ export async function loadMentors(subj, switching){
         ${state.teacher_id===m.id
           ? `<span class="badge on">${G(m.g,'معلمك الحالي','معلمتك الحالية','اختيارك الحالي')}</span>`
           : ''}</div>
-      <div class="m-m">${esc(m.school||'—')}${m.years?` · ${AR(m.years)} سنوات خبرة`:''}</div>
+      <div class="m-m">${esc(m.school||'—')}${m.years?` · ${
+        N(m.years,'سنة خبرة','سنتا خبرة','سنوات خبرة','سنة خبرة')}`:''}</div>
       ${m.bio?`<div class="m-b">${esc(m.bio)}</div>`:''}
       ${/* 🆕 124 · ومحايدُ السعة **بلا فعل**: الرقمان يقولان ما يقوله
             «يتابع/تتابع» بلا صيغة. وهو نموذجُ القاعدة — حيث تُمكن
             المحايدةُ تُكتب محايدةً، ولا تُستدعى الدالّةُ أصلاً. */''}
       <span class="m-cap">${m.full ? 'اكتمل النصاب' : G(m.g,
-        `يتابع ${AR(m.students)} من ${AR(m.capacity)} طالباً`,
-        `تتابع ${AR(m.students)} من ${AR(m.capacity)} طالباً`,
-        `${AR(m.students)} من ${AR(m.capacity)} طالباً`)}</span>
+        `يتابع ${AR(m.students)} من ${AR(m.capacity)} ${cap}`,
+        `تتابع ${AR(m.students)} من ${AR(m.capacity)} ${cap}`,
+        `${AR(m.students)} من ${AR(m.capacity)} ${cap}`)}</span>
     </div>`;
+  };
 
   app.innerHTML = `
     <div class="crumb" id="bk">← رجوع للمواد</div>
     ${errBox(eMentor,'قائمة المعلمين')}
     <div class="warnbox">
-      الانضمامُ إلى معلم يعني أنه سيتابع تقدّمك في هذه المادة، ويصحّح إجاباتك
+      الانضمام إلى معلم يعني أنه سيتابع تقدّمك في هذه المادة، ويصحّح إجاباتك
       المقالية، ويجيب عن أسئلتك.
     </div>
     ${mentors.length?mentors.map(card).join(""):''}
     <div class="mentor self" data-t="">
-      <div class="m-n">📖 المتابعة الذاتية</div>
+      <div class="m-n">المتابعة الذاتية</div>
       <div class="m-m">${mentors.length
-        ? 'الدراسةُ بنفسك، ويمكنك الانضمام إلى معلم متى شئت'
-        : 'لم ينضم معلمون لهذه المادة بعد — والبدايةُ بنفسك، ونُعلمك عند توفّرهم'}</div>
+        ? 'الدراسة بنفسك، ويمكنك الانضمام إلى معلم متى شئت'
+        : 'لم ينضم معلمون لهذه المادة بعد — والبداية بنفسك، ونُعلمك عند توفّرهم'}</div>
     </div>`;
 
   document.getElementById("bk").onclick = loadList;
@@ -362,8 +368,8 @@ export async function loadMentors(subj, switching){
       /* 🆕 124 · «معلم آخر» هنا **مستقبلٌ لم يُختَر بعد** — لا صيغةَ له
          أصلاً، فالمحايدةُ هي الصواب لا البديل. ⇒ «انتقال». */
       let msg = `الانضمام إلى أ. ${name} في مادة «${subj.name}»؟`;
-      if(tried === 1) msg += "\n\nبعد هذا الانضمام تبقى لك فرصةُ انتقالٍ واحدة.";
-      else if(tried >= 2) msg += "\n\nهذه آخر فرصة — ولا انتقالَ بعدها في هذه المادة.";
+      if(tried === 1) msg += "\n\nبعد هذا الانضمام تبقى لك فرصة انتقال واحدة.";
+      else if(tried >= 2) msg += "\n\nهذه آخر فرصة — ولا انتقال بعدها في هذه المادة.";
 
       if(!confirm(msg)) return;
     }
@@ -372,7 +378,7 @@ export async function loadMentors(subj, switching){
     if(error){ toast(error.message); return; }
     if(!r.ok){ toast(r.error); return; }
 
-    toast(r.self_study ? "متابعةُ دروسك بنفسك" : "انضممت إلى أ. "+r.teacher);
+    toast(r.self_study ? "متابعة دروسك بنفسك" : "انضممت إلى أ. "+r.teacher);
     subj.mentor_chosen = true; subj.mentor_name = r.teacher || null;
     loadLessons(subj);
   });
@@ -417,9 +423,9 @@ export async function loadLessons(subj){
         ${/* 🆕 124 · `mentor_g` تصل من `list_subjects`. و«الانتقال» بلا
               مفعولٍ عمداً: الوجهةُ لم تُختَر بعد فلا صيغةَ لها. */''}
         ${subj.mentor_name
-            ? G(subj.mentor_g, '👤 معلمك: أ. ', '👤 معلمتك: أ. ', '👤 مع أ. ')
+            ? G(subj.mentor_g, 'معلمك: أ. ', 'معلمتك: أ. ', 'مع أ. ')
               + esc(subj.mentor_name) + ' · انتقال'
-            : '👤 الانضمام إلى معلم'}
+            : 'الانضمام إلى معلم'}
       </button>
     </div>
     ${Object.keys(groups).map(g=>`
@@ -474,11 +480,11 @@ const itmRow = i => `
         <div style="flex:1">
           <div class="itm-t" dir="auto">${esc(i.title)}</div>
           <div class="itm-m">${KINDS[i.kind]||i.kind}
-            ${i.duration?` · ${AR(i.duration)} دقيقة`:''}
+            ${i.duration?` · ${N(i.duration,'دقيقة','دقيقتان','دقائق','دقيقة')}`:''}
             ${i.is_graded?' · يُحتسب في النتيجة':''}
             ${i.required&&!i.is_graded?' · إلزامي':''}${credit(i)}</div>
         </div>
-        <div class="itm-s" data-s="${i.id}">${i.status==='completed'?'✅'
+        <div class="itm-s" data-s="${i.id}">${i.status==='completed'?'✔'
           :((canEmbed(i)||isSim(i))?'▶':(i.kind==='quiz'?'←':'↗'))}</div>
       </div>
       ${(canEmbed(i)||isSim(i))?`<div class="embed-slot" id="slot-${i.id}"></div>`:''}`;
@@ -501,10 +507,10 @@ export function openLesson(l){
   app.innerHTML = `
     <div class="crumb" id="bk">← ${esc(S.subj.name)}</div>
     ${l.summary?`<div class="card"><div class="line" style="color:var(--text)">${esc(l.summary)}</div></div>`:''}
-    <div class="grp">📦 مصادر الدرس <span class="chip">${AR(done)} / ${AR(items.length)}</span></div>
+    <div class="grp">مصادر الدرس <span class="chip">${AR(done)} / ${AR(items.length)}</span></div>
       ${items.map(itmRow).join("")}
     ${!items.length?'<div class="status">لم تُضف مصادر لهذا الدرس بعد</div>':''}
-    ${extras.length?`<div class="grp" style="margin-top:22px">➕ إضافات المعلمين
+    ${extras.length?`<div class="grp" style="margin-top:22px">إضافات المعلمين
         <span class="chip">${AR(extras.length)}</span></div>
       ${extras.map(itmRow).join("")}`:''}
     <p class="hint">المطلوب ${AR(l.pass_mark)}٪ في الاختبار لإتمام الدرس</p>`;
@@ -569,7 +575,7 @@ function toggleAudio(i){
     <div class="aud">
       <audio class="aud-p" controls preload="metadata"></audio>
       <div class="aud-row">
-        <button class="aud-b" data-a="back">⟲ ١٠ ثوانٍ</button>
+        <button class="aud-b" data-a="back">⟲ ١٠ ثوان</button>
         <button class="aud-b" data-a="rate">السرعة ١٫٠×</button>
         <span class="aud-note"></span>
       </div>
@@ -595,13 +601,13 @@ function toggleAudio(i){
   /* التسجيل عند الانتهاء لا عند الفتح:
      «فتحَ» ليست «سمعَ»، وإشارةٌ كاذبة أسوأ من إشارةٍ ناقصة. */
   au.onended = async () => {
-    note.textContent = "سُجّل استماعك ✅";
+    note.textContent = "سُجّل استماعك ✔";
     if(i.status === 'completed') return;
     const { error } = await api.markItemCompleted(i.id);
     if(error){ note.textContent = "لم يُسجَّل — ربما تكون المشكلة في الاتصال"; return; }
     i.status = 'completed';
     const s = document.querySelector(`[data-s="${i.id}"]`);
-    if(s) s.textContent = '✅';
+    if(s) s.textContent = '✔';
   };
 
   const RATES = [1, 0.75, 1.25];
@@ -625,7 +631,7 @@ export async function loadFeedback(){
   /* 🆕 124 · «ملاحظات معلمي» ⇐ «ملاحظاتٌ على إجاباتي»: الشاشةُ تجمع
      ملاحظاتِ المواد كلّها، ولكلّ مادةٍ معلّمُها. فالمفردُ خبرٌ غيرُ
      صادق — والصيغةُ فرعٌ عن ذلك لا أصلُ المسألة. */
-  nav('feedback'); head("ملاحظاتٌ على إجاباتي", S.prof.full_name);
+  nav('feedback'); head("ملاحظات على إجاباتي", S.prof.full_name);
   app.innerHTML = skeleton('rows');
   const { data, error } = await api.myFeedback(S.user.id);
 
@@ -720,7 +726,7 @@ async function loadLessonDeck(l){
     <div class="deck-ic">${DECK_SVG}</div>
     <div class="deck-txt">
       <div class="deck-t">${esc(deck.title)}</div>
-      <div class="deck-m">${AR(deck.cards)} بطاقة · تعود إليك بالتباعد</div>
+      <div class="deck-m">${N(deck.cards,'بطاقة','بطاقتان','بطاقات','بطاقة')} · تعود إليك بالتباعد</div>
     </div>
     <div class="deck-go">←</div>`;
 

@@ -87,7 +87,7 @@ export function questionBody(q, opts = {}){
   const multi = q.kind === 'msq';
 
   if(q.kind === 'mcq' || multi)
-    return `${multi ? `<div class="q-hint">يُختار كلُّ ما ينطبق — وقد ينطبق أكثر من خيار</div>` : ''}
+    return `${multi ? `<div class="q-hint">يُختار كلّ ما ينطبق — وقد ينطبق أكثر من خيار</div>` : ''}
       <div class="opts${multi ? ' multi' : ''}">${(q.options||[]).map((o,j) => `
         <button class="opt ${picked(o) ? 'sel' : ''}" data-o="${o.id}" data-pvo="${j}"
                 dir="${dirOf(o.body)}" style="text-align:start" ${ro ? 'disabled' : ''}>
@@ -133,7 +133,7 @@ export function questionBody(q, opts = {}){
     const txt = k => (bank.find(b => b.k === k) || {}).t || '';
     const PH  = 'بالنقر أو السحب: مقابل';
 
-    return `<div class="q-hint">لكلّ بندٍ درجة — وقد يبقى في العمود مقابلٌ لا يُزاوَج</div>
+    return `<div class="q-hint">لكلّ بند درجة — وقد يبقى في العمود مقابل لا يُزاوَج</div>
       <div class="mq${ro ? ' ro' : ''}">
         ${bank.length ? `<div class="bank">${bank.map(b => `
           <button type="button" class="bank-w" data-bw="${esc(b.k)}"
@@ -159,7 +159,7 @@ export function questionBody(q, opts = {}){
       </div>`;
   }
 
-  return `<textarea class="essay" placeholder="السلسلة السببية كاملةً…"
+  return `<textarea class="essay" placeholder="السلسلة السببية كاملة…"
             ${ro ? 'disabled' : ''}>${esc(opts.essay || '')}</textarea>`;
 }
 

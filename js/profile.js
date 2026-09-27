@@ -46,7 +46,7 @@ const isTeacher = () => ['teacher','admin'].includes(S.roleInfo?.role || S.prof?
 export async function loadProfile(){
   nav('subjects');
   head('ملفّي', S.prof?.full_name || '');
-  app.innerHTML = `<div class="status">جارٍ التحميل…</div>`;
+  app.innerHTML = `<div class="status">جار التحميل…</div>`;
 
   /* 🔑 كلُّ دورٍ يجلب ما يعرضه وحدَه — ولا يُجلب للطالب جدولُ موادّ
      التدريس ولا للمعلّم سلالمُ الصفوف. نداءٌ لا يُعرض ناتجُه ثمنٌ بلا
@@ -98,7 +98,7 @@ function studentFields(p){
     <select id="pfGrade"><option value="">— الصفّ —</option>${opts}</select>
     ${/* 🔑 والتنبيهُ يُقال قبل الحفظ لا بعده: تغييرُ الصفّ يُبدّل
           الموادَّ المعروضة، وهو أثرٌ يُفاجئ من ظنّه تصحيحَ بيان. */''}
-    <p class="small">تغييرُ الصفّ يُبدّل الموادَّ التي تظهر لك.</p>`;
+    <p class="small">تغيير الصفّ يُبدّل الموادّ التي تظهر لك.</p>`;
 }
 
 function teacherFields(p){
@@ -114,9 +114,9 @@ function teacherFields(p){
     <label class="fl" style="margin-top:16px">سنوات الخبرة</label>
     <input type="text" id="pfYears" inputmode="numeric" value="${esc(p.years_exp ?? '')}">
 
-    <label class="fl" style="margin-top:16px">تعريفٌ موجز بك</label>
+    <label class="fl" style="margin-top:16px">تعريف موجز بك</label>
     <textarea id="pfBio" dir="auto">${esc(p.bio || '')}</textarea>
-    <p class="small">الاسمُ والمدرسةُ والخبرةُ والتعريف تظهر لطلابك في شاشة «اختيار معلمك».</p>`;
+    <p class="small">الاسم والمدرسة والخبرة والتعريف تظهر لطلابك في شاشة «اختيار معلمك».</p>`;
 }
 
 /* ═══ القسمُ الخاصُّ بالدور ═══ */
@@ -129,13 +129,13 @@ function learnCard(p){
       <div class="pf-row"><span>الصفّ الحاليّ</span>
         <b>${esc(subs[0]?.my_level || p.klass || '—')}</b></div>
       ${p.path_id ? `<div class="pf-row"><span>الشعبة</span><b>محفوظة</b></div>` : ''}
-      <div class="pf-row"><span>موادُّ صفّك</span><b>${AR(subs.length)}</b></div>
+      <div class="pf-row"><span>موادّ صفّك</span><b>${AR(subs.length)}</b></div>
 
       <div class="grp" style="margin-top:18px">من يتابعني</div>
       ${mentors.length ? mentors.map(m => `
         <div class="pf-row"><span>${esc(m.name)}</span>
           <b>${G(m.mentor_g, 'أ. ', 'أ. ', 'مع ')}${esc(m.mentor_name)}</b></div>`).join('')
-        : `<div class="pf-row"><span class="line">لم تنضمّ إلى معلّمٍ بعد — يُختار من شاشة المادة.</span></div>`}
+        : `<div class="pf-row"><span class="line">لم تنضمّ إلى معلّم بعد — يُختار من شاشة المادة.</span></div>`}
 
       <div class="nav" style="margin-top:16px">
         <button class="btn ghost" id="pfPerf">تقدّمي بالتفصيل ←</button>
@@ -150,15 +150,15 @@ function teachCard(){
   return `
     <h2 class="sec">تدريسي</h2>
     <div class="card">
-      <div class="pf-row"><span>الموادُّ المختارة</span><b>${AR(mine.length)}</b></div>
-      <div class="pf-row"><span>الطلابُ الآن</span>
+      <div class="pf-row"><span>الموادّ المختارة</span><b>${AR(mine.length)}</b></div>
+      <div class="pf-row"><span>الطلاب الآن</span>
         <b>${AR(load)}${cap ? ' من ' + AR(cap) : ''}</b></div>
 
       <div class="grp" style="margin-top:18px">موادّي وسعتُها</div>
       ${mine.length ? mine.map(x => `
         <div class="pf-row"><span>${esc(x.name)}</span>
           <b>${AR(x.students || 0)} / ${AR(x.capacity || 0)}</b></div>`).join('')
-        : `<div class="pf-row"><span class="line">لم تُختَر موادُّ بعد — تُختار من شاشة «موادّي».</span></div>`}
+        : `<div class="pf-row"><span class="line">لم تُختَر موادّ بعد — تُختار من شاشة «موادّي».</span></div>`}
 
       ${/* 🔑 والسعةُ تُعرَض هنا ولا تُحرَّر: موضعُها الوحيد شاشةُ «موادّي»
             (b88 · «ورقمان لشيءٍ واحد يتفارقان»). وحقلان لقيمةٍ واحدة في
@@ -188,9 +188,9 @@ function render(){
     <h2 class="sec">الحساب</h2>
     <div class="card">
       <div class="pf-row"><span>البريد</span><b dir="ltr">${esc(S.user?.email || '—')}</b></div>
-      <p class="small">البريدُ لا يُغيَّر من هنا — راسلنا إن لزم.</p>
+      <p class="small">البريد لا يُغيَّر من هنا — راسلنا إن لزم.</p>
 
-      <label class="fl" style="margin-top:16px">كلمة مرورٍ جديدة</label>
+      <label class="fl" style="margin-top:16px">كلمة مرور جديدة</label>
       <input type="password" id="pfPw" placeholder="٦ أحرف على الأقل" autocomplete="new-password">
       <div class="nav" style="margin-top:12px">
         <button class="btn ghost" id="pfPwGo">تغيير كلمة المرور</button>
@@ -207,12 +207,12 @@ function render(){
         <b dir="ltr">${esc(p.policy_version)}</b></div>` : ''}
       <p class="small"><a href="${POLICY_URL}" target="_blank" rel="noopener">قراءة السياسة</a></p>
 
-      ${/* 🔑 الحذفُ كما وعدت به السياسة — نصّاً ومدّةً، لا زرّاً يوهم */''}
+      ${''}/* 🔑 الحذفُ كما وعدت به السياسة — نصّاً ومدّةً، لا زرّاً يوهم */
       <div class="grp" style="margin-top:20px">حذف الحساب</div>
       <p class="small">
         لك أن تطلب حذف حسابك وبياناتك الشخصية. يُطلب بالمراسلة على
         <a href="mailto:${MAIL}" dir="ltr">${MAIL}</a>،
-        والاستجابةُ خلال ثلاثين يوماً على الأكثر — كما في
+        والاستجابة خلال ثلاثين يوماً على الأكثر — كما في
         <a href="${POLICY_URL}" target="_blank" rel="noopener">§٩ من السياسة</a>.
       </p>
     </div>`;
@@ -242,7 +242,7 @@ function wire(){
       const { data, error } = await api.setMyName(S.user.id, name);
       if(error || !data?.length){
         b.disabled = false; b.textContent = 'حفظ الهوية';
-        toast('تعذّر حفظ الاسم — ' + (error?.message || 'لم يمسَّ صفَّك شيء')); return;
+        toast('تعذّر حفظ الاسم — ' + (error?.message || 'لم يمسّ صفَّك شيء')); return;
       }
       S.prof.full_name = name; changed++;
     }
@@ -262,7 +262,7 @@ function wire(){
         const { data, error } = await api.setMyTeacherInfo(S.user.id, { school, bio, years });
         if(error || !data?.length){
           b.disabled = false; b.textContent = 'حفظ الهوية';
-          toast('تعذّر الحفظ — ' + (error?.message || 'لم يمسَّ صفَّك شيء')); return;
+          toast('تعذّر الحفظ — ' + (error?.message || 'لم يمسّ صفَّك شيء')); return;
         }
         S.prof.school = school; S.prof.bio = bio; S.prof.years_exp = years; changed++;
       }

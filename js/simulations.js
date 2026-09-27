@@ -15,7 +15,7 @@
           window.parent.postMessage({ bayanSim:'done' }, '*')
 
         هذا هو العقد الوحيد المطلوب من أي محاكٍ يُبنى لاحقاً. بلا هذا
-        السطر، يبقى العنصر "▶ مفتوح" ولا يصير "✅ منجَز" أبداً — سلوكٌ
+        السطر، يبقى العنصر "▶ مفتوح" ولا يصير "✔ منجَز" أبداً — سلوكٌ
         آمن لا كاذب، لا عطلٌ يُصلَح. متى تُطلَق الرسالة بالضبط —
         بعد نقرةٍ؟ بعد استكشافٍ حقيقي؟ — قرارٌ تربويّ يخصّ كل محاكٍ
         على حدة، لا شيء هنا يفرضه.
@@ -47,8 +47,8 @@ async function finishSim(itemId){
 
   if(item) item.status = 'completed';
   const s = document.querySelector(`[data-s="${itemId}"]`);
-  if(s) s.textContent = '✅';
-  if(note) note.textContent = "أُنجزت المحاكاة ✅";
+  if(s) s.textContent = '✔';
+  if(note) note.textContent = "أُنجزت المحاكاة ✔";
 }
 
 /* تُستدعى من student.js عند النقر على عنصر محاكاة.

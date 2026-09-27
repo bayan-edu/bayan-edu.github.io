@@ -10,7 +10,7 @@
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
 import { S } from './state.js';
-import { app, head, toast, esc, AR, errBox, nav, setWide, scrollTop } from './ui.js';
+import { app, head, toast, esc, AR, errBox, nav, setWide, scrollTop, N } from './ui.js';
 import { openQuiz } from './editor_quiz.js';
 import { openItems } from './editor_items.js';
 import { openCards } from './editor_cards.js';
@@ -38,7 +38,7 @@ const narrowNote = () => isNarrow()
 export async function openEditor(scaleId, levelId){
   nav('editor'); setWide(true);
   head("التأليف", "المقرَّر الذي يكون فيه التأليف");
-  app.innerHTML = `<div class="status">جارٍ التحميل…</div>`;
+  app.innerHTML = `<div class="status">جار التحميل…</div>`;
 
   const t = await tree();
   if(t._error){ app.innerHTML = errBox(t._error, 'شجرة التأليف'); return; }
@@ -83,8 +83,8 @@ export async function openEditor(scaleId, levelId){
         <div class="ed-m">
           ${p ? `<span class="chip g">${esc(p.name)}</span>` : ''}
           ${c.elective_group ? '<span class="chip">اختيارية</span>' : ''}
-          <span class="chip">👥 ${AR(c.students)} طالباً</span>
-          <span class="chip ${c.lessons ? 'g' : ''}">${AR(c.lessons)} درساً</span>
+          <span class="chip">👥 ${N(c.students,'طالب','طالبان','طلاب','طالباً')}</span>
+          <span class="chip ${c.lessons ? 'g' : ''}">${N(c.lessons,'درس','درسان','دروس','درساً')}</span>
           ${c.curate ? '' : '<span class="chip">مصادر فقط</span>'}
         </div>
       </div>
@@ -130,7 +130,7 @@ export async function openTools(){
   head("أدوات القياس", "اختبارات قائمة بذاتها — لا تتبع درساً ولا مقرَّراً");
   app.innerHTML = `<div class="ed-bar">
     <button class="btn ghost" id="bk2">← رجوع إلى التأليف</button></div>
-    <div class="status">جارٍ التحميل…</div>`;
+    <div class="status">جار التحميل…</div>`;
   const { data, error } = await api.listTools();
   /* 🔧 errBox يقرأ error.message — فتمريرُ النصّ يُنتج «خطأ غير معروف» */
   if(error){ app.innerHTML = errBox(error, 'أدوات القياس'); return; }
@@ -170,7 +170,7 @@ export async function openTools(){
     ${!tools.length ? `<div class="card" style="text-align:center;padding:30px">
       <div style="font-size:2rem;margin-bottom:10px">🎯</div>
       <div class="rev-q">لا أدوات قياس بعد</div>
-      <div class="line">أداةٌ تُنشأ بأن يُعطى اختبارٌ اسمَ أداةٍ ورقمَ محطّة.</div></div>` : ''}`;
+      <div class="line">أداة تُنشأ بأن يُعطى اختبار اسم أداة ورقم محطّة.</div></div>` : ''}`;
 
   document.getElementById("bk2").onclick = () => openEditor();
      document.getElementById("newst").onclick = () => newStation(tools);
@@ -221,7 +221,7 @@ async function newStation(tools){
              placeholder="ielts_placement" value="${esc(names[0] || '')}">
       <datalist id="ns_tools">${names.map(n =>
         `<option value="${esc(n)}">`).join("")}</datalist>
-      <div class="eq-hint">يُكتب اسمٌ قائم لتُضاف المحطّة إليه، أو اسمٌ جديد لأداةٍ جديدة.</div>
+      <div class="eq-hint">يُكتب اسم قائم لتُضاف المحطّة إليه، أو اسم جديد لأداة جديدة.</div>
 
       <label class="fl" style="margin-top:14px">عنوان المحطّة</label>
       <input id="ns_title" dir="auto" placeholder="التوجيه · اللوحة L · فحص الحدّ ١">
@@ -236,7 +236,7 @@ async function newStation(tools){
       <label class="fl" style="margin-top:14px">دور المحطّة في التوجيه</label>
       <select id="ns_k">
         <option value="routing">محطّة التوجيه — يدخلها الجميع، ولا مستوى يخرج منها</option>
-        <option value="panel">محطّة قياس — يخرج منها مستوًى أو إحالةٌ إلى حدّ</option>
+        <option value="panel">محطّة قياس — يخرج منها مستوًى أو إحالة إلى حدّ</option>
         <option value="boundary">محطّة حدّ — تحسم لبساً، ويخرج منها مستوًى دائماً</option>
         <option value="productive">محطّة إنتاج — يصحّحها المعلّم، ولا توجيه لها</option>
       </select>
@@ -275,7 +275,7 @@ async function newStation(tools){
 export async function openRoutes(tool){
   nav('editor'); setWide(true);
   head("شجرة التوجيه", tool);
-  app.innerHTML = `<div class="status">جارٍ التحميل…</div>`;
+  app.innerHTML = `<div class="status">جار التحميل…</div>`;
 
   const { data, error } = await api.toolRoutes(tool);
   if(error){ app.innerHTML = errBox(error, 'التوجيه'); return; }
@@ -288,7 +288,7 @@ export async function openRoutes(tool){
     <div class="rt" data-r="${r.id}">
       <span class="rt-n">${AR(r.min)}–${AR(r.max)}</span>
       <span class="rt-a">${r.verdict === 'next'
-        ? `→ ${esc(r.to_title || '⚠️ محطّةٌ محذوفة')}`
+        ? `→ ${esc(r.to_title || '⚠️ محطّة محذوفة')}`
         : `⇒ ${esc(r.level || '⚠️ مستوًى محذوف')}`}</span>
       ${r.note ? `<span class="rt-note">${esc(r.note)}</span>` : ''}
       <button class="it-b" data-red="${r.id}" title="تحرير">✏️</button>
@@ -302,7 +302,7 @@ export async function openRoutes(tool){
     </div>
 
     <div class="card ${R.ok ? 'rt-ok' : 'rt-bad'}" style="margin-bottom:18px">
-      <div class="ed-t">${R.ok ? '✅ شجرةٌ مكتملة' : '⚠️ الشجرة ناقصة'}</div>
+      <div class="ed-t">${R.ok ? '✅ شجرة مكتملة' : '⚠️ الشجرة ناقصة'}</div>
       <div class="ed-m" style="margin-top:6px">
         <span class="chip g">${AR(R.stations || 0)} محطّة</span>
         <span class="chip g">${AR(R.routes || 0)} مسار</span></div>
@@ -324,7 +324,7 @@ export async function openRoutes(tool){
           ? `<div class="rt-list">${s.routes.map(routeRow).join("")}</div>`
           : `<div class="eq-hint" style="display:block;padding:10px 3px">
                ${s.kind === 'productive' ? 'محطّة إنتاج — لا توجيه لها'
-                                         : '⚠️ لا مسارَ يغادر هذه المحطّة'}</div>`}
+                                         : '⚠️ لا مسار يغادر هذه المحطّة'}</div>`}
       </div>`).join("")}`;
 
   document.getElementById("bk3").onclick = () => openTools();
@@ -339,7 +339,7 @@ export async function openRoutes(tool){
   });
 
   app.querySelectorAll("[data-rdel]").forEach(el => el.onclick = async () => {
-    if(!confirm("حذف هذا المسار؟ ⚠️ وقد يُنتج فجوةً في المدى.")) return;
+    if(!confirm("حذف هذا المسار؟ ⚠️ وقد يُنتج فجوة في المدى.")) return;
     const { data, error } = await api.deleteRoute(+el.dataset.rdel);
     if(error || !data?.ok){ toast(error?.message || data?.error); return; }
     toast("حُذف المسار"); openRoutes(tool);
@@ -368,7 +368,7 @@ function routeForm(tool, fromId, r, stations, levels){
 
       <label class="fl" style="margin-top:14px">الحكم</label>
       <select id="rf_v">
-        <option value="next" ${r?.verdict !== 'done' ? 'selected' : ''}>→ إلى محطّةٍ تالية</option>
+        <option value="next" ${r?.verdict !== 'done' ? 'selected' : ''}>→ إلى محطّة تالية</option>
         <option value="done" ${r?.verdict === 'done' ? 'selected' : ''}>⇒ ينتهي بمستوًى</option>
       </select>
 
@@ -385,7 +385,7 @@ function routeForm(tool, fromId, r, stations, levels){
           `<option value="${l.id}" ${r?.level_id === l.id ? 'selected' : ''}>${esc(l.name)}</option>`).join("")}</select>
       </div>
 
-      <label class="fl" style="margin-top:14px">سببُ القاعدة — يقرؤه من يُعاير بعد سنة</label>
+      <label class="fl" style="margin-top:14px">سبب القاعدة — يقرؤه من يُعاير بعد سنة</label>
       <input id="rf_note" dir="auto" value="${esc(r?.note || '')}"
              placeholder="P2/P3 ملتبس ⇒ محطّة الحدّ ١">
 
@@ -429,8 +429,8 @@ export async function openCourse(course){
   const p = byId(t.paths, course.path_id);
 
   head(esc(s.name || course.title),
-       `${AR(course.students)} طالباً${p ? ' · ' + p.name : ''}`);
-  app.innerHTML = `<div class="status">جارٍ تحميل الدروس…</div>`;
+       `${N(course.students,'طالب','طالبان','طلاب','طالباً')}${p ? ' · ' + p.name : ''}`);
+  app.innerHTML = `<div class="status">جار تحميل الدروس…</div>`;
 
   const { data, error } = await api.authorLessons(course.id);
   const lessons = data || [];
@@ -459,7 +459,7 @@ export async function openCourse(course){
       </div>
       <button class="it-b wide" data-it="${l.id}">📦 المصادر (${AR(l.official_items)})</button>
       <button class="eq-go ${l.has_quiz?'':'warn'}" data-q="${l.id}">
-        ${l.has_quiz ? '📝 الاختبار' : '⚠️ إضافةُ اختبار'}</button>
+        ${l.has_quiz ? '📝 الاختبار' : '⚠️ إضافة اختبار'}</button>
       <div class="qz-go">تحرير ←</div>
     </div>`;
 
@@ -484,7 +484,7 @@ export async function openCourse(course){
     ${group(null).length || !units.length ? block('دروس بلا وحدة', null) : ''}
 
     ${!lessons.length && course.curate
-      ? `<p class="hint">البدايةُ بوحدة ثمّ درس — أو بدرسٍ مباشرة.</p>` : ''}`;
+      ? `<p class="hint">البداية بوحدة ثمّ درس — أو بدرس مباشرة.</p>` : ''}`;
 
    document.getElementById("bk").onclick = () => openEditor(
     (byId(t.subjects, course.subject_id) || {}).scale_id ?? 'free', course.level_id);
@@ -544,7 +544,7 @@ export async function editLesson(course, lesson){
     <div class="ed-form">
       <div class="ed-side">
         <div class="ed-hint">👥 سيصل هذا الدرس إلى
-          <b>${AR(course.students)} طالباً</b> في ${esc(course.title)}</div>
+          <b>${N(course.students,'طالب','طالبان','طلاب','طالباً')}</b> في ${esc(course.title)}</div>
         ${isNew ? '' : `<div class="ed-hint">
           ${AR(lesson.official_items)} مصدراً · ${lesson.has_quiz ? 'له اختبار' : 'بلا اختبار'}</div>`}
         <div class="ed-hint" style="opacity:.7">
@@ -568,8 +568,8 @@ export async function editLesson(course, lesson){
         ${strands.length ? `
         <label class="fl" style="margin-top:16px">فرع المادة</label>
         ${strandSelect(strands, lesson?.strand?.id)}
-        <p class="small">موضعُ هذا الدرس في خريطة المادة — به يقرأ الطالب
-          «بلاغة ٤١٪» بدل «العربية ٦٢٪». وشرطُ النشر.</p>` : ''}
+        <p class="small">موضع هذا الدرس في خريطة المادة — به يقرأ الطالب
+          «بلاغة ٤١٪» بدل «العربية ٦٢٪». وشرط النشر.</p>` : ''}
 
         <label class="fl" style="margin-top:16px">ملخّص <span style="opacity:.6">(اختياري)</span></label>
         <textarea id="su" style="min-height:80px"

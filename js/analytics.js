@@ -42,14 +42,14 @@
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
 import { app, head, esc, fmt, AR, errBox, nav, BUILD, scrollTop,
-         skeleton } from './ui.js';
+         skeleton, N, NW } from './ui.js';
 
 /* 🔑 ختمُ هذه الوحدة وحدها.
    BUILD تسكن ui.js، فالرقمُ المعروض يشهد لها لا لهذا الملفّ — وقد
    شخّصنا في هذه الجلسة ثلاثَ مرّات منطقاً سليماً وسببُ العطل ملفٌّ
    لم يصل. ⇒ حين يختلف الختمان يُعلَن الاختلاف في الشاشة.
    ⚠️ ويُرفع مع BUILD في كلّ نسخة — وإلّا صار إنذاراً كاذباً يُتجاهل. */
-const MOD = "b105";
+const MOD = "b107";
 
 const F = { level:null, subject:null, view:'list', search:'', opts:null };
 const M = { uid:null, forMe:false, subject:null, strand:null,
@@ -346,19 +346,22 @@ function trendLine(tr, forMe){
   const arr = tr || [];
   const act = arr.filter(p => p.mastery != null);
   const you = forMe ? 'ك' : 'ه';
-  if(!act.length) return forMe ? 'البدايةُ من أوّل محاولة — وكلُّ محاولةٍ تضيف نقطةً إلى خطّك.'
+  if(!act.length) return forMe ? 'البداية من أوّل محاولة — وكلّ محاولة تضيف نقطة إلى خطّك.'
                                : 'لا محاولات مسجَّلة بعد.';
   if(arr.length && arr[arr.length-1].mastery == null){
     let gap = 0;
     for(let i = arr.length-1; i >= 0 && arr[i].mastery == null; i--) gap++;
-    return `لا إجاباتٍ هذا الأسبوع — آخرُ نشاط${you} قبل ${AR(gap)} أسبوعاً.`;
+    return `لا إجابات هذا الأسبوع — آخر نشاط${you} قبل ${
+      N(gap,'أسبوع','أسبوعين','أسابيع','أسبوعاً')}.`;
   }
   const last = act[act.length-1], prev = act[act.length-2];
-  const now  = `هذا الأسبوع ${pct(last.mastery)} من ${AR(last.answered)} إجابة`;
+  const now  = `هذا الأسبوع ${pct(last.mastery)} من ${
+    N(last.answered,'إجابة','إجابتين','إجابات','إجابة')}`;
   if(!prev) return `${now} — وهي بداية${you}.`;
   const dv = Math.round((last.mastery - prev.mastery) * 10) / 10;
   if(dv === 0) return `${now} — كالأسبوع النشِط السابق تماماً.`;
-  return `${now} — ${dv>0?'أعلى':'أقلّ'} من الأسبوع النشِط السابق بـ${AR(Math.abs(dv))} نقطة.`;
+  return `${now} — ${dv>0?'أعلى':'أقلّ'} من الأسبوع النشِط السابق بـ${
+    N(Math.abs(dv),'نقطة','نقطتين','نقاط','نقطة')}.`;
 }
 
 
@@ -420,10 +423,11 @@ async function drawPerformance(title, sub, back){
      تصفه يجعل الشاشةَ كلَّها تشخّص ما ليس موجوداً. */
   const rushBox = r => (!r || !r.gradable || (r.pct||0) < 20) ? '' : `
     <div class="an-rush">
-      <b>${AR(r.rushed)} من ${AR(r.gradable)} إجابة (${AR(r.pct)}٪)</b>
-      ${you ? `أجبتها في أقلّ من ${AR(r.threshold)} ثوانٍ — وهي أسرعُ من قراءة السؤال.
-        وقراءةُ الجذع مرّتين قبل الاختيار وحدها قد ترفع نتيجتك أكثر من أيّ مراجعة.`
-            : `دون ${AR(r.threshold)} ثوانٍ وخاطئة. وأنماطُ الخطأ أدناه محسوبةٌ
+      <b>${AR(r.rushed)} من ${AR(r.gradable)} ${
+        NW(r.gradable,'إجابة','إجابتين','إجابات','إجابة')} (${AR(r.pct)}٪)</b>
+      ${you ? `أجبتها في أقلّ من ${N(r.threshold,'ثانية','ثانيتين','ثوان','ثانية')} — وهي أسرع من قراءة السؤال.
+        وقراءة الجذع مرّتين قبل الاختيار وحدها قد ترفع نتيجتك أكثر من أيّ مراجعة.`
+            : `دون ${N(r.threshold,'ثانية','ثانيتين','ثوان','ثانية')} وخاطئة. وأنماط الخطأ أدناه محسوبة
         <b>بعد استبعادها</b> — فهي لا تصف تصوّراً خاطئاً بل نقراً.`}
     </div>`;
 
@@ -449,13 +453,13 @@ async function drawPerformance(title, sub, back){
       </div>
       ${mode==='gain' ? '' : bar(x.mastery, x.answered<10, judge)}
       <div class="qz-m">${x.lesson?esc(x.lesson)+'، ':''}${
-        x.attempts>1 ? `${AR(x.attempts)} محاولات، من ${pct(x.first)} إلى ${pct(x.mastery)}`
-                     : `محاولةٌ واحدة، ${AR(x.answered)} إجابة`}${
-        mode==='need' ? `، عتبةُ النجاح ${pct(x.pass)}` : ''}</div>
-      ${/* 🎓 الذروةُ تُقال حين يكون الحاضرُ دونها: gain وحده يخفي انحداراً */''}
+        x.attempts>1 ? `${N(x.attempts,'محاولة','محاولتان','محاولات','محاولة')}، من ${pct(x.first)} إلى ${pct(x.mastery)}`
+                     : `محاولة واحدة، ${N(x.answered,'إجابة','إجابتان','إجابات','إجابة')}`}${
+        mode==='need' ? `، عتبة النجاح ${pct(x.pass)}` : ''}</div>
+      ${''}/* 🎓 الذروةُ تُقال حين يكون الحاضرُ دونها: gain وحده يخفي انحداراً */
       ${x.since_best != null && x.since_best < -2
         ? `<div class="an-drop">بلغ ${pct(x.best)} في المحاولة ${AR(x.best_no)}،
-             ثمّ نزل ${AR(Math.abs(x.since_best))} نقطة</div>` : ''}
+             ثمّ نزل ${N(Math.abs(x.since_best),'نقطة','نقطتين','نقاط','نقطة')}</div>` : ''}
     </div>`;
 
   const section = (ttl, arr, mode, more, key, note) => !arr.length ? '' : `
@@ -488,11 +492,11 @@ async function drawPerformance(title, sub, back){
           <div class="an-chart">
             <div class="an-clab">الإتقان الأسبوعيّ</div>
             <div class="an-cmain"><canvas id="anChart"></canvas></div>
-            <div class="an-clab">عددُ الإجابات في الأسبوع</div>
+            <div class="an-clab">عدد الإجابات في الأسبوع</div>
             <div class="an-cvol"><canvas id="anVol"></canvas></div>
-          </div>` : `<div class="qz-m">الرسمُ يظهر بعد أسبوعين من النشاط.</div>`}
-        <div class="an-foot">النسبةُ الأسبوعية تتحرّك بما دُرس في الأسبوع أيضاً،
-          لا بالاجتهاد وحده — ولهذا يُعرض الجهدُ معها.</div>
+          </div>` : `<div class="qz-m">الرسم يظهر بعد أسبوعين من النشاط.</div>`}
+        <div class="an-foot">النسبة الأسبوعية تتحرّك بما دُرس في الأسبوع أيضاً،
+          لا بالاجتهاد وحده — ولهذا يُعرض الجهد معها.</div>
       </div>
       <div class="an-tr">
         <div class="an-two">
@@ -504,7 +508,7 @@ async function drawPerformance(title, sub, back){
             ${gauge(cp.pct, false, 'إنجاز', true, false)}
             <div class="an-note">${cp.required
               ? `${AR(cp.done)} من ${AR(cp.required)} ${fl.subject?'في هذه المادة':'من دروس صفّه'}`
-              : 'لا دروسَ منشورةً مطلوبة'}</div>
+              : 'لا دروس منشورة مطلوبة'}</div>
           </div>
         </div>
       </div>
@@ -525,7 +529,7 @@ async function drawPerformance(title, sub, back){
         ${section('ما تحسّن', up, 'gain', M.moreUp, 'up',
             'هذا وحده يقيس <b>ما فعله التعليم</b>: الفرق بين المحاولة الأولى وأحدثها.')}
         ${section('يستحقّ عودة', down, 'need', M.moreDown, 'down',
-            'دون عتبةِ النجاح التي حدّدها معلّمُ الاختبار. <b>والبدايةُ من أعلى القائمة.</b>')}
+            'دون عتبة النجاح التي حدّدها معلّم الاختبار. <b>والبداية من أعلى القائمة.</b>')}
 
         ${nextSection(d.next || [], d.locked || [], you)}
         ${subs.length ? `<h2 class="sec">المواد — الأضعف أوّلاً</h2>
@@ -534,10 +538,11 @@ async function drawPerformance(title, sub, back){
               <div class="an-h"><span class="qz-t">${esc(s.name)}</span>
                 <span class="an-n ${band(s.mastery,judge)}">${pct(s.mastery)}</span></div>
               ${bar(s.mastery, s.thin, judge)}
-              <div class="qz-m">${AR(s.quizzes)} اختباراً، ${AR(s.answered)} إجابة ${thinTag(s.thin)}</div>
+              <div class="qz-m">${N(s.quizzes,'اختبار','اختباران','اختبارات','اختباراً')}، ${
+                N(s.answered,'إجابة','إجابتان','إجابات','إجابة')} ${thinTag(s.thin)}</div>
             </div>`).join("")}` : empty("لا محاولات مصحَّحة بعد")}`}
 
-    <p class="hint">الإتقان = إجاباتٌ صحيحة ÷ إجابات مُصحَّحة، من أحدث محاولةٍ
+    <p class="hint">الإتقان = إجابات صحيحة ÷ إجابات مُصحَّحة، من أحدث محاولة
       لكلّ اختبار · نسخة الواجهة ${BUILD}${stamp()}</p>`;
 
   bind();
@@ -569,7 +574,7 @@ async function drawPerformance(title, sub, back){
       علاجُه أصلاً، فوسمُه إخفاقاً حكمٌ على دواءٍ لم يُعطَ. */
 const DXS = {
   persistent:['يحتاج عودة','لم يزل بعد الإعادة'],
-  partial:   ['في الطريق','زال في بعضٍ وبقي في بعض'],
+  partial:   ['في الطريق','زال في بعض وبقي في بعض'],
   cleared:   ['زال','لم يعد يظهر بعد الإعادة'],
   untested:  ['لم يُختبر','ظهر ولم تُعَد اختباراتُه']
 };
@@ -585,36 +590,37 @@ function dxSection(pats, forMe){
   const p = forMe ? all.filter(x => x.note && String(x.note).trim()) : all;
   const hidden = all.length - p.length;
 
-  if(!p.length) return hidden ? `<h2 class="sec">أنماطُ الأخطاء</h2>
-    <div class="status">رُصدت ${AR(hidden)} أنماط، ولم تُكتب لها صياغةٌ
+  if(!p.length) return hidden ? `<h2 class="sec">أنماط الأخطاء</h2>
+    <div class="status">رُصدت ${AR(hidden)} أنماط، ولم تُكتب لها صياغة
       تشرحها لك بعد.</div>` : '';
 
   const order = forMe ? ['cleared','persistent','partial','untested']
                       : ['persistent','partial','cleared','untested'];
   const head  = forMe
-    ? 'أنماطُ أخطائك — والترتيبُ يبدأ بما تجاوزته'
-    : 'أنماطُ الخطأ — المستعصي أوّلاً';
+    ? 'أنماط أخطائك — والترتيب يبدأ بما تجاوزته'
+    : 'أنماط الخطأ — المستعصي أوّلاً';
 
   const rows = order.flatMap(st => p.filter(x => x.state === st).map(x => `
     <div class="an-row static">
       <div class="an-h">
-         <span class="qz-t">${fmt(x.note || x.name || x.code || 'نمطٌ بلا تعريف')}</span>
+         <span class="qz-t">${fmt(x.note || x.name || x.code || 'نمط بلا تعريف')}</span>
         <span class="an-st ${x.state}">${DXS[x.state][0]}</span>
       </div>
       ${!forMe && !(x.note && String(x.note).trim())
-        ? `<span class="an-thin">بلا صياغةٍ للطالب — لا يراه</span>` : ''}
+        ? `<span class="an-thin">بلا صياغة للطالب — لا يراه</span>` : ''}
       <div class="qz-m">
         ${x.name ? `<b>${esc(x.name)}</b>${x.code?' · '+esc(x.code):''}، ` : ''}
-        ظهر في ${AR(x.quizzes)} اختباراً${
+        ظهر في ${N(x.quizzes,'اختبار','اختبارين','اختبارات','اختباراً')}${
           x.retried ? `، أُعيد منها ${AR(x.retried)} وزال في ${AR(x.cleared)}`
-                    : '، ولم يُعَد أيٌّ منها بعد'}
+                    : '، ولم يُعَد أيّ منها بعد'}
       </div>
        ${x.remedy ? `<div class="an-dx">${fmt(x.remedy)}</div>` : ''}
     </div>`));
 
   return `<h2 class="sec">${head}</h2>${rows.join("")}${
-    hidden ? `<div class="qz-m an-cen">و${AR(hidden)} ${hidden===1?'نمطٌ':'أنماطٍ'} أخرى
-      لم تُكتب لها صياغةٌ تشرحها لك بعد.</div>` : ''}`;
+    hidden ? `<div class="qz-m an-cen">و${
+      N(hidden,'نمط آخر','نمطان آخران','أنماط أخرى','نمطاً آخر')}
+      لم تُكتب لها صياغة تشرحها لك بعد.</div>` : ''}`;
 }
 
 
@@ -633,18 +639,18 @@ function nextSection(nx, lk, forMe){
   const him = forMe ? 'لك' : 'له';
 
   return `
-    <h2 class="sec">القادم — مفتوحٌ ${him} الآن</h2>
+    <h2 class="sec">القادم — مفتوح ${him} الآن</h2>
     ${nx.length ? nx.map(x => `
       <div class="an-row static">
         <div class="an-h"><span class="qz-t">${esc(x.title || 'اختبار')}</span></div>
         <div class="qz-m">${[x.subject, x.lesson].filter(Boolean).map(esc).join('، ')}</div>
       </div>`).join("")
       : `<div class="status">${forMe
-          ? 'لا شيء مفتوحٌ الآن — أتممت كلَّ ما فُتح لك.'
-          : 'لا شيء مفتوحٌ له الآن — أتمّ كلَّ ما فُتح له.'}</div>`}
+          ? 'لا شيء مفتوح الآن — أتممت كلّ ما فُتح لك.'
+          : 'لا شيء مفتوح له الآن — أتمّ كلّ ما فُتح له.'}</div>`}
     ${waiting ? `<div class="qz-m an-cen">
-      وينتظر خلفها ${AR(waiting)} ${waiting === 1 ? 'اختبار' : 'اختباراً'}،
-      يُفتح كلٌّ منها بإتمام ما قبله —
+      وينتظر خلفها ${N(waiting,'اختبار','اختباران','اختبارات','اختباراً')}،
+      يُفتح كلّ منها بإتمام ما قبله —
       ${lk.map(x => `${esc(x.subject || '—')} ${AR(x.count)}`).join('، ')}.</div>` : ''}`;
 }
 
@@ -677,8 +683,8 @@ async function openQuiz(quizId, backTitle, backSub, backHas){
       ${a.chosen  ? `<div class="an-qc">اخترت: ${fmt(a.chosen)}</div>` : ''}
       ${a.written ? `<div class="an-qc">كتبت: ${esc(a.written)}</div>` : ''}
       ${a.rushed
-        ? `<div class="an-qr">أُجيب في ${AR(a.seconds)} ثانية — أسرعُ من قراءة السؤال،
-             فلا تشخيصَ له.</div>`
+        ? `<div class="an-qr">أُجيب في ${N(a.seconds,'ثانية','ثانيتين','ثوان','ثانية')} — أسرع من قراءة السؤال،
+             فلا تشخيص له.</div>`
         : (a.note ? `<div class="an-qd">${fmt(a.note)}</div>` : '')}
       ${a.name ? `<div class="qz-m">${esc(a.name)}${a.code?' · '+esc(a.code):''}</div>` : ''}
       ${a.remedy ? `<div class="an-dx">${fmt(a.remedy)}</div>` : ''}
@@ -688,23 +694,23 @@ async function openQuiz(quizId, backTitle, backSub, backHas){
     ${crumb}
     ${atts.length > 1 ? `
       <div class="card">
-        <div class="an-clab">الدرجة في كلّ محاولة</div>
+        <div class="an-clab">الإتقان في كلّ محاولة</div>
         <div class="an-cmain"><canvas id="anQChart"></canvas></div>
       </div>` : last ? `
       <div class="card an-sum">
         ${gauge(last.mastery, false, 'إتقان', false, judge)}
-        <div class="qz-m an-cen">محاولةٌ واحدة، ${AR(last.answered)} إجابة،
-          عتبةُ النجاح ${pct(qz.pass)}</div>
+        <div class="qz-m an-cen">محاولة واحدة، ${N(last.answered,'إجابة','إجابتان','إجابات','إجابة')}،
+          عتبة النجاح ${pct(qz.pass)}</div>
       </div>` : ''}
 
     ${d.rush ? rushLine(d.rush, M.forMe) : ''}
 
     ${!d.revealed
-      ? `<div class="warnbox">هذا الاختبار لا تُعرض مراجعتُه — قرارٌ اتّخذه
-           مؤلّفه، ومحطّاتُ تحديد المستوى كلُّها كذلك.</div>`
+      ? `<div class="warnbox">هذا الاختبار لا تُعرض مراجعتُه — قرار اتّخذه
+           مؤلّفه، ومحطّات تحديد المستوى كلُّها كذلك.</div>`
       : `<h2 class="sec">تفاصيل آخر محاولة</h2>
-         <div class="an-foot">الصوابُ من الخطأ والتشخيص — <b>بلا الإجابة الصحيحة</b>،
-           لتبقى الإعادةُ قياساً لفهمك لا لذاكرتك.</div>
+         <div class="an-foot">الصواب من الخطأ والتشخيص — <b>بلا الإجابة الصحيحة</b>،
+           لتبقى الإعادة قياساً لفهمك لا لذاكرتك.</div>
          ${(d.answers||[]).map(ansRow).join("") || empty("لا إجابات")}`}
 
     <p class="hint">نسخة الواجهة ${BUILD}${stamp()}</p>`;
@@ -718,8 +724,8 @@ function rushLine(r, forMe){
   if(!r || !r.gradable || !r.rushed) return '';
   return `<div class="an-rush">
     <b>${AR(r.rushed)} من ${AR(r.gradable)}</b> ${forMe
-      ? `من إجاباتك هنا كانت في أقلّ من ${AR(r.threshold)} ثوانٍ.`
-      : `من إجاباته دون ${AR(r.threshold)} ثوانٍ وخاطئة.`}</div>`;
+      ? `من إجاباتك هنا كانت في أقلّ من ${N(r.threshold,'ثانية','ثانيتين','ثوان','ثانية')}.`
+      : `من إجاباته دون ${N(r.threshold,'ثانية','ثانيتين','ثوان','ثانية')} وخاطئة.`}</div>`;
 }
 
 
@@ -801,8 +807,10 @@ async function renderList(box){
       </div>
       ${bar(r.mastery, r.thin, true)}
       <div class="qz-m">
-        ${r.level?esc(r.level)+'، ':''}${AR(r.subjects)} مادة، ${AR(r.attempts)} محاولة${
-          r.days_silent!=null && r.days_silent>0 ? `، بلا نشاط ${AR(r.days_silent)} يوماً` : ''}
+        ${r.level?esc(r.level)+'، ':''}${N(r.subjects,'مادة','مادتان','مواد','مادة')}، ${
+          N(r.attempts,'محاولة','محاولتان','محاولات','محاولة')}${
+          r.days_silent!=null && r.days_silent>0
+            ? `، بلا نشاط ${N(r.days_silent,'يوم','يومين','أيام','يوماً')}` : ''}
       </div>
       ${r.dx_top ? `<div class="an-dx">أكثر أخطائه: ${esc(r.dx_top.name||r.dx_top.code)}
                      <span class="an-c">${AR(r.dx_top.n)}</span></div>` : ''}
@@ -827,7 +835,8 @@ async function renderBoard(box){
       <div class="an-h"><span class="qz-t">${esc(name)}</span>
         <span class="an-n ${band(x.mastery,true)}">${pct(x.mastery)}</span></div>
       ${bar(x.mastery, x.thin, true)}
-      <div class="qz-m">${AR(x.students)} طالباً، ${AR(x.attempts)} محاولة</div>
+      <div class="qz-m">${N(x.students,'طالب','طالبان','طلاب','طالباً')}، ${
+        N(x.attempts,'محاولة','محاولتان','محاولات','محاولة')}</div>
       ${thinTag(x.thin)}
     </div>`;
 
@@ -837,10 +846,11 @@ async function renderBoard(box){
   box.innerHTML = `
     <div class="card an-sum">
       ${gauge(o.mastery, o.thin, 'إتقان', false, true)}
-      <div class="qz-m an-cen">${AR(o.students)} طالباً، ${AR(o.attempts)} محاولة</div>
+      <div class="qz-m an-cen">${N(o.students,'طالب','طالبان','طلاب','طالباً')}، ${
+        N(o.attempts,'محاولة','محاولتان','محاولات','محاولة')}</div>
       ${o.thin ? `<div class="warnbox">العيّنة أصغر من أن يُبنى عليها حكم.
-         الرقم صحيحُ الحساب، والخريطةُ هنا تكشف <b>أين ينقصنا المحتوى</b>
-         أكثر مما تقيس أداءً.</div>` : ''}
+         الرقم صحيح الحساب، والخريطة هنا تكشف <b>أين ينقصنا المحتوى</b>
+         أكثر مما تقيس أداء.</div>` : ''}
     </div>
     ${group('المواد',  d.by_subject, x => x.name)}
     ${group('الصفوف',  d.by_level,   x => x.name)}

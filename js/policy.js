@@ -23,7 +23,7 @@ export const POLICY_URL     = './privacy.html';
 export const policyCheck = (id = 'pol_ok') => `
   <label class="pol-ck" for="${id}">
     <input type="checkbox" id="${id}">
-    <span>قرأتُ <a href="${POLICY_URL}" target="_blank" rel="noopener">سياسة الخصوصية</a>
+    <span>قرأت <a href="${POLICY_URL}" target="_blank" rel="noopener">سياسة الخصوصية</a>
       وأوافق عليها</span>
   </label>`;
 

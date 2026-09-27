@@ -92,8 +92,8 @@ export function teacherFields(v = {}, opts = {}){
     ${/* 🔑 منتقٍ لا نصٌّ حرّ: register_teacher تُنشئ صفَّ teacher_subjects
           وهو يحتاج subject_id — ونصٌّ حرّ لا يُنتجه. شرطُ تنفيذٍ لا زينة. */''}
     <label class="fl" style="margin-top:16px">المادة التي تدرّسها</label>
-    <select id="rf_sb"><option value="">— جارٍ التحميل… —</option></select>
-    <p class="small">تُضاف موادُّ أخرى لاحقاً من شاشة «موادّي».</p>
+    <select id="rf_sb"><option value="">— جار التحميل… —</option></select>
+    <p class="small">تُضاف موادّ أخرى لاحقاً من شاشة «موادّي».</p>
 
     <label class="fl" style="margin-top:14px">سنوات الخبرة</label>
     <input type="text" id="rf_yr" inputmode="numeric" value="${esc(v.years??'')}" placeholder="مثال: 8">
@@ -109,7 +109,7 @@ export function teacherFields(v = {}, opts = {}){
         `<option value="${c}" ${c==='+20'?'selected':''} dir="ltr">${esc(n)} ${c}</option>`).join("")}</select>
       <input type="tel" id="rf_ph" dir="ltr" inputmode="tel" placeholder="1012345678">
     </div>
-    <p class="small">يُحفَظ ولا يُرسَل إليه رمزٌ الآن — ولا يظهر لأحد.</p>`;
+    <p class="small">يُحفَظ ولا يُرسَل إليه رمز الآن — ولا يظهر لأحد.</p>`;
 }
 
 /* يُملأ المنتقي بعد الرسم — والفشلُ يُقال ولا يُترك صندوقاً فارغاً

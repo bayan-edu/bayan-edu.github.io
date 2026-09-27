@@ -43,7 +43,7 @@
 import * as api from './api.js';
 import { S } from './state.js';
 import { app, head, toast, esc, fmt, AR, errBox, nav, setWide, scrollTop, L,
-                  pgMedia, srcOf, SAFE_HOSTS, optLabel, dirOf } from './ui.js';
+                  pgMedia, srcOf, SAFE_HOSTS, optLabel, dirOf, N } from './ui.js';
 import { attachUpload } from './upload.js';
 import { openCourse, openTools } from './editor.js';
 import { questionText, questionBody, KIND_LABEL, gapCount } from './render_q.js';
@@ -71,7 +71,7 @@ export async function openQuiz(course, lesson){
         فهرسُ الأدوات) — فيبقى في الترويسة وحدَها، ولا يُحذف معه. */
   head(st ? (course.title ? "محطّة قياس — " + course.title : "محطّة قياس")
           : "اختبار الدرس");
-  app.innerHTML = `<div class="status">جارٍ التحميل…</div>`;
+  app.innerHTML = `<div class="status">جار التحميل…</div>`;
 
   const qid = st ? course.id : lesson.quiz_id;
   if(!qid) return offerCreate();
@@ -101,7 +101,7 @@ function offerCreate(){
 
 async function createQuiz(){
   const { course, lesson } = ctx;
-  app.innerHTML = `<div class="status">جارٍ الإنشاء…</div>`;
+  app.innerHTML = `<div class="status">جار الإنشاء…</div>`;
 
   const q = await api.saveQuiz({ course: course.id, title: lesson.title, official: true });
   if(q.error || !q.data.ok){ toast(q.error?.message || q.data.error); offerCreate(); return; }
@@ -155,7 +155,7 @@ function render(at = 'focus'){
 const emptyCard = () => `<div class="card" style="text-align:center;padding:34px">
   <div style="font-size:2rem;margin-bottom:10px">◉</div>
   <div class="rev-q">لا أسئلة بعد</div>
-  <div class="line">البدايةُ بستّة أسئلة اختيار من متعدد — وهو الحدّ الذي تبقى معه عتبة ٦٥٪ ذات معنى.</div>
+  <div class="line">البداية بستّة أسئلة اختيار من متعدد — وهو الحدّ الذي تبقى معه عتبة ٦٥٪ ذات معنى.</div>
   <div class="nav" style="justify-content:center;margin-top:16px">
     <button class="btn primary" id="add0">＋ إضافة أوّل سؤال</button>
     <button class="btn ghost" id="imp0">⇪ استيراد اختبار</button>
@@ -192,7 +192,7 @@ function quizSettings(){
 
       <label class="fl" style="margin-top:12px">الكود</label>
       <input id="qs_c" dir="ltr" value="${esc(Z.code||'')}" ${A?'disabled':''}>
-      ${A ? `<div class="eq-hint">أجاب عنه ${AR(A)} — الكود مِرساةُ المحاولات فلا يُبدَّل.</div>` : ''}
+      ${A ? `<div class="eq-hint">أجاب عنه ${AR(A)} — الكود مِرساة المحاولات فلا يُبدَّل.</div>` : ''}
 
       <div style="display:flex;gap:12px;margin-top:12px">
         <div style="flex:1"><label class="fl">الدقائق</label>
@@ -209,7 +209,7 @@ function quizSettings(){
         <option value="3" ${Z.plays===3?'selected':''}>ثلاث</option>
       </select>
       <div class="eq-hint" id="qs_pw" style="${Z.plays?'':'display:none'}">
-        ⚠️ أكواد تشخيص الاستماع تصير أضعف — قد يكون الخطأ فوات سمعٍ لا سوء فهم.</div>
+        ⚠️ أكواد تشخيص الاستماع تصير أضعف — قد يكون الخطأ فوات سمع لا سوء فهم.</div>
 
       <label class="fl" style="margin-top:12px">بعد التسليم</label>
       <select id="qs_r">
@@ -219,7 +219,7 @@ function quizSettings(){
 
       <label class="eq-ck" style="display:flex;gap:9px;margin-top:14px;align-items:flex-start">
         <input type="checkbox" id="qs_s" ${Z.shuffle?'checked':''}>
-        <span>ترتيبٌ متغيّر لكل طالب
+        <span>ترتيب متغيّر لكل طالب
           <div class="eq-hint" style="margin-top:3px">الأقسام والنصوص تبقى كتلاً بترتيبها،
             والخلط داخلها. وأسئلة النصّ المشترك لا تُخلط.</div></span></label>
 
@@ -234,7 +234,7 @@ function quizSettings(){
         <label class="fl" style="margin-top:12px">دور المحطّة في التوجيه</label>
         <select id="qs_k">
           <option value="routing"   ${Z.station_kind==='routing'?'selected':''}>محطّة التوجيه — يدخلها الجميع، ولا مستوى يخرج منها</option>
-          <option value="panel"     ${Z.station_kind==='panel'?'selected':''}>محطّة قياس — يخرج منها مستوًى أو إحالةٌ إلى حدّ</option>
+          <option value="panel"     ${Z.station_kind==='panel'?'selected':''}>محطّة قياس — يخرج منها مستوًى أو إحالة إلى حدّ</option>
           <option value="boundary"  ${Z.station_kind==='boundary'?'selected':''}>محطّة حدّ — تحسم لبساً، ويخرج منها مستوًى دائماً</option>
           <option value="productive" ${Z.station_kind==='productive'?'selected':''}>محطّة إنتاج — يصحّحها المعلّم، ولا توجيه لها</option>
         </select>` : ''}
@@ -323,7 +323,7 @@ function qCard(q){
       ${(q.kind === 'mcq' || multi) ? `
         ${multi ? `<div class="eq-hint" style="display:block;margin-bottom:9px;line-height:1.85">
           صحيحان فأكثر · وخاطئ واحد على الأقل · ولا يُعلَن العدد للطالب.
-          والكود للمشتّت وحده — والإغفال يُشخَّص من نمط الإجابة لا من وسمٍ تكتبه.</div>` : ''}
+          والكود للمشتّت وحده — والإغفال يُشخَّص من نمط الإجابة لا من وسم تكتبه.</div>` : ''}
         <div class="opts eq-opts">${(q.options||[]).map(opt).join("")}</div>
         ${locked ? '' : '<button class="btn ghost eq-addo" id="addo">＋ خيار</button>'}
 
@@ -354,7 +354,7 @@ function qCard(q){
           <div class="cz-pv-h">👁️ هكذا يراه الطالب</div>
           <div class="gaplive" id="gaplive">${
             gapCount(q.body||'') ? czLive(q)
-                                 : '<span class="eq-hint">الجملةُ وفراغاتها تُكتب أعلاه</span>'}</div>
+                                 : '<span class="eq-hint">الجملة وفراغاتها تُكتب أعلاه</span>'}</div>
         </div>
       ` : q.kind === 'matching' ? `
 
@@ -396,25 +396,25 @@ function strip(q, locked){
   const T = {
     lock: `أُجيب عن هذا السؤال ${AR(q.answered)} مرة، والتعديل يكسر ربط الإجابات بما رآه الطلاب فعلاً — ولهذا قُفلت الحقول.`,
     nv:   'يَنسخ السؤال بخياراته وأكواده وخانته وموضعه فتحرّره بحرّية، والقديم يتقاعد بإجاباته سليمة — يختفي من الاختبار ولا يُمحى.',
-    mk:   'يبدأ نسخةً من هذا السؤال ثمّ تبدّل محتواها إلى نسخةٍ مكافئة تقيس نفس المهارة بنصٍّ مختلف.',
-    pair: 'لوضع هذا السؤال في خانةٍ واحدة مع سؤالٍ آخر قائم، لإعلان أنّهما يقيسان نفس المهارة.',
+    mk:   'يبدأ نسخة من هذا السؤال ثمّ تبدّل محتواها إلى نسخة مكافئة تقيس نفس المهارة بنصّ مختلف.',
+    pair: 'لوضع هذا السؤال في خانة واحدة مع سؤال آخر قائم، لإعلان أنّهما يقيسان نفس المهارة.',
     /* 🔓 القفل يخصّ المحتوى لا الخانة — وهذا موضع الحجّة الآن */
-    tag:  'والخانة تُعدَّل ولو كان السؤال مقفلاً: هي وسمُ تجميعٍ لا محتوى، فلا تمسّ إجابةً سابقة.' };
+    tag:  'والخانة تُعدَّل ولو كان السؤال مقفلاً: هي وسم تجميع لا محتوى، فلا تمسّ إجابة سابقة.' };
 
   const det = [];
-  if(locked){ det.push(T.lock); det.push('و«إصدارٌ جديد» ' + T.nv); }
+  if(locked){ det.push(T.lock); det.push('و«إصدار جديد» ' + T.nv); }
   if(canVar){
-    det.push('و«بديلٌ مكافئ» ' + T.mk);
+    det.push('و«بديل مكافئ» ' + T.mk);
     det.push('و«اقرِن» ' + T.pair);
     if(locked) det.push(T.tag);
   }
 
   return `<div class="eq-strip">
     ${locked ? `<span class="eq-lockc" title="${esc(T.lock)}">
-      🔒 مقفل · ${AR(q.answered)} إجابة</span>` : ''}
+      🔒 مقفل · ${N(q.answered,'إجابة','إجابتان','إجابات','إجابة')}</span>` : ''}
     <span class="eq-strip-g"></span>
-    ${locked ? `<button class="eq-sb go" id="nv" title="${esc(T.nv)}">✎ إصدارٌ جديد</button>` : ''}
-    ${canVar ? `<button class="eq-sb" id="mkvar"  title="${esc(T.mk)}">⇄ بديلٌ مكافئ</button>
+    ${locked ? `<button class="eq-sb go" id="nv" title="${esc(T.nv)}">✎ إصدار جديد</button>` : ''}
+    ${canVar ? `<button class="eq-sb" id="mkvar"  title="${esc(T.mk)}">⇄ بديل مكافئ</button>
                 <button class="eq-sb" id="pairvar" title="${esc(T.pair)}">⇄ اقرِن</button>` : ''}
     <button class="eq-i-b" id="nvi" aria-expanded="false" aria-controls="nvd"
             title="التفاصيل">i</button>
@@ -500,7 +500,7 @@ function variantBar(q, locked){
      فوسمُ تجميع: لا يمسّ إجابةً سابقة، وأثره في السحب القادم وحده.
      و set_variant نفسها لا تسأل عن الإجابات — فالحظر كان في الواجهة. */
   const note = locked ? `<div class="eq-bs" style="margin-top:8px;line-height:1.7">
-      🔓 الخانة تُعدَّل ولو كان السؤال مقفلاً — هي وسمُ تجميعٍ لا محتوى.</div>` : '';
+      🔓 الخانة تُعدَّل ولو كان السؤال مقفلاً — هي وسم تجميع لا محتوى.</div>` : '';
 
   /* فعلا الإنشاء (mkvar · pairvar) انتقلا إلى strip() — سطرٌ واحد
      أعلى البطاقة. وهنا يبقى ما لا يُختصر: لوحةُ خانةٍ قائمة. */
@@ -571,12 +571,12 @@ function pairPassage(q){
 
   document.getElementById("main").innerHTML = `
     <div class="card">
-      <div class="qnum">⇄ اقرن كتلة «${esc(pgTitle(q.passage_id))}» بنصٍّ آخر</div>
+      <div class="qnum">⇄ اقرن كتلة «${esc(pgTitle(q.passage_id))}» بنصّ آخر</div>
       <div class="line" style="margin-bottom:6px">
         تُزاوَج الأسئلة <b>بالترتيب</b>: الأول بالأول والثاني بالثاني — فتُصنع
-        ${AR(n)} خانة دفعةً واحدة، ويسحب الاختبار نصّاً واحداً بأسئلته كلها.</div>
+        ${N(n,'خانة','خانتين','خانات','خانة')} دفعة واحدة، ويسحب الاختبار نصّاً واحداً بأسئلته كلها.</div>
       <div class="eq-bs" style="margin-bottom:14px">
-        ولإضافة نصٍّ ثالث: اقرنه بأحد المقترنَين — تتّسع الخانات ولا تحتاج فكّاً.</div>
+        ولإضافة نصّ ثالث: اقرنه بأحد المقترنَين — تتّسع الخانات ولا تحتاج فكّاً.</div>
 
       ${others.length ? others.map(p => {
         const m = pgQs(p.id).length;
@@ -585,7 +585,7 @@ function pairPassage(q){
           <div class="eq-brow">
             <span class="eq-bt" dir="auto" style="flex:1;min-width:0">📖 ${esc(p.title || 'نصّ مشترك')}</span>
             <span class="eq-bs">${AR(m)} أسئلة</span>
-            <span class="eq-bs">${m === n ? '✅ عددٌ مطابق'
+            <span class="eq-bs">${m === n ? '✅ عدد مطابق'
               : '❌ العدد مختلف — الكتلتان غير متوازيتين'}</span>
           </div></button>`;
       }).join('') : `<div class="warnbox">لا نصّ مشترك آخر في هذا الاختبار.</div>`}
@@ -650,7 +650,8 @@ function pairBlock(back, pidA, pidB){
         </div>`).join('')}
 
       <div class="nav" style="margin-top:16px">
-        ${doable ? `<button class="btn primary" id="pbgo">اقرن ${AR(doable)} خانة</button>` : ''}
+        ${doable ? `<button class="btn primary" id="pbgo">قرْن ${
+          N(doable,'خانة','خانتين','خانات','خانة')}</button>` : ''}
         <button class="btn ghost" id="pbb">رجوع</button>
       </div>
     </div>`;
@@ -663,18 +664,19 @@ function pairBlock(back, pidA, pidB){
     if(bad && !confirm(`${bad} مزاوجة فخاخُها غير متطابقة.\n\n` +
         "الاقتران ممكن، لكن صحّح الخيارات بعده.\n\nأتقرن؟")) return;
     if(none && !confirm(`${none} مزاوجة مقالية — لا فحص آليّ لها.\n\n` +
-        "التكافؤ إعلانٌ منك: أمتقاربة في الجنس والطول والألفة؟\n\nأتقرن؟")) return;
+        "التكافؤ إعلان منك: أمتقاربة في الجنس والطول والألفة؟\n\nأتقرن؟")) return;
 
     const box = document.getElementById("main");
     let done = 0, fail = [];
     for(const [i, r] of rows.entries()){
       if(!r.ok) continue;
-      box.innerHTML = `<div class="status">جارٍ الاقتران… ${AR(i + 1)} من ${AR(rows.length)}</div>`;
+      box.innerHTML = `<div class="status">جار الاقتران… ${AR(i + 1)} من ${AR(rows.length)}</div>`;
       const v = await api.setVariant(r.ids);
       if(v.error || !v.data?.ok) fail.push(`${AR(i + 1)}: ${v.error?.message || v.data?.error}`);
       else done++;
     }
-    toast(`قُرنت ${AR(done)} خانة${fail.length ? ` · وتعذّرت ${AR(fail.length)}` : ''}`);
+    toast(`قُرنت ${N(done,'خانة','خانتان','خانات','خانة')}${
+      fail.length ? ` · وتعذّرت ${AR(fail.length)}` : ''}`);
     if(fail.length) console.warn('تعذّر اقتران:', fail);
     reload(back.id);
   };
@@ -777,24 +779,24 @@ function pairForm(q){
 
   document.getElementById("main").innerHTML = `
     <div class="card">
-      <div class="qnum">⇄ اقرن بسؤالٍ قائم</div>
+      <div class="qnum">⇄ اقرن بسؤال قائم</div>
       <div class="line" style="margin-bottom:6px">
-        الاقتران <b>إعلانٌ</b> لا نسخ: تقول إن السؤالين يقيسان المهارة نفسها،
+        الاقتران <b>إعلان</b> لا نسخ: تقول إن السؤالين يقيسان المهارة نفسها،
         فيسحب البنك واحداً منهما في كل اختبار.</div>
       <div class="line" style="margin-bottom:6px">
         فخاخ هذا السؤال: ${fp(q).map(c => `<span class="chip">${esc(dxName(c))}</span>`).join(' ')
           || ((q.options||[]).length ? '—' : '<b>مقاليّ — لا بصمة تُفحص</b>')}
         ${pgName(q.passage_id) ? ` · 📖 ${esc(pgName(q.passage_id))}` : ''}</div>
       <div class="eq-bs" style="margin-bottom:14px">
-        المرشّحون مرتَّبون: قسمُك أولاً · ثم تطابق الفخاخ · ثم من كان تحت نصٍّ آخر —
+        المرشّحون مرتَّبون: قسمُك أولاً · ثم تطابق الفخاخ · ثم من كان تحت نصّ آخر —
         فنسختان تحت نصّ واحد لا تُغنيان عن قراءته مرّتين.</div>
 
       ${cands.length ? cands.map(row).join('') : `
         <div class="warnbox">لا سؤال صالحاً للاقتران في هذا الاختبار.
-          الشرط: محفوظٌ · من النمط نفسه · وغير مقترن بخانة أخرى.</div>`}
+          الشرط: محفوظ · من النمط نفسه · وغير مقترن بخانة أخرى.</div>`}
 
       ${taken ? `<div class="eq-bs" style="margin-top:10px">
-        و${AR(taken)} سؤالاً من النمط نفسه في خانة أخرى — ودمج خانتين ترفضه القاعدة،
+        و${N(taken,'سؤال','سؤالان','أسئلة','سؤالاً')} من النمط نفسه في خانة أخرى — ودمج خانتين ترفضه القاعدة،
         ففُكّ إحداهما أولاً.</div>` : ''}
 
       <div class="nav" style="margin-top:16px">
@@ -807,7 +809,7 @@ function pairForm(q){
     const x = (Z.questions || []).find(y => y.id === +el.dataset.pair);
     const noFp = noFpWith(x);
     const msg = noFp
-      ? "لا فحص آليّ للمقاليّ — التكافؤ إعلانٌ منك.\n\n" +
+      ? "لا فحص آليّ للمقاليّ — التكافؤ إعلان منك.\n\n" +
         "أمتقاربان في الجنس والطول والألفة عند طالب هذا الصف؟\n\nأتقرن؟"
       : "الفخاخ غير متطابقة — النسختان لا تقيسان الشيء نفسه.\n\n" +
         "الاقتران ممكن، لكن صحّح الخيارات بعده.\n\nأتقرن؟";
@@ -837,7 +839,7 @@ async function makeVariant(q){
 
   const v = await api.setVariant([q.id, d.data.id]);
   if(v.error || !v.data?.ok) toast(v.error?.message || v.data?.error || "تعذّر الاقتران");
-  else toast(`أُنشئ بديل في خانة ${v.data.key} — بدّل المحتوى وأبقِ الفخاخ`);
+  else toast(`أُنشئ بديل في خانة ${v.data.key} — بدّل المحتوى وأبق الفخاخ`);
 
   reload(d.data.id);              // تُعيد التحميل وتنتقل إلى البديل معاً
 }
@@ -1027,7 +1029,7 @@ function wire(q){
 
   const ao = main.querySelector("#addo");
   if(ao) ao.onclick = () => {
-    if(q.options.length >= 6){ toast("ستة خيارات حدّ كافٍ"); return; }
+    if(q.options.length >= 6){ toast("ستة خيارات حدّ كاف"); return; }
     q.options.push({ label: null, body: '', correct: false, dx: null });
     mark(); repaint(q);
   };
@@ -1047,7 +1049,7 @@ function wire(q){
       const lv = main.querySelector("#gaplive");
       if(lv) lv.innerHTML = gapCount(qb.value)
         ? (cz ? czLive(q) : questionText(q, [], true))
-        : `<span class="eq-hint">${cz ? 'الجملةُ وفراغاتها تُكتب أعلاه'
+        : `<span class="eq-hint">${cz ? 'الجملة وفراغاتها تُكتب أعلاه'
                                       : '…هكذا يراه الطالب'}</span>`;
     };
 
@@ -1128,7 +1130,7 @@ function wire(q){
 
       const ab = box.querySelector("#addbank");
       if(ab) ab.onclick = () => {
-        if((q.bank || []).length >= 12){ toast("اثنتا عشرة كلمة حدٌّ كافٍ"); return; }
+        if((q.bank || []).length >= 12){ toast("اثنتا عشرة كلمة حدّ كاف"); return; }
         collect(q);
         (q.bank = q.bank || []).push({ k: mtKey('b', czBankKeys(q)), t: '' });
         redraw();
@@ -1211,7 +1213,7 @@ function wire(q){
          بندٍ إلى جاره. زال المنطقُ لأن زالت علّتُه. */
       box.querySelectorAll("[data-rmp]").forEach(el => el.onclick = () => {
         if((q.options || []).length <= 3){
-          toast("المزاوجة تحتاج ثلاثة بنودٍ على الأقل"); return; }
+          toast("المزاوجة تحتاج ثلاثة بنود على الأقل"); return; }
         collect(q);
         const k    = el.dataset.rmp;
         const mate = (q.accept?.pairs || {})[k];
@@ -1251,7 +1253,7 @@ function wire(q){
 
       const ab = box.querySelector("#addbank");
       if(ab) ab.onclick = () => {
-        if((q.bank || []).length >= 12){ toast("اثنا عشر مقابلاً حدٌّ كافٍ"); return; }
+        if((q.bank || []).length >= 12){ toast("اثنا عشر مقابلاً حدّ كاف"); return; }
         collect(q);
         (q.bank = q.bank || []).push({ k: mtKey('b', mtBankKeys(q)), t: '' });
         redraw();
@@ -1262,7 +1264,7 @@ function wire(q){
          فموضعُ الاقتران واحد، ولا يُكتب مرّتين. */
       const ap = box.querySelector("#addprompt");
       if(ap) ap.onclick = () => {
-        if((q.options || []).length >= 8){ toast("ثمانية بنودٍ حدٌّ كافٍ"); return; }
+        if((q.options || []).length >= 8){ toast("ثمانية بنود حدّ كاف"); return; }
         collect(q);
         (q.options = q.options || []).push(
           { k: mtKey('i', mtItemKeys(q)), label:null, body:'', correct:false, dx:null });
@@ -1324,8 +1326,8 @@ function gapFields(q, locked){
     <textarea id="gpw" dir="ltr" style="min-height:78px" ${locked?'disabled':''}
       placeholder="1:30 = RTR">${esc(w)}</textarea>
     <div class="eq-hint" style="display:block;margin-top:6px;line-height:1.8">
-      سطرٌ لكل خطأ، والرقم قبل النقطتين رقمُ الفراغ.
-      واتركه فارغاً إن لم تتوقّع خطأً بعينه — تُقاس الأخطاء الشائعة لاحقاً من إجابات الطلاب.</div>`;
+      سطر لكل خطأ، والرقم قبل النقطتين رقم الفراغ.
+      واتركه فارغاً إن لم تتوقّع خطأ بعينه — تُقاس الأخطاء الشائعة لاحقاً من إجابات الطلاب.</div>`;
 }
 /* ═══════════ حقول المزاوجة ═══════════
    🔑 المبدأ الحاكم نفسه: المشتّت وتشخيصه صفٌّ واحد. والمشتّت هنا
@@ -1425,21 +1427,21 @@ const mtWrongRow = (bank, ik, bkey, code, locked, L = L_MATCH) => `
 const L_MATCH = {
   one:'بند', two:'بندان', many:'بنود',
   pool1:'مقابل', pool2:'مقابلان', poolN:'مقابلات',
-  spN:'مقابلات زائدة', sp2:'مقابلان زائدان', sp1:'مقابلٌ زائد',
-  sp0:'لا مقابلَ زائداً',
-  lack:'المقابلات أقلُّ من البنود', last:'البندَ الأخيرَ',
-  spare:'مقابلاتٌ زائدة', spareOf:'لا بندَ لها — وهي التي تمنع حلَّ البند الأخير بالاستبعاد',
-  chip:'مقابلٌ زائد', addSp:'＋ مقابلٌ زائد', delSp:'احذف المقابل الزائد',
+  spN:'مقابلات زائدة', sp2:'مقابلان زائدان', sp1:'مقابل زائد',
+  sp0:'لا مقابل زائداً',
+  lack:'المقابلات أقلّ من البنود', last:'البند الأخير',
+  spare:'مقابلات زائدة', spareOf:'لا بند لها — وهي التي تمنع حلّ البند الأخير بالاستبعاد',
+  chip:'مقابل زائد', addSp:'＋ مقابل زائد', delSp:'احذف المقابل الزائد',
   wrongCap:'إن زاوجه بـ', wrongPh:'المقابل الخاطئ' };
 
 const L_CLOZE = {
   one:'فراغ', two:'فراغان', many:'فراغات',
   pool1:'كلمة', pool2:'كلمتان', poolN:'كلمات',
-  spN:'كلمات زائدة', sp2:'كلمتان زائدتان', sp1:'كلمةٌ زائدة',
-  sp0:'لا كلمةَ زائدة',
-  lack:'الكلمات أقلُّ من الفراغات', last:'الفراغَ الأخيرَ',
-  spare:'كلماتٌ زائدة', spareOf:'لا فراغَ لها — وهي التي تمنع حلَّ الفراغ الأخير بالاستبعاد',
-  chip:'كلمةٌ زائدة', addSp:'＋ كلمةٌ زائدة', delSp:'احذف الكلمة الزائدة',
+  spN:'كلمات زائدة', sp2:'كلمتان زائدتان', sp1:'كلمة زائدة',
+  sp0:'لا كلمة زائدة',
+  lack:'الكلمات أقلّ من الفراغات', last:'الفراغ الأخير',
+  spare:'كلمات زائدة', spareOf:'لا فراغ لها — وهي التي تمنع حلّ الفراغ الأخير بالاستبعاد',
+  chip:'كلمة زائدة', addSp:'＋ كلمة زائدة', delSp:'احذف الكلمة الزائدة',
   wrongCap:'إن اختار', wrongPh:'الكلمة الخاطئة' };
 
 /* العددُ والمعدود — تُفرد العربية وتُثنّي وتجمع، و«٢ كلمات» خطأٌ
@@ -1456,8 +1458,8 @@ function mtCount(n, m, L = L_MATCH){
       ${cnt(n, L.one, L.two, L.many)} &nbsp;—&nbsp;
       ${cnt(m, L.pool1, L.pool2, L.poolN)} &nbsp;—&nbsp; ${say}</span>
     <span class="mt-note">${sp > 0
-      ? 'الزائدُ يمنع حلَّ الأخير بالاستبعاد.'
-      : `بلا زائدٍ يُصيب ${L.last} من يجهله — ولا يُسجَّل له كود.`}</span>`;
+      ? 'الزائد يمنع حلّ الأخير بالاستبعاد.'
+      : `بلا زائد يُصيب ${L.last} من يجهله — ولا يُسجَّل له كود.`}</span>`;
 }
 
 /* المقابلاتُ الزائدة — لا بندَ لها، وهي **ميزةُ السؤال لا حشوُه**:
@@ -1522,7 +1524,7 @@ function matchFields(q, locked){
                  : `<button class="eq-x" data-rmp="${esc(p.k)}" title="احذف البند">✕</button>`}
       </div>
       ${(wrongBy[p.k] || []).map(w => mtWrongRow(bank, p.k, w.b, w.code, locked)).join("")}
-      ${locked ? '' : `<button class="mt-addw" data-aw="${esc(p.k)}">＋ خلطٌ متوقَّع</button>`}
+      ${locked ? '' : `<button class="mt-addw" data-aw="${esc(p.k)}">＋ خلط متوقَّع</button>`}
     </div>`;
   }).join("");
 
@@ -1637,7 +1639,7 @@ function clozeFields(q, locked){
                dir="auto" value="${esc(mate.t)}" placeholder="الكلمة الصحيحة"
                ${locked?'disabled':''} aria-label="كلمة الفراغ ${AR(i+1)}">
         ${locked ? '' : `<button class="mt-addw cz-addw" data-aw="${esc(k)}"
-                                 title="بأيّ كلمةٍ سيلتبس هذا الفراغ؟">＋ خلطٌ متوقَّع</button>`}
+                                 title="بأيّ كلمة سيلتبس هذا الفراغ؟">＋ خلط متوقَّع</button>`}
       </div>
       ${(wrongBy[k] || []).map(w =>
           mtWrongRow(bank, k, w.b, w.code, locked, L_CLOZE)).join("")}
@@ -1648,7 +1650,7 @@ function clozeFields(q, locked){
     <div class="mt-meta">${mtCount(n, bank.length, L_CLOZE)}
       <span class="mt-note">والترتيب هنا للتأليف — يرى الطالب الكلمات مخلوطة.</span>
     </div>
-    <label class="fl" style="margin-top:2px">كلمةُ كلِّ فراغٍ برقمه *</label>
+    <label class="fl" style="margin-top:2px">كلمة كلّ فراغ برقمه *</label>
     <div class="cz-grid">${cells}</div>
     ${mtSpares(q, locked, L_CLOZE)}`;
 }
@@ -1815,8 +1817,8 @@ function moveBar(q){
       <span class="qmv-s">${AR(at + 1)} من ${AR(sc.length)} · ${where}</span>
     </div>
     ${lead ? `<div class="eq-bs" style="margin:-7px 0 13px;line-height:1.8">
-      ⚠️ نسخةٌ تابعة — مِرساة هذه الخانة في
-      ${lead.passage_id ? '📖 ' + esc(pgTitle(lead.passage_id)) : 'سؤالٍ بلا نصّ'}
+      ⚠️ نسخة تابعة — مِرساة هذه الخانة في
+      ${lead.passage_id ? '📖 ' + esc(pgTitle(lead.passage_id)) : 'سؤال بلا نصّ'}
       عند الموضع ${AR(lead.position)}. رتّبْ هناك ليصل الأثر إلى الطالب.
     </div>` : ''}`;
 }
@@ -1858,16 +1860,16 @@ async function dupQ(q){
    للتحرير بكل قواعد save_question. */
 async function newVersion(q){
   if(!confirm(
-    `إصدارٌ جديد من هذا السؤال؟\n\n` +
+    `إصدار جديد من هذا السؤال؟\n\n` +
     `• يتقاعد الحاليّ وتبقى إجاباته ${AR(q.answered)} سليمة\n` +
-    `• تحلّ محلّه نسخةٌ قابلة للتحرير في موضعه وخانته\n` +
-    `• لا يتغيّر شيءٌ في وجه الاختبار`)) return;
+    `• تحلّ محلّه نسخة قابلة للتحرير في موضعه وخانته\n` +
+    `• لا يتغيّر شيء في وجه الاختبار`)) return;
 
   const { data, error } = await api.retireQuestion(q.id);
   if(error){ toast(error.message); return; }
   if(!data.ok){ toast(data.error); return; }
 
-  toast(`أُنشئ الإصدار · ${AR(data.answers_kept)} إجابة محفوظة` +
+  toast(`أُنشئ الإصدار · ${N(data.answers_kept,'إجابة محفوظة','إجابتان محفوظتان','إجابات محفوظة','إجابة محفوظة')}` +
         (data.reviews_moved ? ` · ${AR(data.reviews_moved)} مراجعة انتقلت` : ''));
   reload(data.id);
 }
@@ -1994,7 +1996,7 @@ const SAMPLE = JSON.stringify({
                  { body: "A Nation Proud of Its Past", correct: true } ] },
     { kind: "msq", section: "B. Reading", passage: "p1",
       body: "Which statements does the passage support? (Choose all that apply)",
-      explanation: "الأوليان منصوصتان في الفقرة؛ والأخريان إسقاطٌ من خارج النصّ.",
+      explanation: "الأوليان منصوصتان في الفقرة؛ والأخريان إسقاط من خارج النصّ.",
       options: [ { body: "Egypt lies where old trade routes met", correct: true },
                  { body: "Its past still shapes its identity",     correct: true },
                  { body: "Its economy depends mainly on tourism",  dx: "INF" },
@@ -2051,7 +2053,7 @@ function parseImport(txt){
     if(kind === 'gap'){
       const ids = [...String(q.body||'').matchAll(/\{\{(\d+)\}\}/g)].map(m => +m[1]);
       const g   = new Set(ids).size;
-      if(!g){ out.issues.push(`س${n}: إكمالٌ بلا {{1}} في نصّه`); return; }
+      if(!g){ out.issues.push(`س${n}: إكمال بلا {{1}} في نصّه`); return; }
       const seq = [...new Set(ids)].sort((a,b)=>a-b).join(',');
       if(seq !== Array.from({length:g},(_,x)=>x+1).join(','))
         out.issues.push(`س${n}: أرقام الفراغات متتالية من ١ بلا فجوة`);
@@ -2063,7 +2065,7 @@ function parseImport(txt){
         out.issues.push(`س${n}: في النصّ ${AR(g)} فراغاً والمقبولات ${AR(slots.length)}`);
       slots.forEach((s, k) => {
         if(!Array.isArray(s) || !s.length || s.some(a => !String(a||'').trim()))
-          out.issues.push(`س${n}: الفراغ ${AR(k+1)} بلا مقبولٍ صالح`);
+          out.issues.push(`س${n}: الفراغ ${AR(k+1)} بلا مقبول صالح`);
       });
 
       // المفتاح "الفراغ:النصّ" — بلا الرقم يُطابَق خطأُ فراغٍ بآخر
@@ -2071,13 +2073,13 @@ function parseImport(txt){
         if(!/^[1-9]\d*:./.test(key))
           out.issues.push(`س${n}: مفتاح الخطأ يبدأ برقم الفراغ ثم نقطتين — "${key}"`);
         else if(+key.split(':')[0] > g)
-          out.issues.push(`س${n}: الخطأ "${key}" يشير إلى فراغٍ غير موجود`);
+          out.issues.push(`س${n}: الخطأ "${key}" يشير إلى فراغ غير موجود`);
         if(!dxCodes.has(code)) out.issues.push(`س${n}: كود غير معروف "${code}"`);
       });
 
       if(Array.isArray(q.bank) && q.bank.length){
         const bad = slots.flat().find(a => !q.bank.includes(a));
-        if(bad) out.issues.push(`س${n}: مقبولٌ ليس في القائمة — "${bad}"`);
+        if(bad) out.issues.push(`س${n}: مقبول ليس في القائمة — "${bad}"`);
       }
 
       if(!String(q.explanation || '').trim()) out.issues.push(`س${n}: بلا شرح للخطأ`);
@@ -2089,50 +2091,50 @@ function parseImport(txt){
        والمفتاحُ accept.pairs بترتيب البنود · والأكوادُ wrong. */
     if(kind === 'matching'){
       if(opts.length < 3 || opts.length > 8){
-        out.issues.push(`س${n}: المزاوجة من ثلاثة بنودٍ إلى ثمانية — والموجود ${AR(opts.length)}`); return; }
+        out.issues.push(`س${n}: المزاوجة من ثلاثة بنود إلى ثمانية — والموجود ${AR(opts.length)}`); return; }
       if(opts.some(o => !String(o.body||'').trim()))
-        out.issues.push(`س${n}: بندٌ بلا نصّ`);
+        out.issues.push(`س${n}: بند بلا نصّ`);
       if(opts.some(o => (o.dx||'').trim()))
-        out.issues.push(`س${n}: الكودُ للاقتران لا للبند — ضعه في «خلطٌ متوقَّع»`);
+        out.issues.push(`س${n}: الكود للاقتران لا للبند — ضعه في «خلط متوقَّع»`);
 
       /* 112 · المفاتيحُ أوّلاً: بلا مفتاحٍ لا تُقرأ إشارةٌ إليه */
       const ik = opts.map(o => o.k).filter(Boolean);
       if(ik.length !== opts.length)
-        out.issues.push(`س${n}: بندٌ بلا مفتاح — افتحه في المحرّر واحفظه`);
+        out.issues.push(`س${n}: بند بلا مفتاح — افتحه في المحرّر واحفظه`);
       if(new Set(ik).size !== ik.length)
         out.issues.push(`س${n}: مفتاحان متطابقان لبندين`);
 
       const bank = Array.isArray(q.bank) ? q.bank : [];
       if(!bank.length){
-        out.issues.push(`س${n}: المزاوجة تحتاج عمودَ مقابلات`); return; }
+        out.issues.push(`س${n}: المزاوجة تحتاج عمود مقابلات`); return; }
       if(bank.some(b => !b || !String(b.t||'').trim()))
-        out.issues.push(`س${n}: لا مقابلَ فارغاً في القائمة`);
+        out.issues.push(`س${n}: لا مقابل فارغاً في القائمة`);
       const bk = bank.map(b => b && b.k).filter(Boolean);
       if(bk.length !== bank.length || new Set(bk).size !== bk.length)
-        out.issues.push(`س${n}: مقابلٌ بلا مفتاح أو بمفتاحٍ مكرَّر`);
+        out.issues.push(`س${n}: مقابل بلا مفتاح أو بمفتاح مكرَّر`);
       if(bank.length <= opts.length)
-        out.warns.push(`س${n}: لا مقابلَ زائداً — البند الأخير يُحلّ بالاستبعاد فلا يُشخَّص`);
+        out.warns.push(`س${n}: لا مقابل زائداً — البند الأخير يُحلّ بالاستبعاد فلا يُشخَّص`);
 
       const pr = q.accept?.pairs;
       if(!pr || typeof pr !== 'object' || Array.isArray(pr)){
-        out.issues.push(`س${n}: المزاوجة تحتاج مفاتيحَ — { "مفتاح البند": "مفتاح المقابل" }`); return; }
+        out.issues.push(`س${n}: المزاوجة تحتاج مفاتيح — { "مفتاح البند": "مفتاح المقابل" }`); return; }
 
       const bset = new Set(bk), iset = new Set(ik);
       opts.forEach((o, z) => {
         if(!pr[o.k]) out.issues.push(`س${n}: البند ${AR(z+1)} بلا صواب`);
         else if(!bset.has(pr[o.k]))
-          out.issues.push(`س${n}: صوابُ البند ${AR(z+1)} ليس في القائمة`);
+          out.issues.push(`س${n}: صواب البند ${AR(z+1)} ليس في القائمة`);
       });
       Object.keys(pr).forEach(k => {
-        if(!iset.has(k)) out.issues.push(`س${n}: مفتاحُ بندٍ «${k}» لا وجود له بين البنود`);
+        if(!iset.has(k)) out.issues.push(`س${n}: مفتاح بند «${k}» لا وجود له بين البنود`);
       });
 
       Object.entries(q.wrong || {}).forEach(([key, code]) => {
         const m = /^([A-Za-z0-9_-]{1,16}):([A-Za-z0-9_-]{1,16})$/.exec(key);
-        if(!m){ out.issues.push(`س${n}: مفتاحُ خلطٍ غير سليم: ${key}`); return; }
-        if(!iset.has(m[1])) out.issues.push(`س${n}: خلطٌ لبندٍ لا وجود له: ${key}`);
-        if(!bset.has(m[2])) out.issues.push(`س${n}: خلطٌ إلى مقابلٍ لا وجود له: ${key}`);
-        if(!code)           out.issues.push(`س${n}: خلطٌ بلا كود تشخيص: ${key}`);
+        if(!m){ out.issues.push(`س${n}: مفتاح خلط غير سليم: ${key}`); return; }
+        if(!iset.has(m[1])) out.issues.push(`س${n}: خلط لبند لا وجود له: ${key}`);
+        if(!bset.has(m[2])) out.issues.push(`س${n}: خلط إلى مقابل لا وجود له: ${key}`);
+        if(!code)           out.issues.push(`س${n}: خلط بلا كود تشخيص: ${key}`);
       });
       return;     // 🔴 وبلا هذا السطر يسقط الفرعُ إلى «نمط غير معروف» تحته
     }
@@ -2144,49 +2146,49 @@ function parseImport(txt){
       const ids = [...String(q.body||'').matchAll(/\{\{(\d+)\}\}/g)].map(m => +m[1]);
       const g   = new Set(ids).size;
       if(g < 2){
-        out.issues.push(`س${n}: «إكمال من قائمة» يحتاج فراغين على الأقل — وفراغٌ واحدٌ من قائمةٍ اختيارٌ من متعدد متنكّر`); return; }
-      if(g > 8){ out.issues.push(`س${n}: ثمانية فراغاتٍ حدٌّ كافٍ — والموجود ${AR(g)}`); return; }
+        out.issues.push(`س${n}: «إكمال من قائمة» يحتاج فراغين على الأقل — وفراغ واحد من قائمة اختيار من متعدد متنكّر`); return; }
+      if(g > 8){ out.issues.push(`س${n}: ثمانية فراغات حدّ كاف — والموجود ${AR(g)}`); return; }
       const seq = [...new Set(ids)].sort((a,b)=>a-b).join(',');
       if(seq !== Array.from({length:g},(_,x)=>x+1).join(','))
         out.issues.push(`س${n}: أرقام الفراغات متتالية من ١ بلا فجوة`);
 
       if(opts.length)
-        out.issues.push(`س${n}: الفراغُ هو البند ⇒ لا خيارات — الكلماتُ كلُّها في bank`);
+        out.issues.push(`س${n}: الفراغ هو البند ⇒ لا خيارات — الكلمات كلُّها في bank`);
 
       const bank = Array.isArray(q.bank) ? q.bank : [];
       if(!bank.length){
-        out.issues.push(`س${n}: «إكمال من قائمة» يحتاج قائمةَ كلمات`); return; }
+        out.issues.push(`س${n}: «إكمال من قائمة» يحتاج قائمة كلمات`); return; }
       if(bank.some(b => !b || !String(b.t||'').trim()))
-        out.issues.push(`س${n}: لا كلمةَ فارغةً في القائمة`);
+        out.issues.push(`س${n}: لا كلمة فارغة في القائمة`);
       const bk = bank.map(b => b && b.k).filter(Boolean);
       if(bk.length !== bank.length || new Set(bk).size !== bk.length)
-        out.issues.push(`س${n}: كلمةٌ بلا مفتاح أو بمفتاحٍ مكرَّر`);
+        out.issues.push(`س${n}: كلمة بلا مفتاح أو بمفتاح مكرَّر`);
       if(bank.length <= g)
-        out.warns.push(`س${n}: لا كلمةَ زائدة — الفراغ الأخير يُحلّ بالاستبعاد فلا يُشخَّص`);
+        out.warns.push(`س${n}: لا كلمة زائدة — الفراغ الأخير يُحلّ بالاستبعاد فلا يُشخَّص`);
 
       const pr = q.accept?.pairs;
       if(!pr || typeof pr !== 'object' || Array.isArray(pr)){
-        out.issues.push(`س${n}: يحتاج مفاتيحَ — { "رقم الفراغ": "مفتاح الكلمة" }`); return; }
+        out.issues.push(`س${n}: يحتاج مفاتيح — { "رقم الفراغ": "مفتاح الكلمة" }`); return; }
 
       const bset = new Set(bk);
       for(let z = 1; z <= g; z++){
         if(!pr[String(z)]) out.issues.push(`س${n}: الفراغ ${AR(z)} بلا صواب`);
         else if(!bset.has(pr[String(z)]))
-          out.issues.push(`س${n}: صوابُ الفراغ ${AR(z)} ليس في القائمة`);
+          out.issues.push(`س${n}: صواب الفراغ ${AR(z)} ليس في القائمة`);
       }
       Object.keys(pr).forEach(k => {
         if(!/^[1-9][0-9]*$/.test(k) || +k > g)
-          out.issues.push(`س${n}: مفتاحٌ لفراغٍ لا وجود له: «${k}»`);
+          out.issues.push(`س${n}: مفتاح لفراغ لا وجود له: «${k}»`);
       });
 
       Object.entries(q.wrong || {}).forEach(([key, code]) => {
         const m = /^([1-9][0-9]*):([A-Za-z0-9_-]{1,16})$/.exec(key);
-        if(!m){ out.issues.push(`س${n}: مفتاحُ خلطٍ غير سليم: ${key}`); return; }
-        if(+m[1] > g)        out.issues.push(`س${n}: خلطٌ لفراغٍ لا وجود له: ${key}`);
-        if(!bset.has(m[2]))  out.issues.push(`س${n}: خلطٌ إلى كلمةٍ لا وجود لها: ${key}`);
+        if(!m){ out.issues.push(`س${n}: مفتاح خلط غير سليم: ${key}`); return; }
+        if(+m[1] > g)        out.issues.push(`س${n}: خلط لفراغ لا وجود له: ${key}`);
+        if(!bset.has(m[2]))  out.issues.push(`س${n}: خلط إلى كلمة لا وجود لها: ${key}`);
         if(pr[m[1]] === m[2])
-          out.issues.push(`س${n}: خلطٌ إلى صواب الفراغ نفسه: ${key} — كودٌ لا يُقرأ أبداً`);
-        if(!code)            out.issues.push(`س${n}: خلطٌ بلا كود تشخيص: ${key}`);
+          out.issues.push(`س${n}: خلط إلى صواب الفراغ نفسه: ${key} — كود لا يُقرأ أبداً`);
+        if(!code)            out.issues.push(`س${n}: خلط بلا كود تشخيص: ${key}`);
         else if(!dxCodes.has(code)) out.issues.push(`س${n}: كود غير معروف "${code}"`);
       });
 
@@ -2235,7 +2237,7 @@ function parseImport(txt){
 
     // شرطان ترفضهما set_variant ⇒ يُحجبان قبل الرفع لا بعده
     if(arr.length < 2)
-      out.issues.push(`خانة "${v}": عضوٌ واحد${at} — سؤالٌ وحده ليس نسخةً لشيء`);
+      out.issues.push(`خانة "${v}": عضو واحد${at} — سؤال وحده ليس نسخة لشيء`);
     if(new Set(arr.map(a => a.q.kind || 'mcq')).size > 1)
       out.issues.push(`خانة "${v}": أنماط مختلطة${at} — لا تُقرن أسئلة مختلفة النمط`);
 
@@ -2243,7 +2245,7 @@ function parseImport(txt){
        ⚠️ والمقاليّ بلا بصمة — فلا يُقال «متطابقة» عمّا لم يُفحص. */
     const essay = arr.every(a => (a.q.kind || 'mcq') === 'essay');
     if(essay){
-      out.warns.push(`خانة "${v}": مقالية${at} — لا فحص آليّ، والتكافؤ إعلانٌ منك`);
+      out.warns.push(`خانة "${v}": مقالية${at} — لا فحص آليّ، والتكافؤ إعلان منك`);
     } else {
       const fps = arr.map(a => [...new Set((a.q.options || [])
         .map(o => o.dx).filter(Boolean))].sort().join(' · '));
@@ -2317,15 +2319,16 @@ function exportQuiz(){
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob); a.download = name;
   a.click(); URL.revokeObjectURL(a.href);
-  toast(`صُدِّر ${AR((Z.questions||[]).length)} سؤالاً`);
+  toast(`صُدِّر ${N((Z.questions||[]).length,'سؤال','سؤالان','أسئلة','سؤالاً')}`);
 }
 
 function importBox(){
   document.getElementById("main").innerHTML = `
     <div class="card">
-      <div class="qnum">⇪ استيراد اختبار · يُضاف إلى ${AR((Z.questions||[]).length)} سؤالاً قائماً</div>
-      <div class="line" style="margin-bottom:12px">يُلصق JSON — أسئلةً ونصوصاً مشتركة وأقساماً.
-        كل سؤال يمرّ بنفس التحقّق: كود تشخيص لكل مشتّت، وشرحٌ للخطأ.<br>
+      <div class="qnum">⇪ استيراد اختبار · يُضاف إلى ${
+        N((Z.questions||[]).length,'سؤال قائم','سؤالين قائمين','أسئلة قائمة','سؤالاً قائماً')}</div>
+      <div class="line" style="margin-bottom:12px">يُلصق JSON — أسئلة ونصوصاً مشتركة وأقساماً.
+        كل سؤال يمرّ بنفس التحقّق: كود تشخيص لكل مشتّت، وشرح للخطأ.<br>
         ولإعلان التكافؤ: تُضاف <code dir="ltr">"variant": "F1"</code> إلى البندين —
         أو يُوضعان داخل <code dir="ltr">groups</code>. ويُقرنان بعد الإدراج تلقائياً.</div>
 
@@ -2392,13 +2395,14 @@ function importBox(){
                 : p.issues.slice(0,14).map(x => `<div class="eq-iss">⚠️ ${esc(x)}</div>`).join("")
                   + (p.issues.length > 14 ? `<div class="eq-iss">… و${AR(p.issues.length-14)} غيرها</div>` : '')}
       </div>
-      ${/* تحذيرٌ لا حجب — يُعرض ولا يمنع الزرّ */''}
+      ${''}/* تحذيرٌ لا حجب — يُعرض ولا يمنع الزرّ */
       ${p.warns.length ? `<div class="warnbox" style="margin-top:10px">
         ${p.warns.map(x => `<div>⚠️ ${esc(x)}</div>`).join('')}
         <div style="margin-top:7px;opacity:.85">الاستيراد ممكن — لكن صحّح <b>الخيارات</b> بعده،
         فالنسخة التي تخالف فخاخ شريكها لا تقيس ما يقيسه.</div></div>` : ''}
       ${okAll ? `<div class="nav" style="margin-top:12px">
-        <button class="btn primary" id="igo">استيراد ${AR(p.questions.length)} سؤالاً</button></div>` : ''}`;
+        <button class="btn primary" id="igo">استيراد ${
+          N(p.questions.length,'سؤال','سؤالين','أسئلة','سؤالاً')}</button></div>` : ''}`;
     const go = document.getElementById("igo");
     if(go) go.onclick = () => runImport(p);
   };
@@ -2428,7 +2432,7 @@ async function runImport(p){
   let done = 0, paired = 0;
   try {
     for(const [k, pg] of p.passages.entries()){
-      say(`جارٍ إضافة النصوص المشتركة… ${AR(k+1)} من ${AR(p.passages.length)}`);
+      say(`جار إضافة النصوص المشتركة… ${AR(k+1)} من ${AR(p.passages.length)}`);
       const { data, error } = await api.savePassage({
         quiz: Z.id, title: pg.title || null, body: pg.body || null,
         media: pg.media || null, kind: pg.kind || 'text',
@@ -2442,7 +2446,7 @@ async function runImport(p){
     }
     const base = (Z.questions || []).length;
     for(const [i, q] of p.questions.entries()){
-      say(`جارٍ الاستيراد… ${AR(i+1)} من ${AR(p.questions.length)}`);
+      say(`جار الاستيراد… ${AR(i+1)} من ${AR(p.questions.length)}`);
       const { data, error } = await api.saveQuestion({
         quiz: Z.id, kind: q.kind || 'mcq', body: q.body,
         position: base + i + 1,
@@ -2473,7 +2477,7 @@ async function runImport(p){
        ولو فشل هنا لبقيت الأسئلة مُدرَجة — فالرسالة تقول ذلك صراحةً. */
     for(const [v, ids] of Object.entries(byVar)){
       if(ids.length < 2) continue;
-      say(`جارٍ اقتران الخانات… ${v}`);
+      say(`جار اقتران الخانات… ${v}`);
       const r = await api.setVariant(ids);
       if(r.error || !r.data?.ok){
         stop(`اقتران الخانة "${v}"`, r.error?.message || r.data?.error, done); return;
@@ -2484,7 +2488,8 @@ async function runImport(p){
     stop('الاتصال', e?.message, done); return;
   }
 
-  toast(`استُورد ${AR(done)} سؤالاً${paired ? ` · وقُرنت ${AR(paired)} خانة` : ''}`);
+  toast(`استُورد ${N(done,'سؤال','سؤالان','أسئلة','سؤالاً')}${
+    paired ? ` · وقُرنت ${N(paired,'خانة','خانتان','خانات','خانة')}` : ''}`);
   reload();
 }
 
@@ -2499,7 +2504,7 @@ async function applySection(sec){
   const { data, error } = await api.setSection(sec, r.ids);
   if(error){ toast(error.message); return; }
   if(!data.ok){ toast(data.error); return; }
-  toast(sec ? `طُبّق على ${AR(data.count)} سؤالاً` : "أُزيل العنوان");
+  toast(sec ? `طُبّق على ${N(data.count,'سؤال','سؤالين','أسئلة','سؤالاً')}` : "أُزيل العنوان");
   reload();
 }
 
@@ -2511,7 +2516,7 @@ async function applyPassage(pid){
   const { data, error } = await api.attachPassage(pid, r.ids);
   if(error){ toast(error.message); return; }
   if(!data.ok){ toast(data.error); return; }
-  toast(pid ? `رُبط بـ${AR(data.count)} سؤالاً` : "فُصل النصّ");
+  toast(pid ? `رُبط بـ${N(data.count,'سؤال','سؤالين','أسئلة','سؤالاً')}` : "فُصل النصّ");
   reload();
 }
 
@@ -2536,7 +2541,7 @@ async function passageRange(pid){
   if(b === null) return;
 
   const from = Math.max(1, +a), to = Math.min(qs.length, +b);
-  if(!(from >= 1 && to >= from)){ toast("نطاقٌ غير صالح"); return; }
+  if(!(from >= 1 && to >= from)){ toast("نطاق غير صالح"); return; }
 
   const inIds  = qs.slice(from - 1, to).map(q => q.id).filter(Boolean);
   const outIds = qs.filter((q, i) => (i < from - 1 || i > to - 1)
@@ -2553,7 +2558,7 @@ async function passageRange(pid){
   const { data, error } = await api.attachPassage(pid, inIds);
   if(error){ toast(error.message); return; }
   if(!data.ok){ toast(data.error); return; }
-  toast(`رُبط بـ${AR(data.count)} سؤالاً`);
+  toast(`رُبط بـ${N(data.count,'سؤال','سؤالين','أسئلة','سؤالاً')}`);
   reload();
 }
 
@@ -2593,7 +2598,7 @@ function passageForm(p, draft){
         <span class="eq-hint">${SAFE_HOSTS}</span>
       </div>
       <textarea id="pfBody" style="min-height:240px"
-        placeholder="الفقرة كاملةً…">${esc(d.body || '')}</textarea>
+        placeholder="الفقرة كاملة…">${esc(d.body || '')}</textarea>
 
         <input id="pfMedia" dir="ltr" class="eq-md" value="${esc(d.media || '')}"
              placeholder="${pk==='image'?'رابط الصورة':pk==='video'?'رابط الفيديو':'رابط المقطع الصوتي'}"
@@ -2701,7 +2706,7 @@ function toolbar(){
               والدرجة، وهذه جلسةٌ لا تُقيَّم — وحالُ الأصل يُقال في
               الصندوق قبل التوليد، فلا يُجمَّد مسودّةٌ على غفلة. */''}
         <button class="eq-tbb" id="rdLink"
-                title="رابطٌ يتدرّب به من لا حساب له"><span class="eq-i">🔗</span> رابط تدرّب</button>
+                title="رابط يتدرّب به من لا حساب له"><span class="eq-i">🔗</span> رابط تدرّب</button>
         ${pub && !live ? `<button class="eq-tbb warn" id="rdLsn">نشر الدرس أيضاً</button>` : ''}
         <button class="eq-tbb ${pub?'':'go'}" id="rdPub" ${r.ok?'':'disabled'}
           title="${r.ok ? '' : pub
@@ -2728,7 +2733,7 @@ function kindChips(){
         title="${esc(label)} — اعرضه وحده في شريط الأسئلة">
         <i>${kIcon(k)}</i><b>${AR(n)}</b><span>${esc(label)}</span>
         ${lack ? '<em>٦ مطلوبة</em>' : ''}
-        ${s.slots !== s.n ? `<em>${AR(s.slots)} خانة</em>` : ''}
+        ${s.slots !== s.n ? `<em>${N(s.slots,'خانة','خانتان','خانات','خانة')}</em>` : ''}
       </button>`;
   };
   return chip('mcq',      'اختيار من متعدد', r.mcq   || 0, true)
@@ -3097,7 +3102,7 @@ function sidebar(){
     body += `<div class="eq-grp" data-s="${esc(sec)}">
         <span class="eq-ar">${open?'▾':'▸'}</span>
         <span class="eq-gt" dir="auto">${esc(sec)}</span>
-        <span class="eq-gc">${AR(idxs.length)} · ${AR(slots)} خانة</span></div>`;
+        <span class="eq-gc">${AR(idxs.length)} · ${N(slots,'خانة','خانتان','خانات','خانة')}</span></div>`;
     if(!open) continue;
     if(pgs.length) body += `<div class="eq-pgs">${pgs.map(id =>
         `<span class="eq-pgc" data-pg="${esc(id)}">📖 ${AR(pg.get(id)||0)}
@@ -3112,7 +3117,7 @@ function sidebar(){
      ⇒ أيقونةٌ مربّعة بجانبه، لا نصفُ الصفّ. */
   return `<div class="eq-top">
       <div class="eq-h">الأسئلة <span class="chip">${AR(st.n)}</span>
-        <span class="chip g">${AR(st.slots)} خانة</span></div>
+        <span class="chip g">${N(st.slots,'خانة','خانتان','خانات','خانة')}</span></div>
 
       <div class="eq-adds">
         <button class="eq-new" id="addq">
@@ -3121,17 +3126,17 @@ function sidebar(){
         <button class="eq-ab ico" id="imp" title="استيراد وتصدير">⇪</button>
       </div>
       <div class="addmenu" id="addmenu" hidden>
-        <button data-k="mcq"><i>◉</i><div><b>اختيار من متعدد</b><span>إجابةٌ واحدة صحيحة</span></div></button>
-        <button data-k="msq"><i>☑</i><div><b>اختيار متعدّد</b><span>أكثر من إجابةٍ صحيحة</span></div></button>
+        <button data-k="mcq"><i>◉</i><div><b>اختيار من متعدد</b><span>إجابة واحدة صحيحة</span></div></button>
+        <button data-k="msq"><i>☑</i><div><b>اختيار متعدّد</b><span>أكثر من إجابة صحيحة</span></div></button>
         <button data-k="gap"><i>✎</i><div><b>إكمال الناقص</b><span>يكتب الطالب الإجابة</span></div></button>
-        <button data-k="cloze"><i>⇢</i><div><b>إكمال من قائمة</b><span>يختار من كلماتٍ مُعطاة</span></div></button>
-        <button data-k="matching"><i>⇄</i><div><b>المزاوجة</b><span>لكلّ بندٍ درجة</span></div></button>
+        <button data-k="cloze"><i>⇢</i><div><b>إكمال من قائمة</b><span>يختار من كلمات مُعطاة</span></div></button>
+        <button data-k="matching"><i>⇄</i><div><b>المزاوجة</b><span>لكلّ بند درجة</span></div></button>
         <hr>
         <button data-k="essay"><i>¶</i><div><b>مقالي قصير</b><span>يصحّحه المعلّم</span></div></button>
       </div>
 
       <input class="eq-sr" id="lsq" value="${esc(LS.q)}"
-             placeholder="بحثٌ في النصّ · أو رقمٌ ثمّ Enter">
+             placeholder="بحث في النصّ · أو رقم ثمّ Enter">
       <div class="eq-f">
         ${fb('all','الكل', st.n)}
         ${fb('warn','⚠️ يحتاج نظرة', st.warn, 'warn')}
@@ -3284,7 +3289,7 @@ function compareVariant(key){
   if(!key){ toast("هذا السؤال بلا خانة"); return; }
   if(dirty && !confirm("تغييرات غير محفوظة في هذا السؤال — أتتركها؟")) return;
   const ms = members(key).sort((a,b) => (a.position||0) - (b.position||0));
-  if(ms.length < 2){ toast("الخانة نسخةٌ واحدة"); return; }
+  if(ms.length < 2){ toast("الخانة نسخة واحدة"); return; }
 
   const v   = verdict(ms);
   const pgN = id => (Z.passages||[]).find(p => String(p.id) === String(id));
@@ -3329,7 +3334,7 @@ function compareVariant(key){
       <div class="cmp-note" style="margin:10px 0 14px">
         الشاشة تُحضِر المادّة ولا تحكم. والسؤال الأخير حكمُك:
         <b>أيقع الطالب في مشتّت هذه وفي مشتّت تلك للسبب نفسه؟</b>
-        وبصمةٌ متطابقة قد تُخفي مشتّتاً جذّاباً وآخر ميتاً.</div>
+        وبصمة متطابقة قد تُخفي مشتّتاً جذّاباً وآخر ميتاً.</div>
     </div>
     <div class="cmp" style="grid-template-columns:repeat(${ms.length},minmax(0,1fr))">
       ${ms.map(col).join('')}

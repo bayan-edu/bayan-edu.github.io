@@ -9,7 +9,7 @@ import * as api from './api.js';
 import { S } from './state.js';
 import { app, bar, head, toast, esc, AR, errBox, nav, registerRoutes,
          registerCounts, registerSearch, registerGram, refreshCounts,
-         mathBoot, scrollTop } from './ui.js';
+         mathBoot, scrollTop, N } from './ui.js';
 import { loadList, loadFeedback, loadChat, openSearchHit } from './student.js';
 import { loadTeacher, loadInbox, loadMySubjects } from './teacher.js';
 import { openEditor } from './editor.js';
@@ -255,7 +255,7 @@ async function submitGate(){
   const scaleId = gsc ? Number(gsc) : null;
   const levelId = glv ? Number(glv) : null;
 
-  app.innerHTML = `<div class="status">جارٍ التحقق…</div>`;
+  app.innerHTML = `<div class="status">جار التحقق…</div>`;
   const r = reg
     ? await api.signUp(em, pw, nm.trim(), kl.trim(), scaleId, levelId, POLICY_VERSION, S.gramG)
     : await api.signIn(em, pw);
@@ -273,7 +273,7 @@ async function submitGate(){
   }
   if(reg && !r.data.session){
     S.gate = "login";
-    renderGate("تم إنشاء حسابك ✅ رابطُ التفعيل في بريدك — يُضغط ثمّ يُسجَّل الدخول.");
+    renderGate("تم إنشاء حسابك ✔ رابط التفعيل في بريدك — يُضغط ثمّ يُسجَّل الدخول.");
     return;
   }
   await boot();
@@ -289,7 +289,7 @@ async function submitTeacherGate(em, pw){
   if(!f.ok){ toast(f.msg); return; }
 
   keepDraft();
-  app.innerHTML = `<div class="status">جارٍ إنشاء الحساب…</div>`;
+  app.innerHTML = `<div class="status">جار إنشاء الحساب…</div>`;
 
   /* بريدٌ مسجَّلٌ سلفاً: يُدخَل به بدل أن يُردّ — فمن سجّل طالباً ثمّ
      عاد معلّماً لا يُطلب منه بريدٌ ثانٍ. وخطأُ كلمة المرور يُقال. */
@@ -304,7 +304,7 @@ async function submitTeacherGate(em, pw){
      تستأنف عند أوّل دخول. وهي الحالةُ الوحيدة التي بقي الانقسامُ لها. */
   if(!r.data.session){
     S.gate = "login";
-    renderGate("أُنشئ حسابك ✅ يُفعَّل بريدك ثمّ يُسجَّل الدخول لإكمال بيانات المعلّم.");
+    renderGate("أُنشئ حسابك ✔ يُفعَّل بريدك ثمّ يُسجَّل الدخول لإكمال بيانات المعلّم.");
     return;
   }
 
@@ -347,7 +347,7 @@ export function renderCompleteProfile(msg){
       <div style="margin-top:14px">${roleTabs(S.role, S.gramG ?? S.prof?.gram_gender ?? null)}</div>
       <div class="line">${S.role === 'teacher'
         ? 'نسألك بعدها عن مادّتك ومدرستك، وتظهر لطلابك في «اختيار معلمك».'
-        : 'نسألك بعدها عن منهجك وصفّك، وهما يحدّدان الموادَّ التي تظهر لك.'}</div>
+        : 'نسألك بعدها عن منهجك وصفّك، وهما يحدّدان الموادّ التي تظهر لك.'}</div>
       ${need ? policyCheck() : ''}
     </div>
     <div class="nav" style="margin-top:16px">
@@ -439,7 +439,7 @@ export function renderVerifyAuthor(msg){
     ${msg ? `<div class="err"><b>تنبيه</b>${esc(msg)}</div>` : ''}
     <div class="card">
       <div class="line" style="color:var(--text);font-size:var(--fs-read)">
-        حسابك مفعّل كمعلّم — ويبقى **التأليف** معلّقاً على خطوةٍ واحدة.</div>
+        حسابك مفعّل كمعلّم — ويبقى <b>التأليف</b> معلّقاً على خطوة واحدة.</div>
       <div class="line" style="margin-top:8px">
         نرسل رمزاً إلى <b dir="ltr">${esc(S.user?.email || '')}</b>.
         وهي الخطوة التي تُثبت أنّ البريد بريدُك — ولا علاقة لها بتفعيل
@@ -459,7 +459,7 @@ export function renderVerifyAuthor(msg){
         </div>
       </div>
 
-      <p class="small">ويمكنك تصفّح المنصّة الآن — التأليفُ وحده ينتظر.</p>
+      <p class="small">ويمكنك تصفّح المنصّة الآن — التأليف وحده ينتظر.</p>
     </div>
     <div class="nav" style="margin-top:14px">
       <button class="btn ghost" id="va_skip">لاحقاً</button>
@@ -507,9 +507,9 @@ export function renderVerifyAuthor(msg){
 
 export function translate(m){
   if(/Invalid login/i.test(m))       return "البريد أو كلمة المرور غير صحيحة";
-  if(/Token has expired|expired/i.test(m)) return "انتهت صلاحية الرمز — يُطلب رمزٌ جديد";
+  if(/Token has expired|expired/i.test(m)) return "انتهت صلاحية الرمز — يُطلب رمز جديد";
   if(/Invalid token|otp/i.test(m))   return "الرمز غير صحيح — يُراجَع أو يُطلب غيره";
-  if(/rate limit|too many/i.test(m)) return "أكثرت من الطلب — انتظارٌ قليل ثمّ إعادة المحاولة";
+  if(/rate limit|too many/i.test(m)) return "أكثرت من الطلب — انتظار قليل ثمّ إعادة المحاولة";
   if(/already registered/i.test(m))  return "هذا البريد مسجّل بالفعل — فالدخول لا التسجيل";
   if(/Email not confirmed/i.test(m)) return "يُفعَّل بريدك أولاً من رابط التفعيل";
   return m;
@@ -697,7 +697,7 @@ async function submitTeacher(){
   if(!nm){ toast("الاسم الكامل مطلوب"); return; }
   if(!sc){ toast("المدرسة أو الجهة مطلوبة"); return; }
 
-  app.innerHTML = `<div class="status">جارٍ إنشاء الحساب…</div>`;
+  app.innerHTML = `<div class="status">جار إنشاء الحساب…</div>`;
 
   let r = await api.signUp(em, pw, nm, sc);
 
@@ -710,7 +710,7 @@ async function submitTeacher(){
 
   if(!r.data.session){
     S.gate = "login";
-    renderTeacherSignup("أُنشئ الحساب ✅ يُفعَّل بريدك ثمّ يُسجَّل الدخول لإكمال الطلب.");
+    renderTeacherSignup("أُنشئ الحساب ✔ يُفعَّل بريدك ثمّ يُسجَّل الدخول لإكمال الطلب.");
     return;
   }
 
@@ -758,7 +758,7 @@ export async function loadAdmin(status){
   const st = status || 'pending';
   nav('requests');
   head("لوحة المدير", "طلبات الانضمام كمعلم");
-  app.innerHTML = `<div class="status">جارٍ التحميل…</div>`;
+  app.innerHTML = `<div class="status">جار التحميل…</div>`;
 
   const { data, error:eReq } = await api.adminRequests(st);
   if(eReq){ app.innerHTML = errBox(eReq,'طلبات المعلمين'); return; }
@@ -776,13 +776,13 @@ export async function loadAdmin(status){
         <div class="req-m">
           ${esc(r.email)}<br>
           ${esc(r.school||'—')} · ${esc(r.subject_area||'—')}
-          ${r.years_exp?` · ${AR(r.years_exp)} سنوات خبرة`:''}<br>
+          ${r.years_exp?` · ${N(r.years_exp,'سنة خبرة','سنتا خبرة','سنوات خبرة','سنة خبرة')}`:''}<br>
           ${new Date(r.created_at).toLocaleString('ar-EG')}
         </div>
         ${r.note?`<div class="req-note">${esc(r.note).replace(/\n/g,"<br>")}</div>`:''}
         ${r.decision_note?`<div class="req-note">📝 ${esc(r.decision_note)}</div>`:''}
         ${st==='pending'?`<div class="rowbtn">
-          <button class="ok-b" data-a="ok"  data-id="${r.id}">✅ قبول</button>
+          <button class="ok-b" data-a="ok"  data-id="${r.id}">✔ قبول</button>
           <button class="no-b" data-a="no" data-id="${r.id}">✕ رفض</button>
         </div>`:''}
       </div>`).join(""):'<div class="status">لا توجد طلبات في هذه الحالة</div>'}`;
@@ -855,7 +855,7 @@ export function start(){
     const { data, error } = await api.setMyGram(S.user.id, g);
     if(error) return error;
     /* 🔴 وصفرُ صفوفٍ ليس نجاحاً — RLS تحجب بلا خطأ (نظير `106`) */
-    if(!data?.length) return { message:'لم يمسَّ الحفظُ صفَّك' };
+    if(!data?.length) return { message:'لم يمسّ الحفظ صفَّك' };
     return null;
   });
 

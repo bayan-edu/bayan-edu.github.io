@@ -8,13 +8,13 @@
 import * as api from './api.js';
 import { S } from './state.js';
 import { app, head, toast, esc, fmt, AR, bubble, errBox, nav, BUILD,
-         refreshCounts, scrollTop, scrollBottom } from './ui.js';
+         refreshCounts, scrollTop, scrollBottom, N } from './ui.js';
 
 /* ═══════════ ① التصحيح ═══════════ */
 
 export async function loadTeacher(){
   nav('grade'); head("لوحة المعلم — "+S.prof.full_name, "الإجابات المقالية بانتظار تصحيحك");
-  app.innerHTML = `<div class="status">جارٍ التحميل…</div>`;
+  app.innerHTML = `<div class="status">جار التحميل…</div>`;
   const { data, error } = await api.attemptsToGrade();
 
   const all  = data || [];
@@ -29,13 +29,13 @@ export async function loadTeacher(){
     <h2 class="sec">بانتظار التصحيح (${AR(wait.length)})</h2>
     ${wait.length?wait.map(a=>card(a,false)).join(""):'<div class="status">لا توجد محاولات معلّقة 🎉</div>'}
     ${done.length?`<h2 class="sec">مُصحَّحة</h2>${done.slice(0,20).map(a=>card(a,true)).join("")}`:''}
-    <p class="hint">استُلم ${AR(all.length)} صفاً من قاعدة البيانات · نسخة الواجهة ${BUILD}</p>`;
+    <p class="hint">استُلم ${N(all.length,'صف','صفان','صفوف','صفاً')} من قاعدة البيانات · نسخة الواجهة ${BUILD}</p>`;
 
   app.querySelectorAll(".pend").forEach(el=>el.onclick=()=>openGrade(+el.dataset.a));
 }
 
 export async function openGrade(id){
-  app.innerHTML = `<div class="status">جارٍ الفتح…</div>`;
+  app.innerHTML = `<div class="status">جار الفتح…</div>`;
   const { data:a,   error:e1 } = await api.attempt(id);
   const { data:ans, error:e2 } = await api.attemptAnswers(id);
   if(e1 || !a){ app.innerHTML = `<div class="crumb" id="bk">← قائمة التصحيح</div>`
@@ -81,7 +81,7 @@ export async function openGrade(id){
 
 export async function loadInbox(){
   nav('inbox'); head("رسائل الطلاب", S.prof.full_name);
-  app.innerHTML = `<div class="status">جارٍ التحميل…</div>`;
+  app.innerHTML = `<div class="status">جار التحميل…</div>`;
   const { data, error } = await api.teacherInbox();
 
   const map = {};
@@ -105,7 +105,7 @@ export async function loadInbox(){
 }
 
 export async function openThread(sid){
-  app.innerHTML = `<div class="status">جارٍ الفتح…</div>`;
+  app.innerHTML = `<div class="status">جار الفتح…</div>`;
   const { data, error } = await api.studentThread(sid);
 
   head("محادثة", data?.[0]?.profiles?.full_name || '');
@@ -146,8 +146,8 @@ const capBox = x => !x.chosen ? '' : `
 
 export async function loadMySubjects(){
   nav('mySubjects');
-  head("موادّي", "الموادُّ التي فيها متابعتك للطلاب");
-  app.innerHTML = `<div class="status">جارٍ التحميل…</div>`;
+  head("موادّي", "الموادّ التي فيها متابعتك للطلاب");
+  app.innerHTML = `<div class="status">جار التحميل…</div>`;
 
   const { data, error } = await api.listTeachableSubjects();
   if(error){ app.innerHTML = `<div class="err"><b>تعذّر التحميل</b>${esc(error.message)}</div>`; return; }
@@ -166,7 +166,8 @@ export async function loadMySubjects(){
               لا صفَّ لها أصلاً، فالأربعون افتراضٌ في الدالّة لا رقمٌ
               محفوظ — ورقمان لشيءٍ واحد يتفارقان. والسعةُ الآن في
               حقلها، وهو موضعها الوحيد. */''}
-        <div class="m-m">${x.family?esc(x.family)+' · ':''}${AR(x.students)} طالباً</div>
+        <div class="m-m">${x.family?esc(x.family)+' · ':''}${
+          N(x.students,'طالب','طالبان','طلاب','طالباً')}</div>
         ${capBox(x)}
       </div>`).join("")}
     ${!subs.length?'<div class="status">لا توجد مواد بعد</div>':''}

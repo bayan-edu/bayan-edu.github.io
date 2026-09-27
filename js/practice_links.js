@@ -11,7 +11,7 @@
       ولّد رابطاً لمسودّةٍ يجب أن يعرف أنّه جمّد مسودّة.
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
-import { toast, esc, AR } from './ui.js';
+import { toast, esc, AR, N } from './ui.js';
 
 const DAYS = [
   [1,  'يوم واحد'], [7,  'أسبوع'], [14, 'أسبوعان'],
@@ -41,7 +41,7 @@ export function practiceLinkBox({ kind, source, title, note }){
     <div class="card" style="max-width:560px;margin:auto">
       <div class="ed-t" style="margin-bottom:6px">رابط تدرّب</div>
       <div class="line">من يملك الرابط يتدرّب <b>بلا حساب</b> ويأخذ تشخيصاً كاملاً —
-        ولا تقييمَ ولا درجةَ ولا سجلَّ تعلّمٍ يترتّب عليه.</div>
+        ولا تقييم ولا درجة ولا سجلّ تعلّم يترتّب عليه.</div>
       <div class="line" dir="auto" style="margin-top:8px;color:var(--text)">
         ${esc(title || '')}</div>
       ${note ? `<div class="eq-hint" style="margin:8px 0 0">${esc(note)}</div>` : ''}
@@ -93,15 +93,16 @@ const result = d => `
   <div class="rev ok">
     <span class="tag ok">جاهز</span>
     <div class="line">${d.kind === 'cards'
-      ? `${AR(d.count)} بطاقة` : `${AR(d.count)} سؤالاً`} ·
-      صالحٌ حتى ${esc(when(d.expires_at))}</div>
+      ? N(d.count,'بطاقة','بطاقتان','بطاقات','بطاقة')
+      : N(d.count,'سؤال','سؤالان','أسئلة','سؤالاً')} ·
+      صالح حتى ${esc(when(d.expires_at))}</div>
     ${d.skipped_essay > 0 ? `<div class="line" style="margin-top:6px">
-      ⚠️ استُبعد ${AR(d.skipped_essay)} سؤالاً مقالياً — لا مصحِّحَ آليّاً له،
-      ولا يقرأ أحدٌ إجابةَ زائرٍ مجهول.</div>` : ''}
+      ⚠️ استُبعد ${N(d.skipped_essay,'سؤال مقالي','سؤالان مقاليان','أسئلة مقالية','سؤالاً مقالياً')} — لا مصحِّح آليّاً له،
+      ولا يقرأ أحد إجابة زائر مجهول.</div>` : ''}
     <input id="pl_u" dir="ltr" readonly value="${esc(practiceUrl(d.token))}"
            style="margin-top:10px">
     <div class="nav" style="margin-top:10px">
-      <button class="btn ghost" id="pl_c">نسخُ الرابط</button>
+      <button class="btn ghost" id="pl_c">نسخ الرابط</button>
     </div>
   </div>`;
 
@@ -116,7 +117,7 @@ function wireCopy($, token){
       await navigator.clipboard.writeText(practiceUrl(token));
       toast('نُسخ الرابط');
     } catch {
-      toast('تعذّر النسخ تلقائياً — الرابط محدَّدٌ فانسخه');
+      toast('تعذّر النسخ تلقائياً — الرابط محدَّد فانسخه');
     }
   };
 }
@@ -135,17 +136,18 @@ async function list($, kind, source){
   if(!mine.length){ host.innerHTML = ''; return; }
 
   host.innerHTML = `
-    <div class="ed-t" style="margin-bottom:8px">روابطُ هذا المصدر</div>
+    <div class="ed-t" style="margin-bottom:8px">روابط هذا المصدر</div>
     ${mine.map(s => `
       <div class="rev ${s.live ? 'ok' : 'no'}">
         <span class="tag ${s.live ? 'ok' : 'no'}">${s.live ? 'يعمل' : 'انتهى'}</span>
         <div class="line">${s.kind === 'cards'
-            ? `${AR(s.count)} بطاقة` : `${AR(s.count)} سؤالاً`} ·
+            ? N(s.count,'بطاقة','بطاقتان','بطاقات','بطاقة')
+            : N(s.count,'سؤال','سؤالان','أسئلة','سؤالاً')} ·
           ${s.live ? `حتى ${esc(when(s.expires_at))}` : `انتهى ${esc(when(s.expires_at))}`} ·
-          ${AR(s.answers)} إجابة</div>
+          ${N(s.answers,'إجابة','إجابتان','إجابات','إجابة')}</div>
         ${s.live ? `<input dir="ltr" readonly value="${esc(practiceUrl(s.token))}"
                       style="margin-top:8px">` : ''}
       </div>`).join("")}
     <div class="eq-hint" style="margin-top:6px">
-      وعددُ الإجابات مجموعٌ بلا اسمٍ ولا تفصيل — الجلسةُ لا تُقيَّم.</div>`;
+      وعدد الإجابات مجموع بلا اسم ولا تفصيل — الجلسة لا تُقيَّم.</div>`;
 }
