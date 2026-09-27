@@ -76,6 +76,20 @@ var m=document.querySelector('meta[name=theme-color]');if(m)m.content=m.dataset[
 
 <div class="toast" id="toast">تم</div>
 
+<!-- أطرُ علامة الحساب — تُعرَّف مرّةً وتُستدعى بـ<use> من كلّ علامة (125).
+     ⚠️ وساكنةٌ في المستند لا مُولَّدةٌ بجافاسكربت: `<use>` تحتاج هدفَها
+        موجوداً لحظةَ الرسم، وعلامةٌ تُرسم قبل الحقن تخرج بلا إطارٍ صامتةً.
+     ⚠️ و`width/height=0` لا `display:none`: المخفيُّ لا يُصيَّر في بعض
+        المحرّكات فلا يجد `<use>` هدفاً. والصفرُ يحجز لا شيء ويبقى حيّاً.
+     📌 والمصدرُ في js/avatar.js — دالّةُ avatarDefs() تُخرج هذا نصّاً
+        لمن أراد توليدَه، وهذه نسختُه الساكنة. غُيّر أحدُهما؟ غيّر الآخر. -->
+<svg width="0" height="0" aria-hidden="true" focusable="false"
+     style="position:absolute"><defs>
+  <g id="avf-star"><polygon points="76.87,76.87 23.13,76.87 23.13,23.13 76.87,23.13"/><polygon points="88.00,50.00 50.00,88.00 12.00,50.00 50.00,12.00"/></g>
+  <g id="avf-oct"><polygon points="85.11,64.54 64.54,85.11 35.46,85.11 14.89,64.54 14.89,35.46 35.46,14.89 64.54,14.89 85.11,35.46"/></g>
+  <g id="avf-ring"><circle cx="88.00" cy="50.00" r="6.2"/><circle cx="76.87" cy="76.87" r="6.2"/><circle cx="50.00" cy="88.00" r="6.2"/><circle cx="23.13" cy="76.87" r="6.2"/><circle cx="12.00" cy="50.00" r="6.2"/><circle cx="23.13" cy="23.13" r="6.2"/><circle cx="50.00" cy="12.00" r="6.2"/><circle cx="76.87" cy="23.13" r="6.2"/></g>
+</defs></svg>
+
 <noscript>
   <div class="wrap"><div class="err"><b>جافاسكربت معطّلة</b>
     تُفعَّل في المتصفح لتعمل المنصة.</div></div>
