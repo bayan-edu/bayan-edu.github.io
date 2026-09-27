@@ -8,7 +8,8 @@
 import * as api from './api.js';
 import { S } from './state.js';
 import { app, bar, head, toast, esc, AR, errBox, nav, registerRoutes,
-         registerCounts, registerSearch, refreshCounts, mathBoot, scrollTop } from './ui.js';
+         registerCounts, registerSearch, registerGram, refreshCounts,
+         mathBoot, scrollTop } from './ui.js';
 import { loadList, loadFeedback, loadChat, openSearchHit } from './student.js';
 import { loadTeacher, loadInbox, loadMySubjects } from './teacher.js';
 import { openEditor } from './editor.js';
@@ -845,6 +846,13 @@ export function start(){
   /* والبحثُ مثلُه: النداءُ من api والوجهةُ من student — وui.js تجهل
      مصدرَ الأول ومحتوى الثاني، فتبقى ورقةً بلا دورةِ استيراد. */
   registerSearch(api.searchAll, openSearchHit);
+
+  /* 🆕 125 · وكاتبُ صيغة المخاطبة كذلك: الدرجُ يسأل، و`api` تكتب،
+     و`ui.js` لا تعرف أيَّهما. ويُعيد الخطأَ ولا يبتلعه. */
+  registerGram(async g => {
+    const { error } = await api.setMyGram(S.user.id, g);
+    return error || null;
+  });
 
   registerRoutes({
     subjects:   loadList,

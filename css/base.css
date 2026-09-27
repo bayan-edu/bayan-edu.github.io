@@ -573,6 +573,20 @@ body.gate .drawer,body.gate .scrim{display:none}
 .who-t b{font-family:'Almarai';font-weight:800;font-size:var(--fs-ui);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .who-t span{font-size:var(--fs-tag);color:var(--text-muted)}
+/* ── سؤالُ صيغة المخاطبة — لمن لم يُسأل (125) ──
+   🔑 **محايدةٌ لا عائلةَ لها:** السؤال ليس تفاعلاً («اخترتَ») ولا حكماً
+      ولا حذراً. وكهرمانيٌّ هنا يقول «انتبه» لأمرٍ لا خطرَ فيه، **والصياحُ
+      الدائم لا يُسمع**. ⇒ `--fill-soft` و`--line` و`--text` (رأس الطبقة).
+   📌 وتسكن بين الرأس والتنقّل: تُرى حين يُفتح الدرجُ قصداً، ولا تسبق
+      شاشةً ولا تحجب فعلاً. */
+.gram-ask{margin:12px 10px 2px;padding:12px;border-radius:12px;
+  background:var(--fill-soft);border:1px solid var(--line)}
+.gram-ask b{font-family:'Almarai';font-weight:800;font-size:var(--fs-ui);
+  display:block;margin-bottom:5px}
+.gram-ask p{font-size:var(--fs-meta);color:var(--text-muted);
+  line-height:1.75;margin:0 0 10px}
+.gram-ask .nav{margin-top:0}
+
 .drawer-nav{flex:1;overflow-y:auto;padding:10px 10px 4px}
 .drawer-foot{padding:8px 10px 14px;border-top:1px solid var(--line)}
 .drawer-item{display:flex;align-items:center;gap:11px;width:100%;text-align:start;

@@ -8,7 +8,7 @@ import { mediaUrl, isManaged } from './media.js';
 import { renderMark, whenReady as avatarReady } from './avatar.js';
 
 /* ── بصمة النسخة — لمعرفة أي شيفرة يشغّلها المتصفح فعلاً ── */
-export const BUILD = "b100";
+export const BUILD = "b101";
 
 /* ── مراسي الصفحة ── */
 export const app = document.getElementById("app");
@@ -473,6 +473,11 @@ const BELL = [
 let countsFetcher = null;
 export function registerCounts(fn){ countsFetcher = fn; }
 
+/* 🔒 وكاتبُ صيغة المخاطبة مثلُه — `ui.js` لا تلمس القاعدة (الثابت ①).
+   يُسجَّل من `auth.js`، فتبقى هذه الوحدة ورقةً في شجرة الاستيراد. */
+let gramSetter = null;
+export function registerGram(fn){ gramSetter = fn; }
+
 /* تُنادى عند الإقلاع وبعد كلّ فعلٍ يُغيّر عدداً — لا عند كل شاشة.
    ⚠️ وفشلُ الجلب يُبقي العدد القديم ولا يصفّره: رقمٌ قديم أصدقُ من
       صفرٍ مخترع، والصفرُ الكاذب يقول «لا شيء ينتظرك» فيُهمل الطالبُ ما ينتظره. */
@@ -616,6 +621,39 @@ function ensureDrawer(){
   });
 }
 
+/* ═══════════ السؤالُ مرّةً — لمن لم يُسأل (123 · 125) ═══════════
+
+   التسعةَ عشرَ القائمون سجّلوا قبل العمود، فصيغتُهم `null`. ومستوى
+   النصّ يعاملهم بالمحايدة — **وهي حلٌّ مؤقّت لا غاية**: العربيةُ تُلزم
+   بالصيغة، والمحايدةُ تُجمّد صوتَ بيان حيث كان يخاطب.
+
+   🔑 **والنصُّ يقول لماذا، وإلا قُرئ جمعاً للجنس.** سؤالٌ عن «ذكر أم
+      أنثى» في قائمة الحساب يُقرأ سمةً ديموغرافية تُجمَع — وهو بالضبط
+      ما لا تفعله بيان. فيُسأل عن **الخطاب** ويُقال إنّه لغةٌ لا سمة.
+
+   🔑 **والخياران بمفردات التسجيل نفسِها** («أنا طالبة» لا «مؤنّث»):
+      المسجِّلُ رأى هذه العبارةَ يوم سجّل، **ومفردةٌ ثانية لشيءٍ واحد
+      تُقرأ شيئاً آخر.**
+
+   📌 **ولا زرَّ صرفٍ ولا تذكيرٌ متكرّر:** الكتلةُ تسكن الدرجَ ولا تسبق
+      شاشة، ولا تُرى إلا حين يفتحه صاحبُها بنفسه. وتختفي بالجواب. */
+function gramAsk(prof){
+  if(prof.gram_gender || !prof.id) return '';
+  const r = roleOf();
+  const m = r === 'teacher' ? 'أنا معلّم' : r === 'admin' ? 'أنا مدير'   : 'أنا طالب';
+  const f = r === 'teacher' ? 'أنا معلّمة': r === 'admin' ? 'أنا مديرة'  : 'أنا طالبة';
+  return `
+    <div class="gram-ask" id="gramAsk">
+      <b>كيف نخاطبك؟</b>
+      <p>لتصحّ صيغةُ الجُمَل — «أحسنتَ» أم «أحسنتِ». إعدادٌ لغويٌّ
+         يُقرأ في النصّ وحده، ولا يُستعمل في غيره.</p>
+      <div class="nav">
+        <button class="btn ghost" data-g="m">${m}</button>
+        <button class="btn ghost" data-g="f">${f}</button>
+      </div>
+    </div>`;
+}
+
 function renderDrawer(active){
   const d = document.getElementById('drawer');
   if(!d) return;
@@ -637,6 +675,7 @@ function renderDrawer(active){
       </div>
       <button class="iconbtn" id="drawerX" aria-label="إغلاق القائمة">${svg('close')}</button>
     </div>
+    ${gramAsk(prof)}
     <nav class="drawer-nav">
       ${destsOf().map(([k, label]) => `
         <button class="drawer-item ${k === active ? 'on' : ''}" data-r="${k}">
@@ -650,6 +689,23 @@ function renderDrawer(active){
     </div>`;
   d.querySelector('#drawerX').onclick = closeDrawer;
   d.querySelector('#themeBtn').onclick = toggleTheme;
+
+  /* 🔴 **والفشلُ يُقال ولا يُبتلع.** لو أُخفيت الكتلةُ بمجرّد النقر ثمّ
+     رُدّ الحفظ لظنّ صاحبُها أنّه أجاب، ثمّ وجد السؤالَ عائداً غداً بلا
+     سبب. ⇒ يُعطَّل الزرّان ريثما يُردّ الجواب، ويُرجَعان عند الخطأ. */
+  d.querySelectorAll('#gramAsk [data-g]').forEach(b => b.onclick = async () => {
+    if(!gramSetter) return;
+    const btns = d.querySelectorAll('#gramAsk [data-g]');
+    btns.forEach(x => x.disabled = true);
+    const err = await gramSetter(b.dataset.g);
+    if(err){
+      btns.forEach(x => x.disabled = false);
+      toast('تعذّر الحفظ — ' + (err.message || '')); return;
+    }
+    S.prof.gram_gender = b.dataset.g;
+    renderDrawer(active);          // السطرُ والكتلةُ يتبعان الجواب فوراً
+  });
+
   wire(d);
 }
 
