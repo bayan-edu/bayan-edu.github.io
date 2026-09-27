@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>بيان — اللوحة النابضة وضبط الحرف</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700;800&family=Readex+Pro:wght@400;600&display=swap" rel="stylesheet">
+<!-- ══════════════════════════════════════════════════════════
+     ① اللوحة النابضة (قرار ٢٧ سبتمبر: لا تقيُّدَ بالشعار ولا بالعائلات)
+     ② ضبطُ الحرف: يُوسَّط **مِدادُه** لا صندوقُ خطّه.
+
+     🔑 والعلّة التي أُصلحت: `textBaseline:'middle'` يُوسّط صندوقَ
+        الـem — وهو واحدٌ لكلّ الحروف. ومِدادُ «ا» عمودٌ طويلٌ نحيف،
+        و«ر» يهبط تحت السطر، و«ه» صغيرةٌ مستديرة. فالتوسيطُ بالصندوق
+        يضع كلَّ حرفٍ في موضعٍ مختلف من القرص.
+     ══════════════════════════════════════════════════════════ -->
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;padding:22px 16px 70px;background:#0b0b0b;color:#E5E5E5;
+       font-family:'Readex Pro','Almarai',system-ui,Tahoma,sans-serif;line-height:1.75}
+  h1{font-family:'Almarai';font-weight:800;font-size:1.32rem;margin:0 0 4px}
+  h2{font-family:'Almarai';font-weight:800;font-size:.98rem;margin:28px 0 8px}
+  .sub{color:#A3A3A3;font-size:.82rem;margin:0 0 8px}
+  .pane{border-radius:14px;padding:14px;margin-top:10px}
+  .pane.l{background:#F5F5F4;color:#292524;border:1px solid #D6D3D1}
+  .pane.d{background:#171717;color:#E5E5E5;border:1px solid rgba(255,255,255,.12)}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+  .cell{text-align:center}
+  .cap{font-size:.6rem;opacity:.6;margin-top:4px;font-family:'Almarai'}
+  .lab{font-family:'Almarai';font-weight:800;font-size:.72rem;margin:10px 0 6px;opacity:.75}
+  canvas{display:block}
+  .note{background:#1c1c1c;border:1px solid #2e2e2e;border-radius:12px;padding:11px 13px;
+        font-size:.79rem;margin-top:11px}
+  .good{border-color:#1e4a2e;background:#101a13}
+  pre{background:#141414;border:1px solid #2a2a2a;border-radius:10px;padding:11px;
+      font-size:.7rem;overflow:auto;direction:ltr;text-align:left}
+</style>
+</head>
+<body>
+<h1>اللوحة النابضة · وضبطُ الحرف داخل العلامة</h1>
+<p class="sub">ثمانيةُ ألوان، كلٌّ منها عند <b>سقف إشباع صبغته</b> الذي يبقى معه الحرفُ مقروءاً والقرصُ مرئيّاً على الورقتين.</p>
+<div id="out"></div>
+
+<script>
+/* ═══ اللوحة — مُخرَجةٌ من palette-scan.mjs ═══ */
+const PAL = [
+  { hex:'#fe2b0c', ink:'#1C1917', name:'قرمزيّ'   },
+  { hex:'#be8202', ink:'#1C1917', name:'ذهبيّ'    },
+  { hex:'#0ca14b', ink:'#1C1917', name:'أخضر'     },
+  { hex:'#069f8e', ink:'#1C1917', name:'فيروزيّ'  },
+  { hex:'#0293ac', ink:'#1C1917', name:'سماويّ'   },
+  { hex:'#088ef6', ink:'#1C1917', name:'أزرق'     },
+  { hex:'#9204fd', ink:'#ffffff', name:'بنفسجيّ' },
+  { hex:'#fa0089', ink:'#1C1917', name:'ورديّ'    }
+];
+const ALPHA = 'ابتثجحخدذرزسشصضطظعغفقكلمنهوي'.split('');
+const FONT = w => `800 ${w}px Almarai, sans-serif`;
+const DPR  = devicePixelRatio || 1;
+
+/* ═══ قياسُ مِداد الحرف — لا تخمين ═══
+   actualBoundingBox* تُعطي حدودَ الحبر الفعليّ لا صندوقَ الخطّ.
+   ⚠️ والقياسُ عند حجمٍ مرجعيّ واحد ثمّ يُنسَب، فلا يُعاد لكلّ رسم. */
+const REF = 100;
+const mcv = document.createElement('canvas').getContext('2d');
+function ink(ch){
+  mcv.font = FONT(REF);
+  mcv.textAlign = 'left'; mcv.textBaseline = 'alphabetic';
+  const m = mcv.measureText(ch);
+  const x0 = -m.actualBoundingBoxLeft,  x1 = m.actualBoundingBoxRight;
+  const y0 = -m.actualBoundingBoxAscent, y1 = m.actualBoundingBoxDescent;
+  return { x0, x1, y0, y1, w:x1-x0, h:y1-y0, cx:(x0+x1)/2, cy:(y0+y1)/2 };
+}
+
+/* ═══ الإطار: نجمةٌ ثمانية ═══ */
+function poly(c,n,R,rot){ c.beginPath();
+  for(let i=0;i<n;i++){ const a=rot+i*2*Math.PI/n, x=50+R*Math.cos(a), y=50+R*Math.sin(a);
+    i?c.lineTo(x,y):c.moveTo(x,y); } c.closePath(); }
+
+/* 🔑 المبدأ: حجمُ الخطّ **ثابت** فيبقى ثِقَلُ الحروف واحداً، والتوسيطُ
+   بالمِداد. ولا يُمدَّد الحرفُ ليملأ صندوقاً — وإلا صارت «ا» عموداً
+   عملاقاً و«م» قزماً. ويُصغَّر وحده إن تجاوز الدائرة الآمنة. */
+const SAFE = 25;          // نصفُ قطر ما يسع الحرفَ داخل الإطار
+const SIZE = 46;          // حجمُ الخطّ في صندوق ١٠٠
+
+/* 🔑 **والحضورُ البصريّ لا العرضُ ولا الارتفاع.** حجمُ خطٍّ ثابتٌ يحفظ
+   ثِقَلَ الحروف ويُفرّق حضورَها: «غ» تملأ القرص و«د» تتوارى. وملءُ
+   صندوقٍ واحدٍ بكلّ حرفٍ يعكس العيب: تصير «ا» عموداً عملاقاً نحيفاً.
+   ⇒ يُقاس الحضورُ بـ`√(عرض×ارتفاع)` — لا بأحدهما — ويُقرَّب من هدفٍ
+      واحد **بمعامِلٍ محبوسٍ في نطاقٍ ضيّق**: فيتقارب الحضورُ ويبقى
+      الثِقَلُ متقارباً. والحبسُ هو الحكم، لا التقريب. */
+const FIT_LO = 0.86, FIT_HI = 1.22;
+let FIT_TARGET = 48;                 // يُعاير من الهجاء عند التحميل
+const presence = b => Math.sqrt(b.w * b.h);
+
+function mark(c, s, o){
+  c.save(); c.scale(s/100, s/100);
+  c.fillStyle = o.hex; c.beginPath(); c.arc(50,50,50,0,Math.PI*2); c.fill();
+
+  const ringInk = o.ink === '#ffffff' ? 'rgba(255,255,255,.55)' : 'rgba(0,0,0,.34)';
+  c.strokeStyle = ringInk; c.lineWidth = 3.2; c.lineJoin='round';
+  poly(c,4,38,Math.PI/4); c.stroke(); poly(c,4,38,0); c.stroke();
+
+  const b = ink(o.letter), k = SIZE / REF;
+  /* ① تقريبُ الحضور، محبوساً ② ثمّ الحدُّ الصلب: لا يخرج عن الدائرة الآمنة */
+  let sc = Math.min(FIT_HI, Math.max(FIT_LO, FIT_TARGET / presence(b)));
+  const need = Math.hypot((b.w * k * sc) / 2, (b.h * k * sc) / 2);
+  if(need > SAFE) sc *= SAFE / need;
+
+  c.fillStyle = o.ink;
+  c.font = FONT(SIZE * sc);
+  c.textAlign = 'left'; c.textBaseline = 'alphabetic';
+  if(o.raw){                                  // الطريقة القديمة — للمقارنة
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.font = FONT(SIZE);
+    c.fillText(o.letter, 50, 50);
+  } else {
+    c.fillText(o.letter, 50 - b.cx * k * sc, 50 - b.cy * k * sc);
+  }
+  c.restore();
+}
+
+function make(size, o, magnify){
+  const cv = document.createElement('canvas');
+  if(magnify){
+    const src = document.createElement('canvas'); src.width=src.height=32;
+    mark(src.getContext('2d'), 32, o);
+    cv.width=cv.height=32*magnify;
+    const g=cv.getContext('2d'); g.imageSmoothingEnabled=false;
+    g.drawImage(src,0,0,32*magnify,32*magnify);
+    cv.style.width=cv.style.height=(32*magnify)+'px';
+  } else {
+    cv.width=cv.height=Math.round(size*DPR);
+    const g=cv.getContext('2d'); g.scale(DPR,DPR); mark(g,size,o);
+    cv.style.width=cv.style.height=size+'px';
+  }
+  return cv;
+}
+/* 🔴 **ولا `innerHTML +=` بعد إلحاق قماش.** الإسنادُ يُسلسل الأبناءَ إلى
+   نصٍّ ثمّ يُعيد تحليله، و**بِطانةُ القماش لا تنجو من الرحلة**: يبقى
+   العنصرُ بمقاسه ويخلو من الرسم. عطلٌ صامتٌ يبدو «لم يُرسم بعد».
+   ⇒ سطرُ العنوان يُلحَق عنصراً لا نصّاً. */
+function lab(text){
+  const d = document.createElement('div');
+  d.className = 'lab'; d.textContent = text; return d;
+}
+
+function strip(items, size, magnify){
+  const row=document.createElement('div'); row.className='row';
+  items.forEach(o=>{
+    const c=document.createElement('div'); c.className='cell';
+    c.appendChild(make(size, o, magnify));
+    if(o.cap){ const t=document.createElement('div'); t.className='cap'; t.textContent=o.cap; c.appendChild(t); }
+    row.appendChild(c);
+  });
+  return row;
+}
+
+document.fonts.ready.then(()=>{
+  /* المعايرة: الهدفُ وسيطُ الهجاء — فلا يُشدّ نصفُه لأعلى ولا نصفُه لأسفل */
+  const pres = ALPHA.map(ch => presence(ink(ch))).sort((a,b)=>a-b);
+  FIT_TARGET = pres[Math.floor(pres.length/2)];
+
+  const out = document.getElementById('out');
+  const L8 = ['ه','م','ع','ر','ن','س','ح','ا'];
+
+  /* ① اللوحة */
+  const b1=document.createElement('div');
+  b1.innerHTML = `<h2>① الثمانية — عند ٩٦ بكسل</h2>`;
+  for(const th of ['l','d']){
+    const p=document.createElement('div'); p.className='pane '+th;
+    p.innerHTML = `<div class="lab">${th==='l'?'الفاتحة':'الداكنة'}</div>`;
+    p.appendChild(strip(PAL.map((c,i)=>({...c, letter:L8[i], cap:c.name})), 96, 0));
+    b1.appendChild(p);
+  }
+  out.appendChild(b1);
+
+  /* ② قبل وبعد */
+  const b2=document.createElement('div');
+  b2.innerHTML = `<h2>② العلّة والعلاج — الحرف نفسُه في القرص نفسِه</h2>
+    <p class="sub">الصفُّ الأول: توسيطٌ بصندوق الخطّ (ما كان). والثاني: توسيطٌ بمِداد الحرف.</p>`;
+  const p2=document.createElement('div'); p2.className='pane l';
+  const probe = ['ا','ر','ه','م','ع','و','ق','ج'];
+  p2.appendChild(lab('قبل — بصندوق الخطّ'));
+  p2.appendChild(strip(probe.map(ch=>({...PAL[5], letter:ch, raw:true, cap:ch})), 84, 0));
+  p2.appendChild(lab('بعد — بمِداد الحرف'));
+  p2.appendChild(strip(probe.map(ch=>({...PAL[5], letter:ch, cap:ch})), 84, 0));
+  b2.appendChild(p2); out.appendChild(b2);
+
+  /* ③ الهجاء كلّه */
+  const b3=document.createElement('div');
+  b3.innerHTML = `<h2>③ الثمانيةُ والعشرون — اختبارُ الحالات الحافّة</h2>
+    <p class="sub">كلُّ حرفٍ في لونٍ من الثمانية بالدور.</p>`;
+  const p3=document.createElement('div'); p3.className='pane l';
+  p3.appendChild(strip(ALPHA.map((ch,i)=>({...PAL[i%8], letter:ch, cap:ch})), 56, 0));
+  p3.appendChild(lab('وعند ٣٢ بكسل — الحجم الذي تُعاش فيه'));
+  p3.appendChild(strip(ALPHA.map((ch,i)=>({...PAL[i%8], letter:ch})), 32, 0));
+  b3.appendChild(p3); out.appendChild(b3);
+
+  /* ④ الجدول */
+  const rows = ALPHA.map(ch=>{ const b=ink(ch);
+    return { ch, dx:+(-b.cx).toFixed(1), dy:+(-b.cy).toFixed(1),
+             w:+b.w.toFixed(1), h:+b.h.toFixed(1) }; });
+  const hi = rows.reduce((a,b)=>a.h>b.h?a:b), lo = rows.reduce((a,b)=>a.h<b.h?a:b);
+  const b4=document.createElement('div');
+  b4.innerHTML = `<h2>④ LETTER_METRICS — مقيسةٌ من Almarai لا من Cairo</h2>
+    <div class="note good">📐 <b>المدى الذي يُثبت أنّ الجدول لازم:</b>
+    أطولُ مِدادٍ «${hi.ch}» ارتفاعُه ${hi.h} وأقصرُه «${lo.ch}» ${lo.h} —
+    فرقٌ <b>${(hi.h-lo.h).toFixed(1)}</b> وحدةً في صندوقٍ من ١٠٠.
+    وإزاحةٌ واحدةٌ لكلّ الحروف تُخرج نصفَها عن المركز.
+    <br><br>⚠️ <b>والخطّ Almarai لا Cairo:</b> الخطّةُ تنصّ على القياس من
+    مِداد Cairo، و<code>index.html</code> لا يحمّل Cairo أصلاً. وجدولٌ
+    مقيسٌ من خطٍّ لا يُرسَم به <b>يُخرج الحروفَ وهو يظنّ أنه يضبطها</b>.</div>
+    <pre id="metrics"></pre>`;
+  out.appendChild(b4);
+  document.getElementById('metrics').textContent =
+    '/* مِداد Almarai 800 عند حجمٍ مرجعيّ 100 — [dx, dy] إزاحةُ التوسيط */\n' +
+    'const LETTER_METRICS = {\n' +
+    rows.map(r=>`  '${r.ch}': [${r.dx}, ${r.dy}],`).join('\n') + '\n};';
+});
+</script>
+</body>
+</html>
