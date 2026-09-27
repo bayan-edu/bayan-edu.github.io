@@ -5,9 +5,10 @@
 
 import { S } from './state.js';
 import { mediaUrl, isManaged } from './media.js';
+import { renderMark, whenReady as avatarReady } from './avatar.js';
 
 /* ── بصمة النسخة — لمعرفة أي شيفرة يشغّلها المتصفح فعلاً ── */
-export const BUILD = "b99";
+export const BUILD = "b100";
 
 /* ── مراسي الصفحة ── */
 export const app = document.getElementById("app");
@@ -504,10 +505,26 @@ function paintCounts(){
 const roleOf  = () => S.roleInfo?.role || S.prof?.role || 'student';
 const destsOf = () => DEST[roleOf()] || DEST.student;
 
-/* حرفٌ واحد لا حرفان: «محمود محمد» يُنتج «مم» — تكرارٌ يبدو خطأً
-   مطبعياً، والعربية لا تعرف اختصار الاسم بالأحرف أصلاً. */
-function initials(name){
-  return (String(name || '').trim()[0]) || '؟';
+/* ═══════════ خانةُ العلامة (125) ═══════════
+   🔓 **وحلّت محلّ `initials()`** — كانت تأخذ أوّل حرفٍ بلا قاعدة، فتُعطي
+      «ا» لكلّ من عُرّف اسمُه و«إ» لإبراهيم. والقاعدةُ العربية صارت في
+      `avatarLetter` مع تطبيع الهمزات وتجاوز «ال» ومسارٍ لاتينيّ.
+   🔴 **والخانةُ ليست زينةً في المُصيِّر:** العلامةُ تُقاس من مِداد الخطّ،
+      وأوّلُ رسمٍ قد يقع **قبل تحميل Almarai** فيُقاس خطُّ الاحتياط.
+      ⇒ تُحاط بعنصرٍ يُعاد ملؤه مرّةً عند جاهزية الخطّ. ولولا ذلك لرأى
+         المستخدمُ حرفاً منزاحاً ثمّ لا يفهم لماذا استقام بعد لحظة. */
+const markSlot = (prof, size) =>
+  `<span class="av-slot" data-s="${size}">${renderMark(prof, size)}</span>`;
+
+let _marksSynced = false;
+function syncMarks(){
+  if(_marksSynced) return;
+  _marksSynced = true;
+  avatarReady().then(() => {
+    document.querySelectorAll('.av-slot').forEach(el => {
+      el.innerHTML = renderMark(S.prof || {}, +el.dataset.s || 32);
+    });
+  });
 }
 
 /* ═══════════ صيغةُ المخاطبة — طبقةُ النصّ (123 · 124) ═══════════
@@ -612,7 +629,7 @@ function renderDrawer(active){
   d.innerHTML = `
     <div class="drawer-head">
       <div class="who">
-        <span class="avatar lg">${esc(initials(prof.full_name))}</span>
+        ${markSlot(prof, 44)}
         <span class="who-t">
           <b dir="auto">${esc(prof.full_name || 'حسابك')}</b>
           ${sub ? `<span>${esc(sub)}</span>` : ''}
@@ -863,7 +880,7 @@ export function nav(active){
       <div class="bellpanel" id="bellPanel" role="menu" hidden></div>
     </span>
     <button class="acct" id="acctBtn" aria-label="حسابك والقائمة">
-      <span class="avatar">${esc(initials(S.prof?.full_name))}</span>
+      ${markSlot(S.prof || {}, 30)}
       <span class="acct-n" dir="auto">${esc((S.prof?.full_name || '').split(/\s+/)[0] || '')}</span>
     </button>
   </div>`;
@@ -873,6 +890,7 @@ export function nav(active){
   bindSlash();
   renderDrawer(active);
   paintCounts();
+  syncMarks();      // مرّةً في عمر الصفحة — الحارسُ داخلها (125)
 
   bar.querySelector('#searchBtn').onclick = openSearch;
   bar.querySelector('#menuBtn').onclick = openDrawer;

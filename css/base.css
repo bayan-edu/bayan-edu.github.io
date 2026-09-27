@@ -515,10 +515,16 @@ h2.sec{font-family:'Almarai';font-weight:800;font-size:var(--fs-h);margin:24px 0
 .acct:hover{border-color:var(--accent-edge);background:var(--fill)}
 .acct-n{font-family:'Almarai';font-weight:700;font-size:var(--fs-meta);
   max-width:9ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.avatar{width:30px;height:30px;border-radius:999px;background:var(--accent-fill);
-  color:var(--accent);font-family:'Almarai';font-weight:800;font-size:var(--fs-meta);
-  display:flex;align-items:center;justify-content:center;flex:0 0 auto}
-.avatar.lg{width:44px;height:44px;font-size:var(--fs-read)}
+/* ── علامةُ الحساب (125) ──
+   🔓 **وحلّت محلّ `.avatar`** — وكانت تلبس `--accent-fill` و`--accent`،
+      **وهي عائلةُ «اخترتَ / اضغط هنا»**. والعلامةُ ليست تفاعلاً ولا
+      حكماً، فلونُها لا يقول شيئاً من الخمس. وكلُّ أزرقَ خارج التفاعل
+      يُضعف الأزرقَ حين يُنقَر عليه فعلاً (رأس طبقة الأدوار).
+      ⇒ صارت تلبس لوحةَ `--av-*` وحدها.
+   📌 والمقاسُ على الـSVG نفسِه (سِمتا `width/height` من `renderMark`)،
+      فلا يُكرَّر رقمٌ هنا ورقمٌ هناك. وهذه الخانةُ للتخطيط لا للحجم. */
+.av-slot{display:flex;flex:0 0 auto;line-height:0}
+.av-slot .av-mark{display:block}
 @media(max-width:520px){ .acct-n{display:none} .acct{padding-inline:3px} }
 
 /* ── لوحة الجرس ──
