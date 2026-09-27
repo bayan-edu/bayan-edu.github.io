@@ -615,7 +615,10 @@ body.gate .drawer,body.gate .scrim{display:none}
   background:none;border:1px solid transparent;border-radius:11px;padding:11px 12px;
   cursor:pointer;color:var(--text-muted);font-family:'Almarai';font-weight:700;
   font-size:var(--fs-ui);transition:color .18s,background .18s,border-color .18s}
-.menu-item > span:not(.bdg){flex:1}
+/* ⚠️ و`.av-ico` تُستثنى: هي أيقونةٌ لا نصّ، ولولا الاستثناء لأخذت
+   `flex:1` فتقاسمت العرضَ مع الكلمة — فانزاح «تغيير صورتي» وحده عن
+   صفّ إخوته. عيبٌ قديمٌ ظهر في الدرج ولم يُرَ حتى ضاقت اللوحة. */
+.menu-item > span:not(.bdg):not(.av-ico){flex:1}
 .menu-item:hover{color:var(--text);background:var(--fill)}
 .menu-item.on{color:var(--accent);background:var(--accent-fill);
   border-color:var(--accent-edge)}

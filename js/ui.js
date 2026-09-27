@@ -734,7 +734,7 @@ function ensureDrawer(){
   d.id = 'drawer'; d.className = 'drawer';
   d.setAttribute('role', 'dialog');
   d.setAttribute('aria-modal', 'true');
-  d.setAttribute('aria-label', 'القائمة');
+  d.setAttribute('aria-label', 'التنقّل');   // اسمان لقائمتين — لا «القائمة» لكليهما
   document.body.append(scrim, d);
 
   /* نقرةٌ خارج لوحةٍ متدلّية تطويها — وللدرج غطاؤه فلا يشترك معهما.
@@ -808,7 +808,7 @@ function renderDrawer(active){
   d.innerHTML = `
     <div class="drawer-head">
       ${brandMark()}
-      <button class="iconbtn" id="drawerX" aria-label="إغلاق القائمة">${svg('close')}</button>
+      <button class="iconbtn" id="drawerX" aria-label="إغلاق">${svg('close')}</button>
     </div>
     <nav class="drawer-nav">
       ${destsOf().map(([k, label]) => `
@@ -892,7 +892,7 @@ function openDrawer(){
   document.getElementById('menuBtn')?.setAttribute('aria-expanded', 'true');
   /* بعد الرسم لا قبله، وإلا ذهب التركيز إلى عنصرٍ لم يظهر بعد */
   requestAnimationFrame(() =>
-    document.querySelector('#drawer .drawer-item')?.focus());
+    document.querySelector('#drawer .menu-item')?.focus());
 }
 
 /* ══════════════════════════════════════════════════════════════
