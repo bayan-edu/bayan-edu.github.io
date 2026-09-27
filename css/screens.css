@@ -1693,6 +1693,11 @@ body.gate{padding-bottom:0}
    📌 وكلُّ ألوانه محايدة: الملفُّ عرضُ حالٍ لا حكمٌ ولا تفاعل. */
 .pf-id{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .pf-mark{flex:0 0 auto;line-height:0}
+/* 🆕 b107 · والقلمُ يكبر مع علامته: ١٩px على ٤٠ في قائمة الحساب،
+   و٢٤ على ٦٤ هنا. قرصٌ ثابتُ الحجم على علامةٍ أكبرَ يُقرأ نقطةً
+   لُصقت، لا زرّاً. وأصلُه في base.css — وهذا مقاسٌ لا لون. */
+.pf-id .av-pen{width:24px;height:24px}
+.pf-id .av-pen .ic{width:14px;height:14px}
 .pf-id-t{display:flex;flex-direction:column;min-width:0;flex:1;line-height:1.6}
 .pf-id-t b{font-family:'Almarai';font-weight:800;font-size:var(--fs-read)}
 

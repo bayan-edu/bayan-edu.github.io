@@ -1,7 +1,7 @@
 /* ══════════════════════════════════════════════════════════
    بيان — profile.js  ·  الملفّ الشخصيّ — للطالب وللمعلّم
 
-   ثلاثةُ أقسام: **الهوية** · القسمُ الخاصُّ بالدور · **الحساب**.
+   ثلاثةُ أقسام: **البيانات الشخصية** · القسمُ الخاصُّ بالدور · **الحساب**.
      الطالب:  الاسم · الصفّ · الصورة   ‖  تعلّمي
      المعلّم: الاسم · المدرسة · الخبرة · النبذة · الصورة  ‖  تدريسي
 
@@ -28,7 +28,7 @@
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
 import { S } from './state.js';
-import { app, head, toast, esc, AR, errBox, nav, scrollTop, G, goRoute } from './ui.js';
+import { app, head, toast, esc, AR, errBox, nav, scrollTop, G, goRoute, icon } from './ui.js';
 import { renderMark } from './avatar.js';
 import { POLICY_URL } from './policy.js';
 import { openAvatarEdit } from './avatar_edit.js';
@@ -45,7 +45,9 @@ const isTeacher = () => ['teacher','admin'].includes(S.roleInfo?.role || S.prof?
 
 export async function loadProfile(){
   nav('subjects');
-  head('ملفّي', S.prof?.full_name || '');
+  /* 🔓 b107 · بلا وصفٍ تحت العنوان: كان الاسمَ، **والاسمُ حقلٌ في هذه
+     الشاشة لا ترويسةٌ لها.** وشاشةُ تعديلٍ تعرض القيمةَ في خانتها. */
+  head('ملفّي');
   app.innerHTML = `<div class="status">جار التحميل…</div>`;
 
   /* 🔑 كلُّ دورٍ يجلب ما يعرضه وحدَه — ولا يُجلب للطالب جدولُ موادّ
@@ -63,23 +65,31 @@ export async function loadProfile(){
   scrollTop();
 }
 
-/* ═══ ترويسةُ الهوية — واحدةٌ للدورين، وسطرُها يتبع الدور ═══ */
+/* ═══ ترويسةُ البطاقة — واحدةٌ للدورين، وسطرُها يتبع الدور ═══
+
+   🔓 **b107 · والاسمُ سقط من هنا.** كان يُعرَض **ثلاثَ مرّات في شاشةٍ
+      واحدة**: وصفاً تحت العنوان · في هذه الترويسة · وفي خانة «اسمك كما
+      يظهر». **وشاشةُ تعديلٍ تعرض القيمةَ في حقلها** — وما عداه تكرارٌ
+      يُشغل الصدر ولا يُضيف خبراً. وبقي سطرُ الدور لأنّه ليس حقلاً هنا.
+
+   🔓 **و«تغيير صورتي» صار قلماً على العلامة** — نظيرُ ما في قائمة
+      الحساب، **والفعلُ يسكن الشيءَ الذي يغيّره**. والصنفان `.av-edit`
+      و`.av-pen` في `base.css` يخدمان الموضعين، فلا يفترق قلمان. */
 function idHead(p){
   const sub = isTeacher()
     ? [G(p.gram_gender,'معلّم','معلّمة',''), p.school].filter(Boolean).join(' · ')
     : [G(p.gram_gender,'طالب','طالبة',''), p.klass].filter(Boolean).join(' · ');
   return `
     <div class="pf-id">
-      <span class="pf-mark">${renderMark(p, 64)}</span>
-      <div class="pf-id-t">
-        <b dir="auto">${esc(p.full_name || '')}</b>
-        ${sub ? `<span class="line">${esc(sub)}</span>` : ''}
-      </div>
-      <button class="btn ghost" id="pfAv">تغيير صورتي</button>
+      <button class="av-edit pf-mark" id="pfAv" aria-label="تغيير صورتي">
+        ${renderMark(p, 64)}
+        <span class="av-pen">${icon('pen')}</span>
+      </button>
+      ${sub ? `<div class="pf-id-t"><span class="line">${esc(sub)}</span></div>` : ''}
     </div>`;
 }
 
-/* ═══ حقولُ الهوية — لكلّ دورٍ ما يخصّه ═══ */
+/* ═══ حقولُ البيانات — لكلّ دورٍ ما يخصّه ═══ */
 function studentFields(p){
   /* الصفّ: القيمةُ «سلّم|صفّ» كما في البوابة — صيغةٌ واحدة في الموضعين،
      فلا تتفارق قراءتان لشيءٍ واحد. */
@@ -175,12 +185,12 @@ function render(){
 
   app.innerHTML = `
     ${Z.err ? errBox(Z.err, 'ملفّك') : ''}
-    <h2 class="sec">الهوية</h2>
+    <h2 class="sec">البيانات الشخصية</h2>
     <div class="card">
       ${idHead(p)}
       ${isTeacher() ? teacherFields(p) : studentFields(p)}
       <div class="nav" style="margin-top:14px">
-        <button class="btn primary" id="pfSave">حفظ الهوية</button>
+        <button class="btn primary" id="pfSave">حفظ</button>
       </div>
     </div>
     ${isTeacher() ? teachCard() : learnCard(p)}
@@ -241,7 +251,7 @@ function wire(){
     if(name !== (S.prof.full_name || '')){
       const { data, error } = await api.setMyName(S.user.id, name);
       if(error || !data?.length){
-        b.disabled = false; b.textContent = 'حفظ الهوية';
+        b.disabled = false; b.textContent = 'حفظ';
         toast('تعذّر حفظ الاسم — ' + (error?.message || 'لم يمسّ صفَّك شيء')); return;
       }
       S.prof.full_name = name; changed++;
@@ -261,7 +271,7 @@ function wire(){
       if(!same){
         const { data, error } = await api.setMyTeacherInfo(S.user.id, { school, bio, years });
         if(error || !data?.length){
-          b.disabled = false; b.textContent = 'حفظ الهوية';
+          b.disabled = false; b.textContent = 'حفظ';
           toast('تعذّر الحفظ — ' + (error?.message || 'لم يمسّ صفَّك شيء')); return;
         }
         S.prof.school = school; S.prof.bio = bio; S.prof.years_exp = years; changed++;
@@ -276,16 +286,16 @@ function wire(){
       if(String(sc) !== String(S.prof.scale_id) || String(lv) !== String(S.prof.level_id)){
         const { data:r, error } = await api.setMyGrade(Number(sc), Number(lv));
         if(error || !r?.ok){
-          b.disabled = false; b.textContent = 'حفظ الهوية';
+          b.disabled = false; b.textContent = 'حفظ';
           toast('تعذّر حفظ الصفّ — ' + (error?.message || r?.error || '')); return;
         }
         S.prof.scale_id = Number(sc); S.prof.level_id = Number(lv); changed++;
       }
     }
 
-    b.disabled = false; b.textContent = 'حفظ الهوية';
+    b.disabled = false; b.textContent = 'حفظ';
     if(!changed){ toast('لا جديد يُحفظ'); return; }
-    toast('حُفظت هويتك');
+    toast('حُفظت بياناتك');
     /* 🔑 والشاشةُ تُعاد بناءً على الجديد: الصفُّ يُبدّل الموادَّ والمستوى،
        فعرضٌ قديمٌ بعد حفظٍ ناجح يُقرأ فشلاً. */
     loadProfile();
