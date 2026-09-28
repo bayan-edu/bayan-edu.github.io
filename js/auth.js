@@ -18,7 +18,7 @@ import { loadProfile } from './profile.js';
 import { loadStudents, loadMyPerformance } from './analytics.js';
 import { loadFlashcards } from './flashcards.js';
 import { openPractice } from './practice.js';
-import { roleTabs, wireRoleTabs, teacherFields, fillSubjects, readTeacher, GRAM_MSG } from './role_form.js';
+import { roleTabs, wireRoleTabs, teacherFields, fillSubjects, readTeacher, gramMsg } from './role_form.js';
 import { POLICY_VERSION, policyCheck, policyOk, POLICY_MSG } from './policy.js';
 
 /* ═══════════ ① البوابة ═══════════ */
@@ -27,7 +27,10 @@ export function renderGate(msg){
   S.role ||= 'student';
   /* 🆕 123 · `S.gramG` تبقى `undefined` حتى يقع اختيار — فلا زرَّ مضغوطاً
      ولا افتراضَ مذكّر. وشكلُ النموذج يتبع `S.role` وحده (حقولاً لا
-     مخاطبةً)، ولذلك لم تُدمَج القيمتان في حقلٍ واحد. */
+     مخاطبةً)، ولذلك لم تُدمَج القيمتان في حقلٍ واحد.
+     🆕 b108 · و`S.rolePicked` ثالثةٌ لا رابعة: تقول **أوقعت نقرةٌ على
+     الدور**، وعليها وحدها ينكشف صفُّ الصيغة. ولم تُقرأ من `S.role`
+     لأنّ افتراضَه 'student' يجعله معروفاً قبل أن يُختار. */
   bar.innerHTML = "";
   head("", "", true);
   /* الترويسة تُخفى وتُنقَل هويتها إلى العمود — ونستنسخ #brand كما هو
@@ -46,7 +49,7 @@ export function renderGate(msg){
     ${/* 🆕 b90 · بوابةٌ واحدة: مسارُ «انضم كمعلم» المنفصل أُدمج هنا.
           والاختيارُ أوّلُ ما يُرى — فالحقول تتبعه، ولا يُملأ نموذجٌ
           ثمّ يُقال للمسجِّل إنّه ملأ نموذجَ غيره. */''}
-    ${reg ? roleTabs(S.role, S.gramG ?? null) : ''}
+    ${reg ? roleTabs(S.role, S.gramG ?? null, S.rolePicked) : ''}
 
     ${/* 🆕 b92 · وطريقُ المزوّد يتصدّر ولا يُذيَّل — وكان تحت النموذج
           كلِّه: **من قصده لم يكن ليقرأ حقلاً واحداً**، فكان يُمرِّر
@@ -128,7 +131,9 @@ export function renderGate(msg){
      ولولا ذلك لفقد المسجِّلُ بريدَه واسمَه لأنّه صحّح دورَه، فتعلّم
      ألّا يصحّحه. ⚠️ وكلمةُ المرور لا تُحفَظ عمداً: قيمتُها لا تُكتب
      في HTML، ولا تُترك في كائنٍ يعيش في الذاكرة بلا داعٍ. */
-  wireRoleTabs(app, (r, g) => { keepDraft(); S.role = r; S.gramG = g; renderGate(msg); });
+  wireRoleTabs(app, (r, g) => {
+    keepDraft(); S.role = r; S.gramG = g; S.rolePicked = true; renderGate(msg);
+  });
 
   /* 🆕 b91 · والموافقةُ شرطٌ قبل الانطلاق إلى Google أيضاً — التسجيلُ
      بمزوّدٍ تسجيلٌ. أمّا في الدخول فلا مربّعَ ولا شرط. */
@@ -235,9 +240,11 @@ async function submitGate(){
   if(pw.length < 6){ toast("كلمة المرور ٦ أحرف على الأقل"); return; }
   if(reg && !policyOk(app)){ askPolicy(); return; }
 
-  /* 🆕 123 · الامتناعُ **قبل تفرّع الدور**: الأربعةُ تجمع الدورَ والصيغة،
-     فلو فُحصت في كلّ فرعٍ وحده لسقطت من أحدهما يوماً. */
-  if(reg && !S.gramG){ toast(GRAM_MSG); return; }
+  /* 🆕 123 · الامتناعُ **قبل تفرّع الدور**: الخطوتان تجمعان الدورَ
+     والصيغة، فلو فُحصتا في كلّ فرعٍ وحده لسقطتا من أحدهما يوماً.
+     ⚠️ و`gramG` وحدها تكفي حارساً: صفُّ الصيغة لا ينكشف قبل نقرة
+        الدور، **فلا تُكتب صيغةٌ بغير دورٍ مختار**. */
+  if(reg && !S.gramG){ toast(gramMsg(S.rolePicked)); return; }
 
   /* 🆕 b90 · مسارُ المعلّم يتفرّع هنا وحده — والدخولُ واحدٌ للدورين
      ولا يُسأل فيه عن دور: الدورُ صفةٌ في profiles تُقرأ **بعد**
@@ -344,7 +351,8 @@ export function renderCompleteProfile(msg){
     <div class="card">
       <div class="line" style="color:var(--text);font-size:var(--fs-read)">
         قبل أن نبدأ — من أنت في بيان؟</div>
-      <div style="margin-top:14px">${roleTabs(S.role, S.gramG ?? S.prof?.gram_gender ?? null)}</div>
+      <div style="margin-top:14px">${roleTabs(
+        S.role, S.gramG ?? S.prof?.gram_gender ?? null, S.rolePicked)}</div>
       <div class="line">${S.role === 'teacher'
         ? 'نسألك بعدها عن مادّتك ومدرستك، وتظهر لطلابك في «اختيار معلمك».'
         : 'نسألك بعدها عن منهجك وصفّك، وهما يحدّدان الموادّ التي تظهر لك.'}</div>
@@ -354,13 +362,15 @@ export function renderCompleteProfile(msg){
       <button class="btn primary" id="cp_go">متابعة ←</button>
     </div>`;
 
-  wireRoleTabs(app, (r, g) => { S.role = r; S.gramG = g; renderCompleteProfile(msg); });
+  wireRoleTabs(app, (r, g) => {
+    S.role = r; S.gramG = g; S.rolePicked = true; renderCompleteProfile(msg);
+  });
 
   document.getElementById("cp_go").onclick = async e => {
     /* 🆕 123 · **المدخلُ الثاني — وهو الذي يُغفل لأنّه حديث (⑤).** من
        سجّل بـGoogle ولم يُسأل هنا يخرج بـ`null` إلى الأبد، والمحفِّزُ
        لا يعرف صيغتَه: لا بياناتِ وصفية عبرت، إنّما مطالبةُ المزوّد. */
-    if(!S.gramG){ toast(GRAM_MSG); return; }
+    if(!S.gramG){ toast(gramMsg(S.rolePicked)); return; }
     if(need && !policyOk(app)){ toast(POLICY_MSG); return; }
     const b = e.currentTarget; b.disabled = true; b.textContent = '…';
 
