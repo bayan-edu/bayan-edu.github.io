@@ -680,6 +680,10 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
   background:var(--fill-soft);border:1px solid var(--line);
   border-radius:12px;padding:13px 15px;margin-bottom:8px;transition:border-color .18s}
 .ed-row:hover{border-color:var(--accent)}
+/* صفٌّ لا يُفتح — كبطاقة «مصادر فقط»: حدٌّ متقطّع يقول «مرئيٌّ لا مملوك» */
+.ed-row.ro{cursor:default;border-style:dashed}
+.ed-row.ro:hover{border-color:var(--line)}
+.qz-go.off{color:var(--text-muted);opacity:.55;cursor:not-allowed}
 .ed-empty{color:var(--text-muted);font-size:var(--fs-meta);padding:10px 4px 14px}
 
 .ed-form{display:flex;gap:16px;align-items:flex-start}
@@ -948,6 +952,8 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
   font-family:'Almarai';font-weight:700;font-size:.76rem;white-space:nowrap}
 .eq-go:hover{background:var(--accent-fill)}
 .eq-go.warn{background:var(--warn-fill);border-color:var(--warn-edge);color:var(--warn)}
+.eq-go:disabled{background:var(--fill);border-color:var(--line);
+  color:var(--text-muted);opacity:.55;cursor:not-allowed}
 
 @media(max-width:1000px){
   .eq{grid-template-columns:1fr}

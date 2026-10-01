@@ -8,7 +8,7 @@ import { mediaUrl, isManaged } from './media.js';
 import { renderMark, whenReady as avatarReady } from './avatar.js';
 
 /* ── بصمة النسخة — لمعرفة أي شيفرة يشغّلها المتصفح فعلاً ── */
-export const BUILD = "b110";
+export const BUILD = "b111";
 
 /* ── مراسي الصفحة ── */
 export const app = document.getElementById("app");

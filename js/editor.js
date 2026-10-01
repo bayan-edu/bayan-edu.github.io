@@ -445,7 +445,11 @@ export async function openCourse(course){
   /* 🌿 والشارة آخر الشارات عمداً: الثلاث قبلها تقول «أيصلح للنشر؟»
      والفرع رابعُ شروطه — فمن يمسح الصفّ يقرأ نواقصه دفعةً واحدة.
      ولا تظهر «بلا فرع» في مادةٍ بلا فروع: إنذارٌ لا فعلَ بعده ضجيج. */
-  const row = l => `<div class="ed-row" data-l="${l.id}">
+  /* ⛔ ومن لا يملك الهيكل (`curate`) يرى البابين مغلقَين لا مفتوحَين ثمّ
+     يُردّ خلفهما: زرٌّ يُفتح ثمّ يقول «لا صلاحية لك» يُعلِّم أنّ الشاشة
+     تكذب. والتعطيل يُرى — فالفجوة تُرى والصمت لا يُرى — والمصادر وحدها
+     حيّة، وعليها تنويهٌ يقول ما تفعل. */
+  const row = l => `<div class="ed-row${course.curate ? '' : ' ro'}" data-l="${l.id}">
       <div style="flex:1;min-width:0">
         <div class="ed-t">${esc(l.title)}</div>
         <div class="ed-m">
@@ -457,10 +461,14 @@ export async function openCourse(course){
             : (strands.length ? `<span class="chip w">🌿 بلا فرع</span>` : '')}
         </div>
       </div>
-      <button class="it-b wide" data-it="${l.id}">📦 المصادر (${AR(l.official_items)})</button>
+      <button class="it-b wide" data-it="${l.id}"${course.curate ? ''
+        : ' title="اضغط هنا لإضافة مصدر جديد"'}>📦 المصادر (${AR(l.official_items)})</button>
+      ${course.curate ? `
       <button class="eq-go ${l.has_quiz?'':'warn'}" data-q="${l.id}">
         ${l.has_quiz ? '📝 الاختبار' : '⚠️ إضافة اختبار'}</button>
-      <div class="qz-go">تحرير ←</div>
+      <div class="qz-go">تحرير ←</div>` : `
+      <button class="eq-go" disabled title="الاختبار لفريق الإشراف">📝 الاختبار</button>
+      <div class="qz-go off" title="تحرير الدرس لفريق الإشراف">تحرير ←</div>`}
     </div>`;
 
   const block = (title, uid) => {
@@ -477,8 +485,7 @@ export async function openCourse(course){
         <button class="btn" id="cards">💡 البطاقات</button>
         <button class="btn ghost"   id="nu">＋ وحدة</button>
         ${s.id ? `<button class="btn ghost" id="nst">🌿 فروع المادة</button>` : ''}
-      </div>` : `<div class="warnbox">لديك صلاحية إضافة مصادر إلى الدروس القائمة —
-        وإنشاء الدروس لفريق الإشراف.</div>`}
+      </div>` : `<div class="warnbox">تستطيع إضافة مصادر إلى الدروس القائمة.</div>`}
 
     ${units.map(u => block(u.title, u.id)).join("")}
     ${group(null).length || !units.length ? block('دروس بلا وحدة', null) : ''}
@@ -496,7 +503,7 @@ export async function openCourse(course){
   if(cb) cb.onclick = () => openCards(course);
   const ns = document.getElementById("nst");
   if(ns) ns.onclick = () => openStrands(course, s);
-  app.querySelectorAll(".ed-row").forEach(el =>
+  if(course.curate) app.querySelectorAll(".ed-row").forEach(el =>
     el.onclick = () => editLesson(course, lessons.find(x => String(x.id) === el.dataset.l)));
   app.querySelectorAll("[data-q]").forEach(el => el.onclick = e => {
     e.stopPropagation();                       // لا يفتح تحرير الدرس معه
