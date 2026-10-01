@@ -90,7 +90,15 @@ export async function openQuiz(course, lesson){
 /* 🔒 مدخلُ من لا يملك التحرير: الشاشةُ الوحيدة التي تُفتح له هي المعاينة.
    ولا يُبنى محرّرٌ ثمّ يُعطَّل بابُه باباً — فالمعطَّلُ بابٌ يُجرَّب،
    والمعاينةُ شبّاكٌ يُرى منه ولا يُدخَل. ومنها الرجوعُ إلى المصادر لا
-   إلى تحريرٍ لم يُفتح. */
+   إلى تحريرٍ لم يُفتح.
+
+   🔴 وبابُها `get_quiz` لا `quiz_for_edit`، ودرسٌ كلّف ردّاً:
+      · quiz_for_edit  حارسُها can_edit_quiz ⇒ **تردّ من جاء يُعاين**،
+        فالشاشةُ تقول «لا تملك تحرير هذا الاختبار» وهو لم يطلب تحريراً.
+      · get_quiz       حارسُها can_access **أو** is_teacher ⇒ تمرّ،
+        وتُرجع ما يُرجَع للطالب بعينه: بلا مفاتيح ولا تشخيص ولا كود.
+      والمعاينة «كما يراها الطالب» تُقرأ من مصدر الطالب نفسِه، وإلا كانت
+      محاكاةً تُصدَّق. ولا تُسجَّل محاولة: القراءة لا تكتب. */
 export async function openQuizPreview(course, lesson){
   pvOnly = true;
   ctx = { course, lesson };
@@ -98,9 +106,8 @@ export async function openQuizPreview(course, lesson){
   head("معاينة الأسئلة", lesson?.title || '');
   app.innerHTML = `<div class="status">جار التحميل…</div>`;
 
-  const { data, error } = await api.quizForEdit(lesson.quiz_id);
-  if(error){ app.innerHTML = errBox(error, 'تحميل الاختبار'); return; }
-  if(!data.ok){ app.innerHTML = errBox({ message: data.error }, 'تحميل الاختبار'); return; }
+  const { data, error } = await api.getQuiz(lesson.quiz_id);
+  if(error){ app.innerHTML = errBox(error, 'معاينة الأسئلة'); return; }
 
   Z = data; cur = 0; dirty = false; pv = 0;
   preview();

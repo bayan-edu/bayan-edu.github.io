@@ -50,6 +50,21 @@ const isAdmin  = () => S.roleInfo?.role === 'admin';
 const canEdit  = i => i.official ? isAdmin()  : !!i.mine;   // مصدرٌ عاديّ
 const canEditQ = i => i.official ? !!D.curate : !!i.mine;   // أسئلةُ اختبار
 
+/* 🏷️ ولفظٌ واحد لا يسع المعنيين: المعتمد **اختبارٌ تشخيصي** يُحتسب في
+   البوّابة ويحجب الانتقال، والإضافي **تدريبٌ** لا يُحتسب ولا يحجب —
+   وتسميتُه اختباراً تَعِد الطالبَ بما لا يقع وتُفزعه بما ليس بفَزَع.
+   ⚠️ والنمط في القاعدة يبقى `quiz` — شاشةُ الطالب تتفرّع على كوده
+      (`student.js` · `i.kind==='quiz'`) — فالفرقُ في اللفظ لا في الكود،
+      وسطرٌ جديد في `item_kinds` كان يكسر الطالبَ صامتاً. */
+const kLabel = (label, needs, official) =>
+  (needs === 'quiz' && !official) ? 'تدريب' : (label || '');
+
+/* ومن يملكه يُسمَّى باسمه: «فريق الإشراف» على المعتمد كذبٌ لو كان
+   المصدر من تأليف زميل — وتنويهٌ يكذب أسوأ من تنويهٍ لا يكون.
+   ⚠️ ويُكتب داخل `title="…"` و`esc` لا تمسّ علامة التنصيص — فتُبدَّل هنا. */
+const owner = i => i.official ? 'فريق الإشراف'
+                 : (i.author ? 'أ. ' + esc(i.author).replace(/"/g, '&quot;') : 'مؤلّفه');
+
 
 /* ═══════════ القائمة ═══════════ */
 
@@ -63,7 +78,7 @@ function render(){
       <div style="flex:1;min-width:0">
         <div class="ed-t">${esc(i.title)}</div>
         <div class="ed-m">
-          <span class="chip">${esc(i.label || i.kind)}</span>
+          <span class="chip">${esc(kLabel(i.label, i.needs, i.official) || i.kind)}</span>
           ${i.is_graded ? '<span class="chip g">⭐ يُحتسب في البوّابة</span>' : ''}
           ${i.required && !i.is_graded ? '<span class="chip">إلزامي</span>' : ''}
           ${i.duration ? `<span class="chip">${AR(i.duration)} د</span>` : ''}
@@ -72,6 +87,13 @@ function render(){
                 والشارة تُضاف ولا تُبدِّل — بجانب اسم المؤلّف لا مكانه.
                 وبعبارة شاشة الطالب نفسِها: لفظٌ واحد لمعنًى واحد. */''}
           ${i.reviewed ? '<span class="chip">اعتمدته بيان</span>' : ''}
+          ${/* 🔴 ١٣٣ · اختبارٌ غير منشور لا يبلغ الطالبَ أبداً (can_access
+                تردّ كلَّ `published is not true`) — والمعلّم يضيف ويطمئنّ.
+                `quiz_published` يصل `null` لمن لا اختبار له، و`false` قبل
+                النشر ⇒ المقارنة صريحة لا منفيّة، فلا تُشعل الشارةَ غيابُ
+                الحقل قبل تطبيق الهجرة. */''}
+          ${i.quiz_published === false
+            ? '<span class="chip w">⚠️ لم يُنشر — لا يراه الطالب</span>' : ''}
           ${i.touched ? `<span class="chip">تفاعل ${AR(i.touched)}</span>` : ''}
         </div>
       </div>
@@ -82,12 +104,12 @@ function render(){
         ? (canEditQ(i)
           ? `<button class="eq-go" data-quiz="${i.quiz_id}">📝 تحرير الأسئلة</button>`
           : `<button class="eq-go lk" data-pvq="${i.quiz_id}"
-               title="الأسئلة يحرّرها فريق الإشراف — وهذه معاينة بعين الطالب"
+               title="الأسئلة يحرّرها ${owner(i)} — وهذه معاينة بعين الطالب"
                >🔒 معاينة الأسئلة</button>`)
         : (canEdit(i)
           ? `<button class="it-b wide" data-ed="${i.id}">✏️ تحرير</button>`
           : `<button class="it-b wide lk" data-pv="${i.id}"
-               title="هذا المصدر يعدّله فريق الإشراف — وهذه معاينة"
+               title="هذا المصدر يعدّله ${owner(i)} — وهذه معاينة"
                >🔒 معاينة</button>`)}
       ${(i.official ? D.curate : i.mine) && !i.touched
         ? `<button class="it-b" data-rm="${i.id}">🗑</button>` : ''}
@@ -162,12 +184,13 @@ function form(item, official, ro){
           <label class="fl">نوع المصدر</label>
           <div class="it-kinds">
             ${kinds().map(x => `<button class="it-k ${x.code===k.code?'on':''}"
-                data-k="${x.code}"${dis}>${x.icon}<span>${esc(x.label)}</span></button>`).join("")}
+                data-k="${x.code}"${dis}>${x.icon}<span>${esc(
+                  kLabel(x.label, x.needs, off))}</span></button>`).join("")}
           </div>
 
           <label class="fl" style="margin-top:18px">العنوان *</label>
           <input type="text" id="ti" value="${esc(item?.title || '')}"${dis}
-                 placeholder="مثال: ${esc(k.label)} — الغلاف المائي">
+                 placeholder="مثال: ${esc(kLabel(k.label, k.needs, off))} — الغلاف المائي">
 
           ${k.needs === 'url' ? `
             <label class="fl" style="margin-top:16px">الرابط *</label>
@@ -176,9 +199,13 @@ function form(item, official, ro){
           ${k.needs === 'body' ? `
             <label class="fl" style="margin-top:16px">النصّ *</label>
             <textarea id="bo" style="min-height:150px"${dis}>${esc(item?.body || '')}</textarea>` : ''}
-          ${k.needs === 'quiz' ? `
+          ${k.needs === 'quiz' ? (off ? `
             <div class="warnbox" style="margin-top:16px">اختبار الدرس يُنشأ من زرّ
-              «الاختبار» في قائمة الدروس — فيُربط ويصير شرط الانتقال تلقائياً.</div>` : ''}
+              «الاختبار» في قائمة الدروس — فيُربط ويصير شرط الانتقال تلقائياً.</div>` : `
+            <div class="warnbox" style="margin-top:16px">تدريبٌ باسمك — لا يُحتسب في
+              البوّابة ولا يحجب الانتقال، ونتائجه تُسجَّل في سجلّ الطالب.<br>
+              ${isNew ? 'يُنشأ بالعنوان أعلاه، ثمّ تُفتح شاشةُ الأسئلة مباشرةً.'
+                      : 'وأسئلته تُحرَّر من زرّ «تحرير الأسئلة» في قائمة المصادر.'}</div>`) : ''}
 
           <label class="fl" style="margin-top:16px">وصف موجز <span style="opacity:.6">(اختياري)</span></label>
           <input type="text" id="de" value="${esc(item?.description || '')}"${dis}>
@@ -205,7 +232,7 @@ function form(item, official, ro){
         </div>
       </div>
       ${ro ? '' : `<div class="nav" style="margin-top:16px">
-        <button class="btn primary" id="sv" ${k.needs==='quiz'?'disabled':''}>
+        <button class="btn primary" id="sv" ${k.needs==='quiz' && off ?'disabled':''}>
           ${isNew ? 'إضافة' : 'حفظ'}</button>
       </div>`}`;
 
@@ -229,12 +256,30 @@ async function save(item, official, k){
   if(k.needs === 'url'  && !v("ur")){ toast(k.label + " يحتاج رابطاً"); return; }
   if(k.needs === 'body' && !v("bo")){ toast(k.label + " يحتاج نصاً"); return; }
 
+  /* 🆕 تدريبٌ باسم المعلّم — خطوتان لا خطوة: الاختبار يُخلق أوّلاً
+     (`save_quiz` · official=false ⇒ created_by = صاحبُه ⇒ يملك تحريره)،
+     ثمّ يُدرَج مصدراً إضافياً يحمل مفتاحه. والمعتمد يبقى على بابه الأوّل:
+     زرّ «الاختبار» في قائمة الدروس، فهو شرط انتقالٍ لا إثراء.
+     🔴 ولو أُدرج البندُ قبل أن يُخلق الاختبار لصار مصدراً بلا وجهة —
+        فالترتيب شرطٌ لا تفصيل. */
+  let quizId = item?.quiz_id ?? null;
+  if(k.needs === 'quiz'){
+    if(official){ toast("الاختبار المعتمد يُنشأ من زرّ «الاختبار» في قائمة الدروس"); return; }
+    if(!quizId){
+      const q = await api.saveQuiz({ course: ctx.course.id, title: ti, official: false });
+      if(q.error){ toast(q.error.message); return; }
+      if(!q.data.ok){ toast(q.data.error); return; }
+      quizId = q.data.id;
+    }
+  }
+
   const req = official && document.getElementById("rq")?.value === '1';
   const { data, error } = await api.saveItem({
     id: item?.id ?? null, lesson: ctx.lesson.id, kind: k.code, title: ti,
     description: v("de") || null,
     url: k.needs === 'url' ? v("ur") : null,
     body: k.needs === 'body' ? v("bo") : null,
+    quiz: quizId,
     position: item?.position ?? ((D.items || []).length + 1),
     duration: v("du") ? Number(v("du")) : null,
     lang: v("ln") || 'ar',
@@ -243,6 +288,14 @@ async function save(item, official, k){
 
   if(error){ toast(error.message); return; }
   if(!data.ok){ toast(data.error); return; }
+
+  /* وتدريبٌ بلا أسئلة لا معنى له — فشاشةُ الأسئلة تُفتح في الحال،
+     ولا يُترك المعلّم يبحث عن بابها في قائمةٍ رجع إليها. */
+  if(k.needs === 'quiz' && !item){
+    toast("أُضيف التدريب — أضِف أسئلته الآن");
+    openQuiz(ctx.course, { ...ctx.lesson, quiz_id: quizId, has_quiz: true });
+    return;
+  }
   toast(item ? "حُفظ المصدر" : "أُضيف المصدر");
   openItems(ctx.course, ctx.lesson);
 }
