@@ -127,15 +127,29 @@ body.gate{padding-bottom:0}
    (Google) يتصدّر الصفحة والمربّعُ تحت النموذج، **فرسالةٌ عابرة تُشير
    إلى ما لا يراه المستخدم**. ⇒ يُمرَّر إليه ويُومَض.
    🔑 واللون `warn` لا `danger`: الجملةُ «انتبه» لا «أخطأتَ» — لم يُخطئ
-      أحدٌ، بقي شرطٌ لم يُستوفَ بعد (طبقة الأدوار). */
-.pol-ck.ask{animation:polask 1.6s ease-out 1}
+      أحدٌ، بقي شرطٌ لم يُستوفَ بعد (طبقة الأدوار).
+   🆕 b110 · **والصنفُ عُمّم إلى `.ask` وحدها** — صارت منسدلةُ المخاطبة
+      تُنادى بالعلّة نفسِها، وقصرُه على `.pol-ck` كان يُلزم بنسخِ
+      الإطارِ والحركةِ لكلّ منادًى جديد. */
+.ask{animation:polask 1.6s ease-out 1}
 @keyframes polask{
   0%,100%{box-shadow:0 0 0 0 transparent}
   12%,62%{box-shadow:0 0 0 3px var(--warn-fill);border-radius:9px}
 }
 @media(prefers-reduced-motion:reduce){
-  .pol-ck.ask{animation:none;box-shadow:0 0 0 3px var(--warn-fill);border-radius:9px}
+  .ask{animation:none;box-shadow:0 0 0 3px var(--warn-fill);border-radius:9px}
 }
+
+/* 🆕 b110 · قفلُ النموذج حتى يُختار الدور. و`fieldset` أصيلٌ لأنّ
+   التعطيلَ فيه **يسري على كلّ حقلٍ بداخله** بلا مرورٍ عليها واحداً
+   واحداً — فحقلٌ يُضاف غداً يُقفَل معها بلا أن يتذكّره أحد.
+   ⚠️ ونمطُه يُصفَّر كلُّه: المتصفّح يعطيه إطاراً وحشواً وهامشاً، و`min-width`
+      ضمنيّةً تمنعه من الانكماش في الشاشات الضيّقة.
+   📌 والشحوبُ على المحتوى لا على الحقول وحدها: العنواناتُ والفواصلُ
+      تشحب معها، **فيُقرأ القفلُ حالةً للنموذج كلِّه لا عطلاً في حقل**. */
+fieldset.gate-lk{border:0;padding:0;margin:0;min-width:0}
+fieldset.gate-lk:disabled{opacity:.45}
+fieldset.gate-lk:disabled *{cursor:not-allowed}
 
 /* «الدخول بحساب Google» — إجراءٌ موازٍ لا منافس: محايدُ اللون كزرّ
    ثانويّ، والشعارُ يُميّزه. ولا يأخذ --accent فيزاحم الفعل الأول. */

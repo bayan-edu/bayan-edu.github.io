@@ -386,22 +386,18 @@ button.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .primary:disabled{opacity:.35;cursor:not-allowed}
 .ghost{background:var(--fill);color:var(--text);border:1px solid var(--line)!important}
 
-/* ── الدور وصيغة المخاطبة — خطوتان (123 · b108) ──
-   🔓 وكانت شبكةَ ٢×٢ واحدة تجمع الأربعة، وحجّتُها أنّ العلاقةَ تُقرأ من
-   الشكل نفسِه — **ولم تُقرأ**: لا شيء فيها يقول إنّ العمودَ الواحد
-   صيغةٌ واحدة. فانفصلت إلى صفَّين: `rf-roles` دوراً ثمّ `rf-tabs` صيغةً.
+/* ── زرّا الدور (123 · b108 · b110) ──
+   🔓 وكانت شبكةَ ٢×٢ تجمع الدورَ والصيغة، فانفصلت إلى صفَّين في `b108`،
+   **ثمّ ذهب صفُّ الصيغة كلُّه في `b110`**: صار منسدلةً في متن النموذج
+   بعيدةً عن الدور، فسقط `.rf-tabs` ولم يُترك رقعةً لصنفٍ لا وجود له.
 
    📌 والدورُ `auto-fit` لا عمودان مثبتان: نصُّه أطول («أنا طالب |
    طالبة»)، فيقف الزرّان جنباً إلى جنبٍ حيث يتّسعان **وينزل أحدُهما
    تحت الآخر حيث يضيقان** — بلا استعلامِ وسائطٍ يُصان.
-   📌 أمّا الصيغةُ فعمودان مثبتان: «أنا طالب» و«أنا طالبة» قصيران
-   متناظران، **وتناظرُهما في الشكل هو الذي يقول إنّهما وجها سؤالٍ
-   واحد**.
-   ⚠️ و`button.btn` فيها `flex:1` — لا أثرَ له في grid، والخانةُ
+   ⚠️ و`button.btn` فيه `flex:1` — لا أثرَ له في grid، والخانةُ
       هي التي تُقاس. */
 .rf-roles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
-.rf-tabs{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.rf-roles .btn,.rf-tabs .btn{min-width:0}
+.rf-roles .btn{min-width:0}
 
 /* ── الألسنة ── */
 .tabs,.subtabs{display:flex;gap:8px;margin-bottom:14px}

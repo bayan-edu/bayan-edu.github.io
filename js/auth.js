@@ -18,19 +18,21 @@ import { loadProfile } from './profile.js';
 import { loadStudents, loadMyPerformance } from './analytics.js';
 import { loadFlashcards } from './flashcards.js';
 import { openPractice } from './practice.js';
-import { roleTabs, wireRoleTabs, teacherFields, fillSubjects, readTeacher, gramMsg } from './role_form.js';
+import { roleTabs, wireRoleTabs, gramSelect, wireGram, teacherFields,
+         fillSubjects, readTeacher, GRAM_MSG } from './role_form.js';
 import { POLICY_VERSION, policyCheck, policyOk, POLICY_MSG } from './policy.js';
 
 /* ═══════════ ① البوابة ═══════════ */
 
 export function renderGate(msg){
   S.role ||= 'student';
-  /* 🆕 123 · `S.gramG` تبقى `undefined` حتى يقع اختيار — فلا زرَّ مضغوطاً
+  /* 🆕 123 · `S.gramG` تبقى `undefined` حتى يقع اختيار — فلا خيارَ مُسبقاً
      ولا افتراضَ مذكّر. وشكلُ النموذج يتبع `S.role` وحده (حقولاً لا
      مخاطبةً)، ولذلك لم تُدمَج القيمتان في حقلٍ واحد.
      🆕 b108 · و`S.rolePicked` ثالثةٌ لا رابعة: تقول **أوقعت نقرةٌ على
-     الدور**، وعليها وحدها ينكشف صفُّ الصيغة. ولم تُقرأ من `S.role`
-     لأنّ افتراضَه 'student' يجعله معروفاً قبل أن يُختار. */
+     الدور**. ولم تُقرأ من `S.role` لأنّ افتراضَه 'student' يجعله معروفاً
+     قبل أن يُختار.
+     🆕 b110 · وعليها الآن **يُفتح النموذجُ كلُّه** لا صفُّ الصيغة وحده. */
   bar.innerHTML = "";
   head("", "", true);
   /* الترويسة تُخفى وتُنقَل هويتها إلى العمود — ونستنسخ #brand كما هو
@@ -49,7 +51,18 @@ export function renderGate(msg){
     ${/* 🆕 b90 · بوابةٌ واحدة: مسارُ «انضم كمعلم» المنفصل أُدمج هنا.
           والاختيارُ أوّلُ ما يُرى — فالحقول تتبعه، ولا يُملأ نموذجٌ
           ثمّ يُقال للمسجِّل إنّه ملأ نموذجَ غيره. */''}
-    ${reg ? roleTabs(S.role, S.gramG ?? null, S.rolePicked) : ''}
+    ${reg ? roleTabs(S.role, S.rolePicked) : ''}
+    ${reg && !S.rolePicked
+      ? `<p class="hint" style="margin:10px 0 0">اختر دورك لتبدأ</p>` : ''}
+
+    ${/* 🆕 b110 · **القفل: لا شيء قبل الدور.** وهو يُرسَم ثمّ يُعطَّل لا
+          يُحجَب: الحجبُ يُفرغ الشاشةَ فتُقرأ عطلاً، ثمّ يقفز التخطيطُ
+          عند أوّل نقرة. و`fieldset` أصيلٌ يحمل التعطيل إلى كلّ حقلٍ
+          فيه بلا مرورٍ عليها واحداً واحداً — ونمطُه يُصفَّر في CSS.
+          ⚠️ ويبقى **خارجَه** شيئان: «لديك حساب؟ دخول» — فالدخولُ لا
+             دورَ فيه وحبسُه يسجن من جاء ليدخل — و**روابطُ السياسة**،
+             وهي ليست حقولاً فلا يمسّها التعطيل أصلاً. */''}
+    <fieldset class="gate-lk" ${reg && !S.rolePicked ? 'disabled' : ''}>
 
     ${/* 🆕 b92 · وطريقُ المزوّد يتصدّر ولا يُذيَّل — وكان تحت النموذج
           كلِّه: **من قصده لم يكن ليقرأ حقلاً واحداً**، فكان يُمرِّر
@@ -64,6 +77,13 @@ export function renderGate(msg){
              placeholder="name@example.com" autocomplete="email">
       <label class="fl" style="margin-top:16px">كلمة المرور</label>
       <input type="password" id="pw" placeholder="٦ أحرف على الأقل" autocomplete="${reg?'new-password':'current-password'}">
+
+      ${/* 🆕 b110 · صيغةُ المخاطبة **هنا: بعد المرور وقبل الاسم**.
+            🔑 وهو موضعُ اللقب من المُلَقَّب: بعد «أحمد» يُقرأ السؤالُ
+               عجزاً عن قراءة ما كُتب قبل سطر. وقبله يُقرأ ما هو —
+               وتفصيلُه في رأس `role_form.js`.
+            📌 وسطرٌ واحد يخدم الفرعين: كلاهما يبدأ بالاسم بعده. */''}
+      ${reg ? gramSelect(S.role, S.gramG ?? null) : ''}
       ${/* 🆕 b93 · وعاد نموذجُ المعلّم خطوةً واحدة. كان منقسماً لأنّ
             `p_subjects_read` تشترط حساباً فلا تُقرأ قائمةُ المواد قبله
             — **والعلاجُ بابٌ ضيّق لا سياسةٌ تُرخى** (122): دالّةٌ
@@ -89,6 +109,7 @@ export function renderGate(msg){
     ${reg ? policyCheck() : ''}
     <div class="nav"><button class="btn primary" id="go">${reg?'إنشاء الحساب':'دخول'}</button></div>
     ${reg?'':'<p class="hint" id="fp" style="cursor:pointer;text-decoration:underline">نسيت كلمة المرور؟</p>'}
+    </fieldset>
     <div class="gate-sep"></div>
     <button class="gate-alt" id="alt">${reg?'لديك حساب؟ دخول':'إنشاء حساب جديد'}</button>
     ${/* 🔓 وسقط رابط «انضم كمعلم ←»: صار الدورُ خياراً في التسجيل
@@ -131,9 +152,13 @@ export function renderGate(msg){
      ولولا ذلك لفقد المسجِّلُ بريدَه واسمَه لأنّه صحّح دورَه، فتعلّم
      ألّا يصحّحه. ⚠️ وكلمةُ المرور لا تُحفَظ عمداً: قيمتُها لا تُكتب
      في HTML، ولا تُترك في كائنٍ يعيش في الذاكرة بلا داعٍ. */
-  wireRoleTabs(app, (r, g) => {
-    keepDraft(); S.role = r; S.gramG = g; S.rolePicked = true; renderGate(msg);
+  wireRoleTabs(app, r => {
+    keepDraft(); S.role = r; S.rolePicked = true; renderGate(msg);
   });
+
+  /* 🆕 b110 · والصيغةُ تُكتب في الحالة **بلا إعادة رسم** — وإلا مُحيت
+     كلمةُ المرور ومربّعُ الموافقة، وكلاهما خارج `draft` عمداً. */
+  wireGram(app, g => { S.gramG = g; });
 
   /* 🆕 b91 · والموافقةُ شرطٌ قبل الانطلاق إلى Google أيضاً — التسجيلُ
      بمزوّدٍ تسجيلٌ. أمّا في الدخول فلا مربّعَ ولا شرط. */
@@ -148,7 +173,11 @@ export function renderGate(msg){
   if(reg && S.role === 'teacher') fillSubjects(app, draft.t?.subject);
   else if(reg)                    fillGrades();
 
-  document.getElementById("em").focus();
+  /* 🆕 b110 · والتركيزُ يتبع ما انفتح: البريدُ معطَّلٌ قبل اختيار الدور،
+     وإنزالُ التركيز على معطَّلٍ يُسقطه إلى أوّل الصفحة بلا خبر. */
+  (app.querySelector('fieldset[disabled]')
+    ? app.querySelector('#rf_tabs button')
+    : document.getElementById("em"))?.focus();
 }
 
 /* 🆕 b92 · نداءٌ على مربّع الموافقة حين يُردّ فعلٌ لأجله.
@@ -163,6 +192,18 @@ function askPolicy(){
   box.scrollIntoView({ behavior:'smooth', block:'center' });
   box.classList.remove('ask'); void box.offsetWidth; box.classList.add('ask');
   app.querySelector('#pol_ok')?.focus({ preventScroll:true });
+}
+
+/* 🆕 b110 · ونداءٌ على المنسدلة بالعلّة نفسِها. موضعُها وسطُ النموذج —
+   ومن نقر «إنشاء الحساب» وهو في أسفله **لا يراها**، فرسالةٌ عابرة
+   تقول «يُختار» ولا تدلّ على أين. ⇒ يُمرَّر إليها وتُومَض وتأخذ
+   التركيز، كمربّع الموافقة سواءً بسواء. */
+function askGram(){
+  toast(GRAM_MSG);
+  const box = app.querySelector('#rf_gram'); if(!box) return;
+  box.scrollIntoView({ behavior:'smooth', block:'center' });
+  box.classList.remove('ask'); void box.offsetWidth; box.classList.add('ask');
+  app.querySelector('#rf_g')?.focus({ preventScroll:true });
 }
 
 /* مسوّدةُ البوابة — تعيش بين رسمةٍ وأخرى لا أكثر */
@@ -242,9 +283,9 @@ async function submitGate(){
 
   /* 🆕 123 · الامتناعُ **قبل تفرّع الدور**: الخطوتان تجمعان الدورَ
      والصيغة، فلو فُحصتا في كلّ فرعٍ وحده لسقطتا من أحدهما يوماً.
-     ⚠️ و`gramG` وحدها تكفي حارساً: صفُّ الصيغة لا ينكشف قبل نقرة
-        الدور، **فلا تُكتب صيغةٌ بغير دورٍ مختار**. */
-  if(reg && !S.gramG){ toast(gramMsg(S.rolePicked)); return; }
+     ⚠️ و`gramG` وحدها تكفي حارساً: القفلُ لا يُفتح قبل نقرة الدور،
+        **فلا تُكتب صيغةٌ بغير دورٍ مختار**. */
+  if(reg && !S.gramG){ askGram(); return; }
 
   /* 🆕 b90 · مسارُ المعلّم يتفرّع هنا وحده — والدخولُ واحدٌ للدورين
      ولا يُسأل فيه عن دور: الدورُ صفةٌ في profiles تُقرأ **بعد**
@@ -351,26 +392,35 @@ export function renderCompleteProfile(msg){
     <div class="card">
       <div class="line" style="color:var(--text);font-size:var(--fs-read)">
         قبل أن نبدأ — من أنت في بيان؟</div>
-      <div style="margin-top:14px">${roleTabs(
-        S.role, S.gramG ?? S.prof?.gram_gender ?? null, S.rolePicked)}</div>
+      <div style="margin-top:14px">${roleTabs(S.role, S.rolePicked)}</div>
       <div class="line">${S.role === 'teacher'
         ? 'نسألك بعدها عن مادّتك ومدرستك، وتظهر لطلابك في «اختيار معلمك».'
         : 'نسألك بعدها عن منهجك وصفّك، وهما يحدّدان الموادّ التي تظهر لك.'}</div>
-      ${need ? policyCheck() : ''}
+
+      ${/* 🆕 b110 · **والشاشتان على قاعدةٍ واحدة:** الدورُ يقفل ما بعده،
+            والصيغةُ **مفصولةٌ عنه بسطرٍ ناطق** لا ملاصقة. ولولا الفصلُ
+            لعادت الأربعةُ المتجاورة التي نُقضت في `b108`. وعنوانُ
+            الشاشة «من أنت في بيان؟» يُغني عن سطر «اختر دورك لتبدأ»
+            الذي في البوابة — **وتكرارُ الإرشاد يُضعفه**. */''}
+      <fieldset class="gate-lk" ${S.rolePicked ? '' : 'disabled'}>
+        ${gramSelect(S.role, S.gramG ?? S.prof?.gram_gender ?? null)}
+        ${need ? policyCheck() : ''}
+      </fieldset>
     </div>
     <div class="nav" style="margin-top:16px">
-      <button class="btn primary" id="cp_go">متابعة ←</button>
+      <button class="btn primary" id="cp_go" ${S.rolePicked ? '' : 'disabled'}>متابعة ←</button>
     </div>`;
 
-  wireRoleTabs(app, (r, g) => {
-    S.role = r; S.gramG = g; S.rolePicked = true; renderCompleteProfile(msg);
+  wireRoleTabs(app, r => {
+    S.role = r; S.rolePicked = true; renderCompleteProfile(msg);
   });
+  wireGram(app, g => { S.gramG = g; });
 
   document.getElementById("cp_go").onclick = async e => {
     /* 🆕 123 · **المدخلُ الثاني — وهو الذي يُغفل لأنّه حديث (⑤).** من
        سجّل بـGoogle ولم يُسأل هنا يخرج بـ`null` إلى الأبد، والمحفِّزُ
        لا يعرف صيغتَه: لا بياناتِ وصفية عبرت، إنّما مطالبةُ المزوّد. */
-    if(!S.gramG){ toast(gramMsg(S.rolePicked)); return; }
+    if(!S.gramG){ askGram(); return; }
     if(need && !policyOk(app)){ toast(POLICY_MSG); return; }
     const b = e.currentTarget; b.disabled = true; b.textContent = '…';
 
