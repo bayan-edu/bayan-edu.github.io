@@ -1130,6 +1130,11 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
   font-family:'Almarai';font-weight:700;font-size:.76rem;white-space:nowrap}
 .it-b:hover{border-color:var(--accent);color:var(--accent)}
 .it-b:disabled{opacity:.3;cursor:not-allowed}
+/* 🔒 مقفول لا معطَّل: يُنقر فيُعاين — فالباهتُ الميّت يقول «لا شيء هنا»،
+   والمقفولُ الحيُّ يقول «يُرى ولا يُغيَّر» */
+.it-b.lk,.eq-go.lk{background:var(--fill);border-color:var(--line);
+  color:var(--text-muted);cursor:pointer}
+.it-b.lk:hover,.eq-go.lk:hover{border-color:var(--text-muted);color:var(--text)}
 .it-b.wide{padding:8px 13px}
 .it-ord{display:flex;flex-direction:column;gap:3px}
 .it-ord .it-b{padding:2px 8px;font-size:var(--fs-tag);line-height:1.5}

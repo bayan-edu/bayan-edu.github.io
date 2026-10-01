@@ -46,6 +46,7 @@ import { app, head, toast, esc, fmt, AR, errBox, nav, setWide, scrollTop, L,
                   pgMedia, srcOf, SAFE_HOSTS, optLabel, dirOf, N } from './ui.js';
 import { attachUpload } from './upload.js';
 import { openCourse, openTools } from './editor.js';
+import { openItems } from './editor_items.js';
 import { questionText, questionBody, KIND_LABEL, gapCount } from './render_q.js';
 import { wireMatching } from './match_dnd.js';
 import { practiceLinkBox } from './practice_links.js';
@@ -54,11 +55,13 @@ let Z    = null;   // الاختبار المحمَّل
 let cur  = 0;      // فهرس السؤال المعروض
 let ctx  = null;   // { course, lesson }
 let dirty = false; // تغييرات غير محفوظة في السؤال الحالي
+let pvOnly = false; // دخلنا للمعاينة وحدها — فلا بابَ منها إلى التحرير
 
 
 /* ═══════════ الدخول ═══════════ */
 
 export async function openQuiz(course, lesson){
+  pvOnly = false;
   ctx = { course, lesson };
   nav('editor'); setWide(true);
 
@@ -82,6 +85,25 @@ export async function openQuiz(course, lesson){
 
   Z = data; cur = 0; dirty = false;
   render('top');
+}
+
+/* 🔒 مدخلُ من لا يملك التحرير: الشاشةُ الوحيدة التي تُفتح له هي المعاينة.
+   ولا يُبنى محرّرٌ ثمّ يُعطَّل بابُه باباً — فالمعطَّلُ بابٌ يُجرَّب،
+   والمعاينةُ شبّاكٌ يُرى منه ولا يُدخَل. ومنها الرجوعُ إلى المصادر لا
+   إلى تحريرٍ لم يُفتح. */
+export async function openQuizPreview(course, lesson){
+  pvOnly = true;
+  ctx = { course, lesson };
+  nav('editor'); setWide(true);
+  head("معاينة الأسئلة", lesson?.title || '');
+  app.innerHTML = `<div class="status">جار التحميل…</div>`;
+
+  const { data, error } = await api.quizForEdit(lesson.quiz_id);
+  if(error){ app.innerHTML = errBox(error, 'تحميل الاختبار'); return; }
+  if(!data.ok){ app.innerHTML = errBox({ message: data.error }, 'تحميل الاختبار'); return; }
+
+  Z = data; cur = 0; dirty = false; pv = 0;
+  preview();
 }
 
 /* درس بلا اختبار — لا يكتمل عند الطالب أبداً */
@@ -1907,17 +1929,35 @@ async function reload(focusId){
 
 let pv = 0;
 
+/* الخروجُ من المعاينة: إلى التحرير لمن جاء منه، وإلى المصادر لمن لا تحرير له */
+const pvBack = () => pvOnly ? openItems(ctx.course, ctx.lesson) : render();
+
 function preview(){
   const qs = Z.questions || [];
-  if(!qs.length){ toast("لا أسئلة للمعاينة"); return; }
+  if(!qs.length){
+    /* 🔴 ومن دخل للمعاينة وحدها لا محرِّرَ تحته يرجع إليه — فلو اكتُفي
+       بالتنبيه بقيت شاشة «جار التحميل» معلّقةً: صمتٌ يُصدَّق. */
+    if(!pvOnly){ toast("لا أسئلة للمعاينة"); return; }
+    app.innerHTML = `
+      <div class="crumb" id="pvx">← مصادر الدرس</div>
+      <div class="card" style="text-align:center;padding:32px">
+        <div style="font-size:2.2rem;margin-bottom:12px">📝</div>
+        <div class="rev-q">هذا الاختبار بلا أسئلة بعد</div>
+        <div class="line">يضع الأسئلةَ فريقُ الإشراف.</div>
+      </div>`;
+    document.getElementById("pvx").onclick = () => openItems(ctx.course, ctx.lesson);
+    scrollTop();
+    return;
+  }
   pv = Math.min(pv, qs.length - 1);
   const q = qs[pv];
   const p = (Z.passages||[]).find(x => String(x.id) === String(q.passage_id));
 
   app.innerHTML = `
-    <div class="crumb" id="pvx">← رجوع إلى التحرير</div>
+    <div class="crumb" id="pvx">← ${pvOnly ? 'مصادر الدرس' : 'رجوع إلى التحرير'}</div>
     <div class="warnbox">👁️ معاينة — هكذا يرى الطالب هذا السؤال.
-      لا تُسجَّل محاولة ولا تُعرض الإجابة الصحيحة.</div>
+      لا تُسجَّل محاولة ولا تُعرض الإجابة الصحيحة.${pvOnly
+        ? ' <b>وتحرير الأسئلة لفريق الإشراف.</b>' : ''}</div>
 
     <div class="timerbar" style="position:static;border-radius:11px;margin-bottom:14px">
       <span class="clock">${mmssPv(Z.minutes*60)}</span>
@@ -1949,10 +1989,10 @@ function preview(){
         ${pv === qs.length-1 ? 'نهاية المعاينة' : 'التالي'}</button>
     </div>`;
 
-  document.getElementById("pvx").onclick = () => render();
+  document.getElementById("pvx").onclick = () => pvBack();
   const pp = document.getElementById("pvp"); if(pp) pp.onclick = () => { pv--; preview(); };
   document.getElementById("pvn").onclick = () => {
-    if(pv === qs.length-1){ toast("انتهت المعاينة"); pv = 0; render(); return; }
+    if(pv === qs.length-1){ toast("انتهت المعاينة"); pv = 0; pvBack(); return; }
     pv++; preview();
   };
   /* المزاوجة في المعاينة تعمل كما تعمل عند الطالب — والدالّة نفسها،

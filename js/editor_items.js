@@ -13,7 +13,7 @@ import { S } from './state.js';
 import { app, head, toast, esc, AR, errBox, nav, setWide, scrollTop } from './ui.js';
 import { attachUpload } from './upload.js';
 import { openCourse } from './editor.js';
-import { openQuiz } from './editor_quiz.js';
+import { openQuiz, openQuizPreview } from './editor_quiz.js';
 
 let ctx = null;   // { course, lesson }
 let D   = null;   // { ok, curate, items }
@@ -34,6 +34,21 @@ export async function openItems(course, lesson){
 
 const kinds = () => (S.tree?.kinds) || [];
 const kind  = c => kinds().find(k => k.code === c) || { icon:'•', label:c, needs:'url' };
+
+/* 🔑 القفل يُرسم بحارس القاعدة لا بظنّ الواجهة — قُرئ الحيُّ في ١ أكتوبر ٢٠٢٦،
+   وهو **حارسان لا حارسٌ واحد**، فلا يُجمعان في شرطٍ واحد:
+     · save_item     : المعتمد ⇐ is_admin()    · الإضافي ⇐ صاحبه
+     · can_edit_quiz : المعتمد ⇐ can_curate    · الإضافي ⇐ صاحبه أو مدير
+       (وإليها ترجع retire_question — وهي بابُ تحرير الأسئلة فعلاً)
+     · delete_item   : المعتمد ⇐ can_curate    · الإضافي ⇐ صاحبه
+   ⚠️ ومن ثَمّ: مشرفٌ غيرُ مدير **يحذف المصدر المعتمد ولا يُعدِّله**، ويحرّر
+      أسئلته. فجوةٌ في القاعدة لا في الشاشة — تُرى هنا ولا تُخفى، وعلاجها
+      قرارٌ يُناقَش لا يُفترَض.
+   ومن لا يملك التعديل لا يُفتح له بابٌ ثمّ يُردّ خلفه — بل يُقفل البابُ
+   أمامه ويُفتح له شبّاك: معاينةٌ تُري ولا تُغيِّر. */
+const isAdmin  = () => S.roleInfo?.role === 'admin';
+const canEdit  = i => i.official ? isAdmin()  : !!i.mine;   // مصدرٌ عاديّ
+const canEditQ = i => i.official ? !!D.curate : !!i.mine;   // أسئلةُ اختبار
 
 
 /* ═══════════ القائمة ═══════════ */
@@ -64,8 +79,16 @@ function render(){
         <button class="it-b" data-up="${i.id}" ${idx===0?'disabled':''}>▲</button>
         <button class="it-b" data-dn="${i.id}" ${idx===n-1?'disabled':''}>▼</button></span>` : ''}
       ${i.kind === 'quiz'
-        ? `<button class="eq-go" data-quiz="${i.quiz_id}">📝 تحرير الأسئلة</button>`
-        : `<button class="it-b wide" data-ed="${i.id}">✏️ تحرير</button>`}
+        ? (canEditQ(i)
+          ? `<button class="eq-go" data-quiz="${i.quiz_id}">📝 تحرير الأسئلة</button>`
+          : `<button class="eq-go lk" data-pvq="${i.quiz_id}"
+               title="الأسئلة يحرّرها فريق الإشراف — وهذه معاينة بعين الطالب"
+               >🔒 معاينة الأسئلة</button>`)
+        : (canEdit(i)
+          ? `<button class="it-b wide" data-ed="${i.id}">✏️ تحرير</button>`
+          : `<button class="it-b wide lk" data-pv="${i.id}"
+               title="هذا المصدر يعدّله فريق الإشراف — وهذه معاينة"
+               >🔒 معاينة</button>`)}
       ${(i.official ? D.curate : i.mine) && !i.touched
         ? `<button class="it-b" data-rm="${i.id}">🗑</button>` : ''}
     </div>`;
@@ -96,8 +119,12 @@ function render(){
 
   app.querySelectorAll("[data-ed]").forEach(el => el.onclick = () =>
     form(D.items.find(x => String(x.id) === el.dataset.ed)));
+  app.querySelectorAll("[data-pv]").forEach(el => el.onclick = () =>
+    form(D.items.find(x => String(x.id) === el.dataset.pv), undefined, true));
   app.querySelectorAll("[data-quiz]").forEach(el => el.onclick = () =>
     openQuiz(ctx.course, { ...ctx.lesson, quiz_id: +el.dataset.quiz, has_quiz:true }));
+  app.querySelectorAll("[data-pvq]").forEach(el => el.onclick = () =>
+    openQuizPreview(ctx.course, { ...ctx.lesson, quiz_id: +el.dataset.pvq, has_quiz:true }));
   app.querySelectorAll("[data-rm]").forEach(el => el.onclick = () => remove(+el.dataset.rm));
   app.querySelectorAll("[data-up]").forEach(el => el.onclick = () => move(+el.dataset.up, -1));
   app.querySelectorAll("[data-dn]").forEach(el => el.onclick = () => move(+el.dataset.dn, +1));
@@ -107,10 +134,11 @@ function render(){
 
 /* ═══════════ النموذج ═══════════ */
 
-function form(item, official){
+function form(item, official, ro){
   const isNew = !item;
   const off   = isNew ? official : item.official;
   let k = kind(item?.kind || 'pdf');
+  const dis = ro ? ' disabled' : '';     // الحقول تُقرأ ولا تُكتب
 
   const draw = () => {
     app.innerHTML = `
@@ -120,6 +148,8 @@ function form(item, official){
           <div class="ed-hint">${off
             ? '📦 <b>مصدر معتمد</b> — جزء من المنهج، ويمكن أن يكون شرط انتقال.'
             : '➕ <b>مصدر إضافي باسمك</b> — إثراء لا يحجب ولا يدخل البوّابة.'}</div>
+          ${ro ? `<div class="warnbox">🔒 <b>معاينة</b> — هذا المصدر ${off
+            ? 'يعدّله فريق الإشراف' : 'من تأليف زميلٍ لك'}، فيُقرأ هنا ولا يُحفظ.</div>` : ''}
           ${k.needs === 'url' ? `<div class="ed-hint" style="opacity:.75">
             <b>الصوت:</b> يُرفع إلى المخزن ثمّ يُلصق مفتاحه — <code>audio/l1-a1.mp3</code>
             — فيُشغَّل داخل الدرس.<br>
@@ -132,41 +162,41 @@ function form(item, official){
           <label class="fl">نوع المصدر</label>
           <div class="it-kinds">
             ${kinds().map(x => `<button class="it-k ${x.code===k.code?'on':''}"
-                data-k="${x.code}">${x.icon}<span>${esc(x.label)}</span></button>`).join("")}
+                data-k="${x.code}"${dis}>${x.icon}<span>${esc(x.label)}</span></button>`).join("")}
           </div>
 
           <label class="fl" style="margin-top:18px">العنوان *</label>
-          <input type="text" id="ti" value="${esc(item?.title || '')}"
+          <input type="text" id="ti" value="${esc(item?.title || '')}"${dis}
                  placeholder="مثال: ${esc(k.label)} — الغلاف المائي">
 
           ${k.needs === 'url' ? `
             <label class="fl" style="margin-top:16px">الرابط *</label>
-            <input type="text" id="ur" dir="ltr" value="${esc(item?.url || '')}"
+            <input type="text" id="ur" dir="ltr" value="${esc(item?.url || '')}"${dis}
                      placeholder="audio/l1-a1.mp3  أو  https://…">` : ''}
           ${k.needs === 'body' ? `
             <label class="fl" style="margin-top:16px">النصّ *</label>
-            <textarea id="bo" style="min-height:150px">${esc(item?.body || '')}</textarea>` : ''}
+            <textarea id="bo" style="min-height:150px"${dis}>${esc(item?.body || '')}</textarea>` : ''}
           ${k.needs === 'quiz' ? `
             <div class="warnbox" style="margin-top:16px">اختبار الدرس يُنشأ من زرّ
               «الاختبار» في قائمة الدروس — فيُربط ويصير شرط الانتقال تلقائياً.</div>` : ''}
 
           <label class="fl" style="margin-top:16px">وصف موجز <span style="opacity:.6">(اختياري)</span></label>
-          <input type="text" id="de" value="${esc(item?.description || '')}">
+          <input type="text" id="de" value="${esc(item?.description || '')}"${dis}>
 
           <div class="ed-3">
             <div>
               <label class="fl">المدّة (دقيقة)</label>
-              <input type="text" id="du" inputmode="numeric" value="${item?.duration ?? ''}">
+              <input type="text" id="du" inputmode="numeric" value="${item?.duration ?? ''}"${dis}>
             </div>
             ${off ? `<div>
               <label class="fl">إلزامي</label>
-              <select id="rq">
+              <select id="rq"${dis}>
                 <option value="0" ${item?.required?'':'selected'}>اختياري</option>
                 <option value="1" ${item?.required?'selected':''}>شرط لإتمام الدرس</option>
               </select></div>` : ''}
             <div>
               <label class="fl">اللغة</label>
-              <select id="ln">
+              <select id="ln"${dis}>
                 <option value="ar" ${item?.lang!=='en'?'selected':''}>العربية</option>
                 <option value="en" ${item?.lang==='en'?'selected':''}>English</option>
               </select>
@@ -174,19 +204,20 @@ function form(item, official){
           </div>
         </div>
       </div>
-      <div class="nav" style="margin-top:16px">
+      ${ro ? '' : `<div class="nav" style="margin-top:16px">
         <button class="btn primary" id="sv" ${k.needs==='quiz'?'disabled':''}>
           ${isNew ? 'إضافة' : 'حفظ'}</button>
-      </div>`;
+      </div>`}`;
 
     document.getElementById("bk").onclick = () => render();
       // ctx.lesson لا S.lesson
-    attachUpload('ur', 'l' + (ctx.lesson?.id ?? ''));
+    if(!ro) attachUpload('ur', 'l' + (ctx.lesson?.id ?? ''));
     app.querySelectorAll("[data-k]").forEach(el => el.onclick = () => {
       if(!isNew) return;                    // النمط لا يتغيّر بعد الإنشاء
       k = kind(el.dataset.k); draw();
     });
-    document.getElementById("sv").onclick = () => save(item, off, k);
+    const sv = document.getElementById("sv");
+    if(sv) sv.onclick = () => save(item, off, k);
   };
   draw();
 }
