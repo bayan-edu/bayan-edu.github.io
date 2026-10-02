@@ -332,6 +332,11 @@ export const myPractice = () => db.rpc('my_practice_sessions');
 // + أنماط العناصر وأكواد التشخيص. تُحمَّل مرة وتُخزَّن في S.tree
 export const authorTree   = ()  => db.rpc('author_tree');
 export const authorLessons = cid => db.rpc('author_lessons', { p_course: cid });
+
+// أهدافُ درسِ الاختبار — قائمةُ ما يصلح وسمُ سؤالٍ به (139).
+// ولا موضعَها author_tree: تلك تُحمَّل مرّةً للجلسة، وهذه تتبع اختباراً بعينه.
+export const objectivesForQuiz = qid => db.rpc('objectives_for_quiz', { p_quiz: qid });
+
 export const listTools = () => db.rpc('list_tools');
 export const toolRoutes  = t => db.rpc('tool_routes', { p_tool: t });
 export const saveRoute   = o => db.rpc('save_route', {

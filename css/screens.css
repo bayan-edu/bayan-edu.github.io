@@ -927,6 +927,14 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
 .eq-c input{width:auto}
 .eq-dx{width:auto;flex:0 0 206px;padding:8px 10px;font-size:.78rem}
 .eq-dx.miss{border-color:var(--danger-edge);background:var(--danger-soft)}
+
+/* منتقي الهدف (139) — سطرٌ كاملٌ أعلى نصّ السؤال، لأنّه يحكم ما تحته:
+   الهدفُ ما يُقاس، والتشخيصُ تحته يقول كيف أخطأ الطالبُ فيه.
+   ⚠️ وخلوُّه تحذيرٌ لا خطأ (‎warn‎ لا ‎danger‎ كـ‎.eq-dx‎): أسئلةُ المنصّة
+      كلُّها بلا هدفٍ اليوم، فلو صاح أحمرَ في أربعمئة سؤالٍ لصار لوناً
+      يُعتاد فلا يُرى — والأحمرُ يُحفظ لما يمنع الحفظ. */
+.eq-obj{width:100%;margin:0 0 14px;padding:9px 11px;font-size:.8rem}
+.eq-obj.miss{border-color:var(--warn-edge);background:var(--warn-fill)}
 .eq-sp{flex:0 0 206px}
 .eq-x{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:.9rem;padding:4px}
 .eq-x:hover{color:var(--danger)}

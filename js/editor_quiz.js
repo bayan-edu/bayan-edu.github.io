@@ -56,6 +56,7 @@ let cur  = 0;      // فهرس السؤال المعروض
 let ctx  = null;   // { course, lesson }
 let dirty = false; // تغييرات غير محفوظة في السؤال الحالي
 let pvOnly = false; // دخلنا للمعاينة وحدها — فلا بابَ منها إلى التحرير
+let OB   = null;   // أهدافُ هذا الاختبار — تُحمَّل معه مرّةً (139)
 
 
 /* ═══════════ الدخول ═══════════ */
@@ -84,6 +85,13 @@ export async function openQuiz(course, lesson){
   if(!data.ok){ app.innerHTML = errBox({ message: data.error }, 'تحميل الاختبار'); return; }
 
   Z = data; cur = 0; dirty = false;
+
+  /* الأهدافُ تُحمَّل مع الاختبار لا مع كلّ سؤال: `objectives_for_quiz` تحصر
+     الخيارَ في أهداف دروس هذا الاختبار (139). وتعذّرُها يُخفي المنتقي
+     ولا يُعطّل التحرير — فالوسمُ إضافةٌ على ما كان يعمل. */
+  const ob = await api.objectivesForQuiz(qid);
+  OB = ob?.data?.ok ? ob.data : null;
+
   render('top');
 }
 
@@ -344,6 +352,7 @@ function qCard(q){
             <div class="qnum">سؤال ${AR(cur+1)} · ${KIND_LABEL[q.kind]||'سؤال'}
         ${locked ? '<span class="badge lock">مقفل</span>' : ''}</div>
       ${moveBar(q)}
+      ${objectiveRow(q, locked)}
       ${mediaRow(q, locked)}
 
       <textarea id="qb" class="eq-qt" dir="auto" placeholder="نصّ السؤال…"
@@ -479,6 +488,41 @@ function sectionBar(q, locked){
     <span class="eq-bs">${span(r)}</span>
     ${locked ? '' : `<button class="it-b" id="edsec">✏️</button>
                      <button class="it-b" id="rmsec">✕</button>`}</div>`;
+}
+
+/* ═══════════ منتقي الهدف — ما يقيسه هذا السؤال ═══════════
+   والسلسلةُ التي يفتحها: **سؤال ← هدفُه ← علاجُه ← الطالب.** فـ`submit_attempt`
+   تقرأ `objective_id` لتُخرج للطالب عنوانَ عنصر العلاج — وبلا وسمٍ لا يقول
+   التشخيصُ إلى أين يذهب، فيبقى حكماً على إجابةٍ لا طريقاً.
+
+   ⚠️ وصنفُه `eq-obj` لا `eq-dx`، وبينهما فرقٌ لا شكليّ: `.eq-dx` مربوطٌ
+      بمعالجٍ يقرأ `data-o` ويكتب في خيارٍ بعينه — فلو شاركناه الصنفَ
+      لكتب تشخيصاً في خيارٍ لا وجودَ له.
+
+   والقائمةُ تُجمَّع تحت عنوانها العريض: المعلّم يقرأ «فهم المقروء ⇒ يستخرج
+   الفكرة الرئيسة»، لا بنداً عارياً بين عشرين. */
+function objectiveRow(q, locked){
+  if(!OB) return '';
+  const list = OB.objectives || [];
+
+  if(!list.length) return locked ? '' : `<div class="eq-hint" style="display:block">
+    ${OB.scope === 'subject' ? 'لا أهدافَ في هذه المادة بعد — فهرسُها لم يُدرَج'
+                             : 'لا أهدافَ على درس هذا الاختبار بعد'}
+    · وبلا هدفٍ يقول التشخيصُ أين أخطأ ولا يقول إلى أين يذهب.</div>`;
+
+  const heads = [...new Set(list.map(o => o.heading_name || '—'))];
+  return `
+    <label class="fl">ما يقيسه هذا السؤال${OB.scope === 'subject'
+      ? ' — <span style="color:var(--warn)">من المادة كلّها: هذا الاختبار لا درسَ له</span>'
+      : ''}</label>
+    <select class="eq-obj ${q.objective_id ? '' : 'miss'}" id="qobj" ${locked?'disabled':''}>
+      <option value="">— بلا هدف —</option>
+      ${heads.map(h => `<optgroup label="${esc(h)}">
+        ${list.filter(o => (o.heading_name || '—') === h).map(o =>
+          `<option value="${o.id}" ${String(o.id) === String(q.objective_id) ? 'selected' : ''}>${
+            esc(o.name)}${o.remedy ? '' : ' ⚠︎ بلا علاج'}</option>`).join("")}
+      </optgroup>`).join("")}
+    </select>`;
 }
 
 function passageBar(q, locked){
@@ -1026,6 +1070,15 @@ function wire(q){
   bind("cmpv",   () => compareVariant(q.variant_key));
   bind("addvar", () => pairForm(q));
   bind("rmvar",  () => unVariant(q));
+
+  /* الهدف: يُكتب في السؤال نفسِه لا في نموذجٍ جانبيّ، و`saveQ` تقرؤه
+     من `q.objective_id` فلا يحتاج سطراً في `collect`. */
+  const obSel = main.querySelector('#qobj');
+  if(obSel) obSel.onchange = e => {
+    q.objective_id = e.target.value ? +e.target.value : null;
+    obSel.classList.toggle('miss', !e.target.value);
+    mark();
+  };
 
   main.querySelectorAll(".eq-ob").forEach(el => el.oninput = e => {
     q.options[+el.dataset.o].body = e.target.value; mark();
