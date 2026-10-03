@@ -495,6 +495,28 @@ export const saveStrand = o => db.rpc('save_strand', {
   p_name:    o.name,
   p_sort:    o.sort ?? 0 });
 
+/* ═══════════ ⑫ أهداف المادة ═══════════ */
+// شجرةُ الفهرس بأعدادها في نداءٍ واحد — وبها تُفحص الأهداف لا بأسمائها (143)
+export const objectivesTree = sid => db.rpc('objectives_tree', { p_subject: sid });
+
+/* الكاتبُ الوحيد.
+   🔴 و`p_remedial` يُعاد كما هو ولا يُسقَط: `save_objective` تكتب
+      `remedial_item_id = p_remedial` كتابةً صريحة — فإسقاطُه يُمرّر فارغاً
+      **فيمحو وصلَ عنصر العلاج** الذي ربطه إنسانٌ في شاشة المكوّنات، بلا
+      شكوى ولا أثر. والنصّان (`evidence` و`remedy_note`) محميّان في القاعدة
+      بـcoalesce منذ 141، أمّا هذا فمعرّفٌ ومحوُه فقدُ وصلةٍ لا فقدُ نصّ. */
+export const saveObjective = o => db.rpc('save_objective', {
+  p_id:          o.id      ?? null,
+  p_subject:     o.subject ?? null,
+  p_code:        o.code,
+  p_name:        o.name,
+  p_parent:      o.parent  ?? null,
+  p_remedial:    o.remedial ?? null,
+  p_scale:       o.scale   ?? null,
+  p_strand:      o.strand  ?? null,
+  p_evidence:    o.evidence    ?? null,
+  p_remedy_note: o.remedy_note ?? null });
+
 /* ═══════════ ⑩ الإدارة ═══════════ */
 
 export const requestTeacherAccess = ({ school, subject, years, note }) =>

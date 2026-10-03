@@ -928,6 +928,46 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
 .eq-dx{width:auto;flex:0 0 206px;padding:8px 10px;font-size:.78rem}
 .eq-dx.miss{border-color:var(--danger-edge);background:var(--danger-soft)}
 
+/* ═══════════ شاشة أهداف المادة (143) ═══════════
+   وتصميمُها يتبع غرضَها: **فحصٌ لا تصفُّح.** فالأعدادُ أعلى الصفحة تقول
+   كم بنداً لا سؤالَ يقيسه وكم بلا علاجٍ موصول — وهي العيوبُ التي لا تُرى
+   في قائمة أسماء. والبندُ مطويٌّ حتى يُفتح: ستّون بنداً مفتوحةً تُتصفَّح
+   ولا تُقرأ، وما يُتصفَّح لا يُراجَع. */
+.ob-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));
+  gap:10px;margin:14px 0 18px}
+.ob-t{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:13px 15px}
+.ob-t .n{font-family:'Almarai';font-weight:800;font-size:1.6rem;line-height:1.2}
+.ob-t .l{font-size:.76rem;color:var(--text-muted);font-weight:700;margin-top:2px}
+.ob-t.flag{background:var(--warn-fill);border-color:var(--warn-edge)}
+.ob-t.flag .n,.ob-t.flag .l{color:var(--warn)}
+
+/* العنوانُ العريض: صفٌّ كصفّ الفرع — ولا يحمل صنف `ed-row` قصداً،
+   فذاك مربوطٌ في شاشة المقرّر بفتح تحرير الدرس. */
+.ob-h{display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+  background:var(--fill);border:1px solid var(--line);border-radius:12px;
+  padding:12px 14px;margin-bottom:8px}
+
+.ob-i{background:var(--surface);border:1px solid var(--line);border-radius:11px;
+  margin:0 0 7px 0;margin-inline-start:18px;overflow:hidden}
+.ob-i[open]{border-color:var(--accent-line)}
+.ob-i > summary{cursor:pointer;padding:10px 13px;display:flex;gap:9px;
+  align-items:baseline;flex-wrap:wrap;list-style:none}
+.ob-i > summary::-webkit-details-marker{display:none}
+.ob-i > summary:hover{background:var(--fill)}
+.ob-code{flex:0 0 auto;font-size:.72rem;font-weight:700;direction:ltr;unicode-bidi:isolate;
+  background:var(--fill);border:1px solid var(--line);border-radius:7px;padding:2px 7px;
+  color:var(--text-muted)}
+.ob-nm{flex:1 1 200px;min-width:0;font-weight:700;font-size:.86rem;unicode-bidi:plaintext}
+.ob-n{flex:0 0 auto;font-size:.74rem;color:var(--text-muted);font-weight:700}
+.ob-ok{flex:0 0 auto;font-size:.72rem;font-weight:700;color:var(--ok)}
+.ob-wn{flex:0 0 auto;font-size:.72rem;font-weight:700;color:var(--warn)}
+.ob-b{padding:0 14px 14px;border-top:1px solid var(--line)}
+.ob-f{margin-top:12px}
+.ob-f .k{font-size:.72rem;font-weight:800;color:var(--text-muted);display:block;margin-bottom:4px}
+.ob-f .v{font-size:.84rem;line-height:1.85;background:var(--fill);
+  border-radius:10px;padding:10px 12px;unicode-bidi:plaintext}
+.ob-f.rx .v{border-inline-start:3px solid var(--accent-line)}
+
 /* منتقي الهدف (139) — سطرٌ كاملٌ أعلى نصّ السؤال، لأنّه يحكم ما تحته:
    الهدفُ ما يُقاس، والتشخيصُ تحته يقول كيف أخطأ الطالبُ فيه.
    ⚠️ وخلوُّه تحذيرٌ لا خطأ (‎warn‎ لا ‎danger‎ كـ‎.eq-dx‎): أسئلةُ المنصّة
