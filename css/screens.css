@@ -941,6 +941,10 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
 .ob-t.flag{background:var(--warn-fill);border-color:var(--warn-edge)}
 .ob-t.flag .n,.ob-t.flag .l{color:var(--warn)}
 
+.ob-find{display:flex;gap:10px;align-items:center;margin:0 0 14px}
+.ob-find input{flex:1 1 220px}
+.ob-g[hidden],.ob-i[hidden],.ob-s[hidden]{display:none!important}
+
 /* العنوانُ العريض: صفٌّ كصفّ الفرع — ولا يحمل صنف `ed-row` قصداً،
    فذاك مربوطٌ في شاشة المقرّر بفتح تحرير الدرس. */
 .ob-h{display:flex;gap:10px;align-items:center;flex-wrap:wrap;

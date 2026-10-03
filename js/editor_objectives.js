@@ -26,7 +26,7 @@
       يُترك بلا درسٍ يستهدفه، فيظهر هنا «لا يستهدفه درس».
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
-import { app, head, toast, esc, AR, errBox, nav, setWide, scrollTop, N } from './ui.js';
+import { app, head, toast, esc, AR, errBox, nav, setWide, N } from './ui.js';
 import { openCourse } from './editor.js';
 
 let ctx  = null;    // { course, subject }
@@ -70,7 +70,7 @@ function itemCard(o){
   const flags = [];
   if(!o.questions) flags.push('لا سؤالَ يقيسه');
   if(!o.lessons)   flags.push('لا يستهدفه درس');
-  return `<details class="ob-i">
+  return `<details class="ob-i" data-q="${esc((o.code + ' ' + o.name).toLowerCase())}">
     <summary>
       <span class="ob-code">${esc(o.code)}</span>
       <span class="ob-nm" dir="auto">${esc(o.name)}</span>
@@ -95,9 +95,22 @@ function itemCard(o){
   </details>`;
 }
 
+/* 🔴 النموذجُ أسفل الصفحة، والصفحةُ هنا ستّةُ آلاف بكسل. و`scrollTop()`
+   المنسوخةُ من شاشة الفروع (سبعةُ صفوف) تُمرّر إلى **أعلى** الصفحة — فيمتلئ
+   النموذجُ بالبيانات ولا يراه أحد، ويبدو الزرُّ معطَّلاً وهو يعمل.
+   ⇒ يُمرَّر إلى النموذج لا إلى الأعلى، و`auto` لا `smooth`: قفزةُ ستّة آلاف
+     بكسلٍ بالانزلاق السلس تُضيّع الموضع بدل أن تدلّ عليه. */
+function focusForm(){
+  const card = document.getElementById('sv')?.closest('.card');
+  if(card) card.scrollIntoView({ behavior: 'auto', block: 'center' });
+  const nm = document.getElementById('nm');
+  if(nm) nm.focus({ preventScroll: true });
+}
+
 function headBlock(h){
   const n = (h.items || []).length;
-  return `<div class="ob-h">
+  return `<div class="ob-g" data-q="${esc((h.code + ' ' + h.name).toLowerCase())}">
+    <div class="ob-h">
       <div style="flex:1;min-width:0">
         <div class="ed-t" dir="auto">${esc(h.name)}</div>
         <div class="ed-m">
@@ -111,7 +124,8 @@ function headBlock(h){
       <button class="btn ghost" data-ni="${h.id}">＋ بند</button>
     </div>
     ${n ? (h.items || []).map(itemCard).join('')
-        : '<div class="ed-empty">لا بنودَ تحته — وعنوانٌ بلا بندٍ لا يُقاس</div>'}`;
+        : '<div class="ed-empty">لا بنودَ تحته — وعنوانٌ بلا بندٍ لا يُقاس</div>'}
+  </div>`;
 }
 
 function render(){
@@ -154,11 +168,17 @@ function render(){
       ${N(T.orphans.length,'بندٌ','بندان','بنود','بنداً')} بلا عنوانٍ عريض:
       ${T.orphans.map(o => esc(o.code)).join('، ')} — يُحرَّر فيُنسَب إلى عنوان.</div>` : ''}
 
+    ${hs.length ? `<div class="ob-find">
+      <input type="search" id="q" placeholder="ابحث في الأكواد والأسماء…">
+      <span class="small" id="qn"></span>
+    </div>` : ''}
+
     ${hs.length ? byStrand.map(g => `
+      <section class="ob-s">
       <div class="grp">${esc(g.name)} ${g.k !== '—'
         ? `<span class="chip">${esc(g.k)}</span>` : ''}
         <span class="chip">${N(g.hs.length,'عنوان','عنوانان','عناوين','عنواناً')}</span></div>
-      ${g.hs.map(headBlock).join('')}`).join('')
+      ${g.hs.map(headBlock).join('')}</section>`).join('')
       : `<div class="ed-empty">لا أهدافَ بعد — تُستورد من فهرس المادة أو تُضاف هنا</div>`}
 
     ${formCard(leaves, hs)}`;
@@ -240,24 +260,48 @@ function wire(leaves, hs){
   const $ = id => document.getElementById(id);
   $("sv").onclick = save;
   if($("ca")) $("ca").onclick = () => { edit = null; render(); };
-  if($("kItem")) $("kItem").onclick = () => { add = 'item'; render(); scrollTop(); };
-  if($("kHead")) $("kHead").onclick = () => { add = 'head'; render(); scrollTop(); };
+  if($("kItem")) $("kItem").onclick = () => { add = 'item'; render(); focusForm(); };
+  if($("kHead")) $("kHead").onclick = () => { add = 'head'; render(); focusForm(); };
 
   app.querySelectorAll("[data-eh]").forEach(el => el.onclick = () => {
     const h = hs.find(x => String(x.id) === el.dataset.eh);
-    if(h){ edit = { kind: 'head', row: h }; render(); scrollTop(); }
+    if(h){ edit = { kind: 'head', row: h }; render(); focusForm(); }
   });
   app.querySelectorAll("[data-ei]").forEach(el => el.onclick = () => {
     for(const h of hs){
       const o = (h.items || []).find(x => String(x.id) === el.dataset.ei);
-      if(o){ edit = { kind: 'item', row: { ...o, parent_id: h.id } }; render(); scrollTop(); return; }
+      if(o){ edit = { kind: 'item', row: { ...o, parent_id: h.id } }; render(); focusForm(); return; }
     }
   });
   app.querySelectorAll("[data-ni]").forEach(el => el.onclick = () => {
-    edit = null; add = 'item'; render(); scrollTop();
+    edit = null; add = 'item'; render();
     const pa = document.getElementById("pa");
     if(pa) pa.value = el.dataset.ni;
+    focusForm();
   });
+
+  /* البحثُ يُخفي ولا يُعيد البناء: الطيُّ المفتوحُ يبقى مفتوحاً، والنموذجُ
+     أسفلَ الصفحة لا يُمَسّ. ومطابقةُ العنوان تُظهر بنودَه كلَّها — فالعنوانُ
+     يُراجَع بما تحته لا وحدَه. */
+  const q = $("q");
+  if(q) q.oninput = () => {
+    const s = q.value.trim().toLowerCase();
+    let shown = 0;
+    app.querySelectorAll(".ob-g").forEach(g => {
+      const hit = !s || (g.dataset.q || '').includes(s);
+      let any = hit;
+      g.querySelectorAll(".ob-i").forEach(i => {
+        const ok = hit || (i.dataset.q || '').includes(s);
+        i.hidden = !ok;
+        if(ok && !hit) any = true;
+        if(ok) shown++;
+      });
+      g.hidden = !any;
+    });
+    app.querySelectorAll(".ob-s").forEach(sec =>
+      sec.hidden = ![...sec.querySelectorAll(".ob-g")].some(g => !g.hidden));
+    $("qn").textContent = s ? `${AR(shown)} بنداً` : '';
+  };
 }
 
 async function save(){
