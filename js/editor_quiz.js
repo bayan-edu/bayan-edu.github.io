@@ -87,10 +87,16 @@ export async function openQuiz(course, lesson){
   Z = data; cur = 0; dirty = false;
 
   /* الأهدافُ تُحمَّل مع الاختبار لا مع كلّ سؤال: `objectives_for_quiz` تحصر
-     الخيارَ في أهداف دروس هذا الاختبار (139). وتعذّرُها يُخفي المنتقي
-     ولا يُعطّل التحرير — فالوسمُ إضافةٌ على ما كان يعمل. */
+     الخيارَ في أهداف دروس هذا الاختبار (139). وتعذّرُها لا يُعطّل التحرير —
+     فالوسمُ إضافةٌ على ما كان يعمل.
+
+     🔴 **لكنّه يُقال ولا يُسكَت عنه.** أوّلُ صياغةٍ جعلت الفشلَ يُخفي المنتقيَ
+     صامتاً، فاستوى عند العين «لم يُحمَّل» و«لا أهدافَ لهذا الدرس» و«الشيفرةُ
+     القديمة في المتصفّح» — ثلاثُ عللٍ بمظهرٍ واحد، ولا دليلَ يفرّق. */
   const ob = await api.objectivesForQuiz(qid);
-  OB = ob?.data?.ok ? ob.data : null;
+  OB = ob?.data?.ok ? ob.data
+     : { objectives: [], scope: null,
+         error: ob?.error?.message || ob?.data?.error || 'تعذّر تحميل الأهداف' };
 
   render('top');
 }
@@ -502,7 +508,9 @@ function sectionBar(q, locked){
    والقائمةُ تُجمَّع تحت عنوانها العريض: المعلّم يقرأ «فهم المقروء ⇒ يستخرج
    الفكرة الرئيسة»، لا بنداً عارياً بين عشرين. */
 function objectiveRow(q, locked){
-  if(!OB) return '';
+  if(!OB) return '';          // معاينةٌ لا تحرير — لا نداءَ أصلاً
+  if(OB.error) return `<div class="eq-hint" style="display:block">
+    ⚠︎ ${esc(OB.error)} — فلا منتقيَ هدفٍ في هذا السؤال.</div>`;
   const list = OB.objectives || [];
 
   if(!list.length) return locked ? '' : `<div class="eq-hint" style="display:block">
