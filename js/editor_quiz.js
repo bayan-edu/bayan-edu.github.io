@@ -512,8 +512,16 @@ function objectiveRow(q, locked){
   if(OB.error) return `<div class="eq-hint" style="display:block">
     ⚠︎ ${esc(OB.error)} — فلا منتقيَ هدفٍ في هذا السؤال.</div>`;
   const list = OB.objectives || [];
+  const now  = list.find(o => String(o.id) === String(q.objective_id));
 
-  if(!list.length) return locked ? '' : `<div class="eq-hint" style="display:block">
+  /* 🔴 المقفل يُخبِر ولا يُخفى. وأوّلُ صياغةٍ ردّت `''` للمقفل بلا هدف،
+     وأسئلةُ المنصّة كلُّها مقفلةٌ تقريباً — فلم يظهر شيءٌ في أيّ شاشة،
+     واستوى «لا منتقيَ هنا» و«الشيفرةُ لم تصل». والصمتُ لا يُشخَّص. */
+  if(locked) return `<div class="eq-hint" style="display:block">
+    ما يقيسه: ${now ? esc(now.name) : '— بلا هدف —'}
+    · أُجيب عن هذا السؤال، والقاعدةُ تمنع تعديلَه.</div>`;
+
+  if(!list.length) return `<div class="eq-hint" style="display:block">
     ${OB.scope === 'subject' ? 'لا أهدافَ في هذه المادة بعد — فهرسُها لم يُدرَج'
                              : 'لا أهدافَ على درس هذا الاختبار بعد'}
     · وبلا هدفٍ يقول التشخيصُ أين أخطأ ولا يقول إلى أين يذهب.</div>`;
