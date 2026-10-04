@@ -2148,6 +2148,22 @@ function parseImport(txt){
   }
 
   const refs = new Set(out.passages.map(p => p.ref).filter(Boolean));
+
+  /* 🔑 الهدفُ يُكتب في الملفّ **بكوده** لا بمعرّفه: المؤلّفُ يعرف
+     «U1.IDEA» ولا يعرف «417». والترجمةُ هنا مرّةً واحدة، ويُثبَّت ما
+     حُلَّ على السؤال (`_obj`) فيقرؤه runImport ولا يُعيد الحلّ.
+
+     ⚠️ وكان `objective` يسقط من الاستيراد **صامتاً**: يُكتب في الحفظ
+     (saveQ) ويُنسى في التصدير والاستيراد. وهي ثالثةُ مرّةٍ لهذه العلّة
+     بعينها في هذا الملفّ — سقط `matching` من سطر المفاتيح (112)، وكاد
+     يسقط `cloze` (113). ⇒ **حقلٌ يُكتب في مسارٍ يُفحَص في المسارات
+     الثلاثة: الحفظ · التصدير · الاستيراد.** */
+  const obList   = (OB && !OB.error) ? (OB.objectives || []) : null;
+  const obByCode = new Map((obList || []).map(o => [String(o.code), o.id]));
+  if(!obList && out.questions.some(q => String(q.objective ?? '').trim()))
+    out.issues.push('الملفُّ يحمل أهدافاً وأهدافُ المادة لم تُحمَّل — '
+      + 'أعد تحميل الشاشة، ولا تستورد الآن فتدخل الأسئلة بلا أهداف');
+
   out.questions.forEach((q, i) => {
     const n = i + 1, kind = q.kind || 'mcq';
     /* 🔴 opts كانت تُعرَّف في ذيل الدالّة بـ const، وفرعُ المزاوجة
@@ -2157,6 +2173,20 @@ function parseImport(txt){
     const opts = Array.isArray(q.options) ? q.options : [];
     if(!String(q.body || '').trim()) out.issues.push(`س${n}: بلا نصّ`);
     if(q.passage && !refs.has(q.passage)) out.issues.push(`س${n}: النصّ "${q.passage}" غير معرَّف`);
+
+    /* الهدف قبل تفرّع الأنماط: فالمقاليُّ والإكمالُ والمزاوجةُ ترجع من
+       فروعها، فلو وُضع في الذيل لم يُفحص إلا الاختيارُ من متعدّد. */
+    const obRaw = String(q.objective ?? '').trim();
+    if(!obRaw){
+      out.warns.push(`س${n}: بلا هدف — التشخيصُ لا ينطق عنه`);
+    } else if(obList){
+      if(/^\d+$/.test(obRaw))
+        out.issues.push(`س${n}: الهدف يُكتب بكوده لا برقمه — "${obRaw}"`);
+      else if(!obByCode.has(obRaw))
+        out.issues.push(`س${n}: هدفٌ غير معروف "${obRaw}"`);
+      else
+        q._obj = obByCode.get(obRaw);
+    }
 
     if(kind === 'essay'){
       if(!String(q.model || '').trim()) out.issues.push(`س${n}: مقالي بلا إجابة نموذجية`);
@@ -2397,6 +2427,11 @@ function exportQuiz(){
   const pgs = (Z.passages || []);
   const refOf = id => { const i = pgs.findIndex(p => String(p.id) === String(id));
                         return i < 0 ? null : 'p' + (i + 1); };
+  /* الهدفُ يُصدَّر بكوده: المعرّفاتُ تختلف بين القواعد، والكودُ لا يختلف.
+     وبه يعود الذهابُ والعودةُ بروابطه — وكان يفقدها. */
+  const obCode = new Map(((OB && !OB.error) ? (OB.objectives || []) : [])
+                           .map(o => [String(o.id), o.code]));
+  const lostOb = !obCode.size && (Z.questions || []).some(q => q.objective_id);
   const doc = {
     quiz: { title: Z.title, minutes: Z.minutes },
     passages: pgs.map((p, i) => ({ ref: 'p' + (i + 1), title: p.title || null,
@@ -2407,6 +2442,8 @@ function exportQuiz(){
       // بلا هذا السطر تعود النسخة الاحتياطية مفكوكة الخانات كلها
       if(q.variant_key) o.variant = q.variant_key;
       const r = refOf(q.passage_id); if(r) o.passage = r;
+      // قبل رجوع المقاليّ: فللمقاليِّ هدفٌ كما لغيره
+      const oc = obCode.get(String(q.objective_id)); if(oc) o.objective = oc;
       if(q.kind === 'essay'){ o.model = q.model || null; return o; }
       o.explanation = q.explanation || null;
       if(q.difficulty) o.difficulty = q.difficulty;
@@ -2435,7 +2472,8 @@ function exportQuiz(){
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob); a.download = name;
   a.click(); URL.revokeObjectURL(a.href);
-  toast(`صُدِّر ${N((Z.questions||[]).length,'سؤال','سؤالان','أسئلة','سؤالاً')}`);
+  toast(`صُدِّر ${N((Z.questions||[]).length,'سؤال','سؤالان','أسئلة','سؤالاً')}`
+        + (lostOb ? ' — بلا أهداف: لم تُحمَّل أهدافُ المادة' : ''));
 }
 
 function importBox(){
@@ -2445,6 +2483,8 @@ function importBox(){
         N((Z.questions||[]).length,'سؤال قائم','سؤالين قائمين','أسئلة قائمة','سؤالاً قائماً')}</div>
       <div class="line" style="margin-bottom:12px">يُلصق JSON — أسئلة ونصوصاً مشتركة وأقساماً.
         كل سؤال يمرّ بنفس التحقّق: كود تشخيص لكل مشتّت، وشرح للخطأ.<br>
+        ولوسم ما يقيسه السؤال: <code dir="ltr">"objective": "U1.IDEA"</code> —
+        بكود الهدف لا برقمه. وسؤالٌ بلا هدفٍ يُستورد، لكنّ التشخيصَ لا ينطق عنه.<br>
         ولإعلان التكافؤ: تُضاف <code dir="ltr">"variant": "F1"</code> إلى البندين —
         أو يُوضعان داخل <code dir="ltr">groups</code>. ويُقرنان بعد الإدراج تلقائياً.</div>
 
@@ -2463,6 +2503,31 @@ function importBox(){
             ).join('')}`).join('')}
         </div>
       </details>
+
+      <!-- 🔑 والمبدأ أعلاه يحكم الأهدافَ كما يحكم التشخيص: من يكتب JSON
+           خارج المنصّة لا يرى أكواد الأهداف، فيخترعها فيُردّ ملفُّه.
+           فتُعرض قبل أن يُكتب الملفّ، مجموعةً تحت عناوينها. -->
+      ${(() => {
+        if(!OB || OB.error) return `<div class="eq-hint" style="display:block;margin-bottom:12px">
+          ⚠︎ أهدافُ المادة لم تُحمَّل — فملفٌّ يحمل أهدافاً يُردّ حتى تُحمَّل.</div>`;
+        const ls = OB.objectives || [];
+        if(!ls.length) return `<div class="eq-hint" style="display:block;margin-bottom:12px">
+          لا أهدافَ لهذه المادة بعد — فالأسئلةُ تُستورد بلا وسمٍ، والتشخيصُ لا ينطق عنها.</div>`;
+        const hs = [...new Set(ls.map(o => o.heading_name || '—'))];
+        return `<details class="eq-dxlist" style="margin-bottom:12px">
+          <summary style="cursor:pointer;font-family:'Almarai';font-weight:700;font-size:.82rem">
+            أكواد الأهداف المتاحة (${AR(ls.length)}) — يُنسخ الكود كما هو</summary>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:9px">
+            ${hs.map(h => `
+              <div style="width:100%;margin-top:4px;font-size:.74rem;opacity:.6">${esc(h)}</div>
+              ${ls.filter(o => (o.heading_name || '—') === h).map(o =>
+                `<span class="chip" dir="ltr">${esc(o.code)}</span>
+                 <span style="font-size:.76rem;opacity:.75;margin-inline-end:10px">${
+                   esc(o.name)}${o.remedy ? '' : ' ⚠︎ بلا علاج'}</span>`
+              ).join('')}`).join('')}
+          </div>
+        </details>`;
+      })()}
       <div class="drop" id="idz">
         <div class="drop-i">⇪</div>
         <div>بسحب ملف JSON هنا · أو <span class="drop-a" id="ipick">باختيار ملفّ</span>
@@ -2568,6 +2633,11 @@ async function runImport(p){
         position: base + i + 1,
         section: q.section || null,
         passage: q.passage ? (refMap[q.passage] ?? null) : null,
+        /* 🔴 الهدف — وهذا السطرُ هو العلّةُ التي كانت: `saveQ` تُرسله
+           و`runImport` لا، فيدخل المستورَدُ كلُّه بلا هدف بلا شكوى،
+           ثمّ يُوسَم بالمئات بيدٍ في المحرّر. وقد حلّته parseImport من
+           كوده، فلا ترجمةَ هنا. */
+        objective: q._obj ?? null,
         explanation: q.explanation || null, model: q.model || null,
         difficulty: q.difficulty || null, lang: q.lang || 'ar',
         /* 🔴 و‎o.k‎ هنا كذلك — والمسار الثاني كان يسقط بالعلّة نفسها.
