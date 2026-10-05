@@ -163,12 +163,12 @@
    ⚠️ الكحليّ والفيروزيّ والذهبيّ هويةٌ لا حكم: لا تحمل معنى «اخترتَ» أو
       «أصبتَ» فتُقاس بمنطق التمايز الدلاليّ في رأس هذا الملف — استعمالها
       محصورٌ بمواضع العلامة (.gate-say ونحوها)، لا بمفردات الاختبار.
-   🔴 --logo-hole **لونٌ صلب لا شفافية**: ثقوب B و A في هذا الملفّ ليست
-      نفياً بقاعدة even-odd، بل أشكالٌ تُرسم **فوق** الحرف بلون الورق.
-      فالشفافيةُ لا ترسم شيئاً ⇒ يبقى الحرف مصمتاً (وقع فعلاً: ظهرت
-      B و A كتلتين). ⇒ تُملأ بلون ما خلفها بالضبط.
-      وقيمتُها هنا var(--page) فترثُ السِمتين بلا تكرار — ومن وضع الشعار
-      على غير الورق (لوحة .gate-say الكحليّة) يُعيد تعريفها عنده. */
+   📌 --logo-hole بلا مستهلكٍ اليوم: العلامة الهندسية (أكتوبر ٢٠٢٦)
+      ضرباتٌ بلا ثقوب. بقيت مُعرَّفةً لحُكمها إن عاد وردماركُ ذو ثقوب:
+      **لونٌ صلب لا شفافية** — الثقب يُرسم فوق الحرف بلون ما خلفه
+      بالضبط، فالشفافية لا ترسم شيئاً ويبقى الحرف مصمتاً (وقع فعلاً
+      في وردمارك b78، والتفصيل في STATE ‏٥-١٠).
+      وقيمتُها var(--page) فترثُ السِمتين بلا تكرار. */
 :root{
   --logo-hole:var(--page);
   --brand-navy:#0D345E; --brand-teal:#42B7B4; --brand-teal-2:#63AEA9;
@@ -281,16 +281,18 @@ header.bare{padding:0}
 .brand:not(.hero):not(.topbrand){display:none}
 .brand{margin-bottom:10px;line-height:1.5;display:flex;align-items:center;
   justify-content:center;gap:10px;flex-wrap:wrap}
-/* ══ الشعار — متجهٌ حقيقيّ الآن، بنسختين حسب الحجم ══
-   compact عربيٌّ فقط، مبسّطٌ ليبقى حادّاً عند ٢٥px (الشريط). full
-   ثنائيّ اللغة (بيان + BAYAN)، للبوابة حيث الشعار بطل الشاشة.
-   ⚠️ fill="var(--logo-ink)" على حبر الحروف — كحليّ في الفاتحة، أبيض
-      في الداكنة، كوردمارك الشعار القديم — و var(--logo-hole) على
-      ثقوبها (تكشف عمّا خلفها، شفّافةٌ دوماً). سِمةٌ واحدة تكفي الآن
-      بدل صورتين متبادلتين: الملفّ متجهٌ حقاً، لا بكسلاتٌ مخبوزة
-      الألوان كالشعار القديم.
-   ⚠️ والفيروزيّ/الذهبيّ ألوان هويةٍ ثابتة لا تتبع السِمة — راجع الكتلة
-      الثابتة أسفل ألوان الداكنة في رأس هذا الملف. */
+/* ══ الشعار — علامةٌ هندسية (أكتوبر ٢٠٢٦)، بنسختين حسب الدور ══
+   الرسم واحد (viewBox ‏19 0 460 250): صندوق الباء بألفها، ووعاء النون
+   بورقتيه، وأربع نقاط. compact ساكنةٌ للشريط (٢٥px — المتجه يبقى
+   حادّاً عنده)، وfull مقسومةٌ أجزاءَ مشهدِ الافتتاح للبوابة حيث الشعار
+   بطل الشاشة. وسطر BAYAN صار نصّاً حيّاً (.brand-latin أدناه) لا
+   مساراتٍ متتبَّعة — فخرج من ملفّ الشعار.
+   ⚠️ var(--logo-ink) على الحبر كلّه — ضربات الحروف (stroke) والنقاط
+      (fill) — كحليٌّ في الفاتحة، أبيض في الداكنة. سِمةٌ واحدة تكفي:
+      الملفّ متجهٌ حقّاً. ولا ثقوب في هذه العلامة — راجع --logo-hole
+      في طبقة الهوية أعلاه.
+   ⚠️ والفيروزيّ/الذهبيّ (الورقتان) ألوان هويةٍ ثابتة لا تتبع السِمة —
+      راجع الكتلة الثابتة أسفل ألوان الداكنة في رأس هذا الملف. */
 .brand-logo{height:36px;width:auto;max-width:100%;display:none}
 .brand.has-logo .compact{display:block}
 .brand.has-logo .full{display:none}
@@ -306,6 +308,16 @@ header.bare{padding:0}
 .brand.hero .brand-name{display:block;font-size:clamp(2.4rem,11vw,3.4rem);line-height:1.1;margin-bottom:6px}
 .brand.hero .brand-slogan{display:block;font-size:var(--fs-ui);margin-right:0;
   color:var(--text-muted);letter-spacing:.02em}
+/* سطر BAYAN اللاتينيّ — جزءُ اللوكاب الكامل، فلا يظهر إلا في البوابة.
+   Nunito 900 بتباعد .85em كما في لوح التصميم. والهامش الأيمن السالب
+   يقصّ فراغَ التباعد بعد N الأخيرة (letter-spacing يُضاف بعد كلّ حرف
+   حتى الأخير) فيتوسّط السطر فعلاً — يمينٌ فيزيائيّ لأن النصّ ltr.
+   واللون من --logo-ink فيتبع لوحتَه: أبيض على الكحليّ، حبرُ السِمة
+   على الورق. */
+.brand-latin{display:none}
+.brand.hero .brand-latin{display:block;font-family:'Nunito',sans-serif;
+  font-weight:900;font-size:clamp(1.45rem,5.9vw,2.25rem);line-height:1;
+  letter-spacing:.85em;margin-right:-.85em;color:var(--logo-ink)}
 
 /* ⚠️ موضع هذين السطرين لازمٌ بعد قواعد hero: تساويهما في الخصوصية
    (٣ أصناف) يجعل المتأخّر يغلب. ولو وُضعا فوق لظهر الاسم في البوابة.
@@ -322,40 +334,36 @@ header.bare{padding:0}
    🔑 **وبلا is-playing تظهر القطع كلُّها ساكنة** — فشلُ الـJS يُظهر شعاراً
       تامّاً لا شاشةً فارغة. الحركة زينةٌ فوق حالةٍ صحيحة، لا شرطٌ لها.
    ⚠️ والإزاحات بوحدات viewBox لا بكسلات الشاشة، فتكبر وتصغر مع الشعار
-      نفسه. وهي أرقام المعاينة مضروبةً في ١٫٦٤ — نسبةُ عرض الكلمة بين
-      الملفّين (١٦١٠ ⇐ ٢٦٤٠)، أي أن المسافة تبقى نسبةً ثابتة من الحرف. */
+      نفسه — ونُقلت إلى علامة ٢٠٢٦ نسبةً لا رقماً: هبوط النقطة كان ١٣٪
+      من ارتفاع viewBox القديم، فصار ٢٥٠ × ٠٫١٣ ≈ ٣٣ (وقِسه الارتداد).
+   📌 ومشهد العلامة الهندسية ثلاث حركاتٍ لا ستّ: الحبر يُكتب، النقاط
+      تنقر، الورقتان تتفتّحان — فسقطت rise/cap/up مع حروف الشعار
+      المتتبَّع الذي كانت له (BAYAN نصٌّ حيّ الآن يلحق بـ sp-slog). */
 .brand.hero .part{transform-box:fill-box}
+/* نقطة النون تهبط من فوق حافّة viewBox العليا — فلا يقصّها الإطار */
+.brand.hero .full{overflow:visible}
 .brand.hero.is-playing .write{animation:sp-write .95s cubic-bezier(.65,0,.35,1) var(--d,0s) both}
 .brand.hero.is-playing .drop {animation:sp-drop .34s cubic-bezier(.3,.7,.4,1) var(--d) both;
   transform-origin:center}
 .brand.hero.is-playing .grow {animation:sp-grow .6s cubic-bezier(.2,.8,.3,1.1) var(--d) both;
   transform-origin:var(--o,center)}
-.brand.hero.is-playing .rise {animation:sp-rise .5s cubic-bezier(.2,.8,.3,1.2) var(--d) both}
-.brand.hero.is-playing .cap  {animation:sp-cap .65s cubic-bezier(.3,.7,.4,1) var(--d) both;
-  transform-origin:center bottom}
-.brand.hero.is-playing .up   {animation:sp-up .45s cubic-bezier(.2,.8,.3,1) var(--d) both}
-/* الشعار النصّيّ يلحق بالحروف — آخر ما يستقرّ */
-.brand.hero.is-playing .brand-slogan{animation:sp-slog .5s ease 2.15s both}
+/* سطرا النصّ يلحقان بالعلامة — BAYAN ثم الشعار النصّيّ، آخرُ ما يستقرّ */
+.brand.hero.is-playing .brand-latin {animation:sp-slog .5s ease 1.5s both}
+.brand.hero.is-playing .brand-slogan{animation:sp-slog .5s ease 1.8s both}
 
 /* الكتابة من اليمين إلى اليسار — كما يكتب الخطّاط */
 @keyframes sp-write{from{clip-path:inset(0 0 0 100%)}to{clip-path:inset(0 0 0 0)}}
 /* النقطة نقرةُ قلم: لا تُرى قبل أن يمرّ القلم فوقها، ثم تنزل وتنتفخ وتستقرّ */
-@keyframes sp-drop{0%{transform:translateY(-245px) scale(.3);opacity:0}
-  60%{transform:translateY(16px) scale(1.15);opacity:1}100%{transform:none;opacity:1}}
-/* الأقواس تنفتح من وعاء النون كصفحات كتاب */
+@keyframes sp-drop{0%{transform:translateY(-33px) scale(.3);opacity:0}
+  60%{transform:translateY(2px) scale(1.15);opacity:1}100%{transform:none;opacity:1}}
+/* الورقتان تتفتّحان من وعاء النون */
 @keyframes sp-grow{from{transform:scale(.15);opacity:0}to{transform:none;opacity:1}}
-/* المتعلّم يطلع من بين الصفحات */
-@keyframes sp-rise{from{transform:translateY(280px) scale(.6);opacity:0}to{transform:none;opacity:1}}
-/* القبعة تهبط ثم تستقرّ */
-@keyframes sp-cap{0%{transform:translateY(-490px) rotate(-16deg);opacity:0}
-  60%{transform:translateY(20px) rotate(4deg);opacity:1}
-  82%{transform:translateY(-8px) rotate(-1.5deg)}100%{transform:none;opacity:1}}
-@keyframes sp-up{from{transform:translateY(115px);opacity:0}to{transform:none;opacity:1}}
 @keyframes sp-slog{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}
 
 /* من فعّل «تقليل الحركة» في جهازه: لا يُلغى المشهد بل يُهدَّأ — القطع
    تظهر بالترتيب نفسه تلاشياً بلا انتقالٍ ولا ارتداد. */
 .brand.hero.is-soft.is-playing .part,
+.brand.hero.is-soft.is-playing .brand-latin,
 .brand.hero.is-soft.is-playing .brand-slogan{animation:sp-fade .5s ease var(--d,0s) both}
 @keyframes sp-fade{from{opacity:0}to{opacity:1}}
 h1{font-family:'Almarai';font-weight:800;font-size:clamp(1.3rem,4.4vw,1.72rem);line-height:1.4}
