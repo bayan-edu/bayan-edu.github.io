@@ -384,6 +384,12 @@ export const saveQuiz = o => db.rpc('save_quiz', {
   p_pass_mark: o.passMark ?? null, p_shuffle: o.shuffle ?? null });
 
 // p_options: [{label, body, correct, dx}] — المعرّفات تُبنى في القاعدة
+/* 🔑 عقدُ استيراد الاختبار (147 · 148) — دالّةٌ واحدة تُنشئ الاختبارَ
+   وبندَه ونصوصَه وأسئلتَه بحرّاس المحرّر نفسِها، ذرّيّةً. و`dry` تُجري
+   المسارَ كلَّه ثمّ تُنقضه ⇒ ما قالت «يمرّ» مرّ عند الاعتماد. */
+export const importQuiz = (course, payload, dry = true) =>
+  db.rpc('import_quiz', { p_course: course, p_payload: payload, p_dry_run: dry });
+
 export const saveQuestion = o => db.rpc('save_question', {
   p_id:          o.id      ?? null,
   p_quiz:        o.quiz,

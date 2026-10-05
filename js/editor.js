@@ -16,6 +16,7 @@ import { openItems } from './editor_items.js';
 import { openCards } from './editor_cards.js';
 import { openStrands, strandsOf, strandSelect, clearStrands } from './editor_strands.js';
 import { openObjectives } from './editor_objectives.js';
+import { openQuizImport } from './editor_import.js';
 
 /* شجرة التأليف تُحمَّل مرة وتُخزَّن — لا تتغيّر أثناء الجلسة */
 async function tree(){
@@ -487,6 +488,7 @@ export async function openCourse(course){
         <button class="btn ghost"   id="nu">＋ وحدة</button>
         ${s.id ? `<button class="btn ghost" id="nst">🌿 فروع المادة</button>
                   <button class="btn ghost" id="nob">🎯 أهداف المادة</button>` : ''}
+        <button class="btn ghost" id="imq">⇪ استيراد اختبار</button>
       </div>` : `<div class="warnbox">تستطيع إضافة مصادر إلى الدروس القائمة.</div>`}
 
     ${units.map(u => block(u.title, u.id)).join("")}
@@ -507,6 +509,8 @@ export async function openCourse(course){
   if(ns) ns.onclick = () => openStrands(course, s);
   const nob = document.getElementById("nob");
   if(nob) nob.onclick = () => openObjectives(course, s);
+  const imq = document.getElementById("imq");
+  if(imq) imq.onclick = () => openQuizImport(course);
   if(course.curate) app.querySelectorAll(".ed-row").forEach(el =>
     el.onclick = () => editLesson(course, lessons.find(x => String(x.id) === el.dataset.l)));
   app.querySelectorAll("[data-q]").forEach(el => el.onclick = e => {
