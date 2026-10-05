@@ -2147,7 +2147,14 @@ function parseImport(txt){
     return out;
   }
 
-  const refs = new Set(out.passages.map(p => p.ref).filter(Boolean));
+  /* 🔑 مُعرِّفُ النصّ المشترك: `ref` أو `id` — اسمانِ لمعنًى واحد (148).
+     التصديرُ يكتب `ref` وحده (قانونٌ واحدٌ للخارج)، والاستيرادُ يقبل
+     الاثنين لأنّ ملفّاتٍ سُلّمت كُتبت بـ`id`. والأولويّة لـ`ref`.
+     ⚠️ والمرادفةُ في موضعين لا موضع: هنا وفي حلقة runImport أدناه —
+     ومثلُها في `import_quiz` بالقاعدة. ومسارٌ يقبل وآخرُ يردّ هو
+     العلّةُ التي جاء العقدُ الواحد يُنهيها. */
+  const pref = p => (p.ref ?? p.id ?? null);
+  const refs = new Set(out.passages.map(pref).filter(Boolean));
 
   /* 🔑 الهدفُ يُكتب في الملفّ **بكوده** لا بمعرّفه: المؤلّفُ يعرف
      «U1.IDEA» ولا يعرف «417». والترجمةُ هنا مرّةً واحدة، ويُثبَّت ما
@@ -2622,8 +2629,9 @@ async function runImport(p){
       if(error || !data?.ok){
         stop(`النصّ المشترك ${AR(k+1)}`, error?.message || data?.error, 0); return;
       }
-      // الأسئلة تشير إلى النصّ بـ ref، والقاعدة تعرف المعرّف وحده
-      if(pg.ref) refMap[pg.ref] = data.id;
+      // الأسئلة تشير إلى النصّ بـ ref (أو id · 148)، والقاعدة تعرف المعرّف وحده
+      const k0 = pg.ref ?? pg.id ?? null;
+      if(k0) refMap[k0] = data.id;
     }
     const base = (Z.questions || []).length;
     for(const [i, q] of p.questions.entries()){
