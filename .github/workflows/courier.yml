@@ -1,0 +1,37 @@
+# ناقلُ التسليمات: Drive ⇐ بيان — كلَّ ساعةٍ، ويداً عند الطلب.
+# العقلُ في القاعدة (import_quiz · ملفّات sql/147–150)، وهذا جدولٌ وساعٍ.
+# الفشلُ يُفشل التشغيلَ عمداً — فيصل بريدُ GitHub صاحبَ المنصّة.
+name: ناقل التسليمات
+
+on:
+  schedule:
+    - cron: '17 * * * *'      # :17 لا :00 — دقائقُ الصفر مزدحمةٌ فتتأخّر
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: courier               # لا تشغيلين متداخلين — القفلُ في القاعدة كافٍ، والازدحامُ ضجيج
+  cancel-in-progress: false
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: الفحص الذاتي
+        run: BAYAN_SELFTEST=1 node tools/courier/import_quizzes.mjs
+      - name: الجولة
+        run: node tools/courier/import_quizzes.mjs
+        env:
+          SUPABASE_URL:      ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          COURIER_EMAIL:     ${{ secrets.COURIER_EMAIL }}
+          COURIER_PASSWORD:  ${{ secrets.COURIER_PASSWORD }}
+          GDRIVE_SA_KEY:     ${{ secrets.GDRIVE_SA_KEY }}
+          DRIVE_FOLDER_ID:   ${{ secrets.DRIVE_FOLDER_ID }}
