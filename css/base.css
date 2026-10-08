@@ -105,7 +105,17 @@
   --danger-fill:#FEE2E2; --danger-line:#FECACA; --danger-edge:#EF4444;
   --shadow:0 1px 2px rgba(28,25,23,.05), 0 8px 24px -8px rgba(28,25,23,.10);
   --scrim:rgba(28,25,23,.38);
-  --r:14px; --logo-ink:#0D345E}
+  --r:14px;
+  /* حبرُ العلامة — ٨ أكتوبر: رُفع درجةً على صبغة الهوية نفسها (٢٥٣٫٥°)
+     من ‎#0D345E إلى ‎#18477A بقرار المالك. السببُ أنّ الكحليَّ الأصليّ
+     (L* ٢٠٫٩) يُقرأ أسودَ في الخطوط الرفيعة — سطر BAYAN — وفي المقاسات
+     الصغيرة، فيضيع «الأزرق الداكن» الذي هو الهوية.
+     ⚠️ واللوحة لم تُمسّ: --brand-navy أسفلُ ما زال ‎#0D345E، وهو أرضيةُ
+        البوابة وترويسةِ الخصوصية. غُيّر الحبرُ وحده لا ما يقع عليه.
+     🔑 وC‏ ٠٫١٠٠ ⇒ داخل نطاق الهوية المكتوم (٠٫٠٨٦–٠٫١٠٣)، وتمايزُه عن
+        عائلات المعنى تحسّن لا ساء: أسوأ ΔE‏ ١٫٤ ← ٥٫٤ (مقيسٌ بـcoloraide
+        على الرؤى الثلاث). */
+  --logo-ink:#18477A}
 
 /* الداكنة (b62) — محايدةٌ على طريقة Preline، والقيم بالقياس.
    🎓 لماذا محايدة لا كحليّة: منذ b61 كلُّ صبغةٍ في بيان رسالة — الأزرق
@@ -282,7 +292,7 @@ header.bare{padding:0}
 .brand{margin-bottom:10px;line-height:1.5;display:flex;align-items:center;
   justify-content:center;gap:10px;flex-wrap:wrap}
 /* ══ الشعار — علامةٌ هندسية (أكتوبر ٢٠٢٦)، بنسختين حسب الدور ══
-   الرسم واحد (viewBox ‏19 0 484 250): صندوق الباء بألفها، ووعاء النون
+   الرسم واحد (viewBox ‏19 0 500 250): صندوق الباء بألفها، ووعاء النون
    بورقتيه، وأربع نقاط. compact ساكنةٌ للشريط (٢٥px — المتجه يبقى
    حادّاً عنده)، وfull مقسومةٌ أجزاءَ مشهدِ الافتتاح للبوابة حيث الشعار
    بطل الشاشة. وسطر BAYAN صار نصّاً حيّاً (.brand-latin أدناه) لا
@@ -296,7 +306,10 @@ header.bare{padding:0}
 .brand-logo{height:36px;width:auto;max-width:100%;display:none}
 .brand.has-logo .compact{display:block}
 .brand.has-logo .full{display:none}
-.brand.hero{flex-direction:column;gap:6px}
+/* الفجوة بين العلامة وكتلة النصّ — ٨ أكتوبر: كانت ٦px ثابتة، فلمّا كبر
+   الشعار النصّيّ ضاق ما بين نقاط «بيان» وسطر BAYAN. صارت تكبر مع
+   العلامة بنسبة لوح التصميم (٣٠ من ٣٠٤ ⇒ ٠٫٠٩٩ من ارتفاعها). */
+.brand.hero{flex-direction:column;gap:clamp(11px,2.8vw,17px)}
 .brand.hero .brand-logo{height:clamp(110px,28vw,170px)}
 .brand.hero .full{display:block}
 .brand.hero .compact{display:none}
@@ -306,8 +319,15 @@ header.bare{padding:0}
 .brand-slogan{font-size:.75rem;color:var(--text-muted);margin-right:9px}
 .brand.hero{margin-bottom:6px}
 .brand.hero .brand-name{display:block;font-size:clamp(2.4rem,11vw,3.4rem);line-height:1.1;margin-bottom:6px}
-.brand.hero .brand-slogan{display:block;font-size:var(--fs-ui);margin-right:0;
-  color:var(--text-muted);letter-spacing:.02em}
+/* الشعار النصّيّ في البوابة — ٨ أكتوبر: كان ثابتاً عند --fs-ui (١٥px)
+   تحت علامةٍ تبلغ ١٧٠px فبدا ضئيلاً، وصار يكبر معها كما يكبر سطر BAYAN
+   وبنسبة لوح التصميم نفسها (٦٠ من ٣٠٤ ⇒ ٠٫١٩٧ من ارتفاع العلامة).
+   واللونُ من --logo-ink لا --text-muted: اللوكاب المعتمد بلونٍ واحد.
+   (وعلى الكحليّ يغلبه .gate-say في screens.css فيبيضّ.)
+   ⚠️ وسقط letter-spacing: ٠٫٠٢em لا تُرى عند ١٥px، لكنها عند ٣٣px تفكّ
+      وصلَ الحروف العربية — والتباعدُ يُضاف بين كلّ حرفين لا بين الكلمات. */
+.brand.hero .brand-slogan{display:block;font-size:clamp(1.35rem,5.5vw,2.1rem);
+  margin-right:0;color:var(--logo-ink)}
 /* سطر BAYAN اللاتينيّ — جزءُ اللوكاب الكامل، فلا يظهر إلا في البوابة.
    Nunito 900 بتباعد .85em كما في لوح التصميم. والهامش الأيمن السالب
    يقصّ فراغَ التباعد بعد N الأخيرة (letter-spacing يُضاف بعد كلّ حرف
