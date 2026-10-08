@@ -295,7 +295,16 @@ create or replace function public.save_course(
   p_path bigint default null, p_elective_group text default null,
   p_position integer default 0, p_active boolean default true, p_note text default null)
 returns jsonb language plpgsql security definer set search_path to 'public' as $function$
+/* 🔴 و`elective_group` نوعُه `smallint` لا `text` — **افتُرض ولم يُقَس**،
+   فسقطت الدالّةُ عند أوّل إدراج. **وفحصُ التصريف ما كان ليكشفه**: plpgsql
+   يخطّط جُمَله كسولاً، فالخطأُ في التخطيط لا في التصريف. صادته التجربةُ
+   الجافّة وحدها.
+   🔑 **والمعامل يبقى `text` ولا يصير `integer`:** تغييرُ النوع يُنشئ
+      حِملاً زائداً (overload) لا بديلاً، و`drop function` محجوبٌ في أداة
+      الجلسة. ⇒ **التحقُّقُ والتحويل في الجسد**، وهو موضعُهما الصحيح عند
+      حدِّ الواجهة: الشاشةُ تُرسل نصّاً من حقلٍ على كلّ حال. */
 declare v_id bigint; v_before jsonb;
+        v_eg text := nullif(btrim(coalesce(p_elective_group,'')),''); v_egn smallint;
 begin
   if not is_admin() then return jsonb_build_object('ok', false, 'error', 'صلاحية المدير مطلوبة'); end if;
   if coalesce(btrim(p_title),'') = '' then
@@ -310,17 +319,23 @@ begin
   if p_path is not null and not exists (select 1 from paths where id = p_path) then
     return jsonb_build_object('ok', false, 'error', 'المسار غير موجود');
   end if;
+  if v_eg is not null then
+    if v_eg !~ '^-?[0-9]{1,4}$' then
+      return jsonb_build_object('ok', false, 'error', 'مجموعة الاختيار رقم أو فراغ');
+    end if;
+    v_egn := v_eg::smallint;
+  end if;
 
   select to_jsonb(c) into v_before from courses c where c.id = p_id;
 
   if p_id is null then
     insert into courses (subject_id, level_id, path_id, title, elective_group, position, active)
-    values (p_subject, p_level, p_path, btrim(p_title),
-            nullif(btrim(coalesce(p_elective_group,'')),''), coalesce(p_position,0), coalesce(p_active,true))
+    values (p_subject, p_level, p_path, btrim(p_title), v_egn,
+            coalesce(p_position,0), coalesce(p_active,true))
     returning id into v_id;
   else
     update courses set subject_id = p_subject, level_id = p_level, path_id = p_path,
-           title = btrim(p_title), elective_group = nullif(btrim(coalesce(p_elective_group,'')),''),
+           title = btrim(p_title), elective_group = v_egn,
            position = coalesce(p_position,0), active = coalesce(p_active,true)
      where id = p_id returning id into v_id;
     if v_id is null then return jsonb_build_object('ok', false, 'error', 'لا مقرَّر بهذا المعرّف'); end if;

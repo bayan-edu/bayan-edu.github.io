@@ -563,6 +563,48 @@ export const adminSetTeacherSubjects = (teacherId, subjectIds, note) =>
                                          p_subjects: subjectIds || [],
                                          p_note: note || null });
 
+/* ═══════════ ⑩-ج إدارة المحتوى — 155 ═══════════
+   🔑 الهيكلُ فوق الدرس: المقياس والمستوى والمسار والمادّة والمقرَّر
+      وكود التشخيص. **وما يُؤلَّف يبقى في المحرّر** — فلا درسَ هنا
+      ولا وحدةَ ولا سؤال.
+   📐 و`id` فارغٌ ⇒ إنشاء، وإلا تعديل. والردُّ `{ok, id, name}` دائماً. */
+
+export const contentTree = () => db.rpc('content_tree');
+
+export const saveScale = o => db.rpc('save_scale', {
+  p_id: o.id ?? null, p_code: o.code, p_name: o.name, p_kind: o.kind,
+  p_country: o.country ?? null, p_track: o.track ?? null,
+  p_sort: o.sort ?? 0, p_note: o.note ?? null });
+
+export const saveLevel = o => db.rpc('save_level', {
+  p_id: o.id ?? null, p_scale: o.scale, p_code: o.code, p_name: o.name,
+  p_rank: o.rank, p_min: o.min ?? null, p_max: o.max ?? null, p_note: o.note ?? null });
+
+export const savePath = o => db.rpc('save_path', {
+  p_id: o.id ?? null, p_scale: o.scale, p_code: o.code, p_name: o.name,
+  p_from_rank: o.fromRank ?? null, p_sort: o.sort ?? 0,
+  p_active: o.active ?? true, p_note: o.note ?? null });
+
+export const saveSubject = o => db.rpc('save_subject', {
+  p_id: o.id ?? null, p_code: o.code, p_name: o.name, p_scale: o.scale ?? null,
+  p_family: o.family ?? null, p_placement: o.placement ?? 'profile',
+  p_progression: o.progression ?? 'chain', p_active: o.active ?? true,
+  p_icon: o.icon ?? null, p_tool: o.tool ?? null,
+  p_description: o.description ?? null, p_sort: o.sort ?? 0, p_note: o.note ?? null });
+
+/* ⚠️ و`p_elective_group` نصٌّ والعمودُ `smallint` — التحويلُ في الدالّة
+      بتحقُّقٍ صريح (155). فيُرسَل كما كُتب في الحقل، أو `null`. */
+export const saveCourse = o => db.rpc('save_course', {
+  p_id: o.id ?? null, p_subject: o.subject, p_level: o.level ?? null,
+  p_title: o.title, p_path: o.path ?? null,
+  p_elective_group: o.electiveGroup ?? null,
+  p_position: o.position ?? 0, p_active: o.active ?? true, p_note: o.note ?? null });
+
+export const saveDxCode = o => db.rpc('save_dx_code', {
+  p_code: o.code, p_name: o.name, p_remedy: o.remedy ?? null,
+  p_family: o.family ?? null, p_student_note: o.studentNote ?? null,
+  p_note: o.note ?? null });
+
 /* ═══════════ ⑦ الوسائط ═══════════ */
 /* 📐 العقد: المقطع الأول من المفتاح هو اسم المخزن.
      "audio/l1-a1.mp3"  ⇒  المخزن audio · المسار l1-a1.mp3
