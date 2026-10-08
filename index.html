@@ -13,7 +13,15 @@
 <script>try{var t=localStorage.getItem("bayan.theme");if(t)document.documentElement.dataset.theme=t;}catch(e){}
 var m=document.querySelector('meta[name=theme-color]');if(m)m.content=m.dataset[t==="dark"?"dark":"light"];</script>
   
+<!-- أيقونة الموقع — أربعُ صيغٍ لأربعة قرّاء، والعلامةُ واحدة:
+     ico لمن لا يقرأ SVG ولمن يطلب /favicon.ico بلا سؤال (وsizes="32x32"
+     عمداً: بها يُقدِّم Chrome الـSVG عليه) · svg للمتصفّحات الحديثة ·
+     apple-touch لشاشة iOS الرئيسة · png ١٩٢ لاختصار Android.
+     غُيّرت العلامة؟ الأربعُ تُولَّد معاً من favicon.svg — لا واحدةٌ دون أخواتها. -->
+<link rel="icon" href="favicon.ico" sizes="32x32">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png" type="image/png" sizes="192x192">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700;800&family=Readex+Pro:wght@400;600&family=Amiri&family=Nunito:wght@900&display=swap" rel="stylesheet">
@@ -29,16 +37,19 @@ var m=document.querySelector('meta[name=theme-color]');if(m)m.content=m.dataset[
 <div class="wrap">
   <header>
     <div class="brand has-logo" id="brand">
-  <svg class="brand-logo full" viewBox="19 0 460 250" role="img" aria-label="بيان" focusable="false">  <!-- «بيان» علامةً هندسية — أكتوبر ٢٠٢٦ · المصدر لوح «A · Versions» -->
+  <svg class="brand-logo full" viewBox="19 0 484 250" role="img" aria-label="بيان" focusable="false">  <!-- «بيان» علامةً هندسية — أكتوبر ٢٠٢٦ · المصدر لوح «A · Versions» -->
   <!-- ١ · الحبر يُكتب من اليمين: صندوق الباء بألفها، ثم وعاء النون.
        الحبر كلُّه ضرباتٌ (stroke ٣٤ مستديرة الأطراف) لا حروفٌ مصمتة —
        فلا ثقوب في هذه العلامة ولا حاجةَ لـ --logo-hole (بقيت مُعرَّفةً
        في base.css لتاريخها).
-       وviewBox مقيسٌ على مدى الحبر مع أنصاف الأطراف (٢٣→٤٧٥ × ٣→٢٤٧)
-       لا منقولٌ عن مصدّر — والهامش ٣ وحدات. -->
+       وviewBox مقيسٌ على مدى الحبر مع أنصاف الأطراف (٢٣→٤٩٩ × ٣→٢٤٧)
+       لا منقولٌ عن مصدّر — والهامش ٣ وحدات.
+       📌 ٦ أكتوبر — مُدّت الباء والياء: كانت نقطةُ الباء تبرز عن حدّ
+       الكلمة الأيمن، فمُدّت الباء حتى دخلت نقطتُها تحتها، ثم مُدّت الياء
+       لتتساوى القوائم الثلاث (ا ٢٨٢ · ي ٣٨٢ · ب ٤٨٢ — مئةٌ بين كلّ اثنتين). -->
   <g class="part write" style="--d:0s">
-    <path fill="none" stroke="var(--logo-ink)" stroke-width="34" stroke-linecap="round" stroke-linejoin="round" d="M458 104 V146 A30 30 0 0 1 428 176 H312 A30 30 0 0 1 282 146 V20"/>
-    <path fill="none" stroke="var(--logo-ink)" stroke-width="34" stroke-linecap="round" d="M370 104 V176"/>
+    <path fill="none" stroke="var(--logo-ink)" stroke-width="34" stroke-linecap="round" stroke-linejoin="round" d="M482 104 V146 A30 30 0 0 1 452 176 H312 A30 30 0 0 1 282 146 V20"/>
+    <path fill="none" stroke="var(--logo-ink)" stroke-width="34" stroke-linecap="round" d="M382 104 V176"/>
     <path fill="none" stroke="var(--logo-ink)" stroke-width="34" stroke-linecap="round" d="M40 104 V128 A80 80 0 0 0 200 128 V104"/>
   </g>
     <!-- ٢ · الورقتان تتفتّحان من وعاء النون — فيروزيٌّ وذهبيّ: هويةٌ ثابتة لا تتبع السِمة -->
@@ -47,14 +58,14 @@ var m=document.querySelector('meta[name=theme-color]');if(m)m.content=m.dataset[
     <!-- ٣ · كلُّ نقطةٍ مع حرفها: الباء ثم الياء بنقطتيها ثم النون.
        التأخير = لحظةُ بلوغ القلم مركزَ النقطة، محسوبةً بعكس منحنى
        sp-write (cubic-bezier(.65,0,.35,1) · ٠٫٩٥ث) على مدى الحبر
-       (٤٧٥→٢٣): ب ٠٫١٨ · ي ٠٫٣٦ و٠٫٤٢ · ن ٠٫٥٩.
+       (٤٩٩→٢٣): ب ٠٫٢٦ · ي ٠٫٣٩ و٠٫٤٣ · ن ٠٫٦٠.
        غيّرتَ مدّة sp-write أو منحناها أو الشعار؟ أعِد الحساب. -->
-  <circle class="part drop" fill="var(--logo-ink)" style="--d:.18s" cx="458" cy="226" r="21"/>
-  <circle class="part drop" fill="var(--logo-ink)" style="--d:.36s" cx="378" cy="226" r="21"/>
-  <circle class="part drop" fill="var(--logo-ink)" style="--d:.42s" cx="326" cy="226" r="21"/>
-  <circle class="part drop" fill="var(--logo-ink)" style="--d:.59s" cx="120" cy="40" r="21"/>
+  <circle class="part drop" fill="var(--logo-ink)" style="--d:.26s" cx="458" cy="226" r="21"/>
+  <circle class="part drop" fill="var(--logo-ink)" style="--d:.39s" cx="374" cy="226" r="21"/>
+  <circle class="part drop" fill="var(--logo-ink)" style="--d:.43s" cx="324" cy="226" r="21"/>
+  <circle class="part drop" fill="var(--logo-ink)" style="--d:.60s" cx="120" cy="40" r="21"/>
 </svg>
-  <svg class="brand-logo compact" viewBox="19 0 460 250" role="img" aria-label="بيان" focusable="false"><path fill="none" stroke="var(--logo-ink)" stroke-width="34" stroke-linecap="round" stroke-linejoin="round" d="M458 104 V146 A30 30 0 0 1 428 176 H312 A30 30 0 0 1 282 146 V20"/><path fill="none" stroke="var(--logo-ink)" stroke-width="34" stroke-linecap="round" d="M370 104 V176"/><path fill="none" stroke="var(--logo-ink)" stroke-width="34" stroke-linecap="round" d="M40 104 V128 A80 80 0 0 0 200 128 V104"/><path fill="#42B7B4" d="M115 184 C113 140 100 102 74 74 C62 118 80 160 115 184 Z"/><path fill="#D6B76D" d="M125 184 C127 140 140 102 166 74 C178 118 160 160 125 184 Z"/><circle fill="var(--logo-ink)" cx="120" cy="40" r="21"/><circle fill="var(--logo-ink)" cx="326" cy="226" r="21"/><circle fill="var(--logo-ink)" cx="378" cy="226" r="21"/><circle fill="var(--logo-ink)" cx="458" cy="226" r="21"/></svg>
+  <svg class="brand-logo compact" viewBox="19 0 484 250" role="img" aria-label="بيان" focusable="false"><path fill="none" stroke="var(--logo-ink)" stroke-width="34" stroke-linecap="round" stroke-linejoin="round" d="M482 104 V146 A30 30 0 0 1 452 176 H312 A30 30 0 0 1 282 146 V20"/><path fill="none" stroke="var(--logo-ink)" stroke-width="34" stroke-linecap="round" d="M382 104 V176"/><path fill="none" stroke="var(--logo-ink)" stroke-width="34" stroke-linecap="round" d="M40 104 V128 A80 80 0 0 0 200 128 V104"/><path fill="#42B7B4" d="M115 184 C113 140 100 102 74 74 C62 118 80 160 115 184 Z"/><path fill="#D6B76D" d="M125 184 C127 140 140 102 166 74 C178 118 160 160 125 184 Z"/><circle fill="var(--logo-ink)" cx="120" cy="40" r="21"/><circle fill="var(--logo-ink)" cx="324" cy="226" r="21"/><circle fill="var(--logo-ink)" cx="374" cy="226" r="21"/><circle fill="var(--logo-ink)" cx="458" cy="226" r="21"/></svg>
   <span class="brand-text">
     <span class="brand-name">بيان</span>
     <span class="brand-latin" dir="ltr" aria-hidden="true">BAYAN</span>
