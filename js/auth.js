@@ -932,7 +932,7 @@ export function start(){
     mySubjects: loadMySubjects,
     editor:     openEditor,
     requests:   loadAdmin,
-    /* 🆕 b118 · لوحةُ الإدارة (152) — الصلاحياتُ والسجلُّ والنبض.
+    /* 🆕 b119 · لوحةُ الإدارة (152) — الصلاحياتُ والسجلُّ والنبض.
        وحارسُها `is_admin()` في كلّ دالّةٍ تناديها، لا في المسار. */
     console:    loadConsole,
     /* 🆕 125 · وليست في DEST عمداً: تلك وجهاتُ العمل التي يعدّ لها
