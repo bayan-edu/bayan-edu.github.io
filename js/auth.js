@@ -16,6 +16,7 @@ import { openEditor } from './editor.js';
 import { openAvatarEdit } from './avatar_edit.js';
 import { loadProfile } from './profile.js';
 import { loadStudents, loadMyPerformance } from './analytics.js';
+import { loadConsole } from './admin.js';
 import { loadFlashcards } from './flashcards.js';
 import { openPractice } from './practice.js';
 import { roleTabs, wireRoleTabs, gramSelect, wireGram, teacherFields,
@@ -931,6 +932,9 @@ export function start(){
     mySubjects: loadMySubjects,
     editor:     openEditor,
     requests:   loadAdmin,
+    /* 🆕 b119 · لوحةُ الإدارة (152) — الصلاحياتُ والسجلُّ والنبض.
+       وحارسُها `is_admin()` في كلّ دالّةٍ تناديها، لا في المسار. */
+    console:    loadConsole,
     /* 🆕 125 · وليست في DEST عمداً: تلك وجهاتُ العمل التي يعدّ لها
        الجرسُ ويضع لها الشريطُ أيقونة. والعلامةُ إعدادُ حسابٍ يُفتح
        من قائمة الحساب (b107)، **ووجهةٌ في الشريط لا عدد لها تُقرأ
