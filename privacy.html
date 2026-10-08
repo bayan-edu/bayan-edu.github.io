@@ -69,11 +69,15 @@ header svg{
   display:block;
   margin:0 auto 14px;
 }
+/* الشعار النصّيّ — ٨ أكتوبر: يكبر مع العلامة بنسبة لوح التصميم نفسها
+   (٠٫١٩٧ من ارتفاعها) بدل مقاسٍ ثابتٍ بدا ضئيلاً تحتها. ونظيرُه
+   .brand.hero .brand-slogan في base.css — يُغيَّران معاً.
+   ⚠️ وسقط letter-spacing: يفكّ وصلَ الحروف العربية. لم يكن يُرى عند
+      ١٤٫٥px، ويظهر عند ٢٠px. */
 header p{
   margin:0;
   opacity:.78;
-  font-size:14.5px;
-  letter-spacing:.16em;
+  font-size:clamp(15px,3.74vw,20.5px);
   font-weight:400;
 }
 
@@ -188,7 +192,7 @@ footer a{font-weight:600}
 <body>
 
 <header>
-<svg viewBox="19 0 484 250" role="img" aria-label="بيان" focusable="false"><path fill="none" stroke="var(--logo-ink)" stroke-width="34" stroke-linecap="round" stroke-linejoin="round" d="M482 104 V146 A30 30 0 0 1 452 176 H312 A30 30 0 0 1 282 146 V20"/><path fill="none" stroke="var(--logo-ink)" stroke-width="34" stroke-linecap="round" d="M382 104 V176"/><path fill="none" stroke="var(--logo-ink)" stroke-width="34" stroke-linecap="round" d="M40 104 V128 A80 80 0 0 0 200 128 V104"/><path fill="#42B7B4" d="M115 184 C113 140 100 102 74 74 C62 118 80 160 115 184 Z"/><path fill="#D6B76D" d="M125 184 C127 140 140 102 166 74 C178 118 160 160 125 184 Z"/><circle fill="var(--logo-ink)" cx="120" cy="40" r="21"/><circle fill="var(--logo-ink)" cx="324" cy="226" r="21"/><circle fill="var(--logo-ink)" cx="374" cy="226" r="21"/><circle fill="var(--logo-ink)" cx="458" cy="226" r="21"/></svg>
+<svg viewBox="19 0 500 250" role="img" aria-label="بيان" focusable="false"><path fill="none" stroke="var(--logo-ink)" stroke-width="34" stroke-linecap="round" stroke-linejoin="round" d="M498 104 V146 A30 30 0 0 1 468 176 H312 A30 30 0 0 1 282 146 V20"/><path fill="none" stroke="var(--logo-ink)" stroke-width="34" stroke-linecap="round" d="M390 104 V176"/><path fill="none" stroke="var(--logo-ink)" stroke-width="34" stroke-linecap="round" d="M40 104 V128 A80 80 0 0 0 200 128 V104"/><path fill="#42B7B4" d="M115 184 C113 140 100 102 74 74 C62 118 80 160 115 184 Z"/><path fill="#D6B76D" d="M125 184 C127 140 140 102 166 74 C178 118 160 160 125 184 Z"/><circle fill="var(--logo-ink)" cx="120" cy="40" r="21"/><circle fill="var(--logo-ink)" cx="365" cy="226" r="21"/><circle fill="var(--logo-ink)" cx="415" cy="226" r="21"/><circle fill="var(--logo-ink)" cx="487" cy="226" r="21"/></svg>
   <p>تعلَّم صح</p>
 </header>
 
