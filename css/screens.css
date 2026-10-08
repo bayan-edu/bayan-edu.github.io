@@ -174,6 +174,15 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
   /* المحتوى يكبر مع الشاشة لا يثبت وسط فراغها: العمود نصفُ الشاشة،
      وبطاقةٌ بعرض ٤١٠ فيه تبدو قصاصةً في قاعة. */
   .gate-say .brand.hero .brand-logo{height:clamp(170px,18vw,275px)}
+  /* ⚠️ وسطرا النصّ يكبران معها — ٨ أكتوبر. كانت العلامة وحدها تُعطى
+     مقاساً أكبر هنا، فيبقى BAYAN عند سقفه (٣٦px) والشعارُ النصّيُّ عند
+     سقفه، فتخرج نسبةُ اللوكاب المعتمدة: ٠٫١٥٧ بدل ٠٫٢١١ على علامةٍ
+     تبلغ ٢٧٥px. والنِّسَبُ من لوح التصميم: BAYAN ٠٫٢١١ من ارتفاع
+     العلامة، والشعار النصّيّ ٠٫١٩٧ — وهي نفسها في base.css لمقاس
+     الترويسة. غيّرتَ ارتفاع العلامة هنا؟ غيّر الثلاثة معاً. */
+  .gate-say .brand.hero{gap:clamp(17px,1.78vw,27px)}
+  .gate-say .brand.hero .brand-latin{font-size:clamp(2.24rem,3.8vw,3.63rem)}
+  .gate-say .brand.hero .brand-slogan{font-size:clamp(2.09rem,3.55vw,3.39rem)}
   .gate-form{align-self:center;padding:40px 24px;max-width:480px}
   .gate-form .card{padding:28px 26px}
   .gate-form input{padding:15px 14px}
@@ -1930,4 +1939,118 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
 .cz-pv-h{font-family:'Almarai';font-weight:800;font-size:var(--fs-tag);
   color:var(--text-muted)}
 
+/* 🔴 ١٩٣٣ · قوسٌ يتيم حُذف (b119) — بقيّةُ لصقٍ في قسم الخانات.
+   و@media عند ١٤٣٤ تُغلق سليمةً عند ١٤٤١، فهذا لا يُغلق شيئاً.
+   🔑 **ولم يؤذِ أحداً لأنّه كان آخرَ الملفّ.** وقوسٌ شاردٌ يُدخل
+      المحلّلَ في استرداد خطإ **فيبتلع أوّلَ قاعدةٍ تليه صامتاً** —
+      فابتلع `.ad-sum` يوم أُضيفت لوحةُ الإدارة، وظهر الأثرُ
+      بلاطاتٍ تتراصّ عمودياً لا بخطإٍ يُقرأ. **والصامتُ يُصدَّق.**
+   ⚠️ وصيدُه فحصُ متصفّحٍ لا قراءةُ شيفرة: المصدرُ سليمٌ بالعين،
+      والقاعدةُ غائبةٌ عن CSSOM. والميزان يُفحص بسطر:
+      python3 -c "s=open('css/screens.css').read(); …" ⇐ ٠ لا −١ */
+
+/* ══════════════════════════════════════════════════════════
+   لوحة الإدارة — b119 · الصلاحيات والسجلّ والنبض
+
+   🔑 **والألوان من العائلات الخمس لا من قيمٍ خام** (قانون
+      `bayan-visual-identity`): `ok` حكمٌ بالسلامة · `warn` طبقةٌ
+      ناقصة تُرى ولا تُفزع · `danger` عطلٌ يُسقط عملاً · `accent`
+      خبرٌ واختيار. **ولا `dx` هنا**: البنفسجيُّ معناه في المنصّة
+      «تشخيصُ خطإِ طالب»، واستعمالُه لصلاحيةِ منسّقٍ يُفرغه.
+
+   ⚠️ **و«بلا مادّة» تحمل `warn` لا `danger`.** هي حالٌ تُصلَح بنقرة،
+      لا خطأٌ وقع. والأحمرُ الذي يُصرف في الحالات لا يبقى منه ما
+      يُنبّه حين يسقط فعلاً شيء.
+   ══════════════════════════════════════════════════════════ */
+
+/* ── الأعداد ── */
+.ad-sum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.ad-tile{background:var(--fill-soft);border:1px solid var(--line);border-radius:11px;
+  padding:11px 8px;text-align:center}
+.ad-tn{font-family:'Almarai';font-weight:800;font-size:var(--fs-h);color:var(--accent);
+  line-height:1.3}
+.ad-tl{font-size:var(--fs-tag);color:var(--text-muted);margin-top:2px}
+
+/* ── التصفية ── */
+.ad-filt{display:flex;gap:8px;margin-bottom:14px}
+.ad-filt .ad-q{flex:2;min-width:0}
+.ad-filt select{flex:1;min-width:0}
+
+/* ── بطاقة الحساب ── */
+.ad-u{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
+  padding:14px;margin-bottom:10px;box-shadow:var(--shadow)}
+.ad-u.open{border-color:var(--accent-line)}
+.ad-uh{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.ad-un{font-family:'Almarai';font-weight:800;font-size:var(--fs-read)}
+.ad-um{font-size:var(--fs-meta);color:var(--text-muted);margin-top:4px;line-height:1.7}
+
+.ad-lay{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.ad-lay .ad-cu{background:var(--accent-fill);border-color:var(--accent);color:var(--accent);
+  font-weight:700;font-family:'Almarai'}
+.ad-lay .ad-ok{background:var(--ok-fill);border-color:var(--ok-line);color:var(--ok)}
+.ad-lay .ad-no{background:var(--warn-fill);border-color:var(--warn-line);color:var(--warn-text)}
+
+/* السببُ يُسمّى — فلا يُقرأ المنعُ قفلاً ولا القفلُ منعاً */
+.ad-why{margin-top:9px;padding:8px 11px;border-radius:9px;background:var(--warn-soft);
+  border:1px solid var(--warn-line);color:var(--warn-text);font-size:var(--fs-meta);
+  line-height:1.8}
+
+/* ── الأفعال ── */
+.ad-acts{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}
+.ad-b{background:var(--fill);border:1px solid var(--line);border-radius:9px;
+  padding:7px 14px;cursor:pointer;color:var(--text);font-family:'Almarai';
+  font-weight:700;font-size:var(--fs-meta)}
+.ad-b:hover{border-color:var(--accent);color:var(--accent)}
+.ad-b:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ── لوحةُ الاختيار المتدلّية داخل البطاقة ── */
+.ad-pick{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.ad-pt{font-family:'Almarai';font-weight:800;font-size:var(--fs-meta);margin-bottom:9px}
+.ad-opts{display:flex;gap:6px;flex-wrap:wrap}
+.ad-opt{background:var(--fill-soft);border:1px solid var(--line);border-radius:999px;
+  padding:6px 13px;cursor:pointer;color:var(--text-muted);font-size:var(--fs-tag);
+  font-family:'Almarai';font-weight:700}
+.ad-opt:hover{border-color:var(--line-strong);color:var(--text)}
+.ad-opt.on{background:var(--accent-fill);border-color:var(--accent);color:var(--accent)}
+.ad-opt:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.ad-pn{font-size:var(--fs-tag);color:var(--text-muted);margin-top:9px;line-height:1.75}
+
+/* ── لافتةُ القسم ── */
+.ad-note{background:var(--accent-soft);border:1px solid var(--accent-line);
+  border-radius:11px;padding:12px 14px;font-size:var(--fs-meta);color:var(--text);
+  line-height:1.85;margin-bottom:14px}
+.ad-note b{font-family:'Almarai';font-weight:800}
+
+/* ── السجلّ ── */
+.ad-lg{background:var(--surface);border:1px solid var(--line);border-radius:11px;
+  padding:12px 14px;margin-bottom:8px}
+.ad-lgh{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.ad-lgw{font-size:var(--fs-ui);margin-top:7px;line-height:1.8}
+
+/* ── النبض ── */
+.ad-h{display:flex;gap:12px;align-items:flex-start;background:var(--surface);
+  border:1px solid var(--line);border-right:3px solid var(--line-strong);
+  border-radius:11px;padding:12px 14px;margin-bottom:8px}
+.ad-h.s-ok  {border-right-color:var(--ok-edge)}
+.ad-h.s-warn{border-right-color:var(--warn-edge)}
+.ad-h.s-bad {border-right-color:var(--danger-edge);background:var(--danger-soft)}
+.ad-hn{font-family:'Almarai';font-weight:800;font-size:var(--fs-h);min-width:2ch;
+  text-align:center;line-height:1.5;color:var(--text-muted)}
+.ad-h.s-warn .ad-hn{color:var(--warn-text)}
+.ad-h.s-bad  .ad-hn{color:var(--danger-text)}
+.ad-h.s-ok   .ad-hn{color:var(--ok)}
+.ad-hb{flex:1;min-width:0}
+.ad-hl{font-family:'Almarai';font-weight:800;font-size:var(--fs-ui)}
+.ad-hw{font-size:var(--fs-meta);color:var(--text-muted);margin-top:4px;line-height:1.8}
+.ad-hd{font-size:var(--fs-tag);color:var(--text-muted);margin-top:6px;line-height:1.8;
+  padding:6px 9px;background:var(--fill-soft);border-radius:8px;
+  overflow-wrap:anywhere}
+.ad-hb .ad-b{margin-top:9px}
+
+/* ⚠️ والجوّالُ يضيق بستّة أعمدة: الأعدادُ عمودان، والتصفيةُ سطران.
+   وبلا هذا تنضغط البلاطةُ حتى يُقطَع رقمُها. */
+@media (max-width:460px){
+  .ad-sum{grid-template-columns:repeat(2,1fr)}
+  .ad-filt{flex-wrap:wrap}
+  .ad-filt .ad-q,.ad-filt select{flex:1 1 100%}
 }

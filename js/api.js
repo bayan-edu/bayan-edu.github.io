@@ -534,6 +534,35 @@ export const adminRequests = status => db.rpc('admin_requests', { p_status: stat
 export const adminDecide = (id, approve, note) =>
   db.rpc('admin_decide', { p_request: id, p_approve: approve, p_note: note });
 
+/* ═══════════ ⑩-ب لوحة الإدارة — 152 ═══════════
+   🔑 والحارس `is_admin()` **في كل دالّة منها، لا في هذه الطبقة**.
+      فلو حرست الواجهة لكانت حراسةً تُتخطّى بفتح الطرفية.
+   📐 والعقد كما هو: تُعاد استجابة Supabase بحرفها، ومعالجة الخطأ
+      في الشاشة. وخمسٌ منها قارئة وثلاثٌ تكتب — والكاتبة تُعيد
+      `{ ok, error }` في `data` لا في `error`، فتُقرأ قراءتين. */
+
+export const adminOverview = ()        => db.rpc('admin_overview');
+export const adminHealth   = ()        => db.rpc('admin_health');
+export const adminCurators = ()        => db.rpc('admin_curators');
+export const adminAudit    = (limit)   => db.rpc('admin_audit_list', { p_limit: limit ?? 60 });
+
+export const adminUsers = (q, role) =>
+  db.rpc('admin_users', { p_q: q || null, p_role: role || null });
+
+export const adminSetRole = (userId, role, note) =>
+  db.rpc('admin_set_role', { p_user: userId, p_role: role, p_note: note || null });
+
+/* `subject = null` ⇒ كل المواد. وهو نطاقٌ لا غياب قيمة — والقاعدة
+   تقرؤه كذلك في `coalesce(subject_id, 0)`. */
+export const adminSetCurator = (userId, subject, on, note) =>
+  db.rpc('admin_set_curator', { p_user: userId, p_subject: subject ?? null,
+                                p_on: !!on, p_note: note || null });
+
+export const adminSetTeacherSubjects = (teacherId, subjectIds, note) =>
+  db.rpc('admin_set_teacher_subjects', { p_teacher: teacherId,
+                                         p_subjects: subjectIds || [],
+                                         p_note: note || null });
+
 /* ═══════════ ⑦ الوسائط ═══════════ */
 /* 📐 العقد: المقطع الأول من المفتاح هو اسم المخزن.
      "audio/l1-a1.mp3"  ⇒  المخزن audio · المسار l1-a1.mp3
