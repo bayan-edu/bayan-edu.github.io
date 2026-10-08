@@ -586,7 +586,14 @@ begin
            'status', case when n = 0 then 'ok'
                           when key in ('dx_orphan','rls_off') then 'bad'
                           else 'warn' end)
-         order by case when n = 0 then 2 else 1 end, key) into v
+         /* 🔑 والترتيبُ بالخطورة لا بالأبجدية — وصيدُه فحصُ متصفّح:
+            كان `case when n=0 then 2 else 1 end, key` فسبق `dx_missing`
+            (تحذيرٌ) `dx_orphan` (عطلٌ يُسقط محاولةَ طالبٍ كاملة) لأنّ
+            الميمَ قبل الواو. **ومن ينظر مرّةً يرى الأوّلَ وحده.** */
+         order by case when n = 0                              then 3
+                       when key in ('dx_orphan','rls_off')     then 1
+                       else                                         2 end,
+                  n desc, key) into v
     from c;
 
   return coalesce(v, '[]'::jsonb);
