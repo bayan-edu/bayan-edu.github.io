@@ -1,6 +1,6 @@
 /* ══════════════════════════════════════════════════════════
    بيان — admin.js
-   لوحة الإدارة: الناس وصلاحياتهم · سجلّ التدقيق · نبض المنصّة
+   لوحة الإدارة: الأعضاء وصلاحياتهم · سجلّ التدقيق · المستجدات
 
    🔑 **ولماذا وُجدت:** المدير كان بلا شاشةِ إدارةٍ واحدة — وجهاتُه
       الخمس في `DEST` كلُّها وجهاتُ معلّم، وشاشةُ الطلبات تقاعدت في
@@ -92,7 +92,9 @@ const errOf = (e, where) => {
 export async function loadConsole(which){
   if(which) tab = which;
   nav('console');
-  head('لوحة الإدارة', 'الصلاحيات والسجلّ ونبض المنصّة');
+  /* 🆕 b120 · بلا وصفٍ تحت العنوان — والألسنةُ الثلاثة تقوله أوجزَ منه.
+     و`head(t)` تُخفي السطرَ ولا تُفرّغه، فلا يحجز حشوَه. */
+  head('لوحة الإدارة');
 
   /* مجاملةٌ للعين لا حاجز — الحارسُ في القاعدة (رأس الملفّ) */
   if(S.roleInfo?.role !== 'admin'){
@@ -102,9 +104,9 @@ export async function loadConsole(which){
 
   app.innerHTML = `
     <div class="tabs" id="adTabs">
-      <div class="tab ${tab==='people'?'on':''}" data-t="people">الناس</div>
+      <div class="tab ${tab==='people'?'on':''}" data-t="people">الأعضاء</div>
       <div class="tab ${tab==='audit' ?'on':''}" data-t="audit">السجلّ</div>
-      <div class="tab ${tab==='pulse' ?'on':''}" data-t="pulse">النبض</div>
+      <div class="tab ${tab==='pulse' ?'on':''}" data-t="pulse">المستجدات</div>
     </div>
     <div id="adBody"><div class="status">جار التحميل…</div></div>`;
 
@@ -330,8 +332,6 @@ async function paintAudit(){
 
   body().innerHTML = `
     ${errOf(error,'سجلّ التدقيق')}
-    <div class="ad-note">كل منح وسحب يُكتب هنا، ولا يُكتب إلا من جوف
-      دالّة. <b>ولوحة تمنح الصلاحيات بلا سجلّ تُنشئ سلطة بلا ذاكرة.</b></div>
     ${rows.length ? rows.map(logRow).join('')
       : `<div class="status">لا سطر بعد — ولم يُغيَّر شيء منذ بُني السجلّ.</div>`}
     <p class="hint">${N(rows.length,'سطر','سطران','أسطر','سطراً')}</p>`;
@@ -361,7 +361,7 @@ function logRow(r){
   </div>`;
 }
 
-/* ══════════ ④ النبض ══════════ */
+/* ══════════ ④ المستجدات ══════════ */
 
 async function paintPulse(){
   const { data, error } = await api.adminHealth();
@@ -369,10 +369,7 @@ async function paintPulse(){
   const bad  = rows.filter(r => r.status !== 'ok');
 
   body().innerHTML = `
-    ${errOf(error,'نبض المنصّة')}
-    <div class="ad-note">فحوص تُقاس من القاعدة في كلّ فتحة.
-      <b>ولكلّ فحص سطره وحكمه</b> — فحكم واحد على ثمانية أشياء
-      يُدرِّب الناظر على تجاهل الإنذار.</div>
+    ${errOf(error,'المستجدات')}
     ${rows.length ? rows.map(hRow).join('')
       : '<div class="status">لا فحص — ولعلّ الملفّ 152 لم يُطبَّق.</div>'}
     <p class="hint">${bad.length
