@@ -400,9 +400,34 @@ export async function loadLessons(subj){
   if(error){ app.innerHTML = `<div class="err"><b>تعذّر التحميل</b>${esc(error.message)}</div>`; return; }
   S.lessons = data || [];
 
-  // تجميع حسب المستوى
-  const groups = {};
-  S.lessons.forEach(l=>{ (groups[l.level||'—'] ||= []).push(l); });
+  /* ══ شريط تصفية الفروع · b122 ═════════════════════════
+     🔑 ثابتُ ⑤ — الشريط يُبنى ممّا ظهر في دروس الطالب لا من
+        جدول الفروع: مادّةٌ فيها سبعةُ فروعٍ ودروسُها المنشورةُ
+        في اثنين لا تُعرَض فيها خمسةُ خياراتٍ تُفضي كلُّها إلى فراغ.
+     🔑 وثابتُ ① — الفرعُ يُوسَم على أصغرِ ما لا ينقسم: العربيةُ على
+        الدرس والإنجليزيةُ على المكوّن. والقاعدةُ ترسل في كلّ بندٍ
+        `strand_json(coalesce(i.strand_id, l.strand_id))` ⇒ الإرثُ
+        محسوبٌ هناك، وهذا يجمع ما وصل ولا يستنتجه ثانيةً.
+     ⚠️ وثابتُ ④ — الحجبُ على البطاقة لا داخلها: الدرسُ متى ظهر
+        ظهرت بنودُه كلُّها — وتصفيةُ جوفه تُنتج ورقةً من ثلث،
+        و`pass_mark` لم يُعايَر على ثلث. */
+  const strandsOf = l => {
+    const m = new Map();
+    if(l.strand) m.set(l.strand.id, l.strand);
+    (l.items||[]).forEach(i=>{ if(i.strand) m.set(i.strand.id, i.strand); });
+    return m;
+  };
+
+  /* ولا تُرتَّب أبجدياً: `list_lessons` تردّ مرتّبةً بالمستوى ثمّ
+     الوحدة ثمّ الموضع، فترتيبُ أوّلِ ظهورٍ هو ترتيبُ المنهج —
+     والمنسدلةُ تُقرأ بالترتيب نفسِه الّذي تُقرأ به القائمةُ تحتها. */
+  const strands = [...new Map(S.lessons.flatMap(l=>[...strandsOf(l)])).values()];
+
+  /* الفرعُ المختار — محلّيٌّ في النداء: تغييرُ المادّة يُنادي
+     `loadLessons` من جديد فيُنسى، كما تُصفّر شاشةُ الأداء فرعَها
+     عند تغيير مادّتها — وفرعٌ يبقى من مادّةٍ إلى مادّةٍ لا معنى له،
+     فالفرعُ يتبع المادّة (ثابتُ ③). */
+  let pick = null;
 
   const lcard = l => `
     <div class="lsn ${l.locked?'locked':''} ${l.done?'done':''}" data-i="${l.id}">
@@ -428,18 +453,57 @@ export async function loadLessons(subj){
             : 'الانضمام إلى معلم'}
       </button>
     </div>
-    ${Object.keys(groups).map(g=>`
-      ${Object.keys(groups).length>1?`<div class="grp">${esc(g)}</div>`:''}
-      ${groups[g].map(lcard).join("")}`).join("")}
-    ${!S.lessons.length?'<div class="status">لا توجد دروس في هذه المادة بعد</div>':''}`;
+    ${/* خيارٌ واحد لا يُصفّي شيئاً ⇒ لا شريط. والفئتان هما فئتا
+          شاشة الأداء نفسُهما — ونسختان تتفارقان دائماً. */''}
+    ${strands.length>1?`<div class="an-bar">
+      <select id="lsnStrand" class="an-sel" aria-label="الفرع">
+        <option value="">كلّ الفروع</option>
+        ${strands.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join("")}
+      </select>
+    </div>`:''}
+    <div id="lsnlist"></div>`;
+
+  const list = document.getElementById("lsnlist");
+
+  /* تُعاد القائمةُ وحدها لا الشاشة: فالفتاتُ والمعلّمُ والشريطُ
+     تبقى موصولةً، والمنسدلةُ تحفظ قيمتَها وموضعَ تركيزها. ولا نداءَ
+     شبكةٍ في التصفية أصلاً — ما وصل كافٍ. */
+  function paint(){
+    const ls = pick==null ? S.lessons
+                          : S.lessons.filter(l=>strandsOf(l).has(pick));
+
+    const groups = {};
+    ls.forEach(l=>{ (groups[l.level||'—'] ||= []).push(l); });
+    /* وعنوانُ المستوى يُحسب بعد التصفية لا قبلها، فلا يبقى
+       عنوانٌ فوق فراغ، ولا يُكتب عنوانٌ واحدٌ لما لا يحتمل قسيماً. */
+    const many = Object.keys(groups).length>1;
+
+    list.innerHTML =
+      !S.lessons.length ? '<div class="status">لا توجد دروس في هذه المادة بعد</div>'
+      /* ولا يقع ما دامت الخياراتُ من الموجود — ولافتةٌ تُقال
+         خيرٌ من شاشةٍ فارغةٍ تُقرأ «لا مادّةَ هنا». */
+      : !ls.length      ? '<div class="status">لا دروس في هذا الفرع</div>'
+      : Object.keys(groups).map(g=>`
+          ${many?`<div class="grp">${esc(g)}</div>`:''}
+          ${groups[g].map(lcard).join("")}`).join("");
+
+    list.querySelectorAll(".lsn").forEach(el=>el.onclick=()=>{
+      const l = S.lessons.find(v=>String(v.id)===el.dataset.i);
+      if(l.locked){ toast(l.reason||"هذا الدرس غير متاح بعد"); return; }
+      openLesson(l);
+    });
+  }
 
   document.getElementById("bk").onclick  = loadList;
   document.getElementById("mnt").onclick = ()=>loadMentors(subj, true);
-  app.querySelectorAll(".lsn").forEach(el=>el.onclick=()=>{
-    const l = S.lessons.find(v=>String(v.id)===el.dataset.i);
-    if(l.locked){ toast(l.reason||"هذا الدرس غير متاح بعد"); return; }
-    openLesson(l);
-  });
+
+  const sel = document.getElementById("lsnStrand");
+  if(sel) sel.onchange = e => {
+    pick = e.target.value==='' ? null : Number(e.target.value);
+    paint();
+  };
+
+  paint();
   scrollTop();
 }
 
