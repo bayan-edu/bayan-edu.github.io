@@ -434,7 +434,12 @@ export async function loadLessons(subj){
       <div class="lsn-t" dir="auto">${esc(l.title)}
         ${l.done?'<span class="badge ok">أُنجز'+(l.best!=null?' '+AR(l.best)+'٪':'')+'</span>':''}
         ${l.locked?'<span class="badge lock">🔒</span>':''}</div>
-      ${l.summary?`<div class="lsn-m">${esc(l.summary)}</div>`:''}
+      ${/* 🆕 b123 · `dir="auto"` كالعنوان فوقه: الصفحةُ `rtl`، فملخّصٌ
+            إنجليزيٌّ داخلها فقرةٌ عربيّةُ الاتجاه — ونقطتُه محايدةٌ
+            فتتبع الفقرةَ لا النصّ، فتُرحَّل إلى يساره: `.vocabulary`.
+            و`auto` لا `ltr`: الاتجاهُ يُقرأ من أوّل حرفٍ قويّ، فيصحّ
+            للعربيّ والإنجليزيّ بسطرٍ واحد. */''}
+      ${l.summary?`<div class="lsn-m" dir="auto">${esc(l.summary)}</div>`:''}
       <div class="chips">
         ${(l.items||[]).map(i=>`<span class="chip ${i.is_graded?'g':''}">${ICONS[i.kind]||'•'} ${esc(i.title)}</span>`).join("")}
       </div>
@@ -570,7 +575,8 @@ export function openLesson(l){
 
   app.innerHTML = `
     <div class="crumb" id="bk">← ${esc(S.subj.name)}</div>
-    ${l.summary?`<div class="card"><div class="line" style="color:var(--text)">${esc(l.summary)}</div></div>`:''}
+    ${/* 🆕 b123 · `dir="auto"` — وعلّتُها في بطاقة الدرس (`lcard`). */''}
+    ${l.summary?`<div class="card"><div class="line" dir="auto" style="color:var(--text)">${esc(l.summary)}</div></div>`:''}
     <div class="grp">مصادر الدرس <span class="chip">${AR(done)} / ${AR(items.length)}</span></div>
       ${items.map(itmRow).join("")}
     ${!items.length?'<div class="status">لم تُضف مصادر لهذا الدرس بعد</div>':''}
