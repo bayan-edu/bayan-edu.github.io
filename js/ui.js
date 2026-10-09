@@ -13,7 +13,7 @@ import { renderMark, whenReady as avatarReady } from './avatar.js';
    والدمجُ مرّ بلا تعارضٍ **لأنّ الجانبين كتبا السطرَ نفسَه حرفاً** — وهو
    أخبثُ ما في التصادم: لا يشتكي. ⇒ هذه ترفعه، **فالختمُ يجيب «أيُّ شيفرةٍ
    يشغّلها المتصفّح»، وجوابان لسؤالٍ واحدٍ لا جواب.** */
-export const BUILD = "b125";
+export const BUILD = "b126";
 
 /* ── مراسي الصفحة ── */
 export const app = document.getElementById("app");
@@ -83,6 +83,21 @@ export function examples(note){
 export function pickExample(note){
   const xs = examples(note);
   return xs.length ? xs[Math.floor(Math.random() * xs.length)] : '';
+}
+
+/* 🔊 النصّ الذي يُنطق في بطاقة — أو null فلا زرَّ نطقٍ أصلاً.
+   مصدرٌ واحد للجلسة والمعاينة، كـexamples أعلاه.
+
+   🔑 واللغة وحدها لا تكفي حَكَماً: بطاقةٌ `lang='en'` قد يكون وجهها
+      عربياً ومعناها إنجليزياً (مَعنًى ← كلمة). ⇒ يُنطق **الطرف
+      اللاتينيّ** أيّهما كان، وإن لم يكن فيها لاتينيٌّ فلا زرّ.
+      فالزرّ الذي لا يُنتج إلا نطقاً خطأً يُعلّم أنّ الأزرار تكذب. */
+export function sayable(c){
+  if(!c || (c.lang || 'ar') === 'ar') return null;
+  const f = String(c.front || '').replace(/\{\{\s*\}\}/g, ' ').trim();
+  if(f && dirOf(f) === 'ltr') return f;
+  const b = String(c.back || '').trim();
+  return b && dirOf(b) === 'ltr' ? b : null;
 }
 
 /* حرف الخيار: المخزَّن إن وُجد (i · ii · iii) وإلا يُشتقّ من اتجاهه */

@@ -16,8 +16,9 @@ import * as api from './api.js';
 import { S } from './state.js';
 import { openMatchGame, eligible } from './card_game_match.js';
 import { app, head, toast, esc, AR, errBox, nav, scrollTop,
-         dirOf, shrinkFont, examples, pickExample,
+         dirOf, shrinkFont, examples, pickExample, sayable,
          skeleton, N } from './ui.js';
+import { playAudio, speak, canSpeak } from './media.js';
 
 let subjects = [];   // { id, name, due }
 
@@ -249,9 +250,16 @@ export function openSession(subject, opts = {}){
       const draft = document.getElementById('bfDraft').value.trim();
       const compare = draft || c.my_note;   // ما يُقارَن به إن وُجد — فرصٌ لا مصدر واحد
 
+      /* 🔊 ويُسمع **بعد الكشف** لا قبله: الوجه الأول سؤال، وصوتٌ فيه
+         يُعطي الجواب. والتسميتان مقصودتان: «نُطق» صوتُ إنسانٍ مرفوع،
+         و«نُطق تقريبي» قراءةُ الجهاز — وجودتُها تختلف بين جهازٍ وجهاز،
+         فلا يُبنى عليها الطالبُ ثقةَ المسموع. */
+      const say = sayable(c);
+      const spoken = c.audio || (say && canSpeak(c.lang || 'en'));
+
       el("bfBack").innerHTML = `
-        ${c.audio ? `<div style="display:flex;justify-content:flex-end;margin-bottom:6px">
-            <span class="chip">نُطق</span></div>` : ''}
+        ${spoken ? `<div style="display:flex;justify-content:flex-end;margin-bottom:6px">
+            <button class="chip" id="bfSay">${c.audio ? 'نُطق' : 'نُطق تقريبي'}</button></div>` : ''}
 
         ${c.entry === 'dx' && c.dx_note ? `
           <div class="bf-label">سبب المراجعة</div>
@@ -278,6 +286,15 @@ export function openSession(subject, opts = {}){
         </div>`;
 
       registerFit(el("bfBack"), document.getElementById('bfAns'), 16.8, 13);
+
+      /* stopPropagation لازمة: النقر على البطاقة يقلبها، وزرٌّ يُسمع
+         ثمّ يقلب يُفقد المستمعَ ما جاء يسمعه. */
+      const sayBtn = document.getElementById('bfSay');
+      if(sayBtn) sayBtn.onclick = e => {
+        e.stopPropagation();
+        const ok = c.audio ? playAudio(c.audio) : speak(say, c.lang || 'en');
+        if(!ok) toast('تعذّر النطق على هذا الجهاز', false);
+      };
 
       el("bfBack").querySelector('[data-flip]').onclick = e => { e.stopPropagation(); toggle(); };
       el("bfBack").querySelectorAll('[data-g]').forEach(b => b.onclick = e => {
