@@ -2054,3 +2054,57 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
   .ad-filt{flex-wrap:wrap}
   .ad-filt .ad-q,.ad-filt select{flex:1 1 100%}
 }
+
+/* ══════════════════════════════════════════════════════════
+   إدارة المحتوى — b121 · لسانٌ رابع في لوحة الإدارة
+
+   🔑 **ويستعير أصنافَ «الأعضاء» ولا يُنشئ نظيراً لها:** `.ad-u` بطاقةٌ
+      و`.ad-b` زرٌّ و`.ad-pt` عنوانُ نموذج. **ونظيران لشيءٍ واحد يفترقان
+      يوماً** — وهو عينُ ما يقوله الثابتُ ⑨ عن الأرقام. وما يُضاف هنا
+      ما لا نظيرَ له: الصفُّ داخل البطاقة، والنموذج، والكود.
+
+   ⚠️ **والشريطُ صار أربعةَ ألسنة**، و«إدارة المحتوى» كلمتان. فـ`.tab`
+      عليه `flex:1` ⇒ أربعةٌ متساوية، وأضيقُها عند ٣٦٠px يسع كلمةً
+      واحدة. ⇒ يُسمح باللفّ ويُصغَّر الخطُّ في الضيّق — **والطيُّ أصدقُ
+      من قصٍّ يُخفي حرفاً.**
+   ══════════════════════════════════════════════════════════ */
+
+/* الشريطُ الفرعيّ داخل اللسان */
+#cSecs{flex-wrap:wrap}
+#cSecs .tab{flex:1 1 calc(50% - 4px);min-width:0}
+
+/* صفٌّ داخل البطاقة — مستوًى أو مسارٌ أو مقرَّرٌ أو كود */
+.ad-sub{margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
+.ad-sh{font-family:'Almarai';font-weight:800;font-size:var(--fs-tag);
+  color:var(--text-muted);margin-bottom:7px}
+.ad-r{padding:9px 0;border-top:1px solid var(--line)}
+.ad-r:first-of-type{border-top:none}
+.ad-rt{font-family:'Almarai';font-weight:700;font-size:var(--fs-ui)}
+.ad-rm{font-size:var(--fs-meta);color:var(--text-muted);margin-top:3px;line-height:1.75}
+.ad-r .ad-b{margin-top:7px}
+.ad-dim{opacity:1;color:var(--text-muted)}
+
+/* 🔴 الفاصلُ بين الحقائق — يُباعَد ويُخفَّف لأنّ `·` و`٠` رسمٌ واحدٌ
+   تقريباً، فسطرٌ يقول «مسار · ١٧ مادّة» يُقرأ «مسار ١٧٠ مادّة».
+   ولا `opacity` على نصّ (الدَّين الموثَّق في STATE ⑧) — لونٌ صريح. */
+.ad-s{padding:0 .3em;color:var(--line-strong);font-weight:400}
+
+/* كودُ التشخيص — لاتينيٌّ وسط عربيّ، فيُعزل بخطٍّ أحاديّ واتّجاهٍ صريح */
+.ad-code{display:inline-block;direction:ltr;font-family:ui-monospace,monospace;
+  font-weight:700;background:var(--dx-fill);color:var(--dx);border:1px solid var(--dx-line);
+  border-radius:7px;padding:1px 7px;font-size:var(--fs-tag)}
+
+/* النموذج */
+.ad-form{margin-top:12px;padding:14px;border-radius:12px;
+  background:var(--fill-soft);border:1px solid var(--accent-line)}
+.ad-form .fl{margin-top:11px}
+.ad-form .fl:first-of-type{margin-top:0}
+.ad-ta{min-height:70px}
+.ad-opt-n{font-weight:400;color:var(--text-muted)}
+.ad-cb{display:flex;align-items:center;gap:9px;margin-top:13px;
+  font-family:'Almarai';font-weight:700;font-size:var(--fs-meta);cursor:pointer}
+.ad-cb input{width:auto;flex:none;accent-color:var(--accent)}
+
+@media (max-width:400px){
+  .tabs .tab,.subtabs .tab{font-size:var(--fs-meta);padding:10px 6px}
+}

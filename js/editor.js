@@ -634,7 +634,11 @@ export async function editLesson(course, lesson){
       course:    course.id,
       title:     ti,
       unitId:    v("un") ? Number(v("un")) : null,
-      summary:   v("su") || null,
+      /* 🆕 b124 · `v("su")` لا `v("su") || null` — والفرقُ ليس تجميلاً:
+         بعد `156` صار `null` يعني «لم يُرسَل فاترك ما هو مكتوب»،
+         والسلسلةُ الفارغة وحدها تعني «امحُ». ولو بقي `|| null` لتعذّر
+         المحوُ المتعمَّد: يمسح المشرفُ الصندوقَ فلا يُمحى شيء. */
+      summary:   v("su"),
       position:  Number(v("po")) || 0,
       requires:  v("rq") ? Number(v("rq")) : null,
       passMark:  Number(v("pm")) || 65,

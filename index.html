@@ -52,10 +52,28 @@ var m=document.querySelector('meta[name=theme-color]');if(m)m.content=m.dataset[
          (القائمة مع وصلتها نحو الألف) فمالت اليسرى إلى الألف. صارتا
          تحت القائمة وحدها، وتبعتها نقطةُ الباء تحت قائمتها — ثم مُدّ
          الحرفان ثماني وحداتٍ أخرى فدخلت نقطةُ الباء جسمَ الكلمة بسبع.
-       🔑 **والنقاط تحت قوائمها لا تحت امتداد الحروف.** -->
+       📌 ٩ أكتوبر — ثلاثةٌ أُخرى، كلُّها في الياء ومحيطها:
+       ③ القاعُ ينهض ستَّ وحداتٍ تحت الياء وحدها (مستقيمٌ حتى ٤٣٥ ·
+         يبلغ ١٧٠ عند ٣٩٠ · يعود إلى ١٧٦ عند ٣٤٥) فلا يبلغ الباء ولا
+         الألف. وجُرِّب تموُّجٌ يعمُّ القاعَ كلَّه فرُفض: يُضيّع انسيابَ
+         الحرفين الآخرين — وهما لم يُطلب مسُّهما.
+       ④ وزاويتا السنّ منحوتتان: شكلان مملوءان قوسُهما نصفُ قطره ١٣،
+         وهو بعينه نصفُ قطر الحدّ الداخلي حيث تنعطف الباء وحيث ينهض
+         الألف (٣٠ للقوس ناقص ١٧ نصفَ الضربة). ومماسُّهما محسوبٌ على
+         القاع المنحني لا على خطٍّ مستقيم.
+         ⚠️ فإن تغيّر القاعُ يوماً لا تُنقل أرقامُهما — تُعاد حسبتُها،
+            وإلّا طفا النحتُ عن القاع أو غاص فيه.
+         ⚠️ وهما داخل `.part write` ليُكشفا مع الحبر لا بعده.
+       ⑤ ونقطتا الياء أُزيحتا ثمانيَ وحداتٍ نحو الألف (٤١٥→٤٠٧ ·
+         ٣٦٥→٣٥٧): كان الفراغ إلى نقطة الباء ٣٠ وإلى الألف ٤٥، فصار
+         ٣٨ و٣٧. ونهوضُ القاع زاد خلوصَهما عنه من ١٢ إلى ١٢٫٦ و١٥٫٦.
+       🔑 **فالنقاط تحت قوائمها لا تحت امتداد الحروف — ونقطتا الياء
+          مزاحتان ثمانياً عن قائمتها، يحكمهما الفراغُ لا المحور.** -->
   <g class="part write" style="--d:0s">
-    <path fill="none" stroke="var(--logo-ink)" stroke-width="34" stroke-linecap="round" stroke-linejoin="round" d="M498 104 V146 A30 30 0 0 1 468 176 H312 A30 30 0 0 1 282 146 V20"/>
-    <path fill="none" stroke="var(--logo-ink)" stroke-width="34" stroke-linecap="round" d="M390 104 V176"/>
+    <path fill="none" stroke="var(--logo-ink)" stroke-width="34" stroke-linecap="round" stroke-linejoin="round" d="M498 104 V146 A30 30 0 0 1 468 176 H435 C415 176 410 170 390 170 C370 170 365 176 345 176 H312 A30 30 0 0 1 282 146 V20"/>
+    <path fill="none" stroke="var(--logo-ink)" stroke-width="34" stroke-linecap="round" d="M390 104 V170"/>
+    <path fill="var(--logo-ink)" d="M373 143.9 A13 13 0 0 1 363.1 156.6 L363.1 159.6 L375 159.6 L375 141.9 Z"/>
+    <path fill="var(--logo-ink)" d="M407 143.9 A13 13 0 0 0 416.9 156.6 L416.9 159.6 L405 159.6 L405 141.9 Z"/>
     <path fill="none" stroke="var(--logo-ink)" stroke-width="34" stroke-linecap="round" d="M40 104 V128 A80 80 0 0 0 200 128 V104"/>
   </g>
     <!-- ٢ · الورقتان تتفتّحان من وعاء النون — فيروزيٌّ وذهبيّ: هويةٌ ثابتة لا تتبع السِمة -->
@@ -63,15 +81,18 @@ var m=document.querySelector('meta[name=theme-color]');if(m)m.content=m.dataset[
   <path class="part grow" fill="#D6B76D" style="--d:1.15s;--o:left bottom" d="M125 184 C127 140 140 102 166 74 C178 118 160 160 125 184 Z"/>
     <!-- ٣ · كلُّ نقطةٍ مع حرفها: الباء ثم الياء بنقطتيها ثم النون.
        التأخير = لحظةُ بلوغ القلم مركزَ النقطة، محسوبةً بعكس منحنى
-       sp-write (cubic-bezier(.65,0,.35,1) · ٠٫٩٥ث) على مدى الحبر
-       (٥١٥→٢٣): ب ٠٫٢٢ · ي ٠٫٣٥ و٠٫٤٠ · ن ٠٫٦٠.
+       sp-write (cubic-bezier(.65,0,.35,1) · ٠٫٩٥ث) على عرض الـviewBox
+       (٥١٩→١٩): ب ٠٫٢٣ · ي ٠٫٣٧ و٠٫٤١ · ن ٠٫٦٠.
+       📌 ٩ أكتوبر — أُعيد الحساب بعد إزاحة نقطتَي الياء. ونقطةُ الباء
+          لم تتحرّك، لكنّ رقمها صار ٠٫٢٣ لا ٠٫٢٢: الحسبة تُخرج ٠٫٢٢٨
+          وكان مجبوراً إلى أسفل. فالأربعةُ الآن مقرَّبةٌ بقاعدةٍ واحدة.
        غيّرتَ مدّة sp-write أو منحناها أو الشعار؟ أعِد الحساب. -->
-  <circle class="part drop" fill="var(--logo-ink)" style="--d:.22s" cx="487" cy="226" r="21"/>
-  <circle class="part drop" fill="var(--logo-ink)" style="--d:.35s" cx="415" cy="226" r="21"/>
-  <circle class="part drop" fill="var(--logo-ink)" style="--d:.40s" cx="365" cy="226" r="21"/>
+  <circle class="part drop" fill="var(--logo-ink)" style="--d:.23s" cx="487" cy="226" r="21"/>
+  <circle class="part drop" fill="var(--logo-ink)" style="--d:.37s" cx="407" cy="226" r="21"/>
+  <circle class="part drop" fill="var(--logo-ink)" style="--d:.41s" cx="357" cy="226" r="21"/>
   <circle class="part drop" fill="var(--logo-ink)" style="--d:.60s" cx="120" cy="40" r="21"/>
 </svg>
-  <svg class="brand-logo compact" viewBox="19 0 500 250" role="img" aria-label="بيان" focusable="false"><path fill="none" stroke="var(--logo-ink)" stroke-width="34" stroke-linecap="round" stroke-linejoin="round" d="M498 104 V146 A30 30 0 0 1 468 176 H312 A30 30 0 0 1 282 146 V20"/><path fill="none" stroke="var(--logo-ink)" stroke-width="34" stroke-linecap="round" d="M390 104 V176"/><path fill="none" stroke="var(--logo-ink)" stroke-width="34" stroke-linecap="round" d="M40 104 V128 A80 80 0 0 0 200 128 V104"/><path fill="#42B7B4" d="M115 184 C113 140 100 102 74 74 C62 118 80 160 115 184 Z"/><path fill="#D6B76D" d="M125 184 C127 140 140 102 166 74 C178 118 160 160 125 184 Z"/><circle fill="var(--logo-ink)" cx="120" cy="40" r="21"/><circle fill="var(--logo-ink)" cx="365" cy="226" r="21"/><circle fill="var(--logo-ink)" cx="415" cy="226" r="21"/><circle fill="var(--logo-ink)" cx="487" cy="226" r="21"/></svg>
+  <svg class="brand-logo compact" viewBox="19 0 500 250" role="img" aria-label="بيان" focusable="false"><path fill="none" stroke="var(--logo-ink)" stroke-width="34" stroke-linecap="round" stroke-linejoin="round" d="M498 104 V146 A30 30 0 0 1 468 176 H435 C415 176 410 170 390 170 C370 170 365 176 345 176 H312 A30 30 0 0 1 282 146 V20"/><path fill="none" stroke="var(--logo-ink)" stroke-width="34" stroke-linecap="round" d="M390 104 V170"/><path fill="var(--logo-ink)" d="M373 143.9 A13 13 0 0 1 363.1 156.6 L363.1 159.6 L375 159.6 L375 141.9 Z"/><path fill="var(--logo-ink)" d="M407 143.9 A13 13 0 0 0 416.9 156.6 L416.9 159.6 L405 159.6 L405 141.9 Z"/><path fill="none" stroke="var(--logo-ink)" stroke-width="34" stroke-linecap="round" d="M40 104 V128 A80 80 0 0 0 200 128 V104"/><path fill="#42B7B4" d="M115 184 C113 140 100 102 74 74 C62 118 80 160 115 184 Z"/><path fill="#D6B76D" d="M125 184 C127 140 140 102 166 74 C178 118 160 160 125 184 Z"/><circle fill="var(--logo-ink)" cx="120" cy="40" r="21"/><circle fill="var(--logo-ink)" cx="357" cy="226" r="21"/><circle fill="var(--logo-ink)" cx="407" cy="226" r="21"/><circle fill="var(--logo-ink)" cx="487" cy="226" r="21"/></svg>
   <span class="brand-text">
     <span class="brand-name">بيان</span>
     <span class="brand-latin" dir="ltr" aria-hidden="true">BAYAN</span>

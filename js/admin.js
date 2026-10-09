@@ -26,6 +26,7 @@ import * as api from './api.js';
 import { S } from './state.js';
 import { app, head, nav, toast, esc, AR, N, G, errBox, BUILD,
          refreshCounts, goRoute } from './ui.js';
+import { paintContent, resetContent } from './admin_content.js';
 
 /* ── حالة الشاشة — تبقى بين الرسمات فلا يفقد الناظر موضعه ── */
 let tab    = 'people';
@@ -104,17 +105,26 @@ export async function loadConsole(which){
 
   app.innerHTML = `
     <div class="tabs" id="adTabs">
-      <div class="tab ${tab==='people'?'on':''}" data-t="people">الأعضاء</div>
-      <div class="tab ${tab==='audit' ?'on':''}" data-t="audit">السجلّ</div>
-      <div class="tab ${tab==='pulse' ?'on':''}" data-t="pulse">المستجدات</div>
+      <div class="tab ${tab==='people' ?'on':''}" data-t="people">الأعضاء</div>
+      <div class="tab ${tab==='content'?'on':''}" data-t="content">إدارة المحتوى</div>
+      <div class="tab ${tab==='audit'  ?'on':''}" data-t="audit">السجلّ</div>
+      <div class="tab ${tab==='pulse'  ?'on':''}" data-t="pulse">المستجدات</div>
     </div>
     <div id="adBody"><div class="status">جار التحميل…</div></div>`;
 
   app.querySelectorAll('#adTabs .tab').forEach(t =>
-    t.onclick = () => { openId = null; loadConsole(t.dataset.t); });
+    t.onclick = () => {
+      openId = null;
+      /* الشجرةُ تُنسى عند المغادرة — فالعائدُ يراها كما هي لا كما كانت */
+      if(tab === 'content' && t.dataset.t !== 'content') resetContent();
+      loadConsole(t.dataset.t);
+    });
 
-  if(tab === 'people') return paintPeople();
-  if(tab === 'audit')  return paintAudit();
+  if(tab === 'people')  return paintPeople();
+  /* 🆕 b121 · إدارةُ المحتوى (155) — الهيكلُ فوق الدرس. ووحدةٌ خاصّةٌ بها
+     لأنّ فيها ستّةَ كيانات، و`admin.js` لا تحتمل نموذجاً سادساً. */
+  if(tab === 'content') return paintContent(body());
+  if(tab === 'audit')   return paintAudit();
   return paintPulse();
 }
 
