@@ -141,7 +141,98 @@ export function audioKey(scope, file){
 }
 
 
-/* ═══════════ ④ أدوات صغيرة ═══════════ */
+/* ═══════════ ④ التشغيل والنطق ═══════════
+
+   موضعُهما هنا لا في شاشةٍ بعينها: النطق يُطلب من ثلاث شاشات
+   (جلسة الطالب · معاينة المؤلّف · اللعبة)، ومنطقُ «أيّ صوتٍ
+   يُسمَع» واحدٌ فيها. ونسختان منه تتفارقان بصمت.
+
+   📐 والعقد المكتوب في 101_card_media_and_note.sql — يُنفَّذ هنا:
+        ملفٌّ مرفوع        ⇒ يُسمَع
+        لا ملفّ · أجنبية   ⇒ قراءةٌ آليّة من المتصفّح
+        لا ملفّ · عربية    ⇒ **لا زرَّ أصلاً**
+      والأخير قرارٌ لا اختصار: القراءة الآلية تُسقط الإعراب وتُخطئ
+      الحركات، ونطقٌ خاطئ يُحفظ أسوأ من لا نطق.
+   ─────────────────────────────────────────────────────────── */
+
+/** يشغّل مفتاحاً مخزَّناً. يعيد false إن تعذّر بناء الرابط. */
+export function playAudio(key){
+  const url = mediaUrl(key);
+  if(!url) return false;
+  try{
+    /* catch على الوعد لازمة: المتصفّح يرفض التشغيل بلا إيماءةٍ من
+       المستخدم، ورفضٌ غيرُ ملتقَط يظهر خطأً أحمر في الطرفية. */
+    new Audio(url).play().catch(() => {});
+    return true;
+  }catch(err){ return false; }
+}
+
+
+/* القائمة تصل **متأخّرةً** في كروم: أوّلُ getVoices() يعود فارغاً،
+   ثمّ يُطلق voiceschanged. ⇒ تُقرأ مرّتين: الآن وعند وصولها. */
+let VOICES = [];
+const loadVoices = () => {
+  try{ VOICES = window.speechSynthesis?.getVoices() || []; }
+  catch(err){ VOICES = []; }
+};
+if(typeof window !== 'undefined' && window.speechSynthesis){
+  loadVoices();
+  window.speechSynthesis.addEventListener
+    ? window.speechSynthesis.addEventListener('voiceschanged', loadVoices)
+    : (window.speechSynthesis.onvoiceschanged = loadVoices);
+}
+
+/* رتبةُ تفضيلٍ بالاسم — فالجهاز يعطي عشرة أصوات وأوّلُها ليس أحسنها.
+   ⚠️ وأسماءُ الأصوات ليست معياراً: تتغيّر بتحديث النظام، فالمطابقة
+      بجزءٍ من الاسم لا بكامله، والساقطُ يقع على أوّل ما بقي. */
+const PREF = [
+  /natural/i,                            // Microsoft … (Natural) — أحسنُ ما في ويندوز
+  /google (us|uk) english/i,             // كروم وأندرويد
+  /samantha|daniel|karen|moira/i,        // أصوات آبل الأصلية
+  /microsoft (aria|jenny|guy|ryan)/i
+];
+
+/* 🔴 ويُستبعد المعروفُ رداءته: eSpeak على لينكس صوتٌ آليٌّ مشوّه،
+      يُعلّم نطقاً خطأً — وهو أسوأ من صمت. */
+const BAD = /espeak|pico|compact|eloquence/i;
+
+function bestVoice(lang){
+  const pool = VOICES.filter(v => String(v.lang || '').toLowerCase().startsWith(lang)
+                               && !BAD.test(v.name || ''));
+  for(const re of PREF){ const hit = pool.find(v => re.test(v.name || '')); if(hit) return hit; }
+  return pool[0] || null;
+}
+
+/**
+ * أيمكن نطقُ هذه اللغة على هذا الجهاز؟
+ * 🔑 والقائمةُ الفارغة تُقرأ «لم تصل بعد» لا «لا صوت» — فزرٌّ يختفي
+ *    لأجل تأخّرٍ معروف أسوأُ من زرٍّ يعتذر مرّةً عند الضغط.
+ */
+export function canSpeak(lang = 'en'){
+  if(typeof window === 'undefined' || !window.speechSynthesis) return false;
+  return VOICES.length ? !!bestVoice(lang) : true;
+}
+
+/**
+ * ينطق نصّاً. يعيد false إن تعذّر — فينادي المنادي رسالته هو.
+ * ويُبطئ قليلاً (0.9): المستمع متعلّمٌ لا ناطق.
+ */
+export function speak(text, lang = 'en'){
+  const t = String(text || '').replace(/\{\{\s*\}\}/g, ' ').trim();
+  if(!t || typeof window === 'undefined' || !window.speechSynthesis) return false;
+  try{
+    window.speechSynthesis.cancel();      // نداءٌ فوق نداءٍ يتداخل صوتُهما
+    const u = new SpeechSynthesisUtterance(t);
+    const v = bestVoice(lang);
+    if(v){ u.voice = v; u.lang = v.lang; } else { u.lang = lang === 'en' ? 'en-US' : lang; }
+    u.rate = 0.9;
+    window.speechSynthesis.speak(u);
+    return true;
+  }catch(err){ return false; }
+}
+
+
+/* ═══════════ ⑤ أدوات صغيرة ═══════════ */
 
 /** أهذا مفتاحٌ نملكه (فيُحذف معه) أم رابطٌ لبيتِ غيرنا؟ */
 export const isManaged = v => !!v && !v.startsWith("http");

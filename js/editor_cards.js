@@ -16,7 +16,8 @@
       يُلصق بمفتاحه كما في بقية الشاشات (ثابت ②).
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
-import { app, head, toast, esc, AR, errBox, nav, setWide, scrollTop, dirOf, shrinkFont, examples, pickExample, N } from './ui.js';
+import { app, head, toast, esc, AR, errBox, nav, setWide, scrollTop, dirOf, shrinkFont, examples, pickExample, sayable, N } from './ui.js';
+import { playAudio, speak, canSpeak } from './media.js';
 import { openCourse } from './editor.js';
 import { practiceLinkBox } from './practice_links.js';
 
@@ -171,6 +172,8 @@ function renderCards(){
       <div style="flex:0 0 34%;min-width:0">
         <div class="ed-t" dir="${dirOf(c.front)}">${esc(c.front)}</div>
         <div class="ed-m">
+          ${(c.lang || 'ar') !== 'ar'
+            ? `<span class="chip g">${esc(String(c.lang).toUpperCase())}</span>` : ''}
           ${c.audio ? '<span class="chip">🔊 نُطق</span>' : ''}
           ${examples(c.note).length > 1
             ? `<span class="chip">${AR(examples(c.note).length)} أمثلة</span>` : ''}
@@ -258,10 +261,20 @@ function pasteBox(){
           المصطلح في سياقه لا مجرَّداً.</div>
         <div class="ed-hint" style="opacity:.75">♻️ وإعادة اللصق
           <b>تصحيح لا تكرار</b>: ما تكرّر وجهُه يُحدَّث معناه.</div>
+        <div class="ed-hint" style="opacity:.75">🔊 <b>واللغة تفتح النُّطق:</b>
+          الإنجليزية يقرؤها جهاز الطالب آلياً حين لا يكون للبطاقة ملفّ
+          صوت. <b>والعربية لا زرَّ لها</b> — القراءة الآلية تُسقط الإعراب،
+          ونطقٌ خاطئ يُحفظ أسوأ من لا نطق.</div>
       </div>
 
       <div class="card" style="flex:1">
-        <label class="fl">القائمة</label>
+        <label class="fl">لغة هذه الدفعة</label>
+        <select id="lg">
+          <option value="ar">عربية</option>
+          <option value="en">إنجليزية</option>
+        </select>
+
+        <label class="fl" style="margin-top:16px">القائمة</label>
         <textarea id="tx" dir="auto" style="min-height:220px;font-family:var(--font-mono,monospace)"
           placeholder="الاستعارة المكنية&#9;تشبيه حُذف فيه المشبَّه به وبقيت قرينة من لوازمه"></textarea>
 
@@ -302,8 +315,10 @@ function pasteBox(){
 
   document.getElementById('sv').onclick = async () => {
     if(!ready.length) return;
+    /* اللغة تُقرأ لحظةَ الحفظ لا عند بناء الشاشة — فقد تُبدَّل بعد الفحص */
+    const lang = document.getElementById('lg').value || 'ar';
     const { data, error } = await api.saveCards(cur.id, ready.map(r => ({
-      front: r.front, back: r.back, note: r.note || null, lang: 'ar' })));
+      front: r.front, back: r.back, note: r.note || null, lang })));
     if(error) return toast(error.message, false);
     toast(`أُضيفت ${AR(data.added)} · صُحّحت ${AR(data.updated)}`);
     openDeck(cur);
@@ -344,11 +359,18 @@ function cardForm(c){
 
         <div class="ed-3">
           <div>
+            <label class="fl">اللغة</label>
+            <select id="lg">
+              <option value="ar" ${(c?.lang || 'ar') === 'ar' ? 'selected' : ''}>عربية</option>
+              <option value="en" ${c?.lang === 'en' ? 'selected' : ''}>إنجليزية</option>
+            </select>
+          </div>
+          <div>
             <label class="fl">مفتاح النُّطق</label>
             <input type="text" id="au" dir="ltr" value="${esc(c?.audio || '')}"
                    placeholder="audio/x.mp3">
           </div>
-          <div style="grid-column:span 2">
+          <div>
             <label class="fl">رابط الصورة</label>
             <input type="text" id="im" dir="ltr" value="${esc(c?.image || '')}"
                    placeholder="https://…">
@@ -374,7 +396,7 @@ function cardForm(c){
       note:  document.getElementById('nt').value.trim() || null,
       audio: document.getElementById('au').value.trim() || null,
       image: document.getElementById('im').value.trim() || null,
-      lang: 'ar' });
+      lang:  document.getElementById('lg').value || 'ar' });
     if(error) return toast(error.message, false);
     toast('حُفظت'); openDeck(cur);
   };
@@ -498,9 +520,14 @@ function preview(){
        فتصير البطاقة قراءةً لا استرجاعاً — وهو وهمُ المعرفة بعينه.
        ومن أراده فالقلب الرجوعيّ يعيده إليه، وتلك محاولةٌ ثانية لا تذكير.
        والاستثناء: من كتب شيئاً يحتاج المقارَن به لحكمه الذاتيّ. */
+    /* 🔑 والمعاينة تعرضه كما يراه الطالب حرفاً — بلا إيموجي ولا تسمية
+       أخرى. فمعاينةٌ تختلف عن الشاشة تُطمئن على غير ما سيقع. */
+    const say = sayable(c);
+    const spoken = c.audio || (say && canSpeak(c.lang || 'en'));
+
     back.innerHTML = `
-      ${c.audio ? `<div style="display:flex;justify-content:flex-end;margin-bottom:6px">
-          <span class="chip">🔊 نُطق</span></div>` : ''}
+      ${spoken ? `<div style="display:flex;justify-content:flex-end;margin-bottom:6px">
+          <button class="chip" id="bfSay">${c.audio ? 'نُطق' : 'نُطق تقريبي'}</button></div>` : ''}
 
       ${draft ? `
         <div class="bf-term" dir="${dirOf(c.front)}">${esc(c.front)}</div>
@@ -523,6 +550,15 @@ function preview(){
       </div>`;
 
     registerFit(back, document.getElementById('bfAns'), 16.8, 13);
+
+    /* stopPropagation لازمة: البطاقة كلُّها تنقلب بالنقر، وزرٌّ يُسمع
+       ثمّ يقلب يُفقد المستمعَ ما جاء يسمعه. */
+    const sayBtn = document.getElementById('bfSay');
+    if(sayBtn) sayBtn.onclick = e => {
+      e.stopPropagation();
+      const ok = c.audio ? playAudio(c.audio) : speak(say, c.lang || 'en');
+      if(!ok) toast('تعذّر النطق على هذا الجهاز', false);
+    };
 
     back.querySelector('[data-flip]').onclick = e => { e.stopPropagation(); toggle(); };
     back.querySelectorAll('[data-g]').forEach(b => b.onclick = e => { e.stopPropagation(); next(); });
