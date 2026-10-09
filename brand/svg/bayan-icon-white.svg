@@ -1,3 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- الأيقونة للخلفيات الداكنة. -->
+<!-- الأيقونة للخلفيات الداكنة.
+     مولَّدٌ من brand/geometry.json — لا يُحرَّر بيد. هندسة: 039489656d7b -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="11 12 218 218" width="218" height="218"><title>بيان — الأيقونة معكوسة</title><path fill="none" stroke="#FFFFFF" stroke-width="36" stroke-linecap="round" d="M40 104 V128 A80 80 0 0 0 200 128 V104"/><path fill="#42B7B4" d="M114 182 C112 138 98 100 72 74 C58 120 78 160 114 182 Z"/><path fill="#D6B76D" d="M126 182 C128 138 142 100 168 74 C182 120 162 160 126 182 Z"/><circle fill="#FFFFFF" cx="120" cy="40" r="23"/></svg>
