@@ -1268,13 +1268,17 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
    سطراً. 🔴 وكان سطراً بعنوانٍ ورقاقةٍ و«i»، فيُعلن «بابٌ يُملأ» في كلّ
    سؤالٍ يُفتح — وأكثرُ الأسئلة لا مصطلحَ لها. فإعلانٌ دائمٌ عن بابٍ
    نادرِ الدخول يُعلّم العينَ أن تتخطّاه يومَ يُحتاج. */
-.eq-mrow{display:flex;align-items:flex-end;gap:10px}
-.eq-mob{flex:1 1 0;min-width:0}
+/* 🔑 والارتفاعُ يستوي بالبناء لا برقمٍ يُجرَّب: ‎stretch‎ تجعل الزرَّ
+   بطول المنتقي مهما تغيّر حشوُه أو خطُّه. ورقمٌ محسوبٌ باليد يصيب
+   اليومَ ويخطئ يومَ يُعدَّل أحدُهما — وهو خطأٌ لا يصيح. */
+.eq-mrow{display:flex;align-items:stretch;gap:10px;margin-bottom:14px}
+.eq-mob{flex:1 1 0;min-width:0;display:flex}
+.eq-mob > *{flex:1 1 auto;margin:0}
 .eq-cb{flex:0 0 auto;cursor:pointer;white-space:nowrap;max-width:210px;
-  overflow:hidden;text-overflow:ellipsis;margin-bottom:2px;
+  overflow:hidden;text-overflow:ellipsis;
   font-family:'Almarai';font-weight:700;font-size:.76rem;
   background:var(--fill);border:1px solid var(--line);color:var(--text-muted);
-  border-radius:9px;padding:7px 11px;transition:color .16s,border-color .16s}
+  border-radius:9px;padding:7px 13px;transition:color .16s,border-color .16s}
 .eq-cb:hover:not(:disabled){border-color:var(--ok-edge);color:var(--ok)}
 .eq-cb.on{background:var(--ok-soft);border-color:var(--ok-line);color:var(--ok)}
 .eq-cb:disabled{opacity:.45;cursor:not-allowed}

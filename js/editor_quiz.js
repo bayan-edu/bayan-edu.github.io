@@ -58,7 +58,7 @@ let dirty = false; // تغييرات غير محفوظة في السؤال ال�
 let pvOnly = false; // دخلنا للمعاينة وحدها — فلا بابَ منها إلى التحرير
 let OB   = null;   // أهدافُ هذا الاختبار — تُحمَّل معه مرّةً (139)
 let LK   = null;   // روابطُ البطاقات — { map, error } تُحمَّل مع الاختبار (158)
-let CD   = null;   // قائمةُ المصطلحات المفتوحة الآن — { qid, rows, lesson, err }
+let CD   = null;   // قائمةُ بطاقات الدرس المفتوحة الآن — { qid, rows, lesson, err }
 
 
 /* ═══════════ الدخول ═══════════ */
@@ -522,41 +522,44 @@ function sectionBar(q, locked){
 
    والقائمةُ تُجمَّع تحت عنوانها العريض: المعلّم يقرأ «فهم المقروء ⇒ يستخرج
    الفكرة الرئيسة»، لا بنداً عارياً بين عشرين. */
+/* 📌 b131 · تُرجع الآن **قطعتين**: عنواناً فوق السطر ومُنتقياً فيه. وزرُّ
+   البطاقة يقف بجوار المنتقي نفسِه لا بجوار الكتلة كلِّها — فيستوي
+   ارتفاعُهما بالبناء (`align-items:stretch`) **لا برقمٍ يُجرَّب**. */
 function objectiveRow(q, locked){
-  if(!OB) return '';          // معاينةٌ لا تحرير — لا نداءَ أصلاً
-  if(OB.error) return `<div class="eq-hint" style="display:block">
-    ⚠︎ ${esc(OB.error)} — فلا منتقيَ هدفٍ في هذا السؤال.</div>`;
+  const hint = h => ({ lab:'', ctl:`<div class="eq-hint" style="display:block">${h}</div>` });
+
+  if(!OB) return { lab:'', ctl:'' };   // معاينةٌ لا تحرير — لا نداءَ أصلاً
+  if(OB.error) return hint(`⚠︎ ${esc(OB.error)} — فلا منتقيَ هدفٍ في هذا السؤال.`);
   const list = OB.objectives || [];
   const now  = list.find(o => String(o.id) === String(q.objective_id));
 
   /* 🔴 المقفل يُخبِر ولا يُخفى. وأوّلُ صياغةٍ ردّت `''` للمقفل بلا هدف،
      وأسئلةُ المنصّة كلُّها مقفلةٌ تقريباً — فلم يظهر شيءٌ في أيّ شاشة،
      واستوى «لا منتقيَ هنا» و«الشيفرةُ لم تصل». والصمتُ لا يُشخَّص. */
-  if(locked) return `<div class="eq-hint" style="display:block">
-    ما يقيسه: ${now ? esc(now.name) : '— بلا هدف —'}
-    · أُجيب عن هذا السؤال، والقاعدةُ تمنع تعديلَه.</div>`;
+  if(locked) return hint(`ما يقيسه: ${now ? esc(now.name) : '— بلا هدف —'}
+    · أُجيب عن هذا السؤال، والقاعدةُ تمنع تعديلَه.`);
 
-  if(!list.length) return `<div class="eq-hint" style="display:block">
-    ${OB.scope === 'subject' ? 'لا أهدافَ في هذه المادة بعد — فهرسُها لم يُدرَج'
-                             : 'لا أهدافَ على درس هذا الاختبار بعد'}
-    · وبلا هدفٍ يقول التشخيصُ أين أخطأ ولا يقول إلى أين يذهب.</div>`;
+  if(!list.length) return hint(
+    `${OB.scope === 'subject' ? 'لا أهدافَ في هذه المادة بعد — فهرسُها لم يُدرَج'
+                              : 'لا أهدافَ على درس هذا الاختبار بعد'}
+     · وبلا هدفٍ يقول التشخيصُ أين أخطأ ولا يقول إلى أين يذهب.`);
 
   const heads = [...new Set(list.map(o => o.heading_name || '—'))];
-  return `
-    <label class="fl">ما يقيسه هذا السؤال${OB.scope === 'subject'
+  return {
+    lab: `<label class="fl">ما يقيسه هذا السؤال${OB.scope === 'subject'
       ? ' — <span style="color:var(--warn)">من المادة كلّها: هذا الاختبار لا درسَ له</span>'
-      : ''}</label>
-    <select class="eq-obj ${q.objective_id ? '' : 'miss'}" id="qobj" ${locked?'disabled':''}>
+      : ''}</label>`,
+    ctl: `<select class="eq-obj ${q.objective_id ? '' : 'miss'}" id="qobj" ${locked?'disabled':''}>
       <option value="">— بلا هدف —</option>
       ${heads.map(h => `<optgroup label="${esc(h)}">
         ${list.filter(o => (o.heading_name || '—') === h).map(o =>
           `<option value="${o.id}" ${String(o.id) === String(q.objective_id) ? 'selected' : ''}>${
             esc(o.name)}${o.remedy ? '' : ' ⚠︎ بلا علاج'}</option>`).join("")}
       </optgroup>`).join("")}
-    </select>`;
+    </select>` };
 }
 
-/* ═══════════ مصطلحُ البطاقة — السؤالُ يُحيل إلى علاجه ═══════════
+/* ═══════════ بطاقةُ السؤال — يُحيل إلى علاجه ═══════════
    والسلسلةُ التي يفتحها زرٌّ واحد: **أخفق في السؤال ⇒ تتصدّر بطاقتُه
    طابورَه غداً، ومعها سببُ تقديمها.** محرّكٌ كاملٌ مبنيٌّ منذ الملفّ
    `100`، وعموده `questions.card_id` موجودٌ وله فهرس — **وصفرُ ربطٍ من
@@ -576,7 +579,7 @@ function objectiveRow(q, locked){
 /* 🔴 b131 · **وكان سطراً كاملاً فصار زرّاً على سطر الهدف.** والفرقُ
    ليس في البكسلات بل فيما يقوله الترتيب: سطرٌ مستقلٌّ بعنوانٍ ورقاقةٍ
    و«i» يُعلن «هذا بابٌ يُملأ» في كلِّ سؤالٍ يُفتح — وأكثرُ الأسئلة لا
-   مصطلحَ لها أصلاً (ربطُ خطأ التطبيق يكذب على `dx_code`). فإعلانٌ
+   بطاقةَ لها أصلاً (ربطُ خطأ التطبيق يكذب على `dx_code`). فإعلانٌ
    دائمٌ عن بابٍ نادرِ الدخول يُعلّم العينَ أن تتخطّاه، ثمّ تتخطّاه
    يومَ يُحتاج. ⇒ زرٌّ ساكنٌ في فراغِ سطرِ الهدف، **ولا شيءَ ينشط إلا
    بالضغط** — والشرحُ انتقل إلى داخل القائمة، حيث يقع القرار. */
@@ -587,13 +590,14 @@ const THint = 'اربط ما كان خطؤه أنّ الطالب لم يعرف �
             + 'لـdx_code علاجاً لم يقع.';
 
 /* سطرٌ واحدٌ يحمل ما يقيسه السؤال وما يُعالجه: هدفٌ يملأ العرض، وزرُّ
-   المصطلح في آخره. والقائمةُ تُفتح تحتهما بعرض البطاقة. */
+   البطاقة في آخره. والقائمةُ تُفتح تحتهما بعرض البطاقة. */
 function measureRow(q, locked){
-  const ob = objectiveRow(q, locked);
+  const { lab, ctl } = objectiveRow(q, locked);
   const cd = cardBtn(q);
-  if(!ob && !cd) return '';
-  return `<div class="eq-mrow">
-    <div class="eq-mob">${ob}</div>
+  if(!ctl && !cd) return '';
+  return `${lab}
+  <div class="eq-mrow">
+    <div class="eq-mob">${ctl}</div>
     <div id="qcdwrap">${cd}</div>
   </div>
   <div id="qcdbox">${cardBoxIn(q)}</div>`;
@@ -609,16 +613,16 @@ function cardBtn(q){
   /* 🔴 وسؤالٌ لم يُحفظ بعد لا يُربط: الربطُ يكتب على `id`، ولا id له.
      ويُقال في `title` ولا يُخفى الزرُّ — فالاختفاءُ يُقرأ «لا ربطَ هنا». */
   if(!q.id) return `<button class="eq-cb" disabled
-    title="يُربط بعد حفظ السؤال — الربطُ يحتاج معرّفاً">🂠 مصطلح</button>`;
+    title="يُربط بعد حفظ السؤال — الربطُ يحتاج معرّفاً">🂠 بطاقة</button>`;
 
   const now  = LK.map[String(q.id)] || null;
   const open = !!(CD && String(CD.qid) === String(q.id));
 
   return `<button class="eq-cb${now ? ' on' : ''}" id="qcd" dir="auto"
     aria-expanded="${open}" aria-controls="qcdbox"
-    title="${esc(now ? 'المصطلح: ' + (now.front || '') + ' — للتغيير أو الفكّ'
-                     : 'اربط السؤال بمصطلح بطاقته. ' + THint)}">
-    🂠 ${open ? 'أغلق' : (now ? esc(now.front || '—') : 'مصطلح')}</button>`;
+    title="${esc(now ? 'البطاقة: ' + (now.front || '') + ' — للتغيير أو الفكّ'
+                     : 'اربط السؤال ببطاقته. ' + THint)}">
+    🂠 ${open ? 'أغلق' : (now ? esc(now.front || '—') : 'بطاقة')}</button>`;
 }
 
 const cardBoxIn = q =>
@@ -626,7 +630,7 @@ const cardBoxIn = q =>
     ? cardPick(q, LK.map[String(q.id)] || null) : '';
 
 /* القائمةُ تُفتح في موضعها لا في نافذةٍ منبثقة: المؤلّف يقرأ نصَّ السؤال
-   وهو يختار مصطلحَه — ولو فُتحت فوقه لحجبت ما يُقرَّر به.
+   وهو يختار بطاقتَه — ولو فُتحت فوقه لحجبت ما يُقرَّر به.
 
    و⟨✓⟩ اقتراحٌ لا حكم: `card_key` في القاعدة تُسقط التشكيلَ وصورَ الألف
    ثمّ تبحث عن المصطلح في نصّ السؤال وخياراته (158 · ثابت ③). والمطابقُ
@@ -635,22 +639,22 @@ function cardPick(q, now){
   if(CD.err) return `<div class="eq-bar" style="border-style:dashed">
     <div class="eq-hint" style="display:block">⚠︎ ${esc(CD.err)}</div></div>`;
   if(CD.load) return `<div class="eq-bar" style="border-style:dashed">
-    <div class="status" style="padding:8px">جار تحميل المصطلحات…</div></div>`;
+    <div class="status" style="padding:8px">جار تحميل بطاقات الدرس…</div></div>`;
 
   const rows = CD.rows || [];
   if(!rows.length) return `<div class="eq-bar" style="border-style:dashed">
     <div class="eq-hint" style="display:block">
       ${CD.lesson ? `لا بطاقاتَ على درس «${esc(CD.lesson)}» بعد`
-                  : 'هذا الاختبار لا درسَ له، فلا قائمةَ مصطلحاتٍ تُحصر به'}
+                  : 'هذا الاختبار لا درسَ له، فلا قائمةَ بطاقاتٍ تُحصر به'}
       · والبطاقاتُ تُدرَج من محرّر البطاقات ثمّ تُوسم بدرسها.</div></div>`;
 
   const hit = rows.filter(r => r.match).length;
   return `<div class="eq-bar cd">
     <div class="eq-brow" style="margin-bottom:9px">
-      <span class="eq-bt" dir="auto">${esc(CD.lesson || 'مصطلحات الدرس')}</span>
+      <span class="eq-bt" dir="auto">${esc(CD.lesson || 'بطاقات الدرس')}</span>
       ${now ? `<button class="it-b" id="qcdx">✕ فكّ الربط</button>` : ''}
       <span class="eq-bs">${hit ? `⟨✓⟩ ${N(hit,'مقترح','مقترحان','مقترحات','مقترحاً')}`
-                                : 'لا مصطلحَ من هذه القائمة في نصّ السؤال'}</span>
+                                : 'لا بطاقةَ من هذه القائمة يظهر وجهُها في نصّ السؤال'}</span>
     </div>
     ${/* والشرحُ هنا لا على سطر الهدف: يُقرأ لحظةَ الاختيار لا في كلّ
          سؤالٍ يُفتح — فالحارسُ الدائمُ يصير أثاثاً تتخطّاه العين. */''}
@@ -1518,7 +1522,7 @@ function wire(q){
   wireCardRow(q);
 }
 
-/* ═══════════ أفعالُ صفِّ المصطلح ═══════════
+/* ═══════════ أفعالُ زرِّ البطاقة ═══════════
    وتُربط بعد كلِّ رسمٍ للحاوية وحدَها، لا بعد رسم البطاقة فقط — فالفتحُ
    والربطُ يُعيدان الحاوية، ولو بقي الربطُ في `wire` لعملت النقرةُ مرّةً
    ثمّ مات الزرُّ صامتاً. */
@@ -1545,7 +1549,7 @@ function wireCardRow(q){
   });
 }
 
-/* الزرُّ وصندوقُه يُعادان معاً: حالُ الزرِّ («أغلق» ⇄ المصطلح) تتبع
+/* الزرُّ وصندوقُه يُعادان معاً: حالُ الزرِّ («أغلق» ⇄ وجهُ البطاقة) تتبع
    فتحَ الصندوق، فرسمُ أحدهما دون الآخر يُنتج زرّاً يكذب على ما تحته. */
 function paintCardRow(q){
   const w = document.getElementById("qcdwrap");
@@ -1562,7 +1566,7 @@ async function openCardPick(q){
   /* ⚠️ والمؤلّف قد بدّل السؤالَ وهو ينتظر — فالجوابُ يُرمى إن لم يعد له موضع. */
   if(!CD || String(CD.qid) !== String(q.id)) return;
   CD = error || !data
-     ? { qid: q.id, err: error?.message || 'تعذّر تحميل مصطلحات الدرس' }
+     ? { qid: q.id, err: error?.message || 'تعذّر تحميل بطاقات الدرس' }
      : { qid: q.id, rows: data.cards || [], lesson: data.lesson || null };
   paintCardRow(q);
 }
@@ -1574,7 +1578,7 @@ async function applyCardLink(q, card){
   else LK.map[String(q.id)] = { question_id: q.id, card_id: data.card_id, front: data.front };
   CD = null;                               // الفعلُ وقع ⇒ تُغلق القائمة
   paintCardRow(q);
-  toast(card === null ? "فُكّ الربط" : "رُبط بالمصطلح: " + (data.front || ''));
+  toast(card === null ? "فُكّ الربط" : "رُبطت البطاقة: " + (data.front || ''));
 }
 
 /* إعادة رسم الوسط وحده — فلا يفقد الشريط موضعه */
