@@ -390,6 +390,13 @@ export const saveQuiz = o => db.rpc('save_quiz', {
 export const importQuiz = (course, payload, dry = true) =>
   db.rpc('import_quiz', { p_course: course, p_payload: payload, p_dry_run: dry });
 
+/* 🆕 عقدُ استيراد البطاقات (159) — والفرقُ عن أخيه فرقان:
+   · لكلّ بطاقةٍ **دروسُها وفروعُها**، لا واحدٌ للدفعة كما في شاشة اللصق.
+   · والوسمُ **يُضاف ولا يُستبدل** — فما وسمه المعلّمُ بيده لا يُمحى
+     أثراً جانبيّاً لاستيراد. */
+export const importCards = (course, payload, dry = true) =>
+  db.rpc('import_cards', { p_course: course, p_payload: payload, p_dry_run: dry });
+
 export const saveQuestion = o => db.rpc('save_question', {
   p_id:          o.id      ?? null,
   p_quiz:        o.quiz,
