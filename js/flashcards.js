@@ -17,7 +17,7 @@ import { S } from './state.js';
 import { openMatchGame, eligible } from './card_game_match.js';
 import { app, head, toast, esc, AR, errBox, nav, scrollTop,
          dirOf, shrinkFont, examples, pickExample, sayable, sayGroup, bindSay,
-         skeleton, N } from './ui.js';
+         cardImg, skeleton, N } from './ui.js';
 
 
 let subjects = [];   // { id, name, due }
@@ -243,6 +243,7 @@ export function openSession(subject, opts = {}){
             >${esc(c.front).replace(/\{\{\s*\}\}/g, '<span style="opacity:.45">______</span>')}</div>
           ${grp}
         </div>
+        ${cardImg(c.front_image, c.front)}
         <div class="bf-recall">
           <textarea id="bfDraft" dir="auto"
                     placeholder="${gap ? 'الكلمة…' : 'ما يحضرك…'}"
@@ -280,6 +281,7 @@ export function openSession(subject, opts = {}){
           <div class="bf-label">الصواب</div>
           ${ans}`
         : ans}
+        ${cardImg(c.image, c.front)}
 
         ${c._ex ? `<div class="bf-divider"></div>
           <div class="bf-label">مثال${examples(c.note).length > 1

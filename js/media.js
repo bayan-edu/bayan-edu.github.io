@@ -102,23 +102,41 @@ export function mediaUrl(key){
 export const AUDIO_EXT = ["mp3", "m4a", "ogg", "wav", "aac"];
 export const AUDIO_MAX_MB = 10;
 
+/* 🆕 b135 · والصورة. والقيمتان **مقيستان على المخزن لا مخترعتان**:
+   `sql/161` أنشأ `img` بحدٍّ ٢٠٩٧١٥٢ بايتاً وصيغِ `png · jpeg · webp`.
+   ⚠️ **ومسطرتان تفترقان**: حدٌّ هنا أوسعُ من حدّ المخزن يُنتج رفعاً
+      يُردّ بعد الانتظار، وأضيقُ يمنع ما يقبله. فإن تغيّر المخزنُ
+      تغيّرا معاً. */
+export const IMG_EXT = ["png", "jpg", "jpeg", "webp"];
+export const IMG_MAX_MB = 2;
+
 /**
  * يفحص الملف ويبني مفتاحه. العقد كعقد api.js: { key, error }.
  * الفحص هنا **راحةٌ للمستخدم لا حراسة** — يمنعه من انتظار رفعٍ
  * سيفشل. والحراسة في سياسة القاعدة، لأن ما يجري في المتصفح
  * يُتجاوَز بلصق سطر.
+ *
+ * 🆕 b135 · والنوعان يشتركان في مسطرةٍ واحدة. **ونسختان منها تفترقان**
+ *    — فالمخزنُ والصيغُ والحدُّ وسائطُ، والمنطقُ موضعٌ واحد.
  */
-export function audioKey(scope, file){
+function mediaKey(bucket, exts, maxMb, scope, file){
   if(!file) return { key: null, error: "لم يُختر ملف" };
 
   const ext = (file.name.split(".").pop() || "").toLowerCase().slice(0, 4);
-  if(!AUDIO_EXT.includes(ext))
-    return { key: null, error: `صيغة غير مدعومة — المقبول: ${AUDIO_EXT.join(" · ")}` };
+  if(!exts.includes(ext))
+    return { key: null, error: `صيغة غير مدعومة — المقبول: ${exts.join(" · ")}` };
 
   const mb = file.size / 1048576;
-  if(mb > AUDIO_MAX_MB)
+  if(mb > maxMb)
     return { key: null,
-             error: `الملف ${mb.toFixed(1)} م.ب — والحدّ ${AUDIO_MAX_MB}. اضغطه أو قصّه.` };
+             /* 🆕 b135 · مصدرٌ لا أمر (هويّةُ اللغة) — وكانت «اضغطه أو
+                قصّه» منقولةً من بناء الصوت. والعلاجُ يُسمّى ولا يُؤمَر به.
+                ⚠️ والرقمُ لاتينيٌّ بعدُ: media.js وحدةٌ ورقيّةٌ لا تستورد
+                   شيئاً، وAR في ui.js التي تستورد منها — فجلبُها دَوْرٌ
+                   على ثابتٍ (const) وهو أهشُّ ما في الدوائر. فجوةٌ
+                   مكتوبةٌ في STATE، وموضعُها نصٌّ يراه المؤلّف لا الطالب. */
+             error: `الملف ${mb.toFixed(1)} م.ب — والحدّ ${maxMb}، `
+                  + `والعلاجُ ضغطُه أو قصُّه.` };
 
   if(!file.size) return { key: null, error: "الملف فارغ" };
 
@@ -137,8 +155,14 @@ export function audioKey(scope, file){
         وما لا يصلح في رابطٍ يُحذف، فيبقى المفتاح لاتينياً في أي مستودع. */
   const s = String(scope || "x").replace(/[^a-z0-9]/gi, "").slice(0, 8).toLowerCase() || "x";
 
-  return { key: `audio/${s}-${rand}.${ext}`, error: null };
+  return { key: `${bucket}/${s}-${rand}.${ext}`, error: null };
 }
+
+export const audioKey = (scope, file) =>
+  mediaKey("audio", AUDIO_EXT, AUDIO_MAX_MB, scope, file);
+
+export const imageKey = (scope, file) =>
+  mediaKey("img",   IMG_EXT,   IMG_MAX_MB,   scope, file);
 
 
 /* ═══════════ ④ التشغيل والنطق ═══════════
