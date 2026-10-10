@@ -655,8 +655,12 @@ export function publicUrl(key){
   return db.storage.from(m[1]).getPublicUrl(m[2]).data.publicUrl;
 }
 /* الرفع — نقطة الاختناق الوحيدة نحو المخزن.
-   ⚠️ upsert:false عمداً: سياسة storage لا تسمح بـupdate أصلاً،
-      فالتصادم (احتمالٌ في ملياريّ) يصير خطأً ظاهراً لا طمساً صامتاً. */
+   ⚠️ upsert:false عمداً — **وحجّته غير التي كانت مكتوبة هنا.**
+      كان هنا «سياسة storage لا تسمح بـupdate أصلاً»، وقِيست السياساتُ
+      في `b136` فإذا `audio_update` و`img_update` قائمتان وتأذنان للمدير.
+      ⇒ الطمسُ **ممكنٌ** تقنياً، فمنعُه هنا قرارٌ لا وصفٌ لقيدٍ خارجيّ:
+      تصادمٌ (احتمالُه في ملياريّ) يصير خطأً ظاهراً لا طمساً صامتاً
+      لوسيطٍ قد يكون مستعملاً في بطاقةٍ أو سؤالٍ آخر. */
 export async function uploadMedia(key, file){
   const m = KEY_RX.exec(key || "");
   if(!m) return { error: { message: "مفتاح بلا مخزن: " + key } };
