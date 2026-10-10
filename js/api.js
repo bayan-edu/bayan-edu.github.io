@@ -482,6 +482,19 @@ export const linkCardsLesson = (ids, lesson, on = true) =>
   db.rpc('link_cards_lesson', { p_cards: ids, p_lesson: lesson, p_on: on });
 export const linkCardsStrand = (ids, strand, on = true) =>
   db.rpc('link_cards_strand', { p_cards: ids, p_strand: strand, p_on: on });
+/* ── السؤالُ يُحيل إلى بطاقته (158) ──
+   وبها يعمل مدخلُ التشخيص في `due_cards` المبنيُّ منذ الملفّ `100`.
+   ثلاثُ دوالَّ لا واحدة، وكلٌّ تُنادى في وقتٍ مختلف:
+     · `quizCardLinks`   مرّةً مع فتح المحرّر — فيعرف كلُّ زرٍّ حالَه.
+     · `questionCards`   عند الطلب — قائمةُ مصطلحات درس هذا الاختبار.
+     · `linkQuestionCard` بطاقةٌ تُربط، وفارغٌ **يفكّ الربط**.
+   ⚠️ ولا تُفتح `saveQuestion` لأجل هذا الحقل: عشرون معاملاً، وفتحُها
+      لإضافة واحدٍ مخاطرةٌ تفوق نفعَها (158 · ثابت ①). */
+export const quizCardLinks  = qid => db.rpc('quiz_card_links', { p_quiz: qid });
+export const questionCards  = qid => db.rpc('question_cards', { p_question: qid });
+export const linkQuestionCard = (qid, card = null) =>
+  db.rpc('link_question_card', { p_question: qid, p_card: card });
+
 export const saveMyNote     = (id, note) => db.rpc('save_my_note', { p_card: id, p_note: note });
 export const dueCards       = (sid, limit, fresh) =>
   db.rpc('due_cards', { p_subject: sid, p_limit: limit ?? 30, p_new: fresh ?? 6 });

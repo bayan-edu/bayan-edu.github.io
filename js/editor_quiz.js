@@ -57,6 +57,8 @@ let ctx  = null;   // { course, lesson }
 let dirty = false; // تغييرات غير محفوظة في السؤال الحالي
 let pvOnly = false; // دخلنا للمعاينة وحدها — فلا بابَ منها إلى التحرير
 let OB   = null;   // أهدافُ هذا الاختبار — تُحمَّل معه مرّةً (139)
+let LK   = null;   // روابطُ البطاقات — { map, error } تُحمَّل مع الاختبار (158)
+let CD   = null;   // قائمةُ المصطلحات المفتوحة الآن — { qid, rows, lesson, err }
 
 
 /* ═══════════ الدخول ═══════════ */
@@ -98,6 +100,17 @@ export async function openQuiz(course, lesson){
      : { objectives: [], scope: null,
          error: ob?.error?.message || ob?.data?.error || 'تعذّر تحميل الأهداف' };
 
+  /* روابطُ البطاقات: نداءٌ واحدٌ لكلّ الاختبار، فيعرف زرُّ كلِّ سؤالٍ حالَه
+     بلا نداءٍ لكلّ سؤال. و`quiz_for_edit` تبقى كما هي — لها سابقةٌ موجعة
+     (٥ سبتمبر)، ونداءٌ شقيقٌ صغيرٌ أرخصُ من فتحها (158 · ثابت ④).
+     🔴 والتعذّرُ يُقال كما في الأهداف: الصمتُ يُسوّي «لم يُحمَّل» و«لا روابطَ
+        بعد» و«الشيفرةُ القديمة في المتصفّح» — ثلاثُ عللٍ بمظهرٍ واحد. */
+  const lk = await api.quizCardLinks(qid);
+  LK = (!lk?.error && Array.isArray(lk?.data))
+     ? { map: Object.fromEntries(lk.data.map(r => [String(r.question_id), r])) }
+     : { map: {}, error: lk?.error?.message || 'تعذّر قراءة روابط البطاقات' };
+  CD = null;
+
   render('top');
 }
 
@@ -123,7 +136,9 @@ export async function openQuizPreview(course, lesson){
   const { data, error } = await api.getQuiz(lesson.quiz_id);
   if(error){ app.innerHTML = errBox(error, 'معاينة الأسئلة'); return; }
 
-  Z = data; cur = 0; dirty = false; pv = 0;
+  /* 🔒 والمعاينةُ لا تحرير: `LK` تُصفَّر صراحةً ولا تُتوارث من اختبارٍ
+     حُرِّر قبلها — حالةُ ربطٍ لاختبارٍ آخر أسوأُ من غيابها. */
+  Z = data; cur = 0; dirty = false; pv = 0; LK = null; CD = null;
   preview();
 }
 
@@ -359,6 +374,7 @@ function qCard(q){
         ${locked ? '<span class="badge lock">مقفل</span>' : ''}</div>
       ${moveBar(q)}
       ${objectiveRow(q, locked)}
+      ${cardRow(q)}
       ${mediaRow(q, locked)}
 
       <textarea id="qb" class="eq-qt" dir="auto" placeholder="نصّ السؤال…"
@@ -539,6 +555,98 @@ function objectiveRow(q, locked){
             esc(o.name)}${o.remedy ? '' : ' ⚠︎ بلا علاج'}</option>`).join("")}
       </optgroup>`).join("")}
     </select>`;
+}
+
+/* ═══════════ مصطلحُ البطاقة — السؤالُ يُحيل إلى علاجه ═══════════
+   والسلسلةُ التي يفتحها زرٌّ واحد: **أخفق في السؤال ⇒ تتصدّر بطاقتُه
+   طابورَه غداً، ومعها سببُ تقديمها.** محرّكٌ كاملٌ مبنيٌّ منذ الملفّ
+   `100`، وعموده `questions.card_id` موجودٌ وله فهرس — **وصفرُ ربطٍ من
+   ٢٤٥٢ سؤالاً حيّ.** ميزةٌ تنتظر يداً تصلها، وهذا الزرُّ هو اليد.
+
+   🔴 **ولا يُعطَّل بالقفل.** وهذا موضعُ الحجّة لا تفصيلَ تنسيق: أسئلةُ
+      المنصّة كلُّها مُجابٌ عنها تقريباً — وهي بعينها التي يحتاج
+      طلّابُها العلاج. فلو حجبنا الربطَ عن المقفل لوُلدت الميزةُ ميّتة.
+      والسابقةُ قائمةٌ وصريحة: الخانةُ تُعدَّل ولو كان السؤال مقفلاً
+      «هي وسمُ تجميعٍ لا محتوى، فلا تمسّ إجابةً سابقة» — والربطُ مثلُها:
+      `link_question_card` تكتب `card_id` وحده ولا تُدخل `save_question`،
+      فلا يُمسّ نصٌّ رآه طالبٌ ولا خيارٌ أُجيب عنه.
+
+   🔑 والحارسُ التربويُّ **في الشاشة لا في القاعدة**: «اربط ما كان خطؤه
+      أنّه لم يعرف الاسم» قرارٌ لا يُقاس بـSQL — ويُكتب حيث يقع الفعل. */
+
+/* حاويةٌ تُعاد وحدها: فتحُ القائمة وربطُها لا يُعيد رسمَ البطاقة كلِّها —
+   و`repaint` تمرّ على `collect` فتُفقد موضعَ المؤشّر في نصٍّ يُكتب. */
+const cardRow = q => `<div id="qcdwrap">${cardRowIn(q)}</div>`;
+
+function cardRowIn(q){
+  if(!LK) return '';                       // معاينةٌ لا تحرير — لا نداءَ أصلاً
+  if(LK.error) return `<div class="eq-hint" style="display:block">
+    ⚠︎ ${esc(LK.error)} — فلا ربطَ ببطاقةٍ في هذا السؤال.</div>`;
+
+  /* 🔴 وسؤالٌ لم يُحفظ بعد لا يُربط: الربطُ يكتب على `id`، ولا id له.
+     ويُقال ولا يُخفى الزرُّ صامتاً — فالاختفاءُ يُقرأ «لا ربطَ هنا». */
+  if(!q.id) return `<div class="eq-hint" style="display:block">
+    مصطلحُ البطاقة يُربط بعد حفظ السؤال — الربطُ يحتاج معرّفاً.</div>`;
+
+  const now  = LK.map[String(q.id)] || null;
+  const open = !!(CD && String(CD.qid) === String(q.id));
+
+  const T = 'اربط ما كان خطؤه أنّه لم يعرف الاسم: مصطلحٌ خُلط بمصطلح. '
+          + 'أمّا «طبّق القانون مقلوباً» فعلاجُه مثالٌ محلول — وبطاقةٌ هناك '
+          + 'تُعلّم الطالب جملةً يردّدها بلا فهم، وتُظهر لـdx_code علاجاً لم يقع.';
+
+  return `
+    <div class="eq-strip eq-cdr">
+      <span class="eq-cdl">مصطلحُ البطاقة</span>
+      ${now ? `<span class="eq-cdc" dir="auto">🂠 ${esc(now.front || '—')}</span>` : ''}
+      <button class="eq-sb" id="qcd" aria-expanded="${open}" aria-controls="qcdbox">
+        ${open ? '▴ أغلق القائمة' : (now ? '⇄ تغيير' : '＋ اربط مصطلحاً')}</button>
+      ${now ? `<button class="it-b" id="qcdx" title="فكّ الربط">✕</button>` : ''}
+      <span class="eq-strip-g"></span>
+      <button class="eq-i-b" id="qcdi" aria-expanded="false" aria-controls="qcdd"
+              title="التفاصيل">i</button>
+      <div class="eq-strip-d" id="qcdd" hidden><div>${esc(T)}</div></div>
+    </div>
+    <div id="qcdbox">${open ? cardPick(q, now) : ''}</div>`;
+}
+
+/* القائمةُ تُفتح في موضعها لا في نافذةٍ منبثقة: المؤلّف يقرأ نصَّ السؤال
+   وهو يختار مصطلحَه — ولو فُتحت فوقه لحجبت ما يُقرَّر به.
+
+   و⟨✓⟩ اقتراحٌ لا حكم: `card_key` في القاعدة تُسقط التشكيلَ وصورَ الألف
+   ثمّ تبحث عن المصطلح في نصّ السؤال وخياراته (158 · ثابت ③). والمطابقُ
+   يتصدّر، والبقيّةُ تظهر كاملةً — فالاقتراحُ يُسرِّع ولا يحجب. */
+function cardPick(q, now){
+  if(CD.err) return `<div class="eq-bar" style="border-style:dashed">
+    <div class="eq-hint" style="display:block">⚠︎ ${esc(CD.err)}</div></div>`;
+  if(CD.load) return `<div class="eq-bar" style="border-style:dashed">
+    <div class="status" style="padding:8px">جار تحميل المصطلحات…</div></div>`;
+
+  const rows = CD.rows || [];
+  if(!rows.length) return `<div class="eq-bar" style="border-style:dashed">
+    <div class="eq-hint" style="display:block">
+      ${CD.lesson ? `لا بطاقاتَ على درس «${esc(CD.lesson)}» بعد`
+                  : 'هذا الاختبار لا درسَ له، فلا قائمةَ مصطلحاتٍ تُحصر به'}
+      · والبطاقاتُ تُدرَج من محرّر البطاقات ثمّ تُوسم بدرسها.</div></div>`;
+
+  const hit = rows.filter(r => r.match).length;
+  return `<div class="eq-bar cd">
+    <div class="eq-brow" style="margin-bottom:9px">
+      <span class="eq-bt" dir="auto">${esc(CD.lesson || 'مصطلحات الدرس')}</span>
+      <span class="eq-bs">${hit ? `⟨✓⟩ ${N(hit,'مقترح','مقترحان','مقترحات','مقترحاً')}`
+                                : 'لا مصطلحَ من هذه القائمة في نصّ السؤال'}</span>
+    </div>
+    <div class="cd-grid">
+      ${rows.map(r => {
+        const on = now && String(now.card_id) === String(r.id);
+        return `<button class="cd-t${on?' on':''}${r.match?' sug':''}" data-cd="${r.id}"
+                        dir="auto" title="${esc(r.back || '')}">
+          ${r.match ? '<span class="cd-s">✓</span>' : ''}
+          <span class="cd-f">${esc(r.front || '—')}</span>
+          <span class="cd-b">${esc((r.back || '').replace(/\s+/g,' ').slice(0,72))}</span>
+          ${on ? '<span class="cd-on">مربوط — انقر للفكّ</span>' : ''}
+        </button>`; }).join('')}
+    </div></div>`;
 }
 
 function passageBar(q, locked){
@@ -1388,6 +1496,67 @@ function wire(q){
   const xq = main.querySelector("#xq"); if(xq) xq.onclick = () => delQ(q);
   const mu = main.querySelector("#mvup"); if(mu) mu.onclick = () => moveQ(-1);
   const md = main.querySelector("#mvdn"); if(md) md.onclick = () => moveQ(+1);
+  wireCardRow(q);
+}
+
+/* ═══════════ أفعالُ صفِّ المصطلح ═══════════
+   وتُربط بعد كلِّ رسمٍ للحاوية وحدَها، لا بعد رسم البطاقة فقط — فالفتحُ
+   والربطُ يُعيدان الحاوية، ولو بقي الربطُ في `wire` لعملت النقرةُ مرّةً
+   ثمّ مات الزرُّ صامتاً. */
+function wireCardRow(q){
+  const w = document.getElementById("qcdwrap");
+  if(!w) return;
+
+  const i = w.querySelector("#qcdi");
+  if(i) i.onclick = () => {
+    const d = w.querySelector("#qcdd");
+    d.hidden = !d.hidden;
+    i.setAttribute('aria-expanded', String(!d.hidden));
+  };
+
+  const b = w.querySelector("#qcd");
+  if(b) b.onclick = () => {
+    if(CD && String(CD.qid) === String(q.id)){ CD = null; paintCardRow(q); return; }
+    openCardPick(q);
+  };
+
+  const x = w.querySelector("#qcdx");
+  if(x) x.onclick = () => applyCardLink(q, null);
+
+  w.querySelectorAll("[data-cd]").forEach(el => el.onclick = () => {
+    const id  = +el.dataset.cd;
+    const now = LK.map[String(q.id)];
+    /* النقرةُ على المربوط تفكّه — زرٌّ واحدٌ يُبدّل حاله، لا زرّان. */
+    applyCardLink(q, (now && String(now.card_id) === String(id)) ? null : id);
+  });
+}
+
+function paintCardRow(q){
+  const w = document.getElementById("qcdwrap");
+  if(!w) return;
+  w.innerHTML = cardRowIn(q);
+  wireCardRow(q);
+}
+
+async function openCardPick(q){
+  CD = { qid: q.id, load: true }; paintCardRow(q);
+  const { data, error } = await api.questionCards(q.id);
+  /* ⚠️ والمؤلّف قد بدّل السؤالَ وهو ينتظر — فالجوابُ يُرمى إن لم يعد له موضع. */
+  if(!CD || String(CD.qid) !== String(q.id)) return;
+  CD = error || !data
+     ? { qid: q.id, err: error?.message || 'تعذّر تحميل مصطلحات الدرس' }
+     : { qid: q.id, rows: data.cards || [], lesson: data.lesson || null };
+  paintCardRow(q);
+}
+
+async function applyCardLink(q, card){
+  const { data, error } = await api.linkQuestionCard(q.id, card);
+  if(error){ toast(error.message); return; }
+  if(card === null) delete LK.map[String(q.id)];
+  else LK.map[String(q.id)] = { question_id: q.id, card_id: data.card_id, front: data.front };
+  CD = null;                               // الفعلُ وقع ⇒ تُغلق القائمة
+  paintCardRow(q);
+  toast(card === null ? "فُكّ الربط" : "رُبط بالمصطلح: " + (data.front || ''));
 }
 
 /* إعادة رسم الوسط وحده — فلا يفقد الشريط موضعه */
