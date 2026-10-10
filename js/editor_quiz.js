@@ -373,8 +373,7 @@ function qCard(q){
             <div class="qnum">سؤال ${AR(cur+1)} · ${KIND_LABEL[q.kind]||'سؤال'}
         ${locked ? '<span class="badge lock">مقفل</span>' : ''}</div>
       ${moveBar(q)}
-      ${objectiveRow(q, locked)}
-      ${cardRow(q)}
+      ${measureRow(q, locked)}
       ${mediaRow(q, locked)}
 
       <textarea id="qb" class="eq-qt" dir="auto" placeholder="نصّ السؤال…"
@@ -574,41 +573,57 @@ function objectiveRow(q, locked){
    🔑 والحارسُ التربويُّ **في الشاشة لا في القاعدة**: «اربط ما كان خطؤه
       أنّه لم يعرف الاسم» قرارٌ لا يُقاس بـSQL — ويُكتب حيث يقع الفعل. */
 
-/* حاويةٌ تُعاد وحدها: فتحُ القائمة وربطُها لا يُعيد رسمَ البطاقة كلِّها —
-   و`repaint` تمرّ على `collect` فتُفقد موضعَ المؤشّر في نصٍّ يُكتب. */
-const cardRow = q => `<div id="qcdwrap">${cardRowIn(q)}</div>`;
+/* 🔴 b131 · **وكان سطراً كاملاً فصار زرّاً على سطر الهدف.** والفرقُ
+   ليس في البكسلات بل فيما يقوله الترتيب: سطرٌ مستقلٌّ بعنوانٍ ورقاقةٍ
+   و«i» يُعلن «هذا بابٌ يُملأ» في كلِّ سؤالٍ يُفتح — وأكثرُ الأسئلة لا
+   مصطلحَ لها أصلاً (ربطُ خطأ التطبيق يكذب على `dx_code`). فإعلانٌ
+   دائمٌ عن بابٍ نادرِ الدخول يُعلّم العينَ أن تتخطّاه، ثمّ تتخطّاه
+   يومَ يُحتاج. ⇒ زرٌّ ساكنٌ في فراغِ سطرِ الهدف، **ولا شيءَ ينشط إلا
+   بالضغط** — والشرحُ انتقل إلى داخل القائمة، حيث يقع القرار. */
 
-function cardRowIn(q){
+const THint = 'اربط ما كان خطؤه أنّ الطالب لم يعرف الاسم: مصطلحٌ خُلط '
+            + 'بمصطلح. أمّا «طبّق القاعدة مقلوبة» فعلاجُه مثالٌ محلول — '
+            + 'وبطاقةٌ هناك تُعلّمه جملةً يردّدها بلا فهم، وتُظهر '
+            + 'لـdx_code علاجاً لم يقع.';
+
+/* سطرٌ واحدٌ يحمل ما يقيسه السؤال وما يُعالجه: هدفٌ يملأ العرض، وزرُّ
+   المصطلح في آخره. والقائمةُ تُفتح تحتهما بعرض البطاقة. */
+function measureRow(q, locked){
+  const ob = objectiveRow(q, locked);
+  const cd = cardBtn(q);
+  if(!ob && !cd) return '';
+  return `<div class="eq-mrow">
+    <div class="eq-mob">${ob}</div>
+    <div id="qcdwrap">${cd}</div>
+  </div>
+  <div id="qcdbox">${cardBoxIn(q)}</div>`;
+}
+
+/* حاويتان تُعادان وحدَهما: فتحُ القائمة وربطُها لا يُعيدان رسمَ البطاقة
+   كلِّها — و`repaint` تمرّ على `collect` فتُفقد موضعَ المؤشّر في نصٍّ يُكتب. */
+function cardBtn(q){
   if(!LK) return '';                       // معاينةٌ لا تحرير — لا نداءَ أصلاً
-  if(LK.error) return `<div class="eq-hint" style="display:block">
-    ⚠︎ ${esc(LK.error)} — فلا ربطَ ببطاقةٍ في هذا السؤال.</div>`;
+  if(LK.error) return `<button class="eq-cb bad" disabled
+    title="${esc(LK.error)}">🂠 تعذّر</button>`;
 
   /* 🔴 وسؤالٌ لم يُحفظ بعد لا يُربط: الربطُ يكتب على `id`، ولا id له.
-     ويُقال ولا يُخفى الزرُّ صامتاً — فالاختفاءُ يُقرأ «لا ربطَ هنا». */
-  if(!q.id) return `<div class="eq-hint" style="display:block">
-    مصطلحُ البطاقة يُربط بعد حفظ السؤال — الربطُ يحتاج معرّفاً.</div>`;
+     ويُقال في `title` ولا يُخفى الزرُّ — فالاختفاءُ يُقرأ «لا ربطَ هنا». */
+  if(!q.id) return `<button class="eq-cb" disabled
+    title="يُربط بعد حفظ السؤال — الربطُ يحتاج معرّفاً">🂠 مصطلح</button>`;
 
   const now  = LK.map[String(q.id)] || null;
   const open = !!(CD && String(CD.qid) === String(q.id));
 
-  const T = 'اربط ما كان خطؤه أنّه لم يعرف الاسم: مصطلحٌ خُلط بمصطلح. '
-          + 'أمّا «طبّق القانون مقلوباً» فعلاجُه مثالٌ محلول — وبطاقةٌ هناك '
-          + 'تُعلّم الطالب جملةً يردّدها بلا فهم، وتُظهر لـdx_code علاجاً لم يقع.';
-
-  return `
-    <div class="eq-strip eq-cdr">
-      <span class="eq-cdl">مصطلحُ البطاقة</span>
-      ${now ? `<span class="eq-cdc" dir="auto">🂠 ${esc(now.front || '—')}</span>` : ''}
-      <button class="eq-sb" id="qcd" aria-expanded="${open}" aria-controls="qcdbox">
-        ${open ? '▴ أغلق القائمة' : (now ? '⇄ تغيير' : '＋ اربط مصطلحاً')}</button>
-      ${now ? `<button class="it-b" id="qcdx" title="فكّ الربط">✕</button>` : ''}
-      <span class="eq-strip-g"></span>
-      <button class="eq-i-b" id="qcdi" aria-expanded="false" aria-controls="qcdd"
-              title="التفاصيل">i</button>
-      <div class="eq-strip-d" id="qcdd" hidden><div>${esc(T)}</div></div>
-    </div>
-    <div id="qcdbox">${open ? cardPick(q, now) : ''}</div>`;
+  return `<button class="eq-cb${now ? ' on' : ''}" id="qcd" dir="auto"
+    aria-expanded="${open}" aria-controls="qcdbox"
+    title="${esc(now ? 'المصطلح: ' + (now.front || '') + ' — للتغيير أو الفكّ'
+                     : 'اربط السؤال بمصطلح بطاقته. ' + THint)}">
+    🂠 ${open ? 'أغلق' : (now ? esc(now.front || '—') : 'مصطلح')}</button>`;
 }
+
+const cardBoxIn = q =>
+  (LK && !LK.error && q.id && CD && String(CD.qid) === String(q.id))
+    ? cardPick(q, LK.map[String(q.id)] || null) : '';
 
 /* القائمةُ تُفتح في موضعها لا في نافذةٍ منبثقة: المؤلّف يقرأ نصَّ السؤال
    وهو يختار مصطلحَه — ولو فُتحت فوقه لحجبت ما يُقرَّر به.
@@ -633,9 +648,13 @@ function cardPick(q, now){
   return `<div class="eq-bar cd">
     <div class="eq-brow" style="margin-bottom:9px">
       <span class="eq-bt" dir="auto">${esc(CD.lesson || 'مصطلحات الدرس')}</span>
+      ${now ? `<button class="it-b" id="qcdx">✕ فكّ الربط</button>` : ''}
       <span class="eq-bs">${hit ? `⟨✓⟩ ${N(hit,'مقترح','مقترحان','مقترحات','مقترحاً')}`
                                 : 'لا مصطلحَ من هذه القائمة في نصّ السؤال'}</span>
     </div>
+    ${/* والشرحُ هنا لا على سطر الهدف: يُقرأ لحظةَ الاختيار لا في كلّ
+         سؤالٍ يُفتح — فالحارسُ الدائمُ يصير أثاثاً تتخطّاه العين. */''}
+    <div class="eq-hint" style="display:block;margin-bottom:10px">🔑 ${esc(THint)}</div>
     <div class="cd-grid">
       ${rows.map(r => {
         const on = now && String(now.card_id) === String(r.id);
@@ -1505,25 +1524,20 @@ function wire(q){
    ثمّ مات الزرُّ صامتاً. */
 function wireCardRow(q){
   const w = document.getElementById("qcdwrap");
+  const x = document.getElementById("qcdbox");
   if(!w) return;
-
-  const i = w.querySelector("#qcdi");
-  if(i) i.onclick = () => {
-    const d = w.querySelector("#qcdd");
-    d.hidden = !d.hidden;
-    i.setAttribute('aria-expanded', String(!d.hidden));
-  };
 
   const b = w.querySelector("#qcd");
   if(b) b.onclick = () => {
     if(CD && String(CD.qid) === String(q.id)){ CD = null; paintCardRow(q); return; }
     openCardPick(q);
   };
+  if(!x) return;
 
-  const x = w.querySelector("#qcdx");
-  if(x) x.onclick = () => applyCardLink(q, null);
+  const u = x.querySelector("#qcdx");
+  if(u) u.onclick = () => applyCardLink(q, null);
 
-  w.querySelectorAll("[data-cd]").forEach(el => el.onclick = () => {
+  x.querySelectorAll("[data-cd]").forEach(el => el.onclick = () => {
     const id  = +el.dataset.cd;
     const now = LK.map[String(q.id)];
     /* النقرةُ على المربوط تفكّه — زرٌّ واحدٌ يُبدّل حاله، لا زرّان. */
@@ -1531,10 +1545,14 @@ function wireCardRow(q){
   });
 }
 
+/* الزرُّ وصندوقُه يُعادان معاً: حالُ الزرِّ («أغلق» ⇄ المصطلح) تتبع
+   فتحَ الصندوق، فرسمُ أحدهما دون الآخر يُنتج زرّاً يكذب على ما تحته. */
 function paintCardRow(q){
   const w = document.getElementById("qcdwrap");
-  if(!w) return;
-  w.innerHTML = cardRowIn(q);
+  const x = document.getElementById("qcdbox");
+  if(!w || !x) return;
+  w.innerHTML = cardBtn(q);
+  x.innerHTML = cardBoxIn(q);
   wireCardRow(q);
 }
 
