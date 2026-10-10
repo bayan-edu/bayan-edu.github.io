@@ -468,6 +468,11 @@ h2.sec{font-family:'Almarai';font-weight:800;font-size:var(--fs-h);margin:24px 0
    لا حكم، فتبع accent إلى الأزرق. لا يُعاد تسميته: يسكن في ١٣ موضعاً. */
 .chip.g{background:var(--accent-fill);border-color:var(--accent-line);color:var(--accent)}
 
+/* 🆕 b129 · شارةُ نقصٍ في واجهة المؤلّف — «بلا درس ولا فرع».
+   كهرمانيّةٌ لا حمراء: الأحمر يقول «أخطأتَ»، وهذا نقصٌ يُستدرَك
+   لا خطأٌ وقع. ولا تُستعمل في نصّ الطالب. */
+.chip.warn{background:var(--warn-fill);border-color:var(--warn-line);color:var(--warn)}
+
 /* ── الحالات والرسائل ── */
 .status{text-align:center;padding:26px 14px;color:var(--text-muted);font-size:var(--fs-ui)}
 

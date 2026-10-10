@@ -697,6 +697,18 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
 .qz-go.off{color:var(--text-muted);opacity:.55;cursor:not-allowed}
 .ed-empty{color:var(--text-muted);font-size:var(--fs-meta);padding:10px 4px 14px}
 
+/* 🆕 b129 · مُنتقٍ متعدّد في المحرّر — مربّعاتٌ لا قائمةُ اختيارٍ
+   متعدّدة: تلك تحتاج Ctrl للنقر، ونقرةٌ واحدةٌ خاطئة تمحو الاختيار
+   كلَّه بلا إنذار. والمربّعاتُ تُقرأ بلمحة وتُلمَس بإصبع.
+   والارتفاع محدودٌ لأنّ المادة قد تبلغ أربعين درساً. */
+.pick{display:flex;flex-direction:column;gap:2px;max-height:190px;overflow-y:auto;
+  border:1px solid var(--line);border-radius:12px;padding:7px 9px;background:var(--fill)}
+.pick-i{display:flex;align-items:center;gap:9px;cursor:pointer;
+  padding:6px 4px;border-radius:8px;font-size:var(--fs-meta);line-height:1.5}
+.pick-i:hover{background:var(--bg)}
+.pick-i input{flex:0 0 auto;width:16px;height:16px;margin:0;accent-color:var(--accent)}
+.pick-i span{min-width:0;overflow-wrap:anywhere}
+
 .ed-form{display:flex;gap:16px;align-items:flex-start}
 .ed-side{flex:0 0 258px;display:flex;flex-direction:column;gap:9px}
 .ed-hint{background:var(--accent-soft);border:1px solid var(--accent-line);
