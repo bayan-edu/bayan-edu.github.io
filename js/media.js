@@ -196,25 +196,46 @@ const PREF = [
       يُعلّم نطقاً خطأً — وهو أسوأ من صمت. */
 const BAD = /espeak|pico|compact|eloquence/i;
 
+/* ⚠️ وأندرويد يكتبها `en_US` بشرطةٍ سفلية لا عُليا — ولو لم تُسوَّ
+      لسقطت مطابقةُ اللهجة هناك وحدها، صامتةً على كلّ جهازٍ آخر. */
+const tagOf = v => String(v?.lang || '').toLowerCase().replace(/_/g, '-');
+
 function bestVoice(lang){
-  const pool = VOICES.filter(v => String(v.lang || '').toLowerCase().startsWith(lang)
-                               && !BAD.test(v.name || ''));
+  const pool = VOICES.filter(v => tagOf(v).startsWith(lang) && !BAD.test(v.name || ''));
   for(const re of PREF){ const hit = pool.find(v => re.test(v.name || '')); if(hit) return hit; }
   return pool[0] || null;
 }
 
 /**
- * أيمكن نطقُ هذه اللغة على هذا الجهاز؟
- * 🔑 والقائمةُ الفارغة تُقرأ «لم تصل بعد» لا «لا صوت» — فزرٌّ يختفي
- *    لأجل تأخّرٍ معروف أسوأُ من زرٍّ يعتذر مرّةً عند الضغط.
+ * ما اللهجاتُ المتاحةُ فعلاً على هذا الجهاز؟ مصفوفةٌ من { code, label }.
+ *
+ * 🔑 والعرضُ يتبع المتاح لا المرجوّ:
+ *      • اللهجتان ⇒ زرّان موسومان `UK` و`US` — وهو عُرفُ المعاجم
+ *        (كامبردج وأكسفورد) فيعرفه متعلّمُ اللغة بلا تعليم.
+ *      • واحدةٌ فقط ⇒ **زرٌّ بلا وسم**: وسمٌ لا يقابله اختيار يَعِد
+ *        بما ليس هناك، ويُفهم أنّ الأخرى عُطّلت لا أنّها غائبة.
+ *      • ولا شيء ⇒ لا زرّ.
+ *
+ * 🔑 والقائمةُ الفارغة تُقرأ «لم تصل بعد» لا «لا صوت» (كروم يُرسلها
+ *    متأخّرةً) ⇒ يُعرض زرٌّ واحدٌ عامّ، فزرٌّ يختفي لأجل تأخّرٍ معروف
+ *    أسوأُ من زرٍّ يعتذر مرّةً عند الضغط.
  */
-export function canSpeak(lang = 'en'){
-  if(typeof window === 'undefined' || !window.speechSynthesis) return false;
-  return VOICES.length ? !!bestVoice(lang) : true;
+export function accents(lang = 'en'){
+  if(typeof window === 'undefined' || !window.speechSynthesis) return [];
+  const one = code => [{ code, label: null }];
+
+  if(lang !== 'en') return bestVoice(lang) || !VOICES.length ? one(lang) : [];
+  if(!VOICES.length) return one('en');
+
+  const gb = bestVoice('en-gb'), us = bestVoice('en-us');
+  if(gb && us) return [{ code: 'en-gb', label: 'UK' }, { code: 'en-us', label: 'US' }];
+  if(gb) return one('en-gb');
+  if(us) return one('en-us');
+  return bestVoice('en') ? one('en') : [];     // en-AU · en-IN · أو عامٌّ بلا بلد
 }
 
 /**
- * ينطق نصّاً. يعيد false إن تعذّر — فينادي المنادي رسالته هو.
+ * ينطق نصّاً بلهجةٍ بعينها. يعيد false إن تعذّر — فينادي المنادي رسالته.
  * ويُبطئ قليلاً (0.9): المستمع متعلّمٌ لا ناطق.
  */
 export function speak(text, lang = 'en'){
@@ -224,7 +245,10 @@ export function speak(text, lang = 'en'){
     window.speechSynthesis.cancel();      // نداءٌ فوق نداءٍ يتداخل صوتُهما
     const u = new SpeechSynthesisUtterance(t);
     const v = bestVoice(lang);
-    if(v){ u.voice = v; u.lang = v.lang; } else { u.lang = lang === 'en' ? 'en-US' : lang; }
+    /* 🔑 وتُضبط u.lang ولو لم يوجد صوتٌ مطابق: المحرّك يختار بها عند
+       الغياب، فطلبُ en-GB يُقرَّب إليها بدل أن يقع على الافتراضيّ. */
+    if(v) u.voice = v;
+    u.lang = v ? v.lang : (lang === 'en' ? 'en-US' : lang);
     u.rate = 0.9;
     window.speechSynthesis.speak(u);
     return true;
