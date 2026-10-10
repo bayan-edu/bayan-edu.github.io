@@ -1253,6 +1253,32 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
 .eq-bs{font-size:var(--fs-tag);color:var(--text-muted);margin-left:auto}
 .eq-pgbox{border-color:var(--accent-edge)}
 
+/* صفُّ مصطلح البطاقة (158) — يلبس ثوبَ ‎.eq-strip‎ ولا يخترع ثوباً:
+   كلاهما «حالٌ ثمّ فعلٌ ثمّ شرحٌ يُطلب» في سطر، فاختلافُ الشكل بينهما
+   يُقرأ فرقاً في المعنى وليس بينهما فرق. */
+.eq-cdr{margin:14px 0 9px}
+.eq-cdl{font-family:'Almarai';font-weight:800;font-size:.78rem;color:var(--text-muted)}
+.eq-cdc{font-family:'Almarai';font-weight:800;font-size:.82rem;color:var(--ok);
+  background:var(--ok-soft);border:1px solid var(--ok-line);
+  border-radius:8px;padding:4px 9px}
+.eq-bar.cd{background:var(--ok-soft);border-color:var(--ok-line)}
+.eq-bar.cd .eq-bt{color:var(--ok)}
+
+/* شبكةٌ لا قائمة: المصطلحُ كلمةٌ وتعريفُه سطر، والعشرون في عمودٍ واحد
+   تمرير — وفي ثلاثة أعمدة لمحة. */
+.cd-grid{display:grid;gap:7px;grid-template-columns:repeat(auto-fill,minmax(236px,1fr))}
+.cd-t{display:block;text-align:start;cursor:pointer;padding:8px 11px;
+  border:1px solid var(--line);border-radius:10px;background:var(--surface);
+  transition:border-color .16s,background .16s}
+.cd-t:hover{border-color:var(--ok-edge);background:var(--ok-soft)}
+.cd-t.sug{border-color:var(--ok-line);background:var(--ok-soft)}
+.cd-t.on{border-color:var(--ok-edge);background:var(--ok-fill)}
+.cd-s{font-weight:800;color:var(--ok);margin-inline-end:5px}
+.cd-f{font-family:'Almarai';font-weight:800;font-size:.84rem;color:var(--text)}
+.cd-b{display:block;font-size:var(--fs-tag);color:var(--text-muted);
+  margin-top:3px;line-height:1.6}
+.cd-on{display:block;font-size:var(--fs-tag);font-weight:800;color:var(--ok);margin-top:4px}
+
 /* شريط أدوات السؤال والفقرة
    🔴 b96 · وكان زرُّه يُسمّى ‎.eq-tb‎ — وهو اسمُ **حاوية شريط الأوامر**
       أعلى الشاشة. اسمان لشيئين، والثاني لاحقٌ وبنفس الخصوصية فيفوز.
