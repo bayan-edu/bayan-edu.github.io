@@ -708,6 +708,25 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
 .qz-go.off{color:var(--text-muted);opacity:.55;cursor:not-allowed}
 .ed-empty{color:var(--text-muted);font-size:var(--fs-meta);padding:10px 4px 14px}
 
+/* 🆕 b134 · شريطُ الفرز والمِصفاة في شاشة البطاقات.
+   🔑 **ولا لونَ جديد فيه ولا عائلةَ معنى:** الشريطُ **محايد**
+      (`--fill-soft` + `--line`) لأنّه لا يقول جملةَ حكم — وكلُّ
+      عائلةٍ تُستهلك خارج الحكم تُضعفها حين يُحكَم بها فعلاً.
+      والرقائقُ تُعيد `.eq-kb` بحالها من شريط الأسئلة: محايدةٌ، و`on`
+      بالتفاعل (`accent`)، و`lack` كهرمانيّةٌ حيث العددُ فوق الصفر —
+      وهي جملةُ `warn` بعينها: «انتبه». */
+.ed-filter{background:var(--fill-soft);border:1px solid var(--line);
+  border-radius:14px;padding:13px 15px;margin-bottom:16px}
+
+/* 🔴 ورقيقةٌ **مختارةٌ وناقصةٌ معاً** كانت تستوي بغير المختارة: `.lack`
+   تأتي بعد `.on` بالخصوصية نفسِها فتغلب خلفيتَها وحدَّها — قِيس في
+   المتصفّح. ⇒ حلقةٌ داخليّةٌ بلون التفاعل تقول «هذه المعروضة» ولا تمحو
+   كهرمانَ «انتبه». **وتُصلح شريطَ الأسئلة معها، فالمسطرةُ واحدة.** */
+.eq-kb.on.lack{box-shadow:inset 0 0 0 2px var(--accent-edge)}
+.ed-fstat{flex:0 0 auto;white-space:nowrap;
+  font-size:var(--fs-tag);color:var(--text-muted)}
+.ed-filter .it-b:disabled{opacity:.45;cursor:default}
+
 /* 🆕 b129 · مُنتقٍ متعدّد في المحرّر — مربّعاتٌ لا قائمةُ اختيارٍ
    متعدّدة: تلك تحتاج Ctrl للنقر، ونقرةٌ واحدةٌ خاطئة تمحو الاختيار
    كلَّه بلا إنذار. والمربّعاتُ تُقرأ بلمحة وتُلمَس بإصبع.

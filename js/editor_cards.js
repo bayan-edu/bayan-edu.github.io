@@ -32,6 +32,61 @@ let SEL = new Set();  // معرّفاتُ البطاقات المحدَّدة ف
    المؤلّف الدرسَ ثمّ يحدّد بطاقاته فيضيع اختيارُه بلا إنذار. */
 let TG  = { lesson: '', strand: '' };
 
+/* 🆕 b134 · وحالةُ المِصفاة تسكن هنا **للعلّة نفسِها** المكتوبة فوق:
+   كلُّ تحديدٍ ووسمٍ يُعيد الرسم، ومِصفاةٌ تُقرأ من DOM تضيع عند أوّل
+   نقرة — فيبحث المراجعُ ثمّ يُحدّد فيضيع بحثُه بلا إنذار. */
+let F = { q: '', lesson: '', strand: '', flag: '', sort: 'pos' };
+
+
+/* ═══════════ رقائقُ الحال — عدٌّ ومِصفاةٌ في عنصرٍ واحد ═══════════
+
+   🔑 **والمِصفاةُ تُحاكي حارسَ البوّابة ولا تخترع معياراً.**
+   `import_cards` (الملفّ `159`) تُنذر بثلاثةٍ بأعيانها: **أمثلةٌ أقلُّ
+   من ثلاثة · بلا درس · بندان متطابقان** — فهذه هي الرقائق، لا غيرُها.
+   **ومعيارٌ لا تقيسه البوّابةُ يُنتج مسطرتين تفترقان.**
+
+   📌 وصيغتُها مُعادةٌ من `editor_quiz.js` («عدٌّ هو في حقيقته **فلتر**»)
+      بفئتها `eq-kb` — **ولا ملفَّ ثانٍ ولا لونَ جديد.**
+
+   ⚠️ **وفرقٌ مقيسٌ يُقال: البوّابةُ تعدّ الأمثلةَ بالفاصلة `؛` وحدَها،
+      و`examples()` تشطر بها وبالسطر الجديد و` | ` معاً.** فنوتةٌ بأسطرٍ
+      يختلف عدُّها بين الشاشة والبوّابة. واعتُمدت `examples()` هنا لأنّها
+      **ما يقرؤه الطالبُ فعلاً** — والصفُّ نفسُه يعرض بها «٣ أمثلة».
+      والتوحيدُ بينهما بندٌ مفتوحٌ لا يُحسم في شاشة.
+
+   📌 و«بلا صورة» تنتظر البيانات: `deck_cards` لا تردّ `front_image`
+      (قِيس على الحيّ)، **ورقيقةٌ تقول «بلا صورة» وفي البطاقة صورةُ
+      وجهٍ تكذب.** */
+
+const FLAGS = {
+  few: { label: 'أمثلتها أقلُّ من ثلاثة',
+         hit: c => examples(c.note).length < 3 },
+  nol: { label: 'بلا درس',
+         hit: c => !(c.lessons || []).length },
+  dup: { label: 'بندان متطابقان',
+         hit: c => { const x = examples(c.note);
+                     return x.length > 1 && new Set(x).size !== x.length; } },
+};
+
+
+/* الظاهرُ الآن — دالّةٌ نقيّة: لا حالةَ فيها ولا أثرَ لها خارجها.
+   🔑 **والترشيحُ في المتصفّح لا في القاعدة:** `deck_cards` تجلب
+   المجموعةَ كلَّها بنداءٍ واحد، وهي واحدةٌ لكلّ (مادة · صفّ) — فنداءٌ
+   لكلّ حرفٍ يُكتب إسراف. والحدُّ يُعاد النظرُ فيه يوم يُقاس لا اليوم. */
+function visible(){
+  const q = F.q.trim().toLowerCase();
+  const out = C.filter(c => {
+    if(F.lesson && !(c.lessons || []).some(l => String(l.id) === F.lesson)) return false;
+    if(F.strand && !(c.strands || []).some(s => String(s.id) === F.strand)) return false;
+    if(F.flag   && !FLAGS[F.flag].hit(c)) return false;
+    if(q && !`${c.front} ${c.back} ${c.note || ''}`.toLowerCase().includes(q)) return false;
+    return true;
+  });
+  if(F.sort === 'abc') out.sort((a, b) => String(a.front).localeCompare(String(b.front), 'ar'));
+  if(F.sort === 'new') out.sort((a, b) => b.id - a.id);
+  return out;                 /* 'pos' — ترتيبُ المؤلّف كما ردّته القاعدة */
+}
+
 
 /* ═══════════ الدخول ═══════════ */
 
@@ -52,70 +107,35 @@ export async function openCards(course){
   ctx.lessons = lessons.data || [];
   /* الفروعُ المنتقاة وحدها: الأبُ غيرُ المنتقى عنوانٌ لا وجهةٌ للوسم */
   ctx.strands = (strands.data || []).filter(s => s.selectable !== false);
-  renderDecks();
+
+  /* 🆕 b134 · ولا شاشةَ وسطى بعد اليوم.
+     🔴 **المجموعةُ الرسميّةُ واحدةٌ لكلّ (مادة · صفّ) منذ `157`** —
+     **وقائمةٌ لا تحمل إلا واحداً ليست قائمة، بل بابٌ بين المؤلّف
+     وعمله.** وكانت الشاشةُ صادقةً يومَ كانت المجموعاتُ عدّة، فبقيت
+     بعد أن أفرغها القيد.
+     📌 **ووظائفُها الثلاث بقيت، كلٌّ حيث يُرى سببُه:** الإنشاءُ حالةُ
+        فراغٍ أدناه · والحذفُ وهي فارغةٌ في شاشة البطاقات · وعدُّ
+        مجموعات الطلاب سطرٌ في ذيلها. */
+  const off = D.find(d => !d.mine);
+  off ? openDeck(off) : renderNoDeck();
 }
 
 
-/* ═══════════ ① المجموعات ═══════════ */
+/* ═══════════ ① لا مجموعةَ بعد — حالةُ فراغٍ لا قائمةُ صفر ═══════════ */
 
-function renderDecks(){
-  /* الشخصية تُعرض ولا تُحرَّر — ملكُ الطالب. وهي هنا لتُعرف لا لتُمسّ */
-  const off = D.filter(d => !d.mine);
-  const own = D.filter(d =>  d.mine);
-
-  const row = d => `
-    <div class="ed-row" data-d="${d.id}">
-      <div style="flex:1;min-width:0">
-        <div class="ed-t">${esc(d.title)}</div>
-        <div class="ed-m">
-          <span class="chip ${d.cards ? 'g' : ''}">${
-            N(d.cards,'بطاقة','بطاقتان','بطاقات','بطاقة')}</span>
-          ${d.lessons ? `<span class="chip">${
-            N(d.lessons,'درس','درسان','دروس','درساً')}</span>` : ''}
-        </div>
-      </div>
-      <button class="it-b wide" data-open="${d.id}">✏️ تحرير</button>
-      ${d.cards === 0 ? `<button class="it-b" data-rm="${d.id}">🗑</button>` : ''}
-    </div>`;
-
+function renderNoDeck(){
   app.innerHTML = `
     <div class="crumb" id="bk">← دروس المقرَّر</div>
-
-    ${/* 🔑 والمجموعةُ الرسميّة واحدةٌ لكلّ (مادة · صفّ) — قيدٌ في
-          القاعدة (sql/157). فزرُّ «جديدة» يُخفى حين توجد، لأنّ زرّاً
-          لا يُنتج إلا رسالةَ رفضٍ يُعلّم أنّ الأزرار تكذب. */''}
-    ${off.length ? '' : `<div class="nav" style="margin-bottom:16px">
-      <button class="btn primary" id="new">＋ إنشاء مجموعة المادة</button>
-    </div>`}
-
     <div class="ed-sec">
-      <div class="grp">مجموعة المقرَّر <span class="chip">${AR(off.length)}</span></div>
-      ${off.length ? off.map(row).join("")
-                   : `<div class="ed-empty">لا مجموعة بعد. وهي حاويةٌ واحدةٌ
-                      لبطاقات المادة كلِّها — والتصنيفُ بالدرس والفرع على
-                      البطاقة نفسِها.</div>`}
-    </div>
-
-    ${own.length ? `<div class="ed-sec">
-      <div class="grp">مجموعات الطلاب <span class="chip">${AR(own.length)}</span></div>
-      <div class="ed-empty">${AR(own.length)} مجموعة شخصية — تُعرض عدداً ولا تُفتح.
-        محتواها ملك صاحبه.</div>
-    </div>` : ''}`;
-
-  document.getElementById('bk').onclick = () => openCourse(ctx.course);
-  const nw = document.getElementById('new');
-  if(nw) nw.onclick = () => deckForm(null);
-  app.querySelectorAll('[data-open]').forEach(b => b.onclick = e => {
-    e.stopPropagation();
-    openDeck(D.find(x => String(x.id) === b.dataset.open));
-  });
-  app.querySelectorAll('[data-rm]').forEach(b => b.onclick = async e => {
-    e.stopPropagation();
-    if(!confirm('حذف المجموعة الفارغة؟')) return;
-    const { error } = await api.deleteDeck(+b.dataset.rm);
-    if(error) return toast(error.message, false);
-    toast('حُذفت'); openCards(ctx.course);
-  });
+      <div class="grp">بطاقات المادة</div>
+      <div class="ed-empty">لا مجموعة بعد. وهي حاويةٌ واحدةٌ لبطاقات المادة
+        كلِّها — والتصنيفُ بالدرس والفرع على البطاقة نفسِها.</div>
+      <div class="nav" style="margin-top:14px">
+        <button class="btn primary" id="new">＋ إنشاء مجموعة المادة</button>
+      </div>
+    </div>`;
+  document.getElementById('bk').onclick  = () => openCourse(ctx.course);
+  document.getElementById('new').onclick = () => deckForm(null);
   scrollTop();
 }
 
@@ -124,7 +144,7 @@ function renderDecks(){
 
 function deckForm(d){
   app.innerHTML = `
-    <div class="crumb" id="bk">← البطاقات</div>
+    <div class="crumb" id="bk">← بطاقات المادة</div>
     <div class="ed-form">
       <div class="ed-side">
         <div class="ed-hint">💡 <b>المجموعة حاوية</b> واحدةٌ للمادة
@@ -146,7 +166,7 @@ function deckForm(d){
       </div>
     </div>`;
 
-  document.getElementById('bk').onclick = renderDecks;
+  document.getElementById('bk').onclick = () => openCards(ctx.course);
   document.getElementById('sv').onclick = async () => {
     const title = document.getElementById('ti').value.trim();
     if(!title) return toast('العنوان مطلوب', false);
@@ -166,6 +186,7 @@ function deckForm(d){
 
 async function openDeck(d){
   cur = d; TAG = false; SEL.clear();
+  F = { q: '', lesson: '', strand: '', flag: '', sort: 'pos' };
   head("البطاقات", d.title);
   app.innerHTML = `<div class="status">جار التحميل…</div>`;
   const { data, error } = await api.deckCards(d.id);
@@ -174,19 +195,128 @@ async function openDeck(d){
   renderCards();
 }
 
-function renderCards(){
-  /* 🔑 والدرسُ والفرعُ يُعرضان على كلّ صفّ: بطاقةٌ بلا تصنيف لا تصل
-     طالباً إلا باختياره، **وهذا صمتٌ يجب أن يُرى** — فالفراغ هنا
-     معلومةٌ لا نقصُ زينة. */
-  const tags = c => {
-    const ls = c.lessons || [], ss = c.strands || [];
-    if(!ls.length && !ss.length)
-      return '<span class="chip warn">بلا درس ولا فرع</span>';
-    return ls.map(l => `<span class="chip">${esc(l.title)}</span>`).join('')
-         + ss.map(s => `<span class="chip g">${esc(s.name)}</span>`).join('');
+/* شريطُ الفرز والمِصفاة — فوق القائمة، لا داخلَ صفوفها */
+function filterBar(){
+  const sel = (k, rows, label, head) => `
+    <select id="f_${k}" data-fk="${k}" class="eq-obj" style="max-width:220px;margin:0">
+      <option value="">${head}</option>
+      ${rows.map(r => `<option value="${r.id}"${
+        String(r.id) === F[k] ? ' selected' : ''}>${esc(r[label])}</option>`).join('')}
+    </select>`;
+
+  /* 🔑 **والصفرُ يُعرض ولا يُخفى** (سابقةُ `b133`): «بلا درس ٠» معلومةٌ
+     يحتاجها المراجع — ورقيقةٌ غائبةٌ تُقرأ سهواً لا طمأنينة.
+     📌 و`lack` الكهرمانيّة حيث العددُ فوق الصفر: هي جملةُ `warn`
+        نفسُها — «انتبه»، لا حكمٌ على إجابةِ طالب. */
+  const kb = k => {
+    const m = C.filter(FLAGS[k].hit).length;
+    return `<button class="eq-kb${F.flag === k ? ' on' : ''}${m ? ' lack' : ''}"
+      data-fl="${k}" title="${esc(FLAGS[k].label)} — عرضُها وحدها"
+      ><b>${AR(m)}</b><span>${esc(FLAGS[k].label)}</span></button>`;
   };
 
-  const row = c => `
+  return `<div class="ed-filter">
+    <div class="eq-brow">
+      <input type="search" id="f_q" class="eq-obj" style="max-width:280px;margin:0"
+             placeholder="بحثٌ في الوجه والمعنى والأمثلة" value="${esc(F.q)}">
+      ${sel('lesson', ctx.lessons || [], 'title', 'كلُّ الدروس')}
+      ${sel('strand', ctx.strands || [], 'name',  'كلُّ الفروع')}
+      <span class="eq-strip-g"></span>
+      <select id="f_sort" class="eq-obj" style="max-width:180px;margin:0">
+        <option value="pos"${F.sort === 'pos' ? ' selected' : ''}>ترتيبُ المؤلّف</option>
+        <option value="abc"${F.sort === 'abc' ? ' selected' : ''}>أبجديٌّ بالوجه</option>
+        <option value="new"${F.sort === 'new' ? ' selected' : ''}>الأحدثُ إدخالاً</option>
+      </select>
+    </div>
+    <div class="eq-brow" style="margin-top:10px">
+      ${Object.keys(FLAGS).map(kb).join('')}
+      <span class="eq-strip-g"></span>
+      <span class="ed-fstat" id="cdStat">${statText(visible().length)}</span>
+      ${/* 🔑 ومعطَّلٌ في الرسم لا في الربط وحده: بين أوّل طلاءٍ وعملِ
+            JS لحظةٌ يبدو فيها الزرُّ فاعلاً وهو لا يفعل — وزرٌّ يكذب
+            لحظةً يُعلّم أنّ الأزرار تكذب. قِيس في المتصفّح. */''}
+      <button class="it-b" id="f_clr"${sifted() ? '' : ' disabled'}>رفعُ المِصفاة</button>
+    </div>
+  </div>`;
+}
+
+const sifted = () => !!(F.q || F.lesson || F.strand || F.flag);
+
+const statText = n => sifted()
+  ? `يُعرض ${AR(n)} من ${AR(C.length)}`
+  : N(C.length, 'بطاقة', 'بطاقتان', 'بطاقات', 'بطاقة');
+
+
+/* 🔴 **ولا يُعاد رسمُ الشريط عند كلّ حرف:** حقلُ البحث يفقد التركيز،
+   فيكتب المراجعُ حرفاً ثمّ يُطرَد منه. فتُحدَّث القائمةُ وحدَها —
+   وهي سابقةُ `editor_quiz.js` بنصّها: «الرقائق وحدها، فلا يُعاد رسمُ
+   الشريط كلِّه عند تبديل فلتر». */
+function redrawList(){
+  const box = document.getElementById('cdList');
+  if(!box) return renderCards();
+  const rows = visible();
+  box.innerHTML = rows.length ? rows.map(cardRow).join('') : emptyNote();
+  const st = document.getElementById('cdStat');
+  if(st) st.textContent = statText(rows.length);
+  app.querySelectorAll('[data-fl]').forEach(b =>
+    b.classList.toggle('on', b.dataset.fl === F.flag));
+  const clr = document.getElementById('f_clr');
+  if(clr) clr.disabled = !sifted();
+  wireRows();
+}
+
+function wireFilterBar(){
+  const $ = id => document.getElementById(id);
+  const q = $('f_q');
+  if(q) q.oninput = () => { F.q = q.value; redrawList(); };
+
+  app.querySelectorAll('[data-fk]').forEach(s =>
+    s.onchange = () => { F[s.dataset.fk] = s.value; redrawList(); });
+
+  const so = $('f_sort');
+  if(so) so.onchange = () => { F.sort = so.value; redrawList(); };
+
+  /* الرقيقةُ تُبدّل حالها: نقرةٌ تُظهرها وحدها، ونقرةٌ تُعيد الكلّ */
+  app.querySelectorAll('[data-fl]').forEach(b => b.onclick = () => {
+    F.flag = F.flag === b.dataset.fl ? '' : b.dataset.fl;
+    redrawList();
+  });
+
+  const clr = $('f_clr');
+  if(clr){
+    clr.disabled = !sifted();
+    clr.onclick  = () => {
+      F.q = F.lesson = F.strand = F.flag = '';
+      renderCards();          /* ترفع المِصفاةَ وتُعيد حقولَ الشريط معها */
+    };
+  }
+}
+
+
+function emptyNote(){
+  return sifted()
+    ? `<div class="ed-empty">ولا بطاقةَ تُطابق المِصفاة — ورفعُها بالزرّ أعلاه.</div>`
+    /* 🆕 b134 · و«الصق» صارت مصدراً: أمرٌ مذكَّرٌ في نصّ المؤلّف، وهو
+       أحدُ المواضع التي تنتظر في مهارة اللغة (§١٣) — وأُصلح لأنّ
+       السطرَ نُقل في هذه الدفعة، لا توسيعاً لها. */
+    : `<div class="ed-empty">لا بطاقة بعد.
+       ولصقُ عمودين يكفي: الوجه ثمّ المعنى، والفاصل بينهما Tab.</div>`;
+}
+
+
+/* 🔑 والدرسُ والفرعُ يُعرضان على كلّ صفّ: بطاقةٌ بلا تصنيف لا تصل
+   طالباً إلا باختياره، **وهذا صمتٌ يجب أن يُرى** — فالفراغ هنا
+   معلومةٌ لا نقصُ زينة. */
+function tags(c){
+  const ls = c.lessons || [], ss = c.strands || [];
+  if(!ls.length && !ss.length)
+    return '<span class="chip warn">بلا درس ولا فرع</span>';
+  return ls.map(l => `<span class="chip">${esc(l.title)}</span>`).join('')
+       + ss.map(s => `<span class="chip g">${esc(s.name)}</span>`).join('');
+}
+
+/* 🆕 b134 · والصفُّ خرج من جوف الرسم لأنّ `redrawList` تُنادِيه وحدَها */
+const cardRow = c => `
     <div class="ed-row${SEL.has(c.id) ? ' on' : ''}" data-c="${c.id}">
       ${TAG ? `<label class="pick-c" title="حدّد">
         <input type="checkbox" data-sel="${c.id}" ${SEL.has(c.id) ? 'checked' : ''}>
@@ -209,8 +339,12 @@ function renderCards(){
       <button class="it-b" data-rm="${c.id}">🗑</button>
     </div>`;
 
+
+function renderCards(){
+  const rows = visible();
+
   app.innerHTML = `
-    <div class="crumb" id="bk">← المجموعات</div>
+    <div class="crumb" id="bk">← دروس المقرَّر</div>
 
     <div class="nav" style="margin-bottom:16px">
       <button class="btn primary" id="paste">📋 لصق قائمة</button>
@@ -231,14 +365,26 @@ function renderCards(){
 
     ${TAG ? tagBar() : ''}
 
+    ${/* الشريطُ لا يُعرض لمجموعةٍ فارغة: مِصفاةٌ على صفرٍ أثاثٌ لا أداة */''}
+    ${C.length ? filterBar() : ''}
+
     <div class="ed-sec">
       <div class="grp">${esc(cur.title)} <span class="chip">${AR(C.length)}</span></div>
-      ${C.length ? C.map(row).join("")
-                 : `<div class="ed-empty">لا بطاقة بعد.
-                    الصق عمودين: الوجه ثم المعنى، والفاصل بينهما Tab.</div>`}
-    </div>`;
+      <div id="cdList">${rows.length ? rows.map(cardRow).join("") : emptyNote()}</div>
+    </div>
 
-  document.getElementById('bk').onclick = renderDecks;
+    ${/* 🆕 b134 · وظيفتان نزلتا من الشاشة الوسطى إلى حيث يُرى سببُهما */''}
+    ${C.length === 0 ? `<div class="nav" style="margin-bottom:18px">
+      <button class="btn" id="delDeck">🗑 حذف المجموعة الفارغة</button>
+    </div>` : ''}
+
+    ${D.some(d => d.mine) ? `<div class="ed-sec">
+      <div class="grp">مجموعات الطلاب
+        <span class="chip">${AR(D.filter(d => d.mine).length)}</span></div>
+      <div class="ed-empty">تُعرض عدداً ولا تُفتح — محتواها ملك صاحبه.</div>
+    </div>` : ''}`;
+
+  document.getElementById('bk').onclick = () => openCourse(ctx.course);
   document.getElementById('paste').onclick = pasteBox;
   document.getElementById('one').onclick   = () => cardForm(null);
   const pv = document.getElementById('pv'); if(pv) pv.onclick = preview;
@@ -248,17 +394,48 @@ function renderCards(){
 
   const tg = document.getElementById('tag');
   if(tg) tg.onclick = () => { TAG = !TAG; SEL.clear(); renderCards(); };
-  wireTagBar();
 
-  app.querySelectorAll('[data-ed]').forEach(b => b.onclick = () =>
-    cardForm(C.find(x => String(x.id) === b.dataset.ed)));
-  app.querySelectorAll('[data-rm]').forEach(b => b.onclick = async () => {
+  const dd = document.getElementById('delDeck');
+  if(dd) dd.onclick = async () => {
+    if(!confirm('حذف المجموعة الفارغة؟')) return;
+    const { error } = await api.deleteDeck(cur.id);
+    if(error) return toast(error.message, false);
+    toast('حُذفت'); openCards(ctx.course);
+  };
+
+  wireFilterBar();
+  wireTagBar();
+  wireRows();
+  scrollTop();
+}
+
+
+/* 🆕 b134 · وربطُ الصفوف خرج وحدَه: `redrawList` تُعيد بناءها بلا الشريط،
+   فلو بقي الربطُ في `renderCards` لعادت الصفوفُ بلا أزرارٍ تعمل. */
+function wireRows(){
+  app.querySelectorAll('[data-ed]').forEach(b => b.onclick = e => {
+    e.stopPropagation();
+    cardForm(C.find(x => String(x.id) === b.dataset.ed));
+  });
+  app.querySelectorAll('[data-rm]').forEach(b => b.onclick = async e => {
+    e.stopPropagation();
     if(!confirm('حذف البطاقة؟')) return;
     const { error } = await api.deleteCard(+b.dataset.rm);
     if(error) return toast(error.message, false);   // 🔒 تُرفض إن كان يراجعها طلاب
     toast('حُذفت'); openDeck(cur);
   });
-  scrollTop();
+  if(!TAG) return;
+
+  const flip = id => { SEL.has(id) ? SEL.delete(id) : SEL.add(id); renderCards(); };
+  app.querySelectorAll('[data-sel]').forEach(b =>
+    b.onchange = () => flip(+b.dataset.sel));
+
+  /* والصفُّ كلُّه هدفٌ للنقر: تحديدُ عشرين بطاقةً بإصابة مربّعٍ من
+     ١٨px عشرين مرّةً عملٌ يُتعب ويُخطئ — والمساحةُ موجودةٌ مجّاناً. */
+  app.querySelectorAll('.ed-row[data-c]').forEach(r => r.onclick = e => {
+    if(e.target.closest('button') || e.target.closest('input')) return;
+    flip(+r.dataset.c);
+  });
 }
 
 
@@ -295,7 +472,7 @@ function tagBar(){
       <span class="chip${n ? ' g' : ''}">${n ? N(n,'بطاقة','بطاقتان','بطاقات','بطاقة')
                                              : 'لم تُحدّد بعد'}</span>
       <span class="eq-strip-g"></span>
-      <button class="it-b" id="selall">تحديد الكلّ</button>
+      <button class="it-b" id="selall">تحديدُ الظاهر (${AR(visible().length)})</button>
       <button class="it-b" id="selnone">إلغاء التحديد</button>
     </div>
 
@@ -325,19 +502,12 @@ function wireTagBar(){
   app.querySelectorAll('[data-tgk]').forEach(s =>
     s.onchange = () => { TG[s.dataset.tgk] = s.value; });
 
-  const flip = id => { SEL.has(id) ? SEL.delete(id) : SEL.add(id); renderCards(); };
-  app.querySelectorAll('[data-sel]').forEach(b =>
-    b.onchange = () => flip(+b.dataset.sel));
-
-  /* والصفُّ كلُّه هدفٌ للنقر: تحديدُ عشرين بطاقةً بإصابة مربّعٍ من
-     ١٨px عشرين مرّةً عملٌ يُتعب ويُخطئ — والمساحةُ موجودةٌ مجّاناً. */
-  app.querySelectorAll('.ed-row[data-c]').forEach(r => r.onclick = e => {
-    if(e.target.closest('button') || e.target.closest('input')) return;
-    flip(+r.dataset.c);
-  });
-
+  /* 🔑 **ومكسبُ المِصفاة عملٌ لا عرض:** «تحديدُ الظاهر» يقع على ما
+     رشّحته المِصفاةُ لا على المجموعة كلِّها. فرقيقةُ «بلا درس» ⇒
+     تحديدُ الظاهر ⇒ وسمٌ واحد — **والمِصفاةُ تُطفئ بعينها الرقيقةَ
+     التي أظهرتها.** وبدونه يكون الزرُّ فخّاً: يُحدّد ما لا يُرى. */
   const all = $('selall'), none = $('selnone');
-  if(all)  all.onclick  = () => { C.forEach(c => SEL.add(c.id)); renderCards(); };
+  if(all)  all.onclick  = () => { visible().forEach(c => SEL.add(c.id)); renderCards(); };
   if(none) none.onclick = () => { SEL.clear(); renderCards(); };
 
   app.querySelectorAll('[data-tg]').forEach(b => b.onclick = async () => {
