@@ -46,6 +46,13 @@
 --  │                                                              │
 --  └──────────────────────────────────────────────────────────────┘
 --
+--  وبُعدان متعامدان لا واحد — والثاني أُضيف بعد سؤالٍ من المالك:
+--      الدرسُ (`card_lessons`) = **أين** تظهر البطاقة
+--      الفرعُ (`card_strands`) = **ما** نوعُها · §⑫
+--  ومعهما §⑬: رابطُ التدرّب يتبعهما. وهو **إصلاحُ ما كان هذا الملفّ
+--  سيكسره** — الرابطُ اليوم يُبنى من مجموعة، فبعد الدمج يصير على
+--  المادة كلِّها. ميزةٌ تُفرَغ بصمت لولا السؤال.
+--
 --  ما ليس فيه عمداً:
 --      • ربطُ السؤال بالبطاقة (`questions.card_id` قائمٌ وصفرُ ربط)
 --        — يُبنى **فوق** هذا الملفّ لا تحته، لأنّ قائمة «بطاقاتِ درس
@@ -154,6 +161,17 @@ delete from public.decks d
 create unique index if not exists decks_official_one
   on public.decks (subject_id, coalesce(level_id, 0))
   where owner_id is null;
+
+--  وعنوانُ الباقية يُحايَد: «مفاهيم بلاغية» تصف فرعاً، وقد صارت
+--  الحاويةَ لكلّ بطاقات المادة. **واسمٌ يصف غيرَ ما يحوي يُضلّل.**
+--  ⚠️ ولا يُمسّ إلا ما كان على الحال القديمة: من سمّاها بيدٍ بعد
+--     هذه الهجرة لا تُعاد تسميتُه إن أُعيد تشغيلُ الملفّ.
+update public.decks d
+   set title = 'بطاقات ' || s.name
+  from public.subjects s
+ where s.id = d.subject_id
+   and d.owner_id is null
+   and d.title not like 'بطاقات %';
 
 
 -- ─── ④ تقاعدُ decks.lesson_id ────────────────────────────────────────
@@ -603,10 +621,365 @@ end $$;
 grant execute on function public.due_cards(bigint, int, int) to authenticated;
 
 
--- ─── ⑫ السجلّ ─────────────────────────────────────────────────────────
+-- ══════════════════════════════════════════════════════════════════════
+--  ⑫ الفرع — بُعدٌ ثانٍ للتصنيف
+--
+--  🔑 ولماذا الفرعُ لا تسميةٌ جديدة: المنصّة تملك تصنيفَ المادة سلفاً
+--     (`strands` · الملفّات 79 · 80 · 97) — سبعةٌ للعربية وثمانيةٌ
+--     للإنجليزية، تُنسَب إليها الدروسُ والأهدافُ والمصادر. وإدخالُ
+--     اسمٍ رابعٍ لمفهومٍ قائم يخالف قانونَ المعجم. ⇒ البطاقةُ تُنسَب
+--     إلى ما تُنسَب إليه أختُها، فيصير التدرّبُ والقياسُ بلغةٍ واحدة.
+--
+--  📌 والبُعدان متعامدان ولا يُغني أحدهما عن الآخر:
+--        الدرسُ  = **أين** تظهر  (متى يراها الطالب)
+--        الفرعُ  = **ما** نوعُها (أيُّ بابٍ من المادة)
+--     فبطاقةُ «الاستعارة» في درس النَّثر الأمويّ، وفرعُها البلاغة.
+-- ══════════════════════════════════════════════════════════════════════
+
+create table if not exists public.card_strands (
+  card_id    bigint not null references public.cards(id)   on delete cascade,
+  strand_id  bigint not null references public.strands(id) on delete cascade,
+  created_by uuid            references public.profiles(id),
+  created_at timestamptz not null default now(),
+  primary key (card_id, strand_id)
+);
+
+comment on table public.card_strands is
+  'فرعُ البطاقة من المادة — البُعد الثاني بجوار card_lessons. '
+  'الدرسُ يقول أين تظهر، والفرعُ يقول ما نوعُها. وكلاهما اختياريّ.';
+
+create index if not exists idx_card_strands_strand
+  on public.card_strands (strand_id);
+
+alter table public.card_strands enable row level security;
+
+drop policy if exists p_card_strands_read on public.card_strands;
+create policy p_card_strands_read on public.card_strands for select to authenticated
+  using (public.can_see_card(card_id));
+
+revoke all on public.card_strands from public, anon;
+grant  select on public.card_strands to authenticated;
+
+
+--  ⑫-١ نسلُ الفرع — والفروعُ شجرةٌ لا قائمة
+--
+--  🔑 ومن اختار «بلاغة» أراد ما تحتها. فالفرعُ يُقرأ بنسله دائماً،
+--     وإلّا كان اختيارُ أبٍ يُرجع صفراً بينما بناتُه مملوءة — صمتٌ
+--     يُفهم «لا بطاقاتِ هنا» وهو كاذب.
+
+create or replace function public.strand_tree(p_strand bigint)
+returns setof bigint language sql stable set search_path to 'public' as $$
+  with recursive t as (
+    select s.id from strands s where s.id = p_strand
+    union all
+    select s.id from strands s join t on s.parent_id = t.id)
+  select id from t;
+$$;
+
+comment on function public.strand_tree(bigint) is
+  'الفرعُ ونسلُه. يُنادى حيث يُقرأ فرعٌ، فلا يفترق حُكمُ الأب عن بناته.';
+
+grant execute on function public.strand_tree(bigint) to authenticated;
+
+
+--  ⑫-٢ الكتابة — نظيرا دالّتَي الدرس حرفاً
+
+create or replace function public.set_card_strands(p_card bigint, p_strands bigint[])
+returns jsonb language plpgsql security definer set search_path to 'public' as $$
+declare v_subject bigint; v_mine bool; v_bad int;
+begin
+  select d.subject_id, coalesce(d.owner_id = auth.uid(), false)
+    into v_subject, v_mine
+    from cards c join decks d on d.id = c.deck_id where c.id = p_card;
+  if v_subject is null then raise exception 'بطاقةٌ غير موجودة'; end if;
+  if not v_mine and not can_curate(v_subject) then
+    raise exception 'لا صلاحيةَ لك على هذه البطاقة';
+  end if;
+
+  select count(*) into v_bad
+    from unnest(coalesce(p_strands, '{}')) x(sid)
+    left join strands s on s.id = x.sid
+   where s.id is null or s.subject_id <> v_subject;
+  if v_bad > 0 then
+    raise exception 'فرعٌ غير موجود أو من مادّةٍ أخرى';
+  end if;
+
+  delete from card_strands cs
+   where cs.card_id = p_card
+     and not (cs.strand_id = any(coalesce(p_strands, '{}')));
+
+  insert into card_strands (card_id, strand_id, created_by)
+  select p_card, x.sid, auth.uid()
+    from unnest(coalesce(p_strands, '{}')) x(sid)
+  on conflict do nothing;
+
+  return jsonb_build_object('card_id', p_card,
+    'strands', (select coalesce(jsonb_agg(cs.strand_id order by cs.strand_id), '[]'::jsonb)
+                  from card_strands cs where cs.card_id = p_card));
+end $$;
+
+grant execute on function public.set_card_strands(bigint, bigint[]) to authenticated;
+
+
+create or replace function public.link_cards_strand(
+  p_cards  bigint[],
+  p_strand bigint,
+  p_on     boolean default true)
+returns jsonb language plpgsql security definer set search_path to 'public' as $$
+declare v_subject bigint; v_n int; v_seen int;
+begin
+  select s.subject_id into v_subject from strands s where s.id = p_strand;
+  if v_subject is null then raise exception 'فرعٌ غير موجود'; end if;
+  if not can_curate(v_subject) then
+    raise exception 'لا صلاحيةَ لك على هذه المادة';
+  end if;
+
+  with ok as (
+    select c.id from cards c
+      join decks d on d.id = c.deck_id
+     where c.id = any(coalesce(p_cards, '{}')) and d.subject_id = v_subject
+  ), act as (
+    insert into card_strands (card_id, strand_id, created_by)
+    select o.id, p_strand, auth.uid() from ok o where p_on
+    on conflict do nothing
+    returning 1
+  ), del as (
+    delete from card_strands cs
+     using ok o
+     where not p_on and cs.card_id = o.id and cs.strand_id = p_strand
+    returning 1
+  )
+  select (select count(*) from act) + (select count(*) from del),
+         (select count(*) from ok)
+    into v_n, v_seen;
+
+  return jsonb_build_object(
+    'changed', v_n,
+    'already', v_seen - v_n,
+    'skipped', coalesce(array_length(p_cards, 1), 0) - v_seen);
+end $$;
+
+grant execute on function public.link_cards_strand(bigint[], bigint, boolean) to authenticated;
+
+
+--  ⑫-٣ وقراءةُ المحرّر تحمل البُعدين — معدَّلة لا منشأة (أصلُها ⑩-١ أعلاه)
+
+create or replace function public.deck_cards(p_deck bigint)
+returns jsonb language plpgsql stable security definer set search_path to 'public' as $$
+declare v jsonb;
+begin
+  if not can_see_deck(p_deck) then raise exception 'لا صلاحية'; end if;
+  select coalesce(jsonb_agg(jsonb_build_object(
+           'id', c.id, 'front', c.front, 'back', c.back,
+           'note', c.note, 'audio', c.audio, 'image', c.image, 'lang', c.lang,
+           'position', c.position,
+           'lessons', (select coalesce(jsonb_agg(jsonb_build_object(
+                                 'id', l.id, 'title', l.title) order by l.position, l.id), '[]'::jsonb)
+                         from card_lessons cl join lessons l on l.id = cl.lesson_id
+                        where cl.card_id = c.id),
+           'strands', (select coalesce(jsonb_agg(jsonb_build_object(
+                                 'id', s.id, 'name', s.name) order by s.sort_order, s.id), '[]'::jsonb)
+                         from card_strands cs join strands s on s.id = cs.strand_id
+                        where cs.card_id = c.id)
+         ) order by c.position, c.id), '[]'::jsonb)
+    into v from cards c where c.deck_id = p_deck;
+  return v;
+end $$;
+
+grant execute on function public.deck_cards(bigint) to authenticated;
+
+
+-- ══════════════════════════════════════════════════════════════════════
+--  ⑬ رابطُ التدرّب — يتبع الدرسَ والفرع لا المجموعةَ وحدها
+--
+--  🔴 وهذا **إصلاحُ ما كان هذا الملفّ سيكسره**: الرابط يُبنى من
+--     `source_id` = مجموعة. وبعد دمج المجموعات تصير «مجموعةُ المادة»
+--     كلَّها ⇒ رابطٌ على مئات البطاقات. ميزةٌ تُفرَغ بصمت، فلا تُترك.
+--
+--  🔑 واللقطةُ تبقى `{kind:'cards', title, cards}` في الأنماط الثلاثة.
+--     فعقدُ المُشغِّل (open_practice_session وشاشةُ الطالب) لا يُمسّ،
+--     و`practice_sessions.kind` وحدها تقول من أين جاءت.
+-- ══════════════════════════════════════════════════════════════════════
+
+alter table public.practice_sessions drop constraint if exists practice_sessions_kind_ck;
+alter table public.practice_sessions add  constraint practice_sessions_kind_ck
+  check (kind in ('quiz', 'cards', 'lesson_cards', 'strand_cards'));
+
+--  ⑬-١ نواةُ اللقطة — مصدرٌ واحد للأنماط الثلاثة (ثابت ⑨)
+--  📌 مولودة.
+
+create or replace function public.practice_card_set(p_title text, p_ids bigint[])
+returns jsonb language sql stable security definer set search_path to 'public' as $$
+  select jsonb_build_object(
+    'kind',  'cards',
+    'title', p_title,
+    'cards', coalesce((
+      select jsonb_agg(jsonb_build_object(
+               'id', c.id, 'front', c.front, 'back', c.back, 'note', c.note,
+               'audio', c.audio, 'image', c.image, 'lang', c.lang)
+             order by c.position, c.id)
+        from cards c where c.id = any(coalesce(p_ids, '{}'))), '[]'::jsonb));
+$$;
+
+grant execute on function public.practice_card_set(text, bigint[]) to authenticated;
+
+
+--  ⑬-٢ لقطةُ المجموعة — معدَّلة: تُفوّض النواة ولا تكرّرها
+--  📌 أصلُها ملفُّ التدرّب. والسلوك كما هو حرفاً.
+
+create or replace function public.practice_snapshot_cards(p_deck bigint)
+returns jsonb language sql stable security definer set search_path to 'public' as $$
+  select practice_card_set(d.title,
+           array(select c.id from cards c where c.deck_id = d.id))
+    from decks d where d.id = p_deck;
+$$;
+
+
+--  ⑬-٣ المُشغِّل — معدَّل: الاختبارُ هو الاستثناء، والبطاقاتُ الأصل
+--
+--  🔴 وكان `if s.kind = 'cards'` — فنمطٌ جديد يسقط في **فرع الاختبار**
+--     ويعرض على الطالب شاشةَ أسئلةٍ بلا أسئلة. ⇒ يُقلب الشرط: ما ليس
+--     اختباراً فهو بطاقات، **فنمطُ بطاقاتٍ رابعٌ يعمل بلا مسٍّ لهذه
+--     الدالّة.** وهذا هو الفرق بين شرطٍ يُحصي وشرطٍ يستثني.
+
+create or replace function public.open_practice_session(p_token text)
+returns jsonb language plpgsql stable security definer set search_path to 'public' as $$
+declare s record;
+begin
+  select id, kind, title, snapshot, opens_at, expires_at into s
+    from practice_sessions where id = p_token;
+
+  if not found then
+    return jsonb_build_object('ok', false, 'error', 'رابطٌ غير معروف');
+  end if;
+  if now() < s.opens_at then
+    return jsonb_build_object('ok', false, 'error', 'لم تُفتح هذه الجلسة بعد');
+  end if;
+  if now() > s.expires_at then
+    return jsonb_build_object('ok', false, 'error', 'انتهت مدّة هذا الرابط');
+  end if;
+
+  if s.kind <> 'quiz' then
+    return jsonb_build_object('ok', true, 'kind', 'cards', 'title', s.title,
+      'expires_at', s.expires_at, 'cards', s.snapshot -> 'cards');
+  end if;
+
+  return jsonb_build_object('ok', true, 'kind', 'quiz', 'title', s.title,
+    'expires_at', s.expires_at,
+    'passages', s.snapshot -> 'passages',
+    'questions', coalesce((
+      select jsonb_agg(jsonb_build_object(
+               'id', q->'id', 'kind', q->'kind', 'body', q->'body',
+               'position', q->'position', 'points', q->'points',
+               'lang', q->'lang', 'section', q->'section',
+               'passage_id', q->'passage_id', 'difficulty', q->'difficulty',
+               'gaps', q->'gaps',
+               'image', q->'image', 'video', q->'video', 'audio', q->'audio',
+               'options', q->'options',
+               'bank', q->'bank')
+             order by (q->>'position')::int, (q->>'id')::bigint)
+      from jsonb_array_elements(s.snapshot -> 'questions') q), '[]'::jsonb));
+end $$;
+
+
+--  ⑬-٤ الإنشاء — معدَّل: نمطان جديدان
+--
+--  ⚠️ و«الرزمة» في رسالة الخطأ بُدّلت بـ«المجموعة»: اسمان لشيءٍ واحد
+--     في منصّةٍ واحدة، والجدولُ وتعليقُه يقولان «مجموعة». اسمٌ ثالثٌ
+--     لمفهومٍ قائم يُهجَر (قانون المعجم).
+
+create or replace function public.create_practice_session(
+  p_kind text, p_source bigint, p_days integer)
+returns jsonb language plpgsql security definer set search_path to 'public' as $$
+declare v_subject bigint; v_title text; v_owner uuid;
+        v_snap jsonb; v_tok text; v_n int; v_essay int := 0;
+        v_days int; v_exp timestamptz; v_empty text;
+begin
+  if not is_teacher() then raise exception 'صلاحية المعلم مطلوبة'; end if;
+
+  v_days := greatest(1, least(90, coalesce(p_days, 14)));
+  v_exp  := now() + make_interval(days => v_days);
+
+  if p_kind = 'quiz' then
+    select q.subject_id, q.title, q.created_by into v_subject, v_title, v_owner
+      from quizzes q where q.id = p_source;
+    if v_title is null then
+      return jsonb_build_object('ok', false, 'error', 'الاختبار غير موجود');
+    end if;
+    select count(*) into v_essay from questions
+     where quiz_id = p_source and retired_at is null and kind = 'essay';
+    v_snap  := practice_snapshot_quiz(p_source);
+    v_n     := jsonb_array_length(v_snap -> 'questions');
+    v_empty := 'لا سؤال يُتدرَّب عليه — والمقاليُّ لا يدخل جلسة التدرّب';
+
+  elsif p_kind = 'cards' then
+    select d.subject_id, d.title, coalesce(d.owner_id, d.created_by)
+      into v_subject, v_title, v_owner
+      from decks d where d.id = p_source;
+    if v_title is null then
+      return jsonb_build_object('ok', false, 'error', 'المجموعة غير موجودة');
+    end if;
+    v_snap  := practice_snapshot_cards(p_source);
+    v_n     := jsonb_array_length(v_snap -> 'cards');
+    v_empty := 'لا بطاقة في هذه المجموعة';
+
+  elsif p_kind = 'lesson_cards' then
+    --  🔑 والدرسُ لا مالكَ له ⇒ v_owner فارغٌ والصلاحيةُ بالتأليف وحده.
+    select l.subject_id, l.title into v_subject, v_title
+      from lessons l where l.id = p_source;
+    if v_title is null then
+      return jsonb_build_object('ok', false, 'error', 'الدرس غير موجود');
+    end if;
+    v_snap  := practice_card_set(v_title,
+                 array(select cl.card_id from card_lessons cl
+                        where cl.lesson_id = p_source));
+    v_n     := jsonb_array_length(v_snap -> 'cards');
+    v_empty := 'لا بطاقةَ مربوطةٌ بهذا الدرس بعد';
+
+  elsif p_kind = 'strand_cards' then
+    select s.subject_id, s.name into v_subject, v_title
+      from strands s where s.id = p_source;
+    if v_title is null then
+      return jsonb_build_object('ok', false, 'error', 'الفرع غير موجود');
+    end if;
+    --  بالنسل: من اختار أباً أراد بناتِه (⑫-١)
+    v_snap  := practice_card_set(v_title,
+                 array(select distinct cs.card_id from card_strands cs
+                        where cs.strand_id in (select t from strand_tree(p_source) t)));
+    v_n     := jsonb_array_length(v_snap -> 'cards');
+    v_empty := 'لا بطاقةَ في هذا الفرع ولا فيما تحته';
+
+  else
+    return jsonb_build_object('ok', false, 'error', 'نمطٌ غير معروف: ' || coalesce(p_kind,'—'));
+  end if;
+
+  -- 🔴 الفراغُ يُغلق لا يُفتح: منطقُ القيم الثلاث يسقط مفتوحاً بلا خطأ
+  if not (coalesce(can_author(v_subject), false)
+          or (v_owner is not null and v_owner = auth.uid())) then
+    return jsonb_build_object('ok', false, 'error', 'لا تملك هذا المحتوى');
+  end if;
+
+  if coalesce(v_n, 0) = 0 then
+    return jsonb_build_object('ok', false, 'error', v_empty);
+  end if;
+
+  v_tok := replace(gen_random_uuid()::text, '-', '');
+
+  insert into practice_sessions (id, kind, title, created_by, source_id, snapshot, expires_at)
+  values (v_tok, p_kind, v_title, auth.uid(), p_source, v_snap, v_exp);
+
+  return jsonb_build_object('ok', true, 'token', v_tok, 'kind', p_kind,
+    'title', v_title, 'count', v_n, 'skipped_essay', v_essay,
+    'expires_at', v_exp);
+end $$;
+
+grant execute on function public.create_practice_session(text, bigint, integer) to authenticated;
+
+
+-- ─── ⑭ السجلّ ─────────────────────────────────────────────────────────
 
 insert into public.sql_log (n, title, applied_at)
-values ('157', 'الدرسُ صفةُ البطاقة: card_lessons ومجموعةٌ رسميّةٌ واحدةٌ لكلّ مادة وصفّ', now())
+values ('157', 'الدرسُ والفرعُ صفتا البطاقة · ومجموعةٌ رسميّةٌ واحدةٌ لكلّ مادة وصفّ', now())
 on conflict (n) do update set applied_at = now();
 
 commit;
