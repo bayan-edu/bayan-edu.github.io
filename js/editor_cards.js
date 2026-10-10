@@ -25,6 +25,12 @@ let ctx = null;   // { course, lessons }
 let D   = [];     // المجموعات
 let cur = null;   // المجموعة المفتوحة
 let C   = [];     // بطاقاتها
+let TAG = false;  // وضعُ الوسم الجماعي مفتوح؟ (b131)
+let SEL = new Set();  // معرّفاتُ البطاقات المحدَّدة فيه
+/* 🔴 والوجهةُ تُحفَظ خارج الرسم: كلُّ تحديدٍ يُعيد رسمَ الشريط، فمُنتقٍ
+   يقرأ قيمتَه من DOM يعود إلى «— اختر درساً —» بعد كلّ نقرة — فيختار
+   المؤلّف الدرسَ ثمّ يحدّد بطاقاته فيضيع اختيارُه بلا إنذار. */
+let TG  = { lesson: '', strand: '' };
 
 
 /* ═══════════ الدخول ═══════════ */
@@ -159,7 +165,7 @@ function deckForm(d){
 /* ═══════════ ③ بطاقات المجموعة ═══════════ */
 
 async function openDeck(d){
-  cur = d;
+  cur = d; TAG = false; SEL.clear();
   head("البطاقات", d.title);
   app.innerHTML = `<div class="status">جار التحميل…</div>`;
   const { data, error } = await api.deckCards(d.id);
@@ -181,7 +187,10 @@ function renderCards(){
   };
 
   const row = c => `
-    <div class="ed-row" data-c="${c.id}">
+    <div class="ed-row${SEL.has(c.id) ? ' on' : ''}" data-c="${c.id}">
+      ${TAG ? `<label class="pick-c" title="حدّد">
+        <input type="checkbox" data-sel="${c.id}" ${SEL.has(c.id) ? 'checked' : ''}>
+      </label>` : ''}
       <div style="flex:0 0 34%;min-width:0">
         <div class="ed-t" dir="${dirOf(c.front)}">${esc(c.front)}</div>
         <div class="ed-m">
@@ -211,8 +220,16 @@ function renderCards(){
             («لا بطاقة في هذه الرزمة»)، وزرٌّ لا يُنتج إلا رسالةَ رفضٍ
             يُعلّم أنّ الأزرار تكذب. */''}
       ${C.length ? '<button class="btn" id="plink">🔗 رابط تدرّب</button>' : ''}
-      <button class="btn" id="edeck">⚙️ اسم المجموعة</button>
+      ${/* 🔴 b131 · ورُفع «⚙️ اسم المجموعة». المجموعةُ بعد `157` حاويةٌ
+            واحدةٌ لكلّ (مادة · صفّ)، واسمُها مشتقٌّ من اسم المادة —
+            فزرُّ إعادة التسمية **يدعو المؤلّف أن يكسر اسماً مشتقّاً**،
+            ويعد بتصنيفٍ لا تفعله الحاويةُ أصلاً. والتصنيفُ على
+            البطاقة: الدرسُ والفرع. ⇒ زرٌّ غامضُ الغرضِ ضرره أكبر. */''}
+      ${C.length ? `<button class="btn${TAG ? ' primary' : ''}" id="tag">🏷 ${
+        TAG ? 'إنهاء الوسم' : 'أضف بطاقاتٍ إلى درس'}</button>` : ''}
     </div>
+
+    ${TAG ? tagBar() : ''}
 
     <div class="ed-sec">
       <div class="grp">${esc(cur.title)} <span class="chip">${AR(C.length)}</span></div>
@@ -224,11 +241,14 @@ function renderCards(){
   document.getElementById('bk').onclick = renderDecks;
   document.getElementById('paste').onclick = pasteBox;
   document.getElementById('one').onclick   = () => cardForm(null);
-  document.getElementById('edeck').onclick = () => deckForm(cur);
   const pv = document.getElementById('pv'); if(pv) pv.onclick = preview;
 
   const pl = document.getElementById('plink');
   if(pl) pl.onclick = linkPicker;
+
+  const tg = document.getElementById('tag');
+  if(tg) tg.onclick = () => { TAG = !TAG; SEL.clear(); renderCards(); };
+  wireTagBar();
 
   app.querySelectorAll('[data-ed]').forEach(b => b.onclick = () =>
     cardForm(C.find(x => String(x.id) === b.dataset.ed)));
@@ -239,6 +259,115 @@ function renderCards(){
     toast('حُذفت'); openDeck(cur);
   });
   scrollTop();
+}
+
+
+/* ═══════════ ③-أ الوسمُ الجماعي — أين تُضاف البطاقةُ القائمة لدرس ═══════════
+
+   🔴 **والعطلُ أنّ البابَ لم يكن له مقبض.** `link_cards_lesson` و
+   `link_cards_strand` مبنيّتان منذ `157` وتقبلان **دفعةً** من البطاقات —
+   ولم تُنادَ إلا من صندوق اللصق، أي **عند الإدخال وحده**. فمن أدخل
+   بطاقةً ثمّ أراد إضافتها إلى درسٍ لاحقاً لم يجد إلا فتحَ كلِّ بطاقةٍ
+   على حدة. ومصطلحٌ يتكرّر في خمسة دروسٍ يعني خمسَ فتحاتٍ لبطاقةٍ واحدة.
+
+   🔑 **والوسمُ شرطُ الوصول لا زينة:** قائمةُ مصطلحات السؤال تُبنى من
+      `card_lessons` (158)، وطابورُ الطالب يُرتَّب بها (`due_cards` ③).
+      فبطاقةٌ بلا درسٍ **لا تصل طالباً ولا تظهر لمؤلّفٍ يربط سؤالاً** —
+      والشارةُ الكهرمانيّة «بلا درس ولا فرع» كانت تقول ذلك ولا تقول
+      أين يُصلَح.
+
+   📌 **والإزالةُ تُعرض مع الإضافة:** الوسمُ الجماعيُّ يُخطئ جماعيّاً،
+      و`p_on` موجودٌ في الدالّتين منذ `157`. وفعلٌ لا رجعةَ له إلا
+      بفتح البطاقات واحدةً واحدة ليس فعلاً جماعيّاً. */
+
+function tagBar(){
+  const n = SEL.size;
+  const sel = (k, rows, label, head) => `
+    <select id="tg_${k}" data-tgk="${k}" class="eq-obj" style="max-width:260px">
+      <option value="">— ${head} —</option>
+      ${rows.map(r => `<option value="${r.id}" ${
+        String(r.id) === String(TG[k]) ? 'selected' : ''}>${esc(r[label])}</option>`).join('')}
+    </select>`;
+
+  return `<div class="ed-tagbar">
+    <div class="eq-brow">
+      <span class="eq-bt">🏷 وسمُ ما تُحدّده</span>
+      <span class="chip${n ? ' g' : ''}">${n ? N(n,'بطاقة','بطاقتان','بطاقات','بطاقة')
+                                             : 'لم تُحدّد بعد'}</span>
+      <span class="eq-strip-g"></span>
+      <button class="it-b" id="selall">تحديد الكلّ</button>
+      <button class="it-b" id="selnone">إلغاء التحديد</button>
+    </div>
+
+    <div class="eq-brow" style="margin-top:10px">
+      ${sel('lesson', ctx.lessons || [], 'title', 'اختر درساً')}
+      <button class="it-b" data-tg="lesson" data-on="1" ${n?'':'disabled'}>أضفها إليه</button>
+      <button class="it-b lk" data-tg="lesson" data-on="0" ${n?'':'disabled'}>أزلها منه</button>
+    </div>
+
+    <div class="eq-brow" style="margin-top:8px">
+      ${sel('strand', ctx.strands || [], 'name', 'اختر فرعاً')}
+      <button class="it-b" data-tg="strand" data-on="1" ${n?'':'disabled'}>أضفها إليه</button>
+      <button class="it-b lk" data-tg="strand" data-on="0" ${n?'':'disabled'}>أزلها منه</button>
+    </div>
+
+    <div class="ed-hint" style="margin-top:10px">💡 <b>الدرسُ يقول أين
+      تظهر البطاقة</b> — وبه تدخل قائمةَ مصطلحات أسئلة ذلك الدرس،
+      وطابورَ طالبٍ فُتح له. <b>والفرعُ يقول ما نوعُها.</b>
+      وبطاقةٌ واحدةٌ تُضاف إلى عدّة دروس.</div>
+  </div>`;
+}
+
+function wireTagBar(){
+  if(!TAG) return;
+  const $ = id => document.getElementById(id);
+
+  app.querySelectorAll('[data-tgk]').forEach(s =>
+    s.onchange = () => { TG[s.dataset.tgk] = s.value; });
+
+  const flip = id => { SEL.has(id) ? SEL.delete(id) : SEL.add(id); renderCards(); };
+  app.querySelectorAll('[data-sel]').forEach(b =>
+    b.onchange = () => flip(+b.dataset.sel));
+
+  /* والصفُّ كلُّه هدفٌ للنقر: تحديدُ عشرين بطاقةً بإصابة مربّعٍ من
+     ١٨px عشرين مرّةً عملٌ يُتعب ويُخطئ — والمساحةُ موجودةٌ مجّاناً. */
+  app.querySelectorAll('.ed-row[data-c]').forEach(r => r.onclick = e => {
+    if(e.target.closest('button') || e.target.closest('input')) return;
+    flip(+r.dataset.c);
+  });
+
+  const all = $('selall'), none = $('selnone');
+  if(all)  all.onclick  = () => { C.forEach(c => SEL.add(c.id)); renderCards(); };
+  if(none) none.onclick = () => { SEL.clear(); renderCards(); };
+
+  app.querySelectorAll('[data-tg]').forEach(b => b.onclick = async () => {
+    const kind = b.dataset.tg, on = b.dataset.on === '1';
+    const pick = $('tg_' + kind);
+    const id   = +pick.value;
+    if(!id) return toast(kind === 'lesson' ? 'اختر درساً أوّلاً' : 'اختر فرعاً أوّلاً', false);
+    if(!SEL.size) return toast('حدّد بطاقةً واحدةً على الأقل', false);
+
+    const ids   = [...SEL];
+    const label = pick.options[pick.selectedIndex].text;
+    b.disabled = true;
+    const { error } = kind === 'lesson'
+      ? await api.linkCardsLesson(ids, id, on)
+      : await api.linkCardsStrand(ids, id, on);
+    b.disabled = false;
+    if(error) return toast(error.message, false);
+
+    toast(`${on ? 'أُضيفت' : 'أُزيلت'} ${N(ids.length,'بطاقة','بطاقتان','بطاقات','بطاقة')} ${
+      on ? 'إلى' : 'من'} «${label}»`);
+
+    /* ⚠️ والقراءةُ من القاعدة لا من الذاكرة: الوسمُ يُغيّر رقائقَ الصفوف،
+       وتحديثُها محليّاً يفترض نجاحاً لم يُقرأ — ونسختان تفترقان بصمت.
+       📌 والوضعُ يبقى مفتوحاً والتحديدُ يُفرَغ: الوسمُ عملٌ متتابع —
+          دفعةٌ لدرس، ثمّ دفعةٌ لآخر. وإخراجُ المؤلّف بعد كلّ دفعةٍ
+          يجعله يُعيد فتحَ البابِ خمسَ مرّاتٍ ليضع خمسَ وسوم. */
+    const r = await api.deckCards(cur.id);
+    if(r.error) return toast(r.error.message, false);
+    C = r.data || []; SEL.clear(); renderCards();
+  });
 }
 
 

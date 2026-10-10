@@ -694,6 +694,17 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
 /* صفٌّ لا يُفتح — كبطاقة «مصادر فقط»: حدٌّ متقطّع يقول «مرئيٌّ لا مملوك» */
 .ed-row.ro{cursor:default;border-style:dashed}
 .ed-row.ro:hover{border-color:var(--line)}
+
+/* 🆕 b131 · الوسمُ الجماعي — وصفٌّ محدَّدٌ يُرى بلمحة لا بتدقيق:
+   المؤلّف يحدّد عشرين من أربعين، فالفرقُ يجب أن يُقرأ بالمسح لا
+   بتتبّع المربّعات. */
+.ed-row.on{background:var(--ok-soft);border-color:var(--ok-line)}
+.pick-c{flex:0 0 auto;display:flex;align-items:center;cursor:pointer;padding:2px}
+.pick-c input{width:18px;height:18px;margin:0;cursor:pointer;accent-color:var(--ok)}
+.ed-tagbar{background:var(--ok-soft);border:1px solid var(--ok-line);
+  border-radius:14px;padding:14px 16px;margin-bottom:14px}
+.ed-tagbar .eq-bt{color:var(--ok)}
+.ed-tagbar .ed-hint{background:var(--surface);border-color:var(--ok-line)}
 .qz-go.off{color:var(--text-muted);opacity:.55;cursor:not-allowed}
 .ed-empty{color:var(--text-muted);font-size:var(--fs-meta);padding:10px 4px 14px}
 
@@ -1253,15 +1264,22 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
 .eq-bs{font-size:var(--fs-tag);color:var(--text-muted);margin-left:auto}
 .eq-pgbox{border-color:var(--accent-edge)}
 
-/* صفُّ مصطلح البطاقة (158) — يلبس ثوبَ ‎.eq-strip‎ ولا يخترع ثوباً:
-   كلاهما «حالٌ ثمّ فعلٌ ثمّ شرحٌ يُطلب» في سطر، فاختلافُ الشكل بينهما
-   يُقرأ فرقاً في المعنى وليس بينهما فرق. */
-.eq-cdr{margin:14px 0 9px}
-.eq-cdl{font-family:'Almarai';font-weight:800;font-size:.78rem;color:var(--text-muted)}
-.eq-cdc{font-family:'Almarai';font-weight:800;font-size:.82rem;color:var(--ok);
-  background:var(--ok-soft);border:1px solid var(--ok-line);
-  border-radius:8px;padding:4px 9px}
-.eq-bar.cd{background:var(--ok-soft);border-color:var(--ok-line)}
+/* زرُّ مصطلح البطاقة (158 · b131) — يسكن فراغَ سطرِ الهدف ولا يأخذ
+   سطراً. 🔴 وكان سطراً بعنوانٍ ورقاقةٍ و«i»، فيُعلن «بابٌ يُملأ» في كلّ
+   سؤالٍ يُفتح — وأكثرُ الأسئلة لا مصطلحَ لها. فإعلانٌ دائمٌ عن بابٍ
+   نادرِ الدخول يُعلّم العينَ أن تتخطّاه يومَ يُحتاج. */
+.eq-mrow{display:flex;align-items:flex-end;gap:10px}
+.eq-mob{flex:1 1 0;min-width:0}
+.eq-cb{flex:0 0 auto;cursor:pointer;white-space:nowrap;max-width:210px;
+  overflow:hidden;text-overflow:ellipsis;margin-bottom:2px;
+  font-family:'Almarai';font-weight:700;font-size:.76rem;
+  background:var(--fill);border:1px solid var(--line);color:var(--text-muted);
+  border-radius:9px;padding:7px 11px;transition:color .16s,border-color .16s}
+.eq-cb:hover:not(:disabled){border-color:var(--ok-edge);color:var(--ok)}
+.eq-cb.on{background:var(--ok-soft);border-color:var(--ok-line);color:var(--ok)}
+.eq-cb:disabled{opacity:.45;cursor:not-allowed}
+.eq-cb.bad{color:var(--warn);border-color:var(--warn-line)}
+.eq-bar.cd{background:var(--ok-soft);border-color:var(--ok-line);margin-top:9px}
 .eq-bar.cd .eq-bt{color:var(--ok)}
 
 /* شبكةٌ لا قائمة: المصطلحُ كلمةٌ وتعريفُه سطر، والعشرون في عمودٍ واحد
