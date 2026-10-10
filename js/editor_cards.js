@@ -16,7 +16,7 @@
       يُلصق بمفتاحه كما في بقية الشاشات (ثابت ②).
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
-import { app, head, toast, esc, AR, errBox, nav, setWide, scrollTop, dirOf, shrinkFont, examples, pickExample, sayable, N } from './ui.js';
+import { app, head, toast, esc, AR, errBox, nav, setWide, scrollTop, dirOf, shrinkFont, examples, pickExample, sayable, icon, N } from './ui.js';
 import { playAudio, speak, canSpeak } from './media.js';
 import { openCourse } from './editor.js';
 import { practiceLinkBox } from './practice_links.js';
@@ -420,6 +420,23 @@ function cardForm(c){
 function preview(){
   let i = 0, fitters = [], resizeT;
 
+  /* 🔊 نفسُ زرّ الطالب حرفاً — رمزاً وموضعاً وتسميةً (ثابت ⑨).
+     فمعاينةٌ تختلف عن الشاشة تُطمئن على غير ما سيقع. */
+  const sayBtn = lbl =>
+    `<div class="bf-saybar"><button class="iconbtn bf-say" id="bfSay"
+       title="${lbl}" aria-label="${lbl}">${icon('speak')}</button></div>`;
+  const sayLabel = c => c.audio ? 'نُطق' : 'نُطق تقريبي';
+
+  function bindSay(c, say){
+    const b = document.getElementById('bfSay');
+    if(!b) return;
+    b.onclick = e => {
+      e.stopPropagation();
+      const ok = c.audio ? playAudio(c.audio) : speak(say.text, c.lang || 'en');
+      if(!ok) toast('تعذّر النطق على هذا الجهاز', false);
+    };
+  }
+
   /* مفتاحٌ صريح لا يُغني عنه إعدادُ النظام: ذاك يقول ما يريده المستخدم
      دائماً، وهذا ما يريده الآن. ⇒ إعداد النظام قيمةٌ ابتدائية، والاختيار
      اليدويّ يعلوها ويُحفظ — كما تفعل سِمة المنصّة. */
@@ -496,7 +513,11 @@ function preview(){
        فتبلى وتصير مشتّتاً، وتُعلّم العين أن تتجاوز أعلى البطاقة.
        وتبقى لبطاقات الفراغ وحدها — هناك تحمل معلومةً لأن الفراغ وسط
        جملةٍ قد يُقرأ نصّاً ناقصاً لا سؤالاً. وما لا يتكرّر لا يبلى. */
+    const say = sayable(c);
+    const onFront = say && say.side === 'front' && (c.audio || canSpeak(c.lang || 'en'));
+
     front.innerHTML = `
+      ${onFront ? sayBtn(sayLabel(c)) : ''}
       ${gap ? '<div class="bf-prompt">ما الكلمة الناقصة؟</div>' : ''}
       <div class="bf-front-q" id="bfQ" dir="${dirOf(c.front)}"
         >${esc(c.front).replace(/\{\{\s*\}\}/g,
@@ -508,6 +529,7 @@ function preview(){
         <button class="bf-hint" data-flip="1">رؤية الإجابة</button>
       </div>`;
     registerFit(front, document.getElementById('bfQ'), 18.9, 15);
+    if(onFront) bindSay(c, say);
 
     back.innerHTML = '';
   }
@@ -520,14 +542,12 @@ function preview(){
        فتصير البطاقة قراءةً لا استرجاعاً — وهو وهمُ المعرفة بعينه.
        ومن أراده فالقلب الرجوعيّ يعيده إليه، وتلك محاولةٌ ثانية لا تذكير.
        والاستثناء: من كتب شيئاً يحتاج المقارَن به لحكمه الذاتيّ. */
-    /* 🔑 والمعاينة تعرضه كما يراه الطالب حرفاً — بلا إيموجي ولا تسمية
-       أخرى. فمعاينةٌ تختلف عن الشاشة تُطمئن على غير ما سيقع. */
+    /* وزرُّ الظهر لحالةٍ واحدة: المنطوقُ في الظهر (معنًى ← الكلمة). */
     const say = sayable(c);
-    const spoken = c.audio || (say && canSpeak(c.lang || 'en'));
+    const onBack = say && say.side === 'back' && (c.audio || canSpeak(c.lang || 'en'));
 
     back.innerHTML = `
-      ${spoken ? `<div style="display:flex;justify-content:flex-end;margin-bottom:6px">
-          <button class="chip" id="bfSay">${c.audio ? 'نُطق' : 'نُطق تقريبي'}</button></div>` : ''}
+      ${onBack ? sayBtn(sayLabel(c)) : ''}
 
       ${draft ? `
         <div class="bf-term" dir="${dirOf(c.front)}">${esc(c.front)}</div>
@@ -550,15 +570,7 @@ function preview(){
       </div>`;
 
     registerFit(back, document.getElementById('bfAns'), 16.8, 13);
-
-    /* stopPropagation لازمة: البطاقة كلُّها تنقلب بالنقر، وزرٌّ يُسمع
-       ثمّ يقلب يُفقد المستمعَ ما جاء يسمعه. */
-    const sayBtn = document.getElementById('bfSay');
-    if(sayBtn) sayBtn.onclick = e => {
-      e.stopPropagation();
-      const ok = c.audio ? playAudio(c.audio) : speak(say, c.lang || 'en');
-      if(!ok) toast('تعذّر النطق على هذا الجهاز', false);
-    };
+    if(onBack) bindSay(c, say);
 
     back.querySelector('[data-flip]').onclick = e => { e.stopPropagation(); toggle(); };
     back.querySelectorAll('[data-g]').forEach(b => b.onclick = e => { e.stopPropagation(); next(); });

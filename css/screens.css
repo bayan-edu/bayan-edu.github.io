@@ -1484,6 +1484,12 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
 .bf-back{transform:rotateY(180deg)}
 .bf-face textarea{cursor:text}
 
+/* 🔊 شريطُ النطق — في صدر الوجه وعلى يساره (اتجاهُ الصفحة rtl).
+   و‏-6px تسحبه إلى حافّة البطاقة فلا يأكل من فراغها: الزرُّ نفسُه
+   ٣٨px لأجل اللمس، وحشوتُه الداخلية تكفي للفصل البصريّ. */
+.bf-saybar{display:flex;justify-content:flex-end;margin:-6px -6px 2px}
+.bf-say .ic{width:18px;height:18px}
+
 .bf-prompt{color:var(--text-muted);font-size:var(--fs-meta);text-align:center;margin-bottom:14px}
 .bf-front-q{font-size:var(--fs-q);font-weight:700;text-align:center;line-height:1.7}
 .bf-recall{margin-top:auto;padding-top:14px}
