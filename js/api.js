@@ -464,10 +464,24 @@ export const saveCard = o => db.rpc('save_card', {
   p_front: o.front, p_back: o.back,
   p_note: o.note ?? null, p_audio: o.audio ?? null,
   p_image: o.image ?? null, p_lang: o.lang ?? 'ar' });
+/* 🔑 ولا p_lesson هنا (sql/157): الدرسُ صار على البطاقة، والدالّةُ
+   تصيح إن أُرسل — ومعاملٌ يُقبل ولا يُكتب أخطرُ من معاملٍ يُرفض. */
 export const saveDeck = o => db.rpc('save_deck', {
   p_id: o.id ?? null, p_title: o.title,
   p_subject: o.subject ?? null, p_level: o.level ?? null,
-  p_lesson: o.lesson ?? null, p_position: o.position ?? 0 });
+  p_position: o.position ?? 0 });
+
+/* ── بُعدا البطاقة (157) — الدرسُ أين تظهر، والفرعُ ما نوعُها ──
+   دالّتان لكلّ بُعد: استبدالٌ كاملٌ لبطاقةٍ واحدة (تحرير)، ووضعٌ
+   أو رفعٌ لدفعةٍ على درسٍ واحد (لصق). */
+export const setCardLessons  = (id, ids) =>
+  db.rpc('set_card_lessons',  { p_card: id, p_lessons: ids });
+export const setCardStrands  = (id, ids) =>
+  db.rpc('set_card_strands',  { p_card: id, p_strands: ids });
+export const linkCardsLesson = (ids, lesson, on = true) =>
+  db.rpc('link_cards_lesson', { p_cards: ids, p_lesson: lesson, p_on: on });
+export const linkCardsStrand = (ids, strand, on = true) =>
+  db.rpc('link_cards_strand', { p_cards: ids, p_strand: strand, p_on: on });
 export const saveMyNote     = (id, note) => db.rpc('save_my_note', { p_card: id, p_note: note });
 export const dueCards       = (sid, limit, fresh) =>
   db.rpc('due_cards', { p_subject: sid, p_limit: limit ?? 30, p_new: fresh ?? 6 });

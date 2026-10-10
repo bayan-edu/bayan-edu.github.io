@@ -35,14 +35,17 @@ export async function openCards(course){
   head("البطاقات", course.title || '');
   app.innerHTML = `<div class="status">جار التحميل…</div>`;
 
-  const [decks, lessons] = await Promise.all([
+  const [decks, lessons, strands] = await Promise.all([
     api.subjectDecks(course.subject_id),
-    api.authorLessons(course.id)
+    api.authorLessons(course.id),
+    api.listStrands(course.subject_id)
   ]);
   if(decks.error){ app.innerHTML = errBox(decks.error, 'البطاقات'); return; }
 
   D = decks.data || [];
   ctx.lessons = lessons.data || [];
+  /* الفروعُ المنتقاة وحدها: الأبُ غيرُ المنتقى عنوانٌ لا وجهةٌ للوسم */
+  ctx.strands = (strands.data || []).filter(s => s.selectable !== false);
   renderDecks();
 }
 
@@ -61,7 +64,8 @@ function renderDecks(){
         <div class="ed-m">
           <span class="chip ${d.cards ? 'g' : ''}">${
             N(d.cards,'بطاقة','بطاقتان','بطاقات','بطاقة')}</span>
-          ${d.lesson ? `<span class="chip">${esc(d.lesson)}</span>` : ''}
+          ${d.lessons ? `<span class="chip">${
+            N(d.lessons,'درس','درسان','دروس','درساً')}</span>` : ''}
         </div>
       </div>
       <button class="it-b wide" data-open="${d.id}">✏️ تحرير</button>
@@ -71,14 +75,19 @@ function renderDecks(){
   app.innerHTML = `
     <div class="crumb" id="bk">← دروس المقرَّر</div>
 
-    <div class="nav" style="margin-bottom:16px">
-      <button class="btn primary" id="new">＋ مجموعة جديدة</button>
-    </div>
+    ${/* 🔑 والمجموعةُ الرسميّة واحدةٌ لكلّ (مادة · صفّ) — قيدٌ في
+          القاعدة (sql/157). فزرُّ «جديدة» يُخفى حين توجد، لأنّ زرّاً
+          لا يُنتج إلا رسالةَ رفضٍ يُعلّم أنّ الأزرار تكذب. */''}
+    ${off.length ? '' : `<div class="nav" style="margin-bottom:16px">
+      <button class="btn primary" id="new">＋ إنشاء مجموعة المادة</button>
+    </div>`}
 
     <div class="ed-sec">
-      <div class="grp">مجموعات المقرَّر <span class="chip">${AR(off.length)}</span></div>
+      <div class="grp">مجموعة المقرَّر <span class="chip">${AR(off.length)}</span></div>
       ${off.length ? off.map(row).join("")
-                   : '<div class="ed-empty">لا مجموعة بعد. والبداية بواحدة تُلصق فيها قائمتك.</div>'}
+                   : `<div class="ed-empty">لا مجموعة بعد. وهي حاويةٌ واحدةٌ
+                      لبطاقات المادة كلِّها — والتصنيفُ بالدرس والفرع على
+                      البطاقة نفسِها.</div>`}
     </div>
 
     ${own.length ? `<div class="ed-sec">
@@ -88,7 +97,8 @@ function renderDecks(){
     </div>` : ''}`;
 
   document.getElementById('bk').onclick = () => openCourse(ctx.course);
-  document.getElementById('new').onclick = () => deckForm(null);
+  const nw = document.getElementById('new');
+  if(nw) nw.onclick = () => deckForm(null);
   app.querySelectorAll('[data-open]').forEach(b => b.onclick = e => {
     e.stopPropagation();
     openDeck(D.find(x => String(x.id) === b.dataset.open));
@@ -111,26 +121,18 @@ function deckForm(d){
     <div class="crumb" id="bk">← البطاقات</div>
     <div class="ed-form">
       <div class="ed-side">
-        <div class="ed-hint">💡 <b>المجموعة</b> تتبع المادة والصفّ.
-          وربطُها بدرس اختياريّ — فإن رُبطت دخلت بطاقاتُها صندوق
-          الطالب حين يفتح ذلك الدرس.</div>
-        <div class="ed-hint" style="opacity:.75">وبلا درس: تبقى مجموعة
-          المقرَّر كلِّه، ولا تدخل إلا بإضافة الطالب أو بخطأ مشخَّص.</div>
+        <div class="ed-hint">💡 <b>المجموعة حاوية</b> واحدةٌ للمادة
+          والصفّ، وليست تصنيفاً. وبها تُدخَل البطاقة مرّةً ولا تتكرّر
+          في المادة.</div>
+        <div class="ed-hint" style="opacity:.75">والتصنيفُ على البطاقة
+          نفسِها ببُعدين: <b>الدرس</b> يقول أين تظهر، و<b>الفرع</b>
+          يقول ما نوعُها. وبطاقةٌ واحدةٌ تظهر في عدّة دروس.</div>
       </div>
 
       <div class="card" style="flex:1">
         <label class="fl">عنوان المجموعة *</label>
         <input type="text" id="ti" value="${esc(d?.title || '')}"
-               placeholder="مثال: مصطلحات البلاغة">
-
-        <label class="fl" style="margin-top:16px">الدرس
-          <span style="opacity:.6">(اختياري)</span></label>
-        <select id="ls">
-          <option value="">— بلا درس —</option>
-          ${ctx.lessons.map(l => `<option value="${l.id}"
-             ${String(d?.lesson_id ?? '') === String(l.id) ? 'selected' : ''}
-             >${esc(l.title)}</option>`).join("")}
-        </select>
+               placeholder="مثال: بطاقات اللغة العربية">
 
         <div class="nav" style="margin-top:20px">
           <button class="btn primary" id="sv">حفظ</button>
@@ -142,10 +144,10 @@ function deckForm(d){
   document.getElementById('sv').onclick = async () => {
     const title = document.getElementById('ti').value.trim();
     if(!title) return toast('العنوان مطلوب', false);
-    const lesson = document.getElementById('ls').value || null;
 
+    /* ولا lesson يُرسَل (sql/157): save_deck تصيح إن أُرسل */
     const { error } = await api.saveDeck({
-      id: d?.id ?? null, title, lesson: lesson ? +lesson : null,
+      id: d?.id ?? null, title,
       subject: ctx.course.subject_id, level: ctx.course.level_id ?? null });
     if(error) return toast(error.message, false);
     toast('حُفظت'); openCards(ctx.course);
@@ -167,6 +169,17 @@ async function openDeck(d){
 }
 
 function renderCards(){
+  /* 🔑 والدرسُ والفرعُ يُعرضان على كلّ صفّ: بطاقةٌ بلا تصنيف لا تصل
+     طالباً إلا باختياره، **وهذا صمتٌ يجب أن يُرى** — فالفراغ هنا
+     معلومةٌ لا نقصُ زينة. */
+  const tags = c => {
+    const ls = c.lessons || [], ss = c.strands || [];
+    if(!ls.length && !ss.length)
+      return '<span class="chip warn">بلا درس ولا فرع</span>';
+    return ls.map(l => `<span class="chip">${esc(l.title)}</span>`).join('')
+         + ss.map(s => `<span class="chip g">${esc(s.name)}</span>`).join('');
+  };
+
   const row = c => `
     <div class="ed-row" data-c="${c.id}">
       <div style="flex:0 0 34%;min-width:0">
@@ -178,6 +191,7 @@ function renderCards(){
           ${examples(c.note).length > 1
             ? `<span class="chip">${AR(examples(c.note).length)} أمثلة</span>` : ''}
         </div>
+        <div class="ed-m" style="margin-top:4px">${tags(c)}</div>
       </div>
       <div style="flex:1;min-width:0;color:var(--text-muted);
                   font-size:var(--fs-meta);line-height:1.6"
@@ -197,7 +211,7 @@ function renderCards(){
             («لا بطاقة في هذه الرزمة»)، وزرٌّ لا يُنتج إلا رسالةَ رفضٍ
             يُعلّم أنّ الأزرار تكذب. */''}
       ${C.length ? '<button class="btn" id="plink">🔗 رابط تدرّب</button>' : ''}
-      <button class="btn" id="edeck">⚙️ إعدادات المجموعة</button>
+      <button class="btn" id="edeck">⚙️ اسم المجموعة</button>
     </div>
 
     <div class="ed-sec">
@@ -214,8 +228,7 @@ function renderCards(){
   const pv = document.getElementById('pv'); if(pv) pv.onclick = preview;
 
   const pl = document.getElementById('plink');
-  if(pl) pl.onclick = () => practiceLinkBox({
-    kind: 'cards', source: cur.id, title: cur.title });
+  if(pl) pl.onclick = linkPicker;
 
   app.querySelectorAll('[data-ed]').forEach(b => b.onclick = () =>
     cardForm(C.find(x => String(x.id) === b.dataset.ed)));
@@ -225,6 +238,61 @@ function renderCards(){
     if(error) return toast(error.message, false);   // 🔒 تُرفض إن كان يراجعها طلاب
     toast('حُذفت'); openDeck(cur);
   });
+  scrollTop();
+}
+
+
+/* ═══════════ ③-ب نطاقُ رابط التدرّب ═══════════
+
+   🔴 ولولا هذا لصار الرابطُ على **المادة كلِّها**: كان يُبنى من
+   مجموعة، والمجموعةُ صارت حاويةَ المادة (sql/157). ميزةٌ تُفرَغ
+   بصمت — والصمتُ يُصدَّق.
+
+   🔑 والدرسُ أوّلاً لا الفرع: إيقاعُ المعلّم أن يُنهي درساً فيُرسل
+      بطاقاته. والفرعُ للمراجعة قبل الامتحان، وهي أندر.
+
+   📌 وما لا بطاقاتِ له لا يُعرض: درسٌ فارغٌ في القائمة يُنتج رابطاً
+      يعتذر عند الضغط — ويُعلّم أنّ الأزرار تكذب. */
+
+function linkPicker(){
+  const byLesson = new Map(), byStrand = new Map();
+  C.forEach(c => {
+    (c.lessons || []).forEach(l => byLesson.set(l.id, (byLesson.get(l.id) || 0) + 1));
+    (c.strands || []).forEach(s => byStrand.set(s.id, (byStrand.get(s.id) || 0) + 1));
+  });
+
+  const opt = (rows, map, label, kind) => rows
+    .filter(r => map.get(r.id))
+    .map(r => `<button class="it-b wide" data-k="${kind}" data-s="${r.id}"
+                 data-t="${esc(r[label])}">${esc(r[label])}
+               <span class="chip">${AR(map.get(r.id))}</span></button>`).join('');
+
+  const ls = opt(ctx.lessons, byLesson, 'title', 'lesson_cards');
+  const st = opt(ctx.strands, byStrand, 'name',  'strand_cards');
+
+  app.innerHTML = `
+    <div class="crumb" id="bk">← ${esc(cur.title)}</div>
+    <div class="ed-sec">
+      <div class="grp">على أيّ شيءٍ يتدرّب الطالب؟</div>
+
+      <div class="ed-hint">🔑 <b>وبطاقاتُ الدرس هي الغالب.</b> واللقطة
+        تُجمَّد عند الإنشاء — فما تضيفه بعد الرابط لا يدخله.</div>
+
+      <div class="grp" style="margin-top:14px">درسٌ بعينه</div>
+      ${ls || '<div class="ed-empty">لا درسَ له بطاقاتٌ بعد.</div>'}
+
+      <div class="grp" style="margin-top:14px">فرعٌ من المادة</div>
+      ${st || '<div class="ed-empty">لا فرعَ له بطاقاتٌ بعد.</div>'}
+
+      <div class="grp" style="margin-top:14px">أو المادة كلُّها</div>
+      <button class="it-b wide" data-k="cards" data-s="${cur.id}"
+        data-t="${esc(cur.title)}">${esc(cur.title)}
+        <span class="chip">${AR(C.length)}</span></button>
+    </div>`;
+
+  document.getElementById('bk').onclick = () => openDeck(cur);
+  app.querySelectorAll('[data-k]').forEach(b => b.onclick = () =>
+    practiceLinkBox({ kind: b.dataset.k, source: +b.dataset.s, title: b.dataset.t }));
   scrollTop();
 }
 
@@ -268,11 +336,29 @@ function pasteBox(){
       </div>
 
       <div class="card" style="flex:1">
-        <label class="fl">لغة هذه الدفعة</label>
-        <select id="lg">
-          <option value="ar">عربية</option>
-          <option value="en">إنجليزية</option>
-        </select>
+        <div class="ed-3">
+          <div>
+            <label class="fl">لغة هذه الدفعة</label>
+            <select id="lg">
+              <option value="ar">عربية</option>
+              <option value="en">إنجليزية</option>
+            </select>
+          </div>
+          <div>
+            <label class="fl">درسُها <span style="opacity:.6">(اختياري)</span></label>
+            <select id="ls1">
+              <option value="">— بلا درس —</option>
+              ${ctx.lessons.map(l => `<option value="${l.id}">${esc(l.title)}</option>`).join("")}
+            </select>
+          </div>
+          <div>
+            <label class="fl">فرعُها <span style="opacity:.6">(اختياري)</span></label>
+            <select id="st1" ${ctx.strands.length ? '' : 'disabled'}>
+              <option value="">${ctx.strands.length ? '— بلا فرع —' : 'لا فروعَ للمادة'}</option>
+              ${ctx.strands.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join("")}
+            </select>
+          </div>
+        </div>
 
         <label class="fl" style="margin-top:16px">القائمة</label>
         <textarea id="tx" dir="auto" style="min-height:220px;font-family:var(--font-mono,monospace)"
@@ -315,12 +401,29 @@ function pasteBox(){
 
   document.getElementById('sv').onclick = async () => {
     if(!ready.length) return;
-    /* اللغة تُقرأ لحظةَ الحفظ لا عند بناء الشاشة — فقد تُبدَّل بعد الفحص */
-    const lang = document.getElementById('lg').value || 'ar';
+    /* الثلاثةُ تُقرأ لحظةَ الحفظ لا عند بناء الشاشة — فقد تُبدَّل بعد الفحص */
+    const lang   = document.getElementById('lg').value || 'ar';
+    const lesson = +document.getElementById('ls1').value || null;
+    const strand = +document.getElementById('st1').value || null;
+
     const { data, error } = await api.saveCards(cur.id, ready.map(r => ({
       front: r.front, back: r.back, note: r.note || null, lang })));
     if(error) return toast(error.message, false);
-    toast(`أُضيفت ${AR(data.added)} · صُحّحت ${AR(data.updated)}`);
+
+    /* 🔑 و save_cards صارت تُعيد ids لما لمسته (sql/157) — وبها يُربط
+       الدرسُ والفرعُ في نداءٍ تالٍ. ولم يُفتح توقيعُها بمعاملٍ ثالث:
+       شكلان يقبلان نداءً بمعاملين يُردّان «function is not unique». */
+    const ids = data.ids || [];
+    let note = '';
+    if(ids.length && (lesson || strand)){
+      const r1 = lesson ? await api.linkCardsLesson(ids, lesson) : {};
+      const r2 = strand ? await api.linkCardsStrand(ids, strand) : {};
+      if(r1.error || r2.error)
+        note = ' · وتعذّر الوسم: ' + (r1.error || r2.error).message;
+    }
+
+    toast(`أُضيفت ${AR(data.added)} · صُحّحت ${AR(data.updated)}${note}`,
+          !note);
     openDeck(cur);
   };
   scrollTop();
@@ -328,6 +431,22 @@ function pasteBox(){
 
 
 /* ═══════════ ⑤ بطاقة واحدة ═══════════ */
+
+/* مُنتقٍ متعدّد — مربّعاتٌ لا قائمةُ اختيارٍ متعدّدة:
+   القائمةُ المتعدّدة تحتاج Ctrl للنقر، ويفقد المستخدمُ اختيارَه
+   بنقرةٍ واحدةٍ خاطئة. والمربّعاتُ تُقرأ بلمحة وتُلمَس بإصبع. */
+function picker(id, rows, label, on){
+  const set = new Set((on || []).map(String));
+  if(!rows.length) return '<div class="ed-empty">لا شيءَ للاختيار.</div>';
+  return `<div class="pick" id="${id}">${rows.map(r => `
+    <label class="pick-i">
+      <input type="checkbox" value="${r.id}" ${set.has(String(r.id)) ? 'checked' : ''}>
+      <span>${esc(r[label])}</span>
+    </label>`).join('')}</div>`;
+}
+
+const picked = id => [...document.querySelectorAll(`#${id} input:checked`)]
+                       .map(x => +x.value);
 
 function cardForm(c){
   app.innerHTML = `
@@ -342,6 +461,10 @@ function cardForm(c){
         <div class="ed-hint" style="opacity:.75"><b>الصورة:</b> رابط خارجيّ
           اليوم. والسؤال قبل إضافتها: أتصلح <b>بديلاً عن المعنى</b>؟
           فإن كانت زينة حوله فلا تُضَف.</div>
+        <div class="ed-hint" style="opacity:.75"><b>الدرس والفرع:</b> الدرسُ
+          يقول أين تظهر — وبه تدخل صندوق الطالب حين يفتحه. والفرعُ يقول
+          ما نوعُها، وبه يُبنى رابطُ تدرّبٍ على الفرع كلِّه.
+          <b>وبطاقةٌ بلا درس</b> لا تصل أحداً إلا باختياره أو بخطأ مشخَّص.</div>
       </div>
 
       <div class="card" style="flex:1">
@@ -377,6 +500,14 @@ function cardForm(c){
           </div>
         </div>
 
+        <label class="fl" style="margin-top:16px">الدروس التي تظهر فيها</label>
+        ${picker('ls', ctx.lessons, 'title', (c?.lessons || []).map(x => x.id))}
+
+        <label class="fl" style="margin-top:14px">الفرع</label>
+        ${ctx.strands.length
+          ? picker('st', ctx.strands, 'name', (c?.strands || []).map(x => x.id))
+          : '<div class="ed-empty">لا فروعَ لهذه المادة بعد.</div>'}
+
         <div class="nav" style="margin-top:20px">
           <button class="btn primary" id="sv">حفظ</button>
         </div>
@@ -391,13 +522,26 @@ function cardForm(c){
 
     /* save_card بالهُويّة لا بمطابقة front — تعديل الصياغة لا يُنشئ
        صفّاً آخر. أمّا save_cards (اللصق الجماعي) فتبقى لغرضها هي. */
-    const { error } = await api.saveCard({
+    const { data: id, error } = await api.saveCard({
       id: c?.id ?? null, deck: cur.id, front, back,
       note:  document.getElementById('nt').value.trim() || null,
       audio: document.getElementById('au').value.trim() || null,
       image: document.getElementById('im').value.trim() || null,
       lang:  document.getElementById('lg').value || 'ar' });
     if(error) return toast(error.message, false);
+
+    /* 🔑 والبُعدان بعد الحفظ لا معه: البطاقةُ الجديدة لا هُويّةَ لها
+       قبله. ونداءان لا واحد — فدالّتان في القاعدة لا دالّة.
+       ⚠️ وخطؤهما يُقال ولا يُبتلَع: البطاقةُ حُفظت والوسمُ لم يُحفظ،
+          وصمتٌ هنا يُفهم «تمّ كلُّه». */
+    const ls = picked('ls');
+    const st = ctx.strands.length ? picked('st') : [];
+    const r1 = await api.setCardLessons(id, ls);
+    const r2 = ctx.strands.length ? await api.setCardStrands(id, st) : {};
+    if(r1.error || r2.error)
+      return toast('حُفظت البطاقة، وتعذّر الوسم: '
+        + (r1.error || r2.error).message, false);
+
     toast('حُفظت'); openDeck(cur);
   };
   scrollTop();
