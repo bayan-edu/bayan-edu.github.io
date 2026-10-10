@@ -16,9 +16,9 @@ import * as api from './api.js';
 import { S } from './state.js';
 import { openMatchGame, eligible } from './card_game_match.js';
 import { app, head, toast, esc, AR, errBox, nav, scrollTop,
-         dirOf, shrinkFont, examples, pickExample, sayable, icon,
+         dirOf, shrinkFont, examples, pickExample, sayable, sayGroup, bindSay,
          skeleton, N } from './ui.js';
-import { playAudio, speak, canSpeak } from './media.js';
+
 
 let subjects = [];   // { id, name, due }
 
@@ -223,15 +223,9 @@ export function openSession(subject, opts = {}){
       bind();
     }
 
-    /* 🔊 زرُّ النطق — واحدٌ لا اثنان، ويقف حيث يقف المنطوق (ui.js · sayable).
-       ورمزٌ لا كلمة: الكلمةُ في البطاقة هي المادّة، فنصٌّ آخرُ بجوارها
-       يزاحمها على النظرة الأولى. والتسميةُ في aria-label لقارئ الشاشة
-       ولمن يُطيل الوقوف — وهي التي تفرّق الصوتَ المرفوع من قراءة الجهاز. */
-    const sayBtn = lbl =>
-      `<div class="bf-saybar"><button class="iconbtn bf-say" id="bfSay"
-         title="${lbl}" aria-label="${lbl}">${icon('speak')}</button></div>`;
-    const sayLabel = c => c.audio ? 'نُطق' : 'نُطق تقريبي';
-
+    /* 🔊 الزرّ يقف **بجوار الكلمة** على الوجه الذي يحمل المنطوق —
+       والبناءُ والربطُ في ui.js (sayGroup · bindSay)، مصدراً واحداً
+       مع معاينة المؤلّف. وهنا القرارُ وحده: أيُّ وجهٍ يستحقّه. */
     function paint(){
       const c = queue[0];
       const gap = /\{\{\s*\}\}/.test(c.front);
@@ -239,14 +233,16 @@ export function openSession(subject, opts = {}){
       el("bfCard").classList.remove('flipped');
 
       const say = sayable(c);
-      const onFront = say && say.side === 'front' && (c.audio || canSpeak(c.lang || 'en'));
+      const grp = say && say.side === 'front' ? sayGroup(c) : '';
 
       el("bfFront").innerHTML = `
         ${c.entry === 'dx' ? '<div class="ed-m"><span class="chip">من إجابة سابقة</span></div>' : ''}
-        ${onFront ? sayBtn(sayLabel(c)) : ''}
         ${gap ? '<div class="bf-prompt">ما الكلمة الناقصة؟</div>' : ''}
-        <div class="bf-front-q" id="bfQ" dir="${dirOf(c.front)}"
-          >${esc(c.front).replace(/\{\{\s*\}\}/g, '<span style="opacity:.45">______</span>')}</div>
+        <div class="bf-qrow ctr" dir="${dirOf(c.front)}">
+          <div class="bf-front-q" id="bfQ"
+            >${esc(c.front).replace(/\{\{\s*\}\}/g, '<span style="opacity:.45">______</span>')}</div>
+          ${grp}
+        </div>
         <div class="bf-recall">
           <textarea id="bfDraft" dir="auto"
                     placeholder="${gap ? 'الكلمة…' : 'ما يحضرك…'}"
@@ -254,21 +250,9 @@ export function openSession(subject, opts = {}){
           <button class="bf-hint" data-flip="1">رؤية الإجابة</button>
         </div>`;
       registerFit(el("bfFront"), document.getElementById('bfQ'), 18.9, 15);
-      if(onFront) bindSay(c, say);
+      if(grp) bindSay(el("bfFront"), c, say);
 
       el("bfBack").innerHTML = '';
-    }
-
-    /* stopPropagation لازمة في الوجهين: النقر على البطاقة يقلبها، وزرٌّ
-       يُسمع ثمّ يقلب يُفقد المستمعَ ما جاء يسمعه. */
-    function bindSay(c, say){
-      const b = document.getElementById('bfSay');
-      if(!b) return;
-      b.onclick = e => {
-        e.stopPropagation();
-        const ok = c.audio ? playAudio(c.audio) : speak(say.text, c.lang || 'en');
-        if(!ok) toast('تعذّر النطق على هذا الجهاز', false);
-      };
     }
 
     function buildBack(){
@@ -280,11 +264,11 @@ export function openSession(subject, opts = {}){
          (معنًى عربيٌّ ← الكلمة). فلو عُرض على الوجه لأفشى الجواب.
          وما كان منطوقُه في الوجه فزرُّه هناك، ولا يُكرَّر هنا. */
       const say = sayable(c);
-      const onBack = say && say.side === 'back' && (c.audio || canSpeak(c.lang || 'en'));
+      const grp = say && say.side === 'back' ? sayGroup(c) : '';
+      const ans = `<div class="bf-qrow" dir="${dirOf(c.back)}">
+          <div class="bf-answer" id="bfAns">${esc(c.back)}</div>${grp}</div>`;
 
       el("bfBack").innerHTML = `
-        ${onBack ? sayBtn(sayLabel(c)) : ''}
-
         ${c.entry === 'dx' && c.dx_note ? `
           <div class="bf-label">سبب المراجعة</div>
           <div class="bf-note" style="margin-bottom:12px">${esc(c.dx_note)}</div>` : ''}
@@ -294,8 +278,8 @@ export function openSession(subject, opts = {}){
           <div class="bf-label">${draft ? 'كتبت' : 'طريقتك في تذكّرها'}</div>
           <div class="bf-mine" dir="auto">${esc(draft || c.my_note)}</div>
           <div class="bf-label">الصواب</div>
-          <div class="bf-answer" id="bfAns" dir="${dirOf(c.back)}">${esc(c.back)}</div>`
-        : `<div class="bf-answer" id="bfAns" dir="${dirOf(c.back)}">${esc(c.back)}</div>`}
+          ${ans}`
+        : ans}
 
         ${c._ex ? `<div class="bf-divider"></div>
           <div class="bf-label">مثال${examples(c.note).length > 1
@@ -310,7 +294,7 @@ export function openSession(subject, opts = {}){
         </div>`;
 
       registerFit(el("bfBack"), document.getElementById('bfAns'), 16.8, 13);
-      if(onBack) bindSay(c, say);
+      if(grp) bindSay(el("bfBack"), c, say);
 
       el("bfBack").querySelector('[data-flip]').onclick = e => { e.stopPropagation(); toggle(); };
       el("bfBack").querySelectorAll('[data-g]').forEach(b => b.onclick = e => {

@@ -4,7 +4,7 @@
    ══════════════════════════════════════════════════════════ */
 
 import { S } from './state.js';
-import { mediaUrl, isManaged } from './media.js';
+import { mediaUrl, isManaged, accents, playAudio, speak } from './media.js';
 import { renderMark, whenReady as avatarReady } from './avatar.js';
 
 /* ── بصمة النسخة — لمعرفة أي شيفرة يشغّلها المتصفح فعلاً ── */
@@ -122,6 +122,46 @@ export function sayable(c){
   if(f && dirOf(f) === 'ltr') return { text: f, side: 'front' };
   const b = clean(c.back);
   return b && dirOf(b) === 'ltr' ? { text: b, side: 'back' } : null;
+}
+
+/* 🔊 أزرارُ النطق — بناءً وربطاً في موضعٍ واحد، تستعملهما شاشةُ الطالب
+   ومعاينةُ المؤلّف (ثابت ⑨). وكانتا منسوختين في الملفّين فوُحِّدتا هنا.
+
+   🔑 وأين يقف الزرّ: **بجوار الكلمة في سطرها** لا في شريطٍ فوقها.
+      والحجّة أنّ النطق صفةُ هذه الكلمة بعينها — فإبعادُه عنها يُنفق
+      من انتباه الطالب في وصل الزرّ بما يخصّه، وهو الحِمل الدخيل بعينه.
+
+   ⚠️ والاتجاه يُؤخذ من النصّ لا من الصفحة: الصفحة rtl، والمصطلح
+      الإنجليزيّ ltr. فلولا dir على السطر لوقع الزرُّ **يسار** الكلمة
+      — أي قبلها في ترتيب القراءة. */
+
+export function sayGroup(c){
+  if(!c) return '';
+  const btn = (code, label, aria) =>
+    `<button class="bf-say" data-say="${code}" title="${esc(aria)}" aria-label="${esc(aria)}"
+      >${svg('speak')}${label ? `<span class="bf-say-t">${esc(label)}</span>` : ''}</button>`;
+  const wrap = s => `<span class="bf-say-grp">${s}</span>`;
+
+  /* الملفُّ المرفوع يسبق القراءةَ الآلية **ويُغني عنها**: صوتُ إنسانٍ
+     مضمون، ولا معنى لعرض تقريبٍ بجواره يزاحمه. */
+  if(c.audio) return wrap(btn('audio', null, 'نُطق'));
+
+  const acc = accents(c.lang || 'en');
+  if(!acc.length) return '';
+  const NAME = { 'en-gb': 'نُطق بريطانيّ تقريبيّ', 'en-us': 'نُطق أمريكيّ تقريبيّ' };
+  return wrap(acc.map(a => btn(a.code, a.label, NAME[a.code] || 'نُطق تقريبيّ')).join(''));
+}
+
+/* يُربط بعد كلّ رسم — العناصر تُبنى من جديد في كلّ قلبة.
+   ⚠️ و stopPropagation لازمة: النقر على البطاقة يقلبها، وزرٌّ يُسمع
+      ثمّ يقلب يُفقد المستمعَ ما جاء يسمعه. */
+export function bindSay(root, c, say){
+  root.querySelectorAll('[data-say]').forEach(b => b.onclick = e => {
+    e.stopPropagation();
+    const code = b.dataset.say;
+    const ok = code === 'audio' ? playAudio(c.audio) : speak(say.text, code);
+    if(!ok) toast('تعذّر النطق على هذا الجهاز');
+  });
 }
 
 /* حرف الخيار: المخزَّن إن وُجد (i · ii · iii) وإلا يُشتقّ من اتجاهه */
