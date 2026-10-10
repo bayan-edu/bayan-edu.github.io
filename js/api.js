@@ -470,7 +470,11 @@ export const saveCard = o => db.rpc('save_card', {
   p_id: o.id ?? null, p_deck: o.deck ?? null,
   p_front: o.front, p_back: o.back,
   p_note: o.note ?? null, p_audio: o.audio ?? null,
-  p_image: o.image ?? null, p_lang: o.lang ?? 'ar' });
+  p_image: o.image ?? null, p_lang: o.lang ?? 'ar',
+  /* 🆕 b135 · صورةُ الوجه (عمودُ `160`، ومعاملُها في `save_card`).
+     🔑 والتُّساعيّةُ تستقبل نداءَ الثمانية بقيمةٍ افتراضية — فلا نافذةَ
+        عطلٍ بين رفع هذه النسخة ورفع تلك. */
+  p_front_image: o.front_image ?? null });
 /* 🔑 ولا p_lesson هنا (sql/157): الدرسُ صار على البطاقة، والدالّةُ
    تصيح إن أُرسل — ومعاملٌ يُقبل ولا يُكتب أخطرُ من معاملٍ يُرفض. */
 export const saveDeck = o => db.rpc('save_deck', {

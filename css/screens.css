@@ -1597,7 +1597,34 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
          font-size:var(--fs-meta);color:var(--text-muted)}
 .bf-answer{font-size:var(--fs-read);line-height:1.8}
 .bf-divider{height:1px;background:var(--line);opacity:.6;margin:13px 0}
+
 .bf-note{font-size:var(--fs-meta);color:var(--text-muted);line-height:1.7}
+
+/* 🆕 b135 · جرّةُ البطاقة — في الوجهين، وتبنيها cardImg في ui.js.
+
+   📏 والارتفاع **محجوزٌ بنسبةٍ** (height) لا مقيَّدٌ بسقفٍ (max-height)،
+      وتلك علّةٌ قياسيّة لا ذوق: shrinkFont يقيس الوجهَ أوّلَ رسمه،
+      وصورةٌ لم تَصِل بعدُ لا تشغل مكاناً — فيُقاس الوجهُ ناقصاً ويبقى
+      الخطُّ كبيراً، ثمّ تصل الصورةُ فيفيض الوجهُ ويقفز النسق.
+      وبالحجز يصدُق القياسُ من أوّل رسمة، ولا يقفز شيءٌ عند الوصول.
+      والنسبةُ تُحلّ: ‎.bf-face مطلقٌ بـinset:0 فارتفاعُه معلوم.
+      ⚠️ وheight على ‎.bf-imgbox‎ لا يُستبدل بـmax-height: تعود العلّةُ
+         كما هي. أمّا max-* على الصورة نفسِها فمقصودةٌ — انظر 📦 أدناه.
+   📦 **والحاجزُ علبةٌ والصورةُ داخلَها** — ولم يكن كذلك أوّلَ مرّة:
+      حُجز الارتفاعُ على الصورة نفسِها، فظهرت الصورةُ العريضة
+      (١٢٠٠×٤٠٠) في صندوقٍ أطولَ منها، وبان شريطان من لون الخلفيّة
+      فوقها وتحتها — قِيسا في المتصفّح وزالا بالعلبة. فالعلبةُ تحجز،
+      والصورةُ تأخذ مقاسَها هي (max-* لا height)، فيلتصق بها إطارُها.
+   📐 ولا تُقصّ الصورة لتملأ: هي معنًى لا زينة.
+   🎨 والإطارُ **محيَّد** (‎--line + --fill-soft): الصورةُ ليست حكماً
+      على صوابٍ ولا خطأ، فلا تأخذ لوناً من أُسَر المعنى (ثابت ⑤).
+   🔑 ولا stopPropagation عليها: الوجهُ كلُّه زرُّ قلبٍ، وصورةٌ تحتلّ
+      ثلثَه ولا تقلب تُحدث **منطقةً ميتة** في وسط البطاقة — ومن لمسها
+      فلم يحدث شيءٌ حسبها عاطلة. فاللمسُ يقلب كما يقلب لمسُ الكلمة. */
+.bf-imgbox{flex:0 0 auto;height:40%;margin-top:12px;
+           display:flex;align-items:flex-start;justify-content:center}
+.bf-img{display:block;max-width:100%;max-height:100%;width:auto;height:auto;
+        border-radius:11px;border:1px solid var(--line);background:var(--fill-soft)}
 .bf-btn-row{margin-top:auto;padding-top:14px;display:flex;gap:7px}
 .bf-btn-row .btn{flex:1;font-size:.82rem;padding:10px 4px}
 

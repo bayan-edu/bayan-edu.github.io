@@ -12,14 +12,20 @@
    في المتصفح ثم save_cards في نداءٍ واحد. وإعادة اللصق **تصحيحٌ
    لا تكرار** — الفهرس على (deck_id, front_key) يتكفّل بذلك.
 
-   ⚠️ ولا محرّر وسائط اليوم: image بلا جرّة في المنصّة، وaudio
-      يُلصق بمفتاحه كما في بقية الشاشات (ثابت ②).
+   🆕 b135 · وقد صار للوسائط محرّر: زرُّ رفعٍ لكلّ حقلٍ من الثلاثة
+      (صورةُ الوجه · صورةُ المعنى · النُّطق) عبر `attachUpload`، والمفتاحُ
+      يُلصق يدوياً كما كان فلا يُكسَر عُرف. والجرّةُ في الوجهين معاً —
+      في المعاينة أسفلَ هذا الملفّ وفي جلسة الطالب بنداءٍ واحد
+      (`cardImg` في `ui.js`)، فلا يرى المؤلّف ما لا يراه الطالب.
+      وسلسلةُ الصورة: `160` العمودُ والمخزن · `161` البوّابةُ وdeck_cards ·
+      `162` وdue_cards — فبلغت الطالبَ، وقِيس ذلك على الحيّ لا بالظنّ.
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
-import { app, head, toast, esc, AR, errBox, nav, setWide, scrollTop, dirOf, shrinkFont, examples, pickExample, sayable, sayGroup, bindSay, N } from './ui.js';
+import { app, head, toast, esc, AR, errBox, nav, setWide, scrollTop, dirOf, shrinkFont, examples, pickExample, sayable, sayGroup, bindSay, cardImg, N } from './ui.js';
 
 import { openCourse } from './editor.js';
 import { practiceLinkBox } from './practice_links.js';
+import { attachUpload } from './upload.js';
 
 let ctx = null;   // { course, lessons }
 let D   = [];     // المجموعات
@@ -54,18 +60,23 @@ let F = { q: '', lesson: '', strand: '', flag: '', sort: 'pos' };
       **ما يقرؤه الطالبُ فعلاً** — والصفُّ نفسُه يعرض بها «٣ أمثلة».
       والتوحيدُ بينهما بندٌ مفتوحٌ لا يُحسم في شاشة.
 
-   📌 و«بلا صورة» تنتظر البيانات: `deck_cards` لا تردّ `front_image`
-      (قِيس على الحيّ)، **ورقيقةٌ تقول «بلا صورة» وفي البطاقة صورةُ
-      وجهٍ تكذب.** */
+   🆕 b135 · و«بلا صورة» دخلت بعد أن صار لها بيانات: `deck_cards` تردّ
+      `front_image` منذ `161`. **وكانت مؤجَّلةً بقصد**، لأنّ رقيقةً تقول
+      «بلا صورة» وفي البطاقة صورةُ وجهٍ **تكذب**.
+      ⚖️ وهي الوحيدةُ التي ليست تحذيرَ بوّابة: **البوّابةُ لا تُنذر بغياب
+         صورة، ولا ينبغي** — فليست كلُّ بطاقةٍ تستحقّها. وهي هنا **بُعدُ
+         مراجعةٍ لا حكمَ نقص**، ولهذا تبقى محايدةً ولا تلبس الكهرمان. */
 
 const FLAGS = {
-  few: { label: 'أمثلتها أقلُّ من ثلاثة',
+  few: { label: 'أمثلتها أقلُّ من ثلاثة', warn: true,
          hit: c => examples(c.note).length < 3 },
-  nol: { label: 'بلا درس',
+  nol: { label: 'بلا درس', warn: true,
          hit: c => !(c.lessons || []).length },
-  dup: { label: 'بندان متطابقان',
+  dup: { label: 'بندان متطابقان', warn: true,
          hit: c => { const x = examples(c.note);
                      return x.length > 1 && new Set(x).size !== x.length; } },
+  nim: { label: 'بلا صورة', warn: false,
+         hit: c => !c.image && !c.front_image },
 };
 
 
@@ -210,7 +221,8 @@ function filterBar(){
         نفسُها — «انتبه»، لا حكمٌ على إجابةِ طالب. */
   const kb = k => {
     const m = C.filter(FLAGS[k].hit).length;
-    return `<button class="eq-kb${F.flag === k ? ' on' : ''}${m ? ' lack' : ''}"
+    return `<button class="eq-kb${F.flag === k ? ' on' : ''}${
+      m && FLAGS[k].warn ? ' lack' : ''}"
       data-fl="${k}" title="${esc(FLAGS[k].label)} — عرضُها وحدها"
       ><b>${AR(m)}</b><span>${esc(FLAGS[k].label)}</span></button>`;
   };
@@ -327,6 +339,10 @@ const cardRow = c => `
           ${(c.lang || 'ar') !== 'ar'
             ? `<span class="chip g">${esc(String(c.lang).toUpperCase())}</span>` : ''}
           ${c.audio ? '<span class="chip">🔊 نُطق</span>' : ''}
+          ${/* 🆕 b135 · وشارةٌ تقول أيَّ صورةٍ تحمل، لا أنّها تحمل صورة:
+                «وجه» و«معنى» موضعان مختلفان في عين الطالب. */''}
+          ${c.front_image ? '<span class="chip">🖼 وجه</span>' : ''}
+          ${c.image ? '<span class="chip">🖼 معنى</span>' : ''}
           ${examples(c.note).length > 1
             ? `<span class="chip">${AR(examples(c.note).length)} أمثلة</span>` : ''}
         </div>
@@ -754,11 +770,13 @@ function cardForm(c){
       <div class="ed-side">
         <div class="ed-hint">🔑 <b>الوجه هو ما يُسأل عنه.</b> ويُختار بما
           سيُطلب من الطالب في الامتحان لا بما هو أسهل كتابة.</div>
-        <div class="ed-hint" style="opacity:.75"><b>النُّطق:</b> يُرفع الملفّ
-          إلى المخزن ثمّ يُلصق مفتاحه — <code>audio/x.mp3</code>.
-          ويُسمَع بعد الكشف لا قبله.</div>
-        <div class="ed-hint" style="opacity:.75"><b>الصورة:</b> رابط خارجيّ
-          اليوم. والسؤال قبل إضافتها: أتصلح <b>بديلاً عن المعنى</b>؟
+        <div class="ed-hint" style="opacity:.75"><b>النُّطق:</b> زرُّ الرفع
+          يملأ الحقل بمفتاحه، والرابطُ الخارجيُّ مقبولٌ أيضاً.
+          <b>ويُسمَع بعد الكشف لا قبله.</b> وفي العربية هو السبيلُ الوحيد —
+          فالقراءةُ الآلية تُسقط الإعراب، ونطقٌ خاطئ يُحفظ أسوأُ من لا نطق.</div>
+        <div class="ed-hint" style="opacity:.75"><b>الصورتان:</b> صورةُ
+          <b>الوجه</b> تُعرض مع السؤال، وصورةُ <b>المعنى</b> بعد الكشف.
+          والسؤال قبل إضافة أيّهما: أتصلح <b>بديلاً عن المعنى</b>؟
           فإن كانت زينة حوله فلا تُضَف.</div>
         <div class="ed-hint" style="opacity:.75"><b>الدرس والفرع:</b> الدرسُ
           يقول أين تظهر — وبه تدخل صندوق الطالب حين يفتحه. والفرعُ يقول
@@ -792,10 +810,20 @@ function cardForm(c){
             <input type="text" id="au" dir="ltr" value="${esc(c?.audio || '')}"
                    placeholder="audio/x.mp3">
           </div>
+        </div>
+
+        ${/* 🆕 b135 · الصورتان صفّاً مستقلّاً: لكلٍّ زرُّ رفعٍ تحتها،
+              فثلاثةُ حقولٍ بأزرارها في صفٍّ واحد تتزاحم. */''}
+        <div class="ed-two" style="margin-top:14px">
           <div>
-            <label class="fl">رابط الصورة</label>
+            <label class="fl">صورةُ الوجه</label>
+            <input type="text" id="imf" dir="ltr" value="${esc(c?.front_image || '')}"
+                   placeholder="img/… أو https://…">
+          </div>
+          <div>
+            <label class="fl">صورةُ المعنى</label>
             <input type="text" id="im" dir="ltr" value="${esc(c?.image || '')}"
-                   placeholder="https://…">
+                   placeholder="img/… أو https://…">
           </div>
         </div>
 
@@ -814,6 +842,14 @@ function cardForm(c){
     </div>`;
 
   document.getElementById('bk').onclick = () => openDeck(cur);
+
+  /* 🆕 b135 · أزرارُ الرفع تلتصق بالحقول القائمة ولا تستبدلها — عقدُ
+     `upload.js` منذ كُتب. والنطاقُ `c<المجموعة>`: وسمٌ للقراءة البشرية
+     لا رابط، فلا يضرُّ أن تُنقل البطاقةُ بعده. */
+  attachUpload('au',  'c' + cur.id, 'audio');
+  attachUpload('imf', 'c' + cur.id, 'image');
+  attachUpload('im',  'c' + cur.id, 'image');
+
   document.getElementById('sv').onclick = async () => {
     const front = document.getElementById('fr').value.trim();
     const back  = document.getElementById('bk2').value.trim();
@@ -826,6 +862,7 @@ function cardForm(c){
       note:  document.getElementById('nt').value.trim() || null,
       audio: document.getElementById('au').value.trim() || null,
       image: document.getElementById('im').value.trim() || null,
+      front_image: document.getElementById('imf').value.trim() || null,
       lang:  document.getElementById('lg').value || 'ar' });
     if(error) return toast(error.message, false);
 
@@ -954,6 +991,7 @@ function preview(){
           '<span style="opacity:.45">______</span>')}</div>
         ${grp}
       </div>
+      ${cardImg(c.front_image, c.front)}
       <div class="bf-recall">
         <textarea id="bfDraft" dir="auto"
                   placeholder="${gap ? 'الكلمة…' : 'ما يحضرك…'}"
@@ -988,6 +1026,7 @@ function preview(){
         <div class="bf-label">الصواب</div>
         ${ans}`
       : ans}
+      ${cardImg(c.image, c.front)}
 
       ${c._ex ? `<div class="bf-divider"></div>
         <div class="bf-label">مثال${examples(c.note).length > 1

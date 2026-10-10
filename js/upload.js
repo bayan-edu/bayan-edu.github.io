@@ -16,21 +16,30 @@
       سيفشل. والحراسة في سياسة storage — ما يجري في المتصفح يُتجاوَز.
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
-import { audioKey, AUDIO_MAX_MB } from './media.js';
+import { audioKey, imageKey, AUDIO_MAX_MB, IMG_MAX_MB } from './media.js';
+
+
+/* 🆕 b135 · والنوعُ سطرٌ في جدول — لا ملفٌّ ثانٍ ولا دالّةٌ موازية.
+   وهي سابقةُ `b133` و`b134` نفسُها: ما افترق بيانٌ، وما اشترك منطقٌ.
+   ⇒ وزيادةُ نوعٍ ثالثٍ يوماً (وثيقة · فيديو) سطرٌ هنا لا أكثر. */
+const KIND = {
+  audio: { label: '⬆ رفع ملفّ صوتيّ', accept: 'audio/*', key: audioKey, max: AUDIO_MAX_MB },
+  image: { label: '⬆ رفع صورة',       accept: 'image/*', key: imageKey, max: IMG_MAX_MB   },
+};
 
 
 /* رسائل Supabase إنجليزية وعامّة — نترجمها إلى ما يفعله المؤلّف.
    ⚠️ المطابقة بالنصّ هشّة: قد تتغيّر صياغة المزوّد فتسقط الترجمة.
       ولهذا الفرع الأخير يعرض الأصل بدل أن يبتلعه — رسالةٌ إنجليزية
       خيرٌ من رسالةٍ عربية خاطئة. */
-function upMsg(e){
+function upMsg(e, maxMb){
   const m = (e?.message || "").toLowerCase();
   if(m.includes("already exists"))
     return "يوجد ملف بالاسم نفسه — تُعاد المحاولة (يُولَّد اسم جديد)";
   if(m.includes("row-level security") || m.includes("unauthorized") || m.includes("403"))
     return "لا صلاحية رفع لهذا الحساب — والمراجعة للمدير";
   if(m.includes("payload") || m.includes("too large") || m.includes("413"))
-    return `الملف أكبر من حدّ المخزن (${AUDIO_MAX_MB} م.ب)`;
+    return `الملف أكبر من حدّ المخزن (${maxMb} م.ب)`;
   if(m.includes("mime") || m.includes("content type"))
     return "نوع الملف غير مقبول في هذا المخزن";
   return "تعذّر الرفع — " + (e?.message || "سبب غير معروف");
@@ -46,13 +55,15 @@ function say(el, txt, bad){
  * يُركّب زرّ رفعٍ بجوار حقلٍ قائم.
  *
  * @param {string} inputId  معرّف حقل النصّ (ur · qa · pfMedia)
- * @param {string} scope    وسمٌ للقراءة: 'l12' درس · 'q5' اختبار
+ * @param {string} scope    وسمٌ للقراءة: 'l12' درس · 'q5' اختبار · 'c5' مجموعة
+ * @param {string} kind     'audio' (الافتراض) أو 'image' — سطرُه في KIND
  *
  * تُنادى بعد كل رسم. آمنةٌ عند التكرار: حقلٌ رُكّب عليه يُتجاهل،
  * وحقلٌ غير موجود (لم يُفتح بعد) يُتجاهل بلا خطأ — فلا يلزم
  * المنادي أن يعرف حالة الشاشة.
  */
-export function attachUpload(inputId, scope){
+export function attachUpload(inputId, scope, kind = 'audio'){
+  const K = KIND[kind] || KIND.audio;
   const inp = document.getElementById(inputId);
   if(!inp || inp.dataset.up) return;
   /* حقلٌ مخفيّ (نوع الوسيط لم يُختر بعد) — لا زرَّ بلا حقلٍ يملؤه.
@@ -64,9 +75,9 @@ export function attachUpload(inputId, scope){
   const wrap = document.createElement("div");
   wrap.className = "mf";
   wrap.innerHTML =
-    `<button type="button" class="mf-up">⬆ رفع ملفّ صوتيّ</button>
+    `<button type="button" class="mf-up">${K.label}</button>
      <span class="mf-note"></span>
-     <input type="file" accept="audio/*" hidden>`;
+     <input type="file" accept="${K.accept}" hidden>`;
   inp.insertAdjacentElement("afterend", wrap);
 
   const btn  = wrap.querySelector(".mf-up");
@@ -83,7 +94,7 @@ export function attachUpload(inputId, scope){
     pick.value = "";
     if(!f) return;
 
-    const { key, error } = audioKey(scope, f);
+    const { key, error } = K.key(scope, f);
     if(error) return say(note, error, true);
 
     btn.disabled = true;
@@ -94,7 +105,7 @@ export function attachUpload(inputId, scope){
 
     if(up){
       console.warn("[upload] فشل:", key, up);
-      return say(note, upMsg(up), true);
+      return say(note, upMsg(up, K.max), true);
     }
 
     inp.value = key;
