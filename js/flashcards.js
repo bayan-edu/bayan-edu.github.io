@@ -16,7 +16,7 @@ import * as api from './api.js';
 import { S } from './state.js';
 import { openMatchGame, eligible } from './card_game_match.js';
 import { app, head, toast, esc, AR, errBox, nav, scrollTop,
-         dirOf, shrinkFont, examples, pickExample, sayable,
+         dirOf, shrinkFont, examples, pickExample, sayable, icon,
          skeleton, N } from './ui.js';
 import { playAudio, speak, canSpeak } from './media.js';
 
@@ -223,14 +223,27 @@ export function openSession(subject, opts = {}){
       bind();
     }
 
+    /* 🔊 زرُّ النطق — واحدٌ لا اثنان، ويقف حيث يقف المنطوق (ui.js · sayable).
+       ورمزٌ لا كلمة: الكلمةُ في البطاقة هي المادّة، فنصٌّ آخرُ بجوارها
+       يزاحمها على النظرة الأولى. والتسميةُ في aria-label لقارئ الشاشة
+       ولمن يُطيل الوقوف — وهي التي تفرّق الصوتَ المرفوع من قراءة الجهاز. */
+    const sayBtn = lbl =>
+      `<div class="bf-saybar"><button class="iconbtn bf-say" id="bfSay"
+         title="${lbl}" aria-label="${lbl}">${icon('speak')}</button></div>`;
+    const sayLabel = c => c.audio ? 'نُطق' : 'نُطق تقريبي';
+
     function paint(){
       const c = queue[0];
       const gap = /\{\{\s*\}\}/.test(c.front);
       c._ex = pickExample(c.note);      // ثابتٌ ما دامت البطاقة معروضة
       el("bfCard").classList.remove('flipped');
 
+      const say = sayable(c);
+      const onFront = say && say.side === 'front' && (c.audio || canSpeak(c.lang || 'en'));
+
       el("bfFront").innerHTML = `
         ${c.entry === 'dx' ? '<div class="ed-m"><span class="chip">من إجابة سابقة</span></div>' : ''}
+        ${onFront ? sayBtn(sayLabel(c)) : ''}
         ${gap ? '<div class="bf-prompt">ما الكلمة الناقصة؟</div>' : ''}
         <div class="bf-front-q" id="bfQ" dir="${dirOf(c.front)}"
           >${esc(c.front).replace(/\{\{\s*\}\}/g, '<span style="opacity:.45">______</span>')}</div>
@@ -241,8 +254,21 @@ export function openSession(subject, opts = {}){
           <button class="bf-hint" data-flip="1">رؤية الإجابة</button>
         </div>`;
       registerFit(el("bfFront"), document.getElementById('bfQ'), 18.9, 15);
+      if(onFront) bindSay(c, say);
 
       el("bfBack").innerHTML = '';
+    }
+
+    /* stopPropagation لازمة في الوجهين: النقر على البطاقة يقلبها، وزرٌّ
+       يُسمع ثمّ يقلب يُفقد المستمعَ ما جاء يسمعه. */
+    function bindSay(c, say){
+      const b = document.getElementById('bfSay');
+      if(!b) return;
+      b.onclick = e => {
+        e.stopPropagation();
+        const ok = c.audio ? playAudio(c.audio) : speak(say.text, c.lang || 'en');
+        if(!ok) toast('تعذّر النطق على هذا الجهاز', false);
+      };
     }
 
     function buildBack(){
@@ -250,16 +276,14 @@ export function openSession(subject, opts = {}){
       const draft = document.getElementById('bfDraft').value.trim();
       const compare = draft || c.my_note;   // ما يُقارَن به إن وُجد — فرصٌ لا مصدر واحد
 
-      /* 🔊 ويُسمع **بعد الكشف** لا قبله: الوجه الأول سؤال، وصوتٌ فيه
-         يُعطي الجواب. والتسميتان مقصودتان: «نُطق» صوتُ إنسانٍ مرفوع،
-         و«نُطق تقريبي» قراءةُ الجهاز — وجودتُها تختلف بين جهازٍ وجهاز،
-         فلا يُبنى عليها الطالبُ ثقةَ المسموع. */
+      /* 🔊 وهنا يقف الزرُّ في حالةٍ واحدة: أن يكون المنطوقُ **في الظهر**
+         (معنًى عربيٌّ ← الكلمة). فلو عُرض على الوجه لأفشى الجواب.
+         وما كان منطوقُه في الوجه فزرُّه هناك، ولا يُكرَّر هنا. */
       const say = sayable(c);
-      const spoken = c.audio || (say && canSpeak(c.lang || 'en'));
+      const onBack = say && say.side === 'back' && (c.audio || canSpeak(c.lang || 'en'));
 
       el("bfBack").innerHTML = `
-        ${spoken ? `<div style="display:flex;justify-content:flex-end;margin-bottom:6px">
-            <button class="chip" id="bfSay">${c.audio ? 'نُطق' : 'نُطق تقريبي'}</button></div>` : ''}
+        ${onBack ? sayBtn(sayLabel(c)) : ''}
 
         ${c.entry === 'dx' && c.dx_note ? `
           <div class="bf-label">سبب المراجعة</div>
@@ -286,15 +310,7 @@ export function openSession(subject, opts = {}){
         </div>`;
 
       registerFit(el("bfBack"), document.getElementById('bfAns'), 16.8, 13);
-
-      /* stopPropagation لازمة: النقر على البطاقة يقلبها، وزرٌّ يُسمع
-         ثمّ يقلب يُفقد المستمعَ ما جاء يسمعه. */
-      const sayBtn = document.getElementById('bfSay');
-      if(sayBtn) sayBtn.onclick = e => {
-        e.stopPropagation();
-        const ok = c.audio ? playAudio(c.audio) : speak(say, c.lang || 'en');
-        if(!ok) toast('تعذّر النطق على هذا الجهاز', false);
-      };
+      if(onBack) bindSay(c, say);
 
       el("bfBack").querySelector('[data-flip]').onclick = e => { e.stopPropagation(); toggle(); };
       el("bfBack").querySelectorAll('[data-g]').forEach(b => b.onclick = e => {
