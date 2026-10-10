@@ -1484,11 +1484,30 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
 .bf-back{transform:rotateY(180deg)}
 .bf-face textarea{cursor:text}
 
-/* 🔊 شريطُ النطق — في صدر الوجه وعلى يساره (اتجاهُ الصفحة rtl).
-   و‏-6px تسحبه إلى حافّة البطاقة فلا يأكل من فراغها: الزرُّ نفسُه
-   ٣٨px لأجل اللمس، وحشوتُه الداخلية تكفي للفصل البصريّ. */
-.bf-saybar{display:flex;justify-content:flex-end;margin:-6px -6px 2px}
-.bf-say .ic{width:18px;height:18px}
+/* 🔊 سطرُ الكلمة وزرِّها — الزرُّ **بجوارها** لا فوقها.
+   والاتّجاه يُكتب على السطر من JS (اتّجاه النصّ لا الصفحة)، فيقع
+   الزرُّ **بعد** الكلمة في ترتيب القراءة لا قبلها.
+   وflex-wrap لأجل الجمل الطويلة: تلتفّ الكلمةُ ويتبعها الزرّ. */
+.bf-qrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.bf-qrow.ctr{justify-content:center}
+.bf-qrow > .bf-front-q,.bf-qrow > .bf-answer{flex:0 1 auto;min-width:0}
+
+.bf-say-grp{display:inline-flex;align-items:center;gap:2px;flex:0 0 auto}
+
+/* ٣٢px حدُّ اللمس الأدنى المعتمد هنا — أصغرُ من .iconbtn (٣٨) لأنّه
+   يجاور كلمةً لا يقف وحده في شريط، وزرٌّ أكبر منها يسرق النظر. */
+.bf-say{display:inline-flex;align-items:center;justify-content:center;gap:3px;
+  min-width:32px;min-height:32px;padding:4px 6px;background:none;
+  border:1px solid transparent;border-radius:9px;cursor:pointer;font:inherit;
+  color:var(--text-muted);transition:color .18s,background .18s,border-color .18s}
+.bf-say:hover{color:var(--accent);background:var(--fill)}
+.bf-say:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.bf-say .ic{width:17px;height:17px}
+
+/* وسمُ اللهجة — لاتينيٌّ دائماً (UK · US)، وهو عُرفُ المعاجم فلا يُترجَم.
+   ويظهر حين تتوفّر اللهجتان معاً وحده: وسمٌ بلا اختيارٍ يَعِد بما ليس هناك. */
+.bf-say-t{font-size:var(--fs-tag);font-weight:600;letter-spacing:.02em;
+  font-family:system-ui,sans-serif}
 
 .bf-prompt{color:var(--text-muted);font-size:var(--fs-meta);text-align:center;margin-bottom:14px}
 .bf-front-q{font-size:var(--fs-q);font-weight:700;text-align:center;line-height:1.7}

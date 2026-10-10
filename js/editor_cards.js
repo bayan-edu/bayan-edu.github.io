@@ -16,8 +16,8 @@
       يُلصق بمفتاحه كما في بقية الشاشات (ثابت ②).
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
-import { app, head, toast, esc, AR, errBox, nav, setWide, scrollTop, dirOf, shrinkFont, examples, pickExample, sayable, icon, N } from './ui.js';
-import { playAudio, speak, canSpeak } from './media.js';
+import { app, head, toast, esc, AR, errBox, nav, setWide, scrollTop, dirOf, shrinkFont, examples, pickExample, sayable, sayGroup, bindSay, N } from './ui.js';
+
 import { openCourse } from './editor.js';
 import { practiceLinkBox } from './practice_links.js';
 
@@ -420,22 +420,9 @@ function cardForm(c){
 function preview(){
   let i = 0, fitters = [], resizeT;
 
-  /* 🔊 نفسُ زرّ الطالب حرفاً — رمزاً وموضعاً وتسميةً (ثابت ⑨).
-     فمعاينةٌ تختلف عن الشاشة تُطمئن على غير ما سيقع. */
-  const sayBtn = lbl =>
-    `<div class="bf-saybar"><button class="iconbtn bf-say" id="bfSay"
-       title="${lbl}" aria-label="${lbl}">${icon('speak')}</button></div>`;
-  const sayLabel = c => c.audio ? 'نُطق' : 'نُطق تقريبي';
-
-  function bindSay(c, say){
-    const b = document.getElementById('bfSay');
-    if(!b) return;
-    b.onclick = e => {
-      e.stopPropagation();
-      const ok = c.audio ? playAudio(c.audio) : speak(say.text, c.lang || 'en');
-      if(!ok) toast('تعذّر النطق على هذا الجهاز', false);
-    };
-  }
+  /* 🔊 ولا نسخةَ ثانية من الزرّ: sayGroup و bindSay في ui.js تخدمان
+     هذه الشاشة وشاشةَ الطالب معاً (ثابت ⑨). فمعاينةٌ تختلف عن الشاشة
+     تُطمئن على غير ما سيقع. */
 
   /* مفتاحٌ صريح لا يُغني عنه إعدادُ النظام: ذاك يقول ما يريده المستخدم
      دائماً، وهذا ما يريده الآن. ⇒ إعداد النظام قيمةٌ ابتدائية، والاختيار
@@ -514,14 +501,16 @@ function preview(){
        وتبقى لبطاقات الفراغ وحدها — هناك تحمل معلومةً لأن الفراغ وسط
        جملةٍ قد يُقرأ نصّاً ناقصاً لا سؤالاً. وما لا يتكرّر لا يبلى. */
     const say = sayable(c);
-    const onFront = say && say.side === 'front' && (c.audio || canSpeak(c.lang || 'en'));
+    const grp = say && say.side === 'front' ? sayGroup(c) : '';
 
     front.innerHTML = `
-      ${onFront ? sayBtn(sayLabel(c)) : ''}
       ${gap ? '<div class="bf-prompt">ما الكلمة الناقصة؟</div>' : ''}
-      <div class="bf-front-q" id="bfQ" dir="${dirOf(c.front)}"
-        >${esc(c.front).replace(/\{\{\s*\}\}/g,
-        '<span style="opacity:.45">______</span>')}</div>
+      <div class="bf-qrow ctr" dir="${dirOf(c.front)}">
+        <div class="bf-front-q" id="bfQ"
+          >${esc(c.front).replace(/\{\{\s*\}\}/g,
+          '<span style="opacity:.45">______</span>')}</div>
+        ${grp}
+      </div>
       <div class="bf-recall">
         <textarea id="bfDraft" dir="auto"
                   placeholder="${gap ? 'الكلمة…' : 'ما يحضرك…'}"
@@ -529,7 +518,7 @@ function preview(){
         <button class="bf-hint" data-flip="1">رؤية الإجابة</button>
       </div>`;
     registerFit(front, document.getElementById('bfQ'), 18.9, 15);
-    if(onFront) bindSay(c, say);
+    if(grp) bindSay(front, c, say);
 
     back.innerHTML = '';
   }
@@ -544,18 +533,18 @@ function preview(){
        والاستثناء: من كتب شيئاً يحتاج المقارَن به لحكمه الذاتيّ. */
     /* وزرُّ الظهر لحالةٍ واحدة: المنطوقُ في الظهر (معنًى ← الكلمة). */
     const say = sayable(c);
-    const onBack = say && say.side === 'back' && (c.audio || canSpeak(c.lang || 'en'));
+    const grp = say && say.side === 'back' ? sayGroup(c) : '';
+    const ans = `<div class="bf-qrow" dir="${dirOf(c.back)}">
+        <div class="bf-answer" id="bfAns">${esc(c.back)}</div>${grp}</div>`;
 
     back.innerHTML = `
-      ${onBack ? sayBtn(sayLabel(c)) : ''}
-
       ${draft ? `
         <div class="bf-term" dir="${dirOf(c.front)}">${esc(c.front)}</div>
         <div class="bf-label">كتبت</div>
         <div class="bf-mine" dir="auto">${esc(draft)}</div>
         <div class="bf-label">الصواب</div>
-        <div class="bf-answer" id="bfAns" dir="${dirOf(c.back)}">${esc(c.back)}</div>`
-      : `<div class="bf-answer" id="bfAns" dir="${dirOf(c.back)}">${esc(c.back)}</div>`}
+        ${ans}`
+      : ans}
 
       ${c._ex ? `<div class="bf-divider"></div>
         <div class="bf-label">مثال${examples(c.note).length > 1
@@ -570,7 +559,7 @@ function preview(){
       </div>`;
 
     registerFit(back, document.getElementById('bfAns'), 16.8, 13);
-    if(onBack) bindSay(c, say);
+    if(grp) bindSay(back, c, say);
 
     back.querySelector('[data-flip]').onclick = e => { e.stopPropagation(); toggle(); };
     back.querySelectorAll('[data-g]').forEach(b => b.onclick = e => { e.stopPropagation(); next(); });
