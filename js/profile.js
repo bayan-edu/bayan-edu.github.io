@@ -34,7 +34,7 @@ import { POLICY_URL } from './policy.js';
 import { openAvatarEdit } from './avatar_edit.js';
 import { loadMyPerformance } from './analytics.js';
 
-const MAIL = 'english.zone1978@gmail.com';
+const MAIL = 'info@bayanclass.com';
 const fmtDate = d => d ? new Date(d).toLocaleDateString('ar-EG',
   { year:'numeric', month:'long', day:'numeric' }) : '—';
 

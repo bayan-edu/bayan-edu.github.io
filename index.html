@@ -7,21 +7,42 @@
      ⚠️ يُكرِّر --page من base.css اضطراراً: هذا يُقرأ قبل أن تُحمَّل CSS.
      غيّرتَ --page؟ غيّر data-light هنا. -->
 <meta name="theme-color" data-light="#F5F5F4" data-dark="#171717">
-<meta name="description" content="بيان — منصة تعلم عربية تشرح لك لماذا أخطأت، لا أنك أخطأت فقط.">
+<meta name="description" content="بيان — تعلّم صح: منصة تعليمية عربية تُشخّص لك لماذا أخطأت بالضبط وكيف تصحح فهمك، تدلك على طريق التفوّق العلمي وتعمل على توفير جميع أدواته. ابدأ الآن.">
 <title>بيان — تعلم صح</title>
+<link rel="canonical" href="https://bayanclass.com/">
+
+<!-- مشاركة الرابط (Open Graph / Twitter) -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://bayanclass.com/">
+<meta property="og:title" content="بيان — تعلم صح">
+<meta property="og:description" content="بيان — تعلّم صح: منصة تعليمية عربية تُشخّص لك لماذا أخطأت بالضبط وكيف تصحح فهمك، تدلك على طريق التفوّق العلمي وتعمل على توفير جميع أدواته. ابدأ الآن.">
+<meta property="og:image" content="https://bayanclass.com/icon-192.png">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="بيان — تعلم صح">
+<meta name="twitter:description" content="بيان — تعلّم صح: منصة تعليمية عربية تُشخّص لك لماذا أخطأت بالضبط وكيف تصحح فهمك، تدلك على طريق التفوّق العلمي وتعمل على توفير جميع أدواته. ابدأ الآن.">
+<meta name="twitter:image" content="https://bayanclass.com/icon-192.png">
 
 <script>try{var t=localStorage.getItem("bayan.theme");if(t)document.documentElement.dataset.theme=t;}catch(e){}
 var m=document.querySelector('meta[name=theme-color]');if(m)m.content=m.dataset[t==="dark"?"dark":"light"];</script>
   
 <!-- أيقونة الموقع — أربعُ صيغٍ لأربعة قرّاء، والعلامةُ واحدة:
-     ico لمن لا يقرأ SVG ولمن يطلب /favicon.ico بلا سؤال (وsizes="32x32"
-     عمداً: بها يُقدِّم Chrome الـSVG عليه) · svg للمتصفّحات الحديثة ·
-     apple-touch لشاشة iOS الرئيسة · png ١٩٢ لاختصار Android.
-     غُيّرت العلامة؟ الأربعُ تُولَّد معاً من favicon.svg — لا واحدةٌ دون أخواتها. -->
-<link rel="icon" href="favicon.ico" sizes="32x32">
-<link rel="icon" href="favicon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="icon" href="icon-192.png" type="image/png" sizes="192x192">
+     ico لمن لا يطلب SVG ولمن يطلب /favicon.ico بلا سؤال وبمقاسات مفتوحة ·
+     svg للمتصفّحات الحديثة · apple-touch لشاشة iOS الرئيسة · png ١٩٢ لبحث Google ولاختصار Android. -->
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192">
+
+<!-- بيانات منظمة لاسم الموقع في بحث جوجل (Schema.org) -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "بيان",
+  "alternateName": ["BAYAN", "بيان كلاس", "bayanclass"],
+  "url": "https://bayanclass.com"
+}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700;800&family=Readex+Pro:wght@400;600&family=Amiri&family=Nunito:wght@900&display=swap" rel="stylesheet">
@@ -104,7 +125,7 @@ var m=document.querySelector('meta[name=theme-color]');if(m)m.content=m.dataset[
   </header>
 
   <!-- كل الشاشات تُرسم داخل هذا العنصر -->
-  <div id="app"><div class="status">جارٍ الاتصال…</div></div>
+  <div id="app"><div class="status" data-nosnippet>جارٍ الاتصال…</div></div>
 </div>
 
 <!-- تذييل الموقع: صفحاتٌ ثابتة لا تحتاج دخولاً ولا جافاسكربت.
@@ -113,7 +134,7 @@ var m=document.querySelector('meta[name=theme-color]');if(m)m.content=m.dataset[
   <a href="privacy.html">سياسة الخصوصية</a>
 </footer>
 
-<div class="toast" id="toast">تم</div>
+<div class="toast" id="toast" data-nosnippet>تم</div>
 
 <!-- أطرُ علامة الحساب — تُعرَّف مرّةً وتُستدعى بـ<use> من كلّ علامة (125).
      ⚠️ وساكنةٌ في المستند لا مُولَّدةٌ بجافاسكربت: `<use>` تحتاج هدفَها
@@ -129,7 +150,7 @@ var m=document.querySelector('meta[name=theme-color]');if(m)m.content=m.dataset[
   <g id="avf-ring"><circle cx="88.00" cy="50.00" r="6.2"/><circle cx="76.87" cy="76.87" r="6.2"/><circle cx="50.00" cy="88.00" r="6.2"/><circle cx="23.13" cy="76.87" r="6.2"/><circle cx="12.00" cy="50.00" r="6.2"/><circle cx="23.13" cy="23.13" r="6.2"/><circle cx="50.00" cy="12.00" r="6.2"/><circle cx="76.87" cy="23.13" r="6.2"/></g>
 </defs></svg>
 
-<noscript>
+<noscript data-nosnippet>
   <div class="wrap"><div class="err"><b>جافاسكربت معطّلة</b>
     تُفعَّل في المتصفح لتعمل المنصة.</div></div>
 </noscript>
