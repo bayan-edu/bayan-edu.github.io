@@ -16,7 +16,7 @@ import * as api from './api.js';
 import { S } from './state.js';
 import { openMatchGame, eligible } from './card_game_match.js';
 import { app, head, toast, esc, AR, errBox, nav, scrollTop,
-         dirOf, shrinkFont, examples, pickExample, sayable, sayGroup, bindSay,
+         dirOf, backText, shrinkFont, examples, pickExample, sayable, sayGroup, bindSay,
          cardImg, skeleton, N } from './ui.js';
 
 
@@ -266,8 +266,12 @@ export function openSession(subject, opts = {}){
          وما كان منطوقُه في الوجه فزرُّه هناك، ولا يُكرَّر هنا. */
       const say = sayable(c);
       const grp = say && say.side === 'back' ? sayGroup(c) : '';
-      const ans = `<div class="bf-qrow" dir="${dirOf(c.back)}">
-          <div class="bf-answer" id="bfAns">${esc(c.back)}</div>${grp}</div>`;
+      /* سطران حين يختلف الخطّان (ui ← backText): الترجمةُ ثمّ التعريف،
+         ولكلٍّ اتّجاهُه. والاتّجاهُ على الصفّ يتبع **أوّلَ** سطرٍ —
+         فعنده يقف زرُّ النطق. */
+      const bk  = backText(c.back);
+      const ans = `<div class="bf-qrow" dir="${dirOf(bk)}">
+          <div class="bf-answer" id="bfAns">${esc(bk)}</div>${grp}</div>`;
 
       el("bfBack").innerHTML = `
         ${c.entry === 'dx' && c.dx_note ? `
@@ -524,7 +528,7 @@ function openBrowseDeck(subject, deck){
         <input type="checkbox" data-c="${c.id}" ${c.mine ? 'checked disabled' : ''}>
         <span class="pick-txt">
           <span class="pick-f" dir="${dirOf(c.front)}">${esc(c.front)}</span>
-          <span class="pick-b" dir="${dirOf(c.back)}">${esc(c.back)}</span>
+          <span class="pick-b" dir="${dirOf(c.back)}">${esc(backText(c.back))}</span>
         </span>
         ${c.mine ? '<span class="chip g">عندك</span>' : ''}
       </label>`;
