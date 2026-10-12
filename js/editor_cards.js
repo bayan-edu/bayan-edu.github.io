@@ -21,7 +21,7 @@
       `162` وdue_cards — فبلغت الطالبَ، وقِيس ذلك على الحيّ لا بالظنّ.
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
-import { app, head, toast, esc, AR, errBox, nav, setWide, scrollTop, dirOf, shrinkFont, examples, pickExample, sayable, sayGroup, bindSay, cardImg, N } from './ui.js';
+import { app, head, toast, esc, AR, errBox, nav, setWide, scrollTop, dirOf, backText, shrinkFont, examples, pickExample, sayable, sayGroup, bindSay, cardImg, N } from './ui.js';
 
 import { openCourse } from './editor.js';
 import { practiceLinkBox } from './practice_links.js';
@@ -348,9 +348,9 @@ const cardRow = c => `
         </div>
         <div class="ed-m" style="margin-top:4px">${tags(c)}</div>
       </div>
-      <div style="flex:1;min-width:0;color:var(--text-muted);
+      <div class="ed-bk" style="flex:1;min-width:0;color:var(--text-muted);
                   font-size:var(--fs-meta);line-height:1.6"
-           dir="${dirOf(c.back)}">${esc(c.back)}</div>
+           dir="${dirOf(c.back)}">${esc(backText(c.back))}</div>
       <button class="it-b wide" data-ed="${c.id}">✏️</button>
       <button class="it-b" data-rm="${c.id}">🗑</button>
     </div>`;
@@ -706,8 +706,8 @@ function pasteBox(){
           <span class="chip g">${AR(ready.length)}</span></div>
         ${ready.slice(0, 6).map(r => `<div class="ed-row">
             <div style="flex:0 0 34%"><div class="ed-t">${esc(r.front)}</div></div>
-            <div style="flex:1;color:var(--text-muted);font-size:var(--fs-meta)"
-              >${esc(r.back)}</div></div>`).join("")}
+            <div class="ed-bk" style="flex:1;color:var(--text-muted);font-size:var(--fs-meta)"
+              >${esc(backText(r.back))}</div></div>`).join("")}
         ${ready.length > 6 ? `<div class="ed-empty">…و${AR(ready.length-6)} غيرها</div>` : ''}`
       : '<div class="warnbox">لا سطر صالح.</div>'}`;
 
@@ -1015,8 +1015,11 @@ function preview(){
     /* وزرُّ الظهر لحالةٍ واحدة: المنطوقُ في الظهر (معنًى ← الكلمة). */
     const say = sayable(c);
     const grp = say && say.side === 'back' ? sayGroup(c) : '';
-    const ans = `<div class="bf-qrow" dir="${dirOf(c.back)}">
-        <div class="bf-answer" id="bfAns">${esc(c.back)}</div>${grp}</div>`;
+    /* ومعاينةُ المؤلّف ترى ما يراه الطالب حرفاً (ثابت ⑨) — فالشطرُ
+       هنا بعينه لا نظيرٌ له. */
+    const bk  = backText(c.back);
+    const ans = `<div class="bf-qrow" dir="${dirOf(bk)}">
+        <div class="bf-answer" id="bfAns">${esc(bk)}</div>${grp}</div>`;
 
     back.innerHTML = `
       ${draft ? `

@@ -43,7 +43,7 @@
 import * as api from './api.js';
 import { S } from './state.js';
 import { app, head, toast, esc, fmt, AR, errBox, nav, setWide, scrollTop, L,
-                  pgMedia, srcOf, SAFE_HOSTS, optLabel, dirOf, N } from './ui.js';
+                  pgMedia, srcOf, SAFE_HOSTS, optLabel, dirOf, backText, N } from './ui.js';
 import { attachUpload } from './upload.js';
 import { openCourse, openTools } from './editor.js';
 import { openItems } from './editor_items.js';
@@ -666,7 +666,10 @@ function cardPick(q, now){
                         dir="auto" title="${esc(r.back || '')}">
           ${r.match ? '<span class="cd-s">✓</span>' : ''}
           <span class="cd-f">${esc(r.front || '—')}</span>
-          <span class="cd-b">${esc((r.back || '').replace(/\s+/g,' ').slice(0,72))}</span>
+          ${/* 🔴 ويُطوى الفراغُ دون السطر الجديد: `\s` يبتلعه، فيعود
+               الخطّان إلى سطرٍ واحد — وهو ما جئنا نفكّه. */''}
+          <span class="cd-b">${esc(backText(r.back || '')
+                                 .replace(/[^\S\n]+/g,' ').slice(0,72))}</span>
           ${on ? '<span class="cd-on">مربوط — انقر للفكّ</span>' : ''}
         </button>`; }).join('')}
     </div></div>`;

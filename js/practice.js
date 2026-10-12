@@ -20,7 +20,7 @@
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
 import { app, bar, head, toast, esc, fmt, AR, media, pgMedia, srcOf,
-         scrollTop, N } from './ui.js';
+         scrollTop, backText, N } from './ui.js';
 import { questionText, questionBody, KIND_LABEL } from './render_q.js';
 import { wireMatching } from './match_dnd.js';
 
@@ -151,7 +151,8 @@ function cardHtml(c){
       <div class="line" dir="auto"
            style="color:var(--text);font-size:var(--fs-read)">${fmt(c.front || '')}</div>
       <div id="back" hidden>
-        <div class="line" dir="auto" style="margin-top:14px"><b>${fmt(c.back || '')}</b></div>
+        <div class="line pr-bk" dir="auto"
+             style="margin-top:14px"><b>${fmt(backText(c.back || ''))}</b></div>
         ${c.note ? `<div class="line" dir="auto" style="margin-top:8px;opacity:.85">${fmt(c.note)}</div>` : ''}
       </div>
     </div>
