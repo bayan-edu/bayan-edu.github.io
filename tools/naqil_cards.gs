@@ -115,6 +115,7 @@ const CFG = {
   MAX_BYTES    : 2 * 1024 * 1024,
 
   EVERY_HOURS  : 1,
+  EVERY_MINUTES: 30,               // طواف كل ٣٠ دقيقة ليواكب وتيرة مهمة معلّم الإنجليزية
   BUDGET_MS    : 4.5 * 60 * 1000,  // ستُّ دقائقَ حدُّ التشغيل، وهذا دونه
 };
 
@@ -151,16 +152,22 @@ const MIME = {
     البوّابةُ تردُّ `المادة` في جافّتها، فإن خالفت ما هنا وقف الحملُ —
     وبهذا يُمسَك خطأُ خريطةٍ يكتب بطاقاتِ مادّةٍ في معجم أخرى.
 
-    ⚠️ والأسماءُ أدناه أسماءُ المواد في القاعدة، **لا أسماءَ مجلداتِك
-       بالضرورة.** `probe()` يسرد ما في Drive حرفاً، ومنه تُضبط.        */
+    ⚠️ والأسماءُ أدناه تشمل أسماءَ المواد الرسمية وكذلك أكواد المجلدات
+       المعتمدة في مسار cards (مثل 4-eg_eng و 12-sci1).                 */
 
 const MAP = {
   'اللغة العربية'    : { course:  2, subject: 2 },
+  '2-eg_ara'         : { course:  2, subject: 2 },
   'English'          : { course:  4, subject: 3 },
+  '4-eg_eng'         : { course:  4, subject: 3 },
   'الرياضيات'        : { course:  8, subject: 4 },
+  '8-eg_math'        : { course:  8, subject: 4 },
   'التاريخ'          : { course: 10, subject: 5 },
+  '10-eg_hist'       : { course: 10, subject: 5 },
   'الفلسفة والمنطق'  : { course: 11, subject: 6 },
+  '11-eg_phil'       : { course: 11, subject: 6 },
   'العلوم المتكاملة' : { course: 12, subject: 1 },
+  '12-sci1'          : { course: 12, subject: 1 },
 };
 
 
@@ -190,10 +197,17 @@ const LOST_CARD = [];
 /**  يُنشئ المؤقّتَ ويحذف أشباهَه — فمؤقّتان يطوفان يتزاحمان على القفل.  */
 function install() {
   uninstall();
-  ScriptApp.newTrigger('round').timeBased().everyHours(CFG.EVERY_HOURS).create();
-  const n = ScriptApp.getProjectTriggers().length;
-  Logger.log('المؤقّت قائم — كلَّ %s ساعة · عددُ المؤقّتات الآن %s',
-             CFG.EVERY_HOURS, n);
+  if (CFG.EVERY_MINUTES) {
+    ScriptApp.newTrigger('round').timeBased().everyMinutes(CFG.EVERY_MINUTES).create();
+    const n = ScriptApp.getProjectTriggers().length;
+    Logger.log('المؤقّت قائم — كلَّ %s دقيقة · عددُ المؤقّتات الآن %s',
+               CFG.EVERY_MINUTES, n);
+  } else {
+    ScriptApp.newTrigger('round').timeBased().everyHours(CFG.EVERY_HOURS).create();
+    const n = ScriptApp.getProjectTriggers().length;
+    Logger.log('المؤقّت قائم — كلَّ %s ساعة · عددُ المؤقّتات الآن %s',
+               CFG.EVERY_HOURS, n);
+  }
 }
 
 /**  يوقف الطوافَ. ولا يمسّ القاعدةَ ولا بصمات الناقل.  */
@@ -227,7 +241,7 @@ function probe() {
 
   subs.sort((a, b) => a.getName().localeCompare(b.getName(), 'ar'));
   subs.forEach(sub => {
-    const name  = sub.getName();
+    const name  = sub.getName().trim();
     const m     = MAP[name];
     const files = jsonFiles_(sub, true);
     out.push((m ? '✔ ' : '🔴 ') + '«' + name + '» — '
@@ -330,7 +344,7 @@ function round() {
 
     for (let i = 0; i < subs.length && budget; i++) {
       const sub  = subs[i];
-      const name = sub.getName();
+      const name = sub.getName().trim();
       const m    = MAP[name];
 
       if (!m) {
