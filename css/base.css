@@ -391,15 +391,35 @@ h1{font-family:'Almarai';font-weight:800;font-size:clamp(1.3rem,4.4vw,1.72rem);l
 /* 🆕 b139 · صفُّ العنوان وبروازُ السياق.
    العنوانُ يأخذ ما بقي، والبروازُ يُدفع إلى الطرف — **يسارُ RTL** —
    فيُقرأ «أين أنا» بلمحةٍ بلا سطرٍ ثالث.
-   🔑 **ولا لونَ جديداً:** البروازُ `.chip` القائمة بعينها (`--fill` ·
-      `--line` · `--text-muted`)، فلا قرارَ هويةٍ يُتّخذ هنا.
+   🔑 **ولا لونَ جديداً ولا ظلَّ جديداً:** رموزُ النظام وحدها —
+      و`.head-tag` أدناه تقول أيَّها ولماذا.
    ⚠️ و`flex-wrap` لازمةٌ لا زينة: عنوانٌ طويل واسمُ مادةٍ طويل على
       شاشةٍ ضيّقة يتزاحمان، فينكسر البروازُ سطراً تحته بدل أن يُعصر.
    ⚠️ و`min-width:0` على العنوان: ابنُ المرن لا ينكمش دون محتواه بلا
       هذه، فيطفح الطويلُ خارج الغلاف. */
 .head-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .head-row h1{flex:1 1 auto;min-width:0}
-.head-tag{flex:0 0 auto;align-self:center}
+
+/* 🆕 b139 · وارتفع البروازُ عن الورق — طلبُ صاحب المنصّة.
+   وكان `.chip` مستعارةً: خلفيّةُ `--fill` غائرةٌ في الورق، وحبرٌ خافتٌ
+   وخطٌّ صغير. فبدا **حفرةً لا لوحة**، وهو عكسُ المراد.
+
+   🔑 **والنهوضُ وصفةُ `.card` بعينها — `--surface` + `--line` +
+      `--shadow`** لا قيمةً جديدة. و`--shadow` معرَّفٌ **في السِمتين**
+      (base.css ١٠٦ و١٦٧)، فلا يُزاد ظلٌّ سادسٌ على الخمسة الخارجة عن
+      النظام التي تُحصيها مهارةُ الهوية.
+   🔑 **ومحايدٌ يبقى محايداً:** البروازُ لا يقول «أصبتَ» ولا «انتبه» —
+      وإنّما «أين أنا». فلا `accent` ولا عائلةَ معنًى فيه، و`--text`
+      هو حبرُ المحايد لا `--text-muted`: **اسمُ المادة خبرٌ يُقرأ لا
+      همسةٌ تُستشفّ.**
+   📌 والخطّ `--fs-ui` بدل `--fs-tag` (٠٫٩٥rem ⇐ ٠٫٧٥)، و`Almarai` ٧٠٠
+      كأسماء المنصّة كلِّها (`.subj-t` · `.m-n` · `label.fl`).
+   📌 ونصفُ القطر ١١px — قطرُ الحقول والأزرار الثانوية، لا ٨ الرقاقة. */
+.head-tag{flex:0 0 auto;align-self:center;
+  background:var(--surface);border:1px solid var(--line);
+  box-shadow:var(--shadow);border-radius:11px;padding:7px 14px;
+  font-family:'Almarai';font-weight:700;font-size:var(--fs-ui);
+  color:var(--text);line-height:1.5}
 .head-tag[hidden]{display:none}
 .sub{color:var(--text-muted);font-size:var(--fs-ui);margin-top:6px}
 
