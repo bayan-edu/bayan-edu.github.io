@@ -51,7 +51,7 @@
 import * as api from './api.js';
 import { S } from './state.js';
 import { app, bar, head, toast, esc, fmt, AR, mmss, media, pgMedia, srcOf,
-        optLabel, dirOf, ICONS, nav, scrollTop, skeleton,
+        optLabel, dirOf, ICONS, nav, scrollTop, skeleton, waiting,
         /* `N` محجوزةٌ هنا لخريطة أرقام الأسئلة (السطر ٦٦) — فتُستورد
            دالّةُ العدد والمعدود باسمٍ آخر، ولا يُعاد تسميةُ المحلّية:
            هي في أربعة عشر موضعاً وتلك في موضعٍ واحد. */
@@ -169,7 +169,8 @@ function leavePage(){
 /* ═══════════ ③ بدء الاختبار ═══════════ */
 
 export async function startQuiz(meta){
-  app.innerHTML = skeleton('screen');
+  /* 🆕 b139 · الترويسةُ تُمسح مع وضع الهيكل — انظر `waiting` في ui.js. */
+  waiting('screen');
   const { data, error } = await api.getQuiz(meta.id);
   if(error){ toast(error.message); loadList(); return; }
 

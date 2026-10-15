@@ -308,11 +308,20 @@ export function head(t, s, hero, tag){
      والتبديل هنا لا في كل شاشة: head() ممرٌّ إجباريّ لا يُنسى. */
   /* 🆕 b139 · بروازُ السياق في طرف صفّ العنوان — وسيطٌ رابعٌ اختياريّ.
      يحمل «أين أنا» (اسمَ المادة مثلاً) فيُغني عن سطرٍ ثالث تحت العنوان.
+     🆕 ويقبل **واحداً أو عدّة**: شاشةُ الدروس تحمل المادة والمستوى معاً،
+        فيستوي السطرُ واحداً بدل عنوانٍ وسطرٍ تحته.
      ⚠️ و`hidden` لا تفريغٌ وحده: البروازُ له حشوٌ وحدّ، فالفارغُ يبقى
         مستطيلاً صغيراً يُقرأ عطلاً. وتعليلُه نظيرُ `.sub` أعلاه.
-     📌 و`textContent` لا `innerHTML`: الاسمُ يأتي من القاعدة. */
-  const tg = document.getElementById("headtag");
-  if(tg){ tg.textContent = tag || ""; tg.hidden = !tag; }
+     📌 و`textContent` لا `innerHTML`: الأسماءُ تأتي من القاعدة. */
+  const tg = document.getElementById("headtags");
+  if(tg){
+    const list = (Array.isArray(tag) ? tag : [tag]).filter(Boolean);
+    tg.replaceChildren(...list.map(x => {
+      const e = document.createElement("span");
+      e.className = "head-tag"; e.dir = "auto"; e.textContent = x; return e;
+    }));
+    tg.hidden = !list.length;
+  }
   /* ⚠️ و`bare` لا تقرأ البرواز: شاشةٌ بلا عنوانٍ ولا وصفٍ لا برواز
      لها أصلاً — فالبروازُ سياقُ عنوانٍ لا بديلٌ عنه. */
   h.closest("header")?.classList.toggle("bare", !t && !s);
@@ -707,6 +716,23 @@ const SKEL = {
 
 /* ⚠️ النطقُ عنصرٌ مستقلّ لا غلافٌ حولها: بطاقاتُ المواد يجب أن تبقى
    أبناءً مباشرين لـ`#app` وإلا سقطت عنها الشبكة (screens.css ⁶⁶). */
+/* 🆕 b139 · **هيكلٌ ينتظر، وترويسةٌ تُمسح معه.**
+
+   🔴 وعطلٌ عامٌّ كشفه بروازُ السياق ولم يُنشئه: الشاشةُ تضع هيكلَها ثمّ
+      تنتظر الشبكة، **و`head()` لا تُنادى إلا بعد الوصول** — فتبقى
+      ترويسةُ الشاشة المُغادَرة فوق محتوى الشاشة المُقبِلة. وقِيس: **تسعةُ
+      مواضع** على هذا الشكل في `analytics` و`flashcards` و`quiz`
+      و`student`. وكان قبل البرواز عنواناً يُشبه عنواناً فلم يُرَ،
+      **فلمّا صار البروازُ يسمّي المادة بانت الكذبة.**
+
+   🔑 **والعلاج أن يقترنا في نداءٍ واحد لا يُفصَل.** دالّتان منفصلتان
+      تُنسى إحداهما في الشاشة العاشرة، **ونداءٌ واحدٌ لا يُنسى نصفُه.**
+   📌 وتُمرَّر الترويسةُ حين تُعرف قبل الجلب، وتُمسح حين لا تُعرف. */
+export function waiting(kind, n, t, s, hero, tag){
+  head(t || "", s || "", hero, tag);
+  app.innerHTML = skeleton(kind, n);
+}
+
 export function skeleton(kind = 'rows', n){
   return `<span class="sr-only" role="status">جار التحميل…</span>`
        + (SKEL[kind] || SKEL.rows)(n);

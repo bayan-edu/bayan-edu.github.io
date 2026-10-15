@@ -599,7 +599,7 @@ export async function editLesson(course, lesson){
 
         <label class="fl" style="margin-top:16px">ملخّص <span style="opacity:.6">(اختياري)</span></label>
         <textarea id="su" style="min-height:80px"
-          placeholder="سطر أو سطران يظهران للطالب قبل دخول الدرس">${esc(lesson?.summary || '')}</textarea>
+          placeholder="سطر أو سطران — للتأليف والمراجعة، ولا يراهما الطالب">${esc(lesson?.summary || '')}</textarea>
 
         <div class="ed-3">
           <div>

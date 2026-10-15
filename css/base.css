@@ -415,12 +415,16 @@ h1{font-family:'Almarai';font-weight:800;font-size:clamp(1.3rem,4.4vw,1.72rem);l
    📌 والخطّ `--fs-ui` بدل `--fs-tag` (٠٫٩٥rem ⇐ ٠٫٧٥)، و`Almarai` ٧٠٠
       كأسماء المنصّة كلِّها (`.subj-t` · `.m-n` · `label.fl`).
    📌 ونصفُ القطر ١١px — قطرُ الحقول والأزرار الثانوية، لا ٨ الرقاقة. */
+/* 🆕 b139 · وصارت حاويةً: شاشةُ الدروس تحمل المادة والمستوى معاً.
+   و`flex-wrap` فيها كما في صفّها الأمّ — برواز ان طويلان على شاشةٍ
+   ضيّقة ينكسران سطراً، ولا يُعصران. */
+.head-tags{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:0 0 auto}
+.head-tags[hidden]{display:none}
 .head-tag{flex:0 0 auto;align-self:center;
   background:var(--surface);border:1px solid var(--line);
   box-shadow:var(--shadow);border-radius:11px;padding:7px 14px;
   font-family:'Almarai';font-weight:700;font-size:var(--fs-ui);
   color:var(--text);line-height:1.5}
-.head-tag[hidden]{display:none}
 .sub{color:var(--text-muted);font-size:var(--fs-ui);margin-top:6px}
 
 /* ── البطاقة ── */

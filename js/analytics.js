@@ -42,7 +42,7 @@
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
 import { app, head, esc, fmt, AR, errBox, nav, BUILD, scrollTop,
-         skeleton, N, NW } from './ui.js';
+         skeleton, waiting, N, NW } from './ui.js';
 
 /* 🔑 ختمُ هذه الوحدة وحدها.
    BUILD تسكن ui.js، فالرقمُ المعروض يشهد لها لا لهذا الملفّ — وقد
@@ -386,7 +386,8 @@ export async function openStudentCard(uid){
 /* ═══════════ المُصيِّر المشترك ═══════════ */
 
 async function drawPerformance(title, sub, back){
-  app.innerHTML = skeleton('screen');
+  /* 🆕 b139 · والعنوانُ معروفٌ هنا قبل الجلب (وسيطان)، فيُكتب لا يُمسح. */
+  waiting('screen', null, title, sub);
   const crumb = back ? `<div class="crumb" id="bk">→ تحليل الأداء</div>` : '';
   const bind  = () => { const b = document.getElementById('bk'); if(b) b.onclick = loadStudents; };
 
@@ -671,7 +672,8 @@ function nextSection(nx, lk, forMe){
       لو رأى الطالبُ الصوابَ متى شاء ثمّ أعاد، لقاست الإعادةُ
       الذاكرةَ لا التعلّم، وفرغ أثمنُ رقمٍ في المنصة. */
 async function openQuiz(quizId, backTitle, backSub, backHas){
-  app.innerHTML = skeleton('screen');
+  /* 🆕 b139 · الترويسةُ تُمسح مع وضع الهيكل — انظر `waiting` في ui.js. */
+  waiting('screen');
   const { data, error } = await api.quizDetail(quizId, M.uid);
   const crumb = `<div class="crumb" id="bq">→ ${M.forMe ? 'أدائي' : 'بطاقة الطالب'}</div>`;
   const back  = () => drawPerformance(backTitle, backSub, backHas);
