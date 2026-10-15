@@ -13,7 +13,7 @@ import { renderMark, whenReady as avatarReady } from './avatar.js';
    والدمجُ مرّ بلا تعارضٍ **لأنّ الجانبين كتبا السطرَ نفسَه حرفاً** — وهو
    أخبثُ ما في التصادم: لا يشتكي. ⇒ هذه ترفعه، **فالختمُ يجيب «أيُّ شيفرةٍ
    يشغّلها المتصفّح»، وجوابان لسؤالٍ واحدٍ لا جواب.** */
-export const BUILD = "b138";
+export const BUILD = "b139";
 
 /* ── مراسي الصفحة ── */
 export const app = document.getElementById("app");
@@ -286,12 +286,14 @@ export function shrinkFont(face, target, basePx, minPx){
 export function head(t, s, hero){
   /* البوابة وحدها تُخفي الترويسة. وإزالة الصنف هنا لا في كل شاشة:
      head() تُستدعى في كل عرض، فهي المكان الوحيد الذي لا يُنسى.
-     🆕 b95 · و`screen` تُضاف معها — معناها «شاشةٌ رسمتها الشيفرة».
-     وبها يُخفى تذييلُ الخصوصية خارج البوّابة **إثباتاً لا نفياً**،
-     فيبقى الرابط في HTML الساكن إن تعطّلت جافاسكربت أو قبل أن تعمل.
-     التعليل كاملاً عند `.site-foot` في base.css. */
+     🔓 b139 · وسقط `add("screen")` الذي أضافه b95. كان قارئُه قاعدةً
+        واحدة في base.css تُخفي تذييلَ الخصوصية **خارج** البوّابة، وقد
+        انقلبت إلى `body.gate .site-foot` تُظهره **في** البوّابة —
+        فلم يبقَ لـ`screen` قارئٌ في شيفرةٍ ولا نمط (قِيس على
+        `js/` و`css/` و`*.html`). **وصنفٌ يُكتب ولا يُقرأ يُرفع، فبقاؤه
+        يُوهم القارئَ بعد سنةٍ أنّ له حكماً في مكانٍ ما.**
+        والتعليل كاملاً عند `.site-foot` في base.css. */
   document.body.classList.remove("gate");
-  document.body.classList.add("screen");
   const b = document.getElementById("brand"), h = document.getElementById("head");
   b.classList.toggle("hero", !!hero);
   h.textContent = t || "";
