@@ -116,7 +116,7 @@ function render(){
     </div>`;
 
   app.innerHTML = `
-    <div class="crumb" id="bk">← دروس المقرَّر</div>
+    <div class="crumb" id="bk">→ دروس المقرَّر</div>
 
     <div class="grp">📦 المصادر المعتمدة <span class="chip">${AR(off.length)}</span></div>
     ${off.length ? off.map((i,x) => row(i,x,off.length)).join("")
@@ -164,7 +164,7 @@ function form(item, official, ro){
 
   const draw = () => {
     app.innerHTML = `
-      <div class="crumb" id="bk">← مصادر الدرس</div>
+      <div class="crumb" id="bk">→ مصادر الدرس</div>
       <div class="ed-form">
         <div class="ed-side">
           <div class="ed-hint">${off

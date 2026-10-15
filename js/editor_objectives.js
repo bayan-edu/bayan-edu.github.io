@@ -143,7 +143,7 @@ function render(){
   }
 
   app.innerHTML = `
-    <div class="crumb" id="bk">← دروس المقرَّر</div>
+    <div class="crumb" id="bk">→ دروس المقرَّر</div>
 
     <div class="ed-hint">🎯 الهدف يقول <b>في ماذا</b> يعمل الطالب، وكود التشخيص يقول
       <b>كيف</b> أخطأ. وبينهما السلسلة: <b>سؤال ← هدفُه ← علاجُه ← الطالب</b>.</div>

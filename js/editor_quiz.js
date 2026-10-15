@@ -145,7 +145,7 @@ export async function openQuizPreview(course, lesson){
 /* درس بلا اختبار — لا يكتمل عند الطالب أبداً */
 function offerCreate(){
   app.innerHTML = `
-    <div class="crumb" id="bk">← دروس المقرَّر</div>
+    <div class="crumb" id="bk">→ دروس المقرَّر</div>
     <div class="card" style="text-align:center;padding:32px">
       <div style="font-size:2.2rem;margin-bottom:12px">📝</div>
       <div class="rev-q">هذا الدرس بلا اختبار</div>
@@ -2209,7 +2209,7 @@ function preview(){
        بالتنبيه بقيت شاشة «جار التحميل» معلّقةً: صمتٌ يُصدَّق. */
     if(!pvOnly){ toast("لا أسئلة للمعاينة"); return; }
     app.innerHTML = `
-      <div class="crumb" id="pvx">← مصادر الدرس</div>
+      <div class="crumb" id="pvx">→ مصادر الدرس</div>
       <div class="card" style="text-align:center;padding:32px">
         <div style="font-size:2.2rem;margin-bottom:12px">📝</div>
         <div class="rev-q">هذا الاختبار بلا أسئلة بعد</div>
@@ -2224,7 +2224,7 @@ function preview(){
   const p = (Z.passages||[]).find(x => String(x.id) === String(q.passage_id));
 
   app.innerHTML = `
-    <div class="crumb" id="pvx">← ${pvOnly ? 'مصادر الدرس' : 'رجوع إلى التحرير'}</div>
+    <div class="crumb" id="pvx">→ ${pvOnly ? 'مصادر الدرس' : 'رجوع إلى التحرير'}</div>
     <div class="warnbox">👁️ معاينة — هكذا يرى الطالب هذا السؤال.
       لا تُسجَّل محاولة ولا تُعرض الإجابة الصحيحة.${pvOnly
         ? ' <b>وتحرير الأسئلة لفريق الإشراف.</b>' : ''}</div>
@@ -3078,7 +3078,7 @@ function toolbar(){
   return `
     <div class="eq-tb">
       <button class="eq-back" id="rdBack" title="رجوع">
-        <span class="eq-back-a">←</span>
+        <span class="eq-back-a">→</span>
         <span class="eq-back-t" dir="auto">${esc(ctx.lesson?.title || 'أدوات القياس')}</span>
       </button>
 

@@ -38,7 +38,7 @@ export async function openGrade(id){
   app.innerHTML = `<div class="status">جار الفتح…</div>`;
   const { data:a,   error:e1 } = await api.attempt(id);
   const { data:ans, error:e2 } = await api.attemptAnswers(id);
-  if(e1 || !a){ app.innerHTML = `<div class="crumb" id="bk">← قائمة التصحيح</div>`
+  if(e1 || !a){ app.innerHTML = `<div class="crumb" id="bk">→ قائمة التصحيح</div>`
     + errBox(e1 || {message:'لم تُوجد المحاولة'}, 'فتح المحاولة');
     document.getElementById("bk").onclick = loadTeacher; return; }
 
@@ -47,7 +47,7 @@ export async function openGrade(id){
 
   head("تصحيح مقالي", a.profiles?.full_name);
   app.innerHTML = `
-    <div class="crumb" id="bk">← قائمة التصحيح</div>
+    <div class="crumb" id="bk">→ قائمة التصحيح</div>
     ${errBox(e2,'الإجابات المقالية')}
     <div class="card">
       <div class="qnum">${esc(a.quizzes?.title||'')} · ${new Date(a.submitted_at).toLocaleString('ar-EG')}</div>
@@ -110,7 +110,7 @@ export async function openThread(sid){
 
   head("محادثة", data?.[0]?.profiles?.full_name || '');
   app.innerHTML = `
-    <div class="crumb" id="bk">← رسائل الطلاب</div>
+    <div class="crumb" id="bk">→ رسائل الطلاب</div>
     ${errBox(error,'المحادثة')}
     <div class="chat">${(data||[]).map(m=>bubble(m,m.sender_role==='teacher')).join("")}</div>
     <div class="card"><label class="fl">ردّك</label>

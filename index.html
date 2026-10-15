@@ -120,7 +120,16 @@ var m=document.querySelector('meta[name=theme-color]');if(m)m.content=m.dataset[
     <span class="brand-slogan">تعلَّم صح</span>
   </span>
 </div>
-    <h1 id="head"></h1>
+    <!-- 🆕 b139 · صفُّ العنوان: العنوانُ في أوّله وبروازُ السياق في طرفه
+         (يسارُ RTL). وكان السياقُ يسكن `.sub` سطراً ثالثاً تحته، فتُقرأ
+         الشاشةُ ثلاثةَ أسطرٍ قبل محتواها.
+         🔑 **وإضافةٌ لا تغيير:** نداءاتُ `head()` كلُّها تمرّر ثلاثةَ
+            وسائط، فالبرواز يبقى فارغاً و`hidden` — وشاشةٌ لم تُطلب لا
+            يمسّها شيء. والرابعُ اختياريّ يُمرَّر حيث يُراد. -->
+    <div class="head-row">
+      <h1 id="head"></h1>
+      <span class="chip head-tag" id="headtag" dir="auto" hidden></span>
+    </div>
     <p class="sub" id="subhead"></p>
   </header>
 

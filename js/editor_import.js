@@ -164,7 +164,7 @@ async function openImport(course, kind){
 
   const draw = () => {
     app.innerHTML = `
-      <div class="crumb" id="bk">← دروس المقرّر</div>
+      <div class="crumb" id="bk">→ دروس المقرّر</div>
       <div class="card">
         <div class="qnum">${C.card}</div>
         <div class="line" style="margin-bottom:12px">
@@ -249,7 +249,7 @@ async function openImport(course, kind){
         <div class="line">الاختبار <b dir="ltr">${esc(data.quiz_code || '')}</b> ·
           ${N(data.questions || 0, 'سؤال', 'سؤالان', 'أسئلة', 'سؤالاً')}</div></div>
         <div class="nav" style="margin-top:12px">
-          <button class="btn ghost" id="bk2">← دروس المقرّر</button></div>`;
+          <button class="btn ghost" id="bk2">→ دروس المقرّر</button></div>`;
       document.getElementById("bk2").onclick = () => openCourse(course);
       return;
     }
@@ -281,7 +281,7 @@ async function openImport(course, kind){
         ${warns.length ? `<div class="warnbox" style="margin-top:10px">
           ${warns.map(x => `<div>⚠️ ${esc(x)}</div>`).join('')}</div>` : ''}
         <div class="nav" style="margin-top:12px">
-          <button class="btn primary" id="bk3">← دروس المقرّر</button></div>`;
+          <button class="btn primary" id="bk3">→ دروس المقرّر</button></div>`;
       document.getElementById("bk3").onclick = () => openCourse(course);
       return;
     }

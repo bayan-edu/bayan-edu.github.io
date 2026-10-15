@@ -66,9 +66,13 @@ export async function loadFlashcards(){
 /* ═══════════ ② مركز المادة ═══════════ */
 
 function openSubjectCards(subject){
-  head("تذكّرها", subject.name);
+  /* 🆕 b139 · اسمُ المادة إلى برواز طرف العنوان لا إلى سطرٍ ثالث.
+     كانت الشاشة: «تذكّرها» عنواناً · ثمّ المادة وصفاً · ثمّ «← تذكّرها»
+     فتاتاً — **ثلاثةُ أسطرٍ عموديّة، والاسمُ مكرّرٌ فيها مرّتين**: مرّةً
+     عنواناً ومرّةً وِجهةَ عودة. ⇒ سطران، والفتاتُ يقول فعلَه لا وِجهتَه. */
+  head("تذكّرها", "", false, subject.name);
   app.innerHTML = `
-    <div class="crumb" id="bk">← تذكّرها</div>
+    <div class="crumb" id="bk">→ عودة</div>
 
     ${subject.due > 0 ? `
       <div class="card" style="text-align:center;padding:28px 18px">
@@ -77,8 +81,17 @@ function openSubjectCards(subject){
         <button class="btn primary" id="go" style="width:100%">بدء</button>
       </div>`
     : `
+      ${/* 🔴 b139 · «حفظتها كلها. لن تعود قريباً» **كانت تكذب على من لا
+            بطاقةَ له**: الشرطُ `subject.due > 0` وحده، و`due = 0` تصدُق
+            في حالين — مَن حفظها كلَّها، **ومَن لم تُعرَض عليه واحدة قطّ**.
+            فأوّلُ داخلٍ يُقال له «حفظتها كلها» وهو لم يرَ شيئاً.
+          🔑 **والنصُّ الجديد يصدُق في الحالين** — فلا يُقرَّر ما لا
+            يُعرف. وتفريقُ الحالين يقتضي عدداً إجماليّاً لا تردّه
+            `due_counts` بما نعرف (لا تعريفَ لها في `00_schema.sql` ولا
+            في `sql/`)، **وقراءةُ القاعدة الحيّة لم تُؤذَن بعد.**
+            ⇒ عطلٌ مؤجَّلٌ مكتوبٌ في `STATE.md §٠·د`. */''}
       <div class="card" style="text-align:center;padding:28px 18px">
-        <div style="font-size:1.05rem;margin-bottom:4px">حفظتها كلها. لن تعود قريباً</div>
+        <div style="font-size:1.05rem;margin-bottom:4px">لا بطاقات مستحقّة اليوم</div>
       </div>`}
 
     <div class="nav" style="margin:16px 0">
@@ -162,7 +175,7 @@ export function openSession(subject, opts = {}){
 
   function mount(){
     app.innerHTML = `
-      <div class="crumb" id="bk">← ${esc(opts.label || subject.name)}</div>
+      <div class="crumb" id="bk">→ ${esc(opts.label || subject.name)}</div>
       <div class="bf-wrap${calm ? ' calm' : ''}">
         <div class="bf-bar">
           <label class="bf-toggle">
@@ -468,7 +481,7 @@ function openAdd(subject){
     const decks = (data || []).filter(d => !d.mine && d.cards > 0);
 
     app.innerHTML = `
-      <div class="crumb" id="bk">← ${esc(subject.name)}</div>
+      <div class="crumb" id="bk">→ ${esc(subject.name)}</div>
 
       <div class="card">
         <label class="fl">الكلمة أو المصطلح</label>
@@ -545,7 +558,7 @@ function openBrowseDeck(subject, deck){
       </label>`;
 
     app.innerHTML = `
-      <div class="crumb" id="bk">← ${esc(subject.name)}</div>
+      <div class="crumb" id="bk">→ ${esc(subject.name)}</div>
       <div class="ed-sec">
         <div class="grp">${esc(deck.title)}</div>
         ${cards.map(row).join("")}

@@ -387,6 +387,20 @@ header.bare{padding:0}
 .brand.hero.is-soft.is-playing .brand-slogan{animation:sp-fade .5s ease var(--d,0s) both}
 @keyframes sp-fade{from{opacity:0}to{opacity:1}}
 h1{font-family:'Almarai';font-weight:800;font-size:clamp(1.3rem,4.4vw,1.72rem);line-height:1.4}
+
+/* 🆕 b139 · صفُّ العنوان وبروازُ السياق.
+   العنوانُ يأخذ ما بقي، والبروازُ يُدفع إلى الطرف — **يسارُ RTL** —
+   فيُقرأ «أين أنا» بلمحةٍ بلا سطرٍ ثالث.
+   🔑 **ولا لونَ جديداً:** البروازُ `.chip` القائمة بعينها (`--fill` ·
+      `--line` · `--text-muted`)، فلا قرارَ هويةٍ يُتّخذ هنا.
+   ⚠️ و`flex-wrap` لازمةٌ لا زينة: عنوانٌ طويل واسمُ مادةٍ طويل على
+      شاشةٍ ضيّقة يتزاحمان، فينكسر البروازُ سطراً تحته بدل أن يُعصر.
+   ⚠️ و`min-width:0` على العنوان: ابنُ المرن لا ينكمش دون محتواه بلا
+      هذه، فيطفح الطويلُ خارج الغلاف. */
+.head-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.head-row h1{flex:1 1 auto;min-width:0}
+.head-tag{flex:0 0 auto;align-self:center}
+.head-tag[hidden]{display:none}
 .sub{color:var(--text-muted);font-size:var(--fs-ui);margin-top:6px}
 
 /* ── البطاقة ── */
