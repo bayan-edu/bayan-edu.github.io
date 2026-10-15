@@ -221,7 +221,13 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
    كلٌّ منه في صفّه، وارتفاعُ صفّه ارتفاعُه. */
 .wrap:has(.subj)   #app{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
   align-items:stretch}
-.wrap:has(.mentor) #app{grid-template-columns:repeat(auto-fill,minmax(288px,1fr))}
+/* 🆕 b139 · و`stretch` هنا أيضاً — **والحجّةُ حجّةُ المواد فوقها بحرفها.**
+   كانت بطاقاتُ المعلّمين على `start` الموروثة، فتفاوتت ارتفاعاتُ الصفّ
+   الواحد بحسب ما يحمله كلٌّ من مدرسةٍ وخبرةٍ وتعريف (قِيس على ١٣٥٠px:
+   ١٦٧ · ١٣٠ · ١٢١ في صفٍّ واحد) — وهو بعينه «المهلهل» الذي عولج في
+   المواد ولم يُعالج هنا. */
+.wrap:has(.mentor) #app{grid-template-columns:repeat(auto-fill,minmax(288px,1fr));
+  align-items:stretch}
 
 /* ══════════════════════════════════════════════════════════
    المواد — بطاقةٌ عمودية: شكلٌ يقول «أيُّ مادة» ولونٌ يقول «أين أنا»
@@ -580,8 +586,14 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
 .jd-dx{display:block;margin-top:5px;font-size:var(--fs-read);color:var(--dx);line-height:1.8}
 
 /* ═══ الإرشاد — اختيار المعلم ═══ */
+/* 🆕 b139 · عمودٌ مرن لا كتلة: تُطاول البطاقةُ أختَها في الصفّ (stretch
+   أعلاه)، **والسعةُ تُدفع إلى القاع** فتصطفّ الشاراتُ على خطٍّ واحد بدل
+   أن تطفو كلٌّ عند آخر سطرٍ فيها. وهو نظيرُ `margin-top:auto` في
+   `.subj-m`. ⚠️ ولا يضرّ شاشةَ «موادّي» وهي تستعير `.mentor`: صندوقُ
+   السعة هناك `.m-cap-set` لا `.m-cap`، فيبقى في مجراه. */
 .mentor{background:var(--surface);border:1px solid var(--line);
-  border-radius:13px;padding:16px;margin-bottom:10px;cursor:pointer;transition:border-color .18s}
+  border-radius:13px;padding:16px;margin-bottom:10px;cursor:pointer;transition:border-color .18s;
+  display:flex;flex-direction:column}
 .mentor:hover{border-color:var(--accent)}
 .mentor.full{opacity:.45;cursor:not-allowed}
 .mentor.full:hover{border-color:var(--line)}
@@ -590,8 +602,16 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
 .m-n{font-family:'Almarai';font-weight:700;font-size:var(--fs-read)}
 .m-m{font-size:var(--fs-meta);color:var(--text-muted);margin-top:4px}
 .m-b{font-size:var(--fs-ui);line-height:1.85;margin-top:9px;color:var(--text);opacity:.85}
+/* ⚠️ و`align-self` لازمةٌ مع العمود المرن: الابنُ يمتدّ عرضَ أبيه
+   افتراضاً، فتصير الشارةُ شريطاً عبر البطاقة لا رقعةً حول رقمها. */
 .m-cap{display:inline-block;background:var(--fill-strong);border-radius:8px;
-  padding:2px 9px;font-size:var(--fs-tag);color:var(--text-muted);margin-top:8px}
+  padding:2px 9px;font-size:var(--fs-tag);color:var(--text-muted);
+  margin-top:auto;align-self:flex-start}
+/* 🔴 و`margin-top:auto` تبتلع الفراغَ الزائد **وتصير صفراً حين لا فراغ**
+   — أي في أطولِ بطاقةٍ بالذات، فتلتصق الشارةُ بالسطر فوقها. والفجوةُ
+   الدنيا تُحمَّل على ما قبلها، و`:has(+ …)` تبلغه بلا غلافٍ يُضاف
+   (والمحدِّد مستعمَلٌ في المشروع أصلاً: `.wrap:has(.mentor)`). */
+.m-m:has(+ .m-cap), .m-b:has(+ .m-cap){margin-bottom:12px}
 
 /* 🆕 b88 · صندوق السعة في بطاقة المادة (شاشة «موادّي») — ضبطٌ لا اختيار.
    ⚠️ cursor:default لأن ‎.mentor‎ كلُّها ‎pointer‎: ومؤشّرُ اليد فوق حقل
