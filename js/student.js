@@ -9,7 +9,7 @@ import * as api from './api.js';
 import { S } from './state.js';
 import { app, head, toast, esc, AR, ICONS, KINDS, bubble, errBox, nav,
          refreshCounts, scrollTop, scrollBottom, shape, icon,
-         skeleton, G, N, NW } from './ui.js';
+         skeleton, waiting, G, N, NW } from './ui.js';
 import { startQuiz } from './quiz.js';
 import { mediaUrl, isManaged } from './media.js';
 import { isSim, openSim } from './simulations.js';
@@ -97,7 +97,9 @@ function todayStrip(){
 
 export async function loadList(){
   nav('subjects');
-  app.innerHTML = skeleton('subjects');
+  /* 🆕 b139 · والترحيبُ معروفٌ قبل الجلب — فيُكتب الآن لا بعد الشبكة.
+     وهو موضعُ البلاغ: كان البرواز يبقى من الشاشة السابقة حتى يصل الردّ. */
+  waiting('subjects', null, "أهلاً " + S.prof.full_name, "");
 
   const { data, error } = await api.listSubjects();
   if(error){
@@ -425,11 +427,14 @@ export async function loadLessons(subj){
      عنواناً بلا لقبه.** و«مستواك:» سقطت: البروازُ يقول أيَّ مادة، والسطرُ
      يقول أيَّ مستوى — **ولقبٌ يسبق الخبرَ في سطرٍ لا يحتمل غيرَه حشو.**
 
-     ⚠️ و«الدروس» بديلٌ حين لا مستوى — **وهو اسمٌ قائمٌ في المنصّة** لا
-        مخترَع (`دروس المقرَّر` في المحرّر · `٥ / ٧ دروس` في بطاقة المادة ·
-        ورأسُ القسم ③ في هذا الملفّ). ولولاه لظهر صفُّ عنوانٍ فيه برواز
-        بلا عنوان. */
-  head(subj.my_level || "الدروس", "", false, subj.name);
+     🔑 **b139-ثانيةً · والمستوى نزل إلى بروازٍ ثانٍ، والعنوانُ «الدروس».**
+        رُفع المستوى أوّلاً عنواناً فورث حجمَ `h1` ‏(`clamp` حتى ١٫٧٢rem)
+        وهو أكبرُ من المستهدَف — **قرارُ صاحب المنصّة.** وبروازان في طرفٍ
+        واحد يحفظان السطرَ الواحد ويردّان المستوى إلى `--fs-ui`، وهو
+        حجمُه الأوّل. ⇒ **المادةُ ثمّ المستوى: الأعمُّ قبل الأخصّ.**
+     📌 و«الدروس» اسمٌ قائمٌ في المنصّة لا مخترَع (`دروس المقرَّر` في
+        المحرّر · `٥ / ٧ دروس` في بطاقة المادة · ورأسُ القسم ③ هنا). */
+  head("الدروس", "", false, [subj.name, subj.my_level]);
   app.innerHTML = skeleton('rows');
 
   const { data, error } = await api.listLessons(subj.id);
@@ -475,7 +480,10 @@ export async function loadLessons(subj){
             فتتبع الفقرةَ لا النصّ، فتُرحَّل إلى يساره: `.vocabulary`.
             و`auto` لا `ltr`: الاتجاهُ يُقرأ من أوّل حرفٍ قويّ، فيصحّ
             للعربيّ والإنجليزيّ بسطرٍ واحد. */''}
-      ${l.summary?`<div class="lsn-m" dir="auto">${esc(l.summary)}</div>`:''}
+      ${/* 🔓 b139 · وسقط الملخّصُ من بطاقة الدرس — **قرارُ صاحب المنصّة.**
+            سطرٌ تحت كلّ عنوانٍ في قائمةٍ يُطيلها ولا يُقرأ، والطالبُ
+            يدخل الدرسَ ليرى لا ليقرأ عنه. **ويبقى للمؤلّف** في المحرّر
+            حيث يُكتب ويُراجَع. */''}
       <div class="chips">
         ${(l.items||[]).map(i=>`<span class="chip ${i.is_graded?'g':''}">${ICONS[i.kind]||'•'} ${esc(i.title)}</span>`).join("")}
       </div>
@@ -597,7 +605,10 @@ const itmRow = i => `
 export function openLesson(l){
   S.lesson = l;
   nav('subjects');
-  head(l.title, l.unit || S.subj.name);
+  /* 🆕 b139 · المادةُ إلى البرواز كأخواتها، والوحدةُ تبقى وصفاً —
+     فهي سياقُ الدرس داخل المادة لا اسمَ مكانٍ آخر. ولمّا صارت المادةُ
+     في البرواز لم يبقَ للوصف بديلٌ عنها حين تغيب الوحدة. */
+  head(l.title, l.unit || "", false, S.subj.name);
 
   /* 🆕 b87 · extras كانت تصل من list_lessons منذ زمنٍ ولا تُرسم —
      فما يؤلّفه المعلّم لا يبلغ طالبه. عطلٌ صامت لم يظهر لأنّ
@@ -610,9 +621,12 @@ export function openLesson(l){
   const done   = items.filter(i=>i.status==='completed').length;
 
   app.innerHTML = `
-    <div class="crumb" id="bk">→ ${esc(S.subj.name)}</div>
+    ${/* 🆕 b139 · والفتاتُ يقول فعلَه لا وِجهتَه — فالمادةُ في البرواز
+          فوقه، **واسمٌ يُكتب مرّتين في شاشةٍ واحدة يُقرأ سهواً.** */''}
+    <div class="crumb" id="bk">→ عودة</div>
     ${/* 🆕 b123 · `dir="auto"` — وعلّتُها في بطاقة الدرس (`lcard`). */''}
-    ${l.summary?`<div class="card"><div class="line" dir="auto" style="color:var(--text)">${esc(l.summary)}</div></div>`:''}
+    ${/* 🔓 b139 · وسقط هنا أيضاً — قرارُ صاحب المنصّة. ومن بلغ الدرسَ
+          فقد اختاره، فبطاقةٌ تصفه فوق مصادره تؤخّر ما جاء له. */''}
     <div class="grp">مصادر الدرس <span class="chip">${AR(done)} / ${AR(items.length)}</span></div>
       ${items.map(itmRow).join("")}
     ${!items.length?'<div class="status">لم تُضف مصادر لهذا الدرس بعد</div>':''}
@@ -811,7 +825,8 @@ function renderChat(msgs, error){
 /* اختبار تحديد المستوى — أداةٌ قائمة بذاتها، لا درسَ لها ولا مقرَّر */
 async function startPlacement(x){
   if(!x.tool){ toast("اختبار تحديد المستوى قيد الإعداد"); return; }
-  app.innerHTML = skeleton('screen');
+  /* 🆕 b139 · الترويسةُ تُمسح مع وضع الهيكل — انظر `waiting` في ui.js. */
+  waiting('screen');
   const { data, error } = await api.placementStart(x.tool);
   if(error){ app.innerHTML = errBox(error.message, 'تحديد المستوى'); return; }
   if(!data.ok){ toast(data.error); loadList(); return; }

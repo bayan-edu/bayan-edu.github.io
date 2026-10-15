@@ -17,7 +17,7 @@ import { S } from './state.js';
 import { openMatchGame, eligible } from './card_game_match.js';
 import { app, head, toast, esc, AR, errBox, nav, scrollTop,
          dirOf, backText, backMeta, shrinkFont, pickExample, sayable, sayGroup, bindSay,
-         cardImg, skeleton, N } from './ui.js';
+         cardImg, skeleton, waiting, N } from './ui.js';
 
 
 let subjects = [];   // { id, name, due }
@@ -162,7 +162,8 @@ export function openSession(subject, opts = {}){
       : saved === '1';
   }catch(err){ calm = false; }
 
-  app.innerHTML = skeleton('screen');
+  /* 🆕 b139 · الترويسةُ تُمسح مع وضع الهيكل — انظر `waiting` في ui.js. */
+  waiting('screen');
 
   Promise.resolve(fetchCards()).then(list => {
     queue = list || [];
@@ -474,7 +475,8 @@ export function openSession(subject, opts = {}){
 /* ═══════════ ④ الإضافة — كتابةً أو اشتراكاً ═══════════ */
 
 function openAdd(subject){
-  app.innerHTML = skeleton('screen');
+  /* 🆕 b139 · الترويسةُ تُمسح مع وضع الهيكل — انظر `waiting` في ui.js. */
+  waiting('screen');
 
   api.subjectDecks(subject.id).then(({ data, error }) => {
     if(error){ app.innerHTML = errBox(error, 'الإضافة'); return; }
@@ -538,7 +540,8 @@ async function addByWriting(subject){
 /* ═══════════ ⑤ تصفّح مجموعةٍ رسمية والاشتراك ═══════════ */
 
 function openBrowseDeck(subject, deck){
-  app.innerHTML = skeleton('rows');
+  /* 🆕 b139 · الترويسةُ تُمسح مع وضع الهيكل — انظر `waiting` في ui.js. */
+  waiting('rows');
 
   api.browseDeck(deck.id).then(({ data, error }) => {
     if(error){ app.innerHTML = errBox(error, 'المجموعة'); return; }
@@ -595,7 +598,8 @@ function openBrowseDeck(subject, deck){
       فتعود متباعدةً بعد أيام.
 */
 export function openLessonDeck(subject, deck, back){
-  app.innerHTML = skeleton('screen');
+  /* 🆕 b139 · الترويسةُ تُمسح مع وضع الهيكل — انظر `waiting` في ui.js. */
+  waiting('screen');
 
   openSession(subject, {
     label: deck.lesson || deck.title,
