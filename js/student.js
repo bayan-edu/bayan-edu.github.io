@@ -113,10 +113,19 @@ export async function loadList(){
         الشاشة، وهذا موضعُ زواله لا رقعتُه. */
   await refreshCounts();
 
-  /* الشريط يُبنى قبل الترويسة: وجودُه يغيّر ما تقوله. */
+  /* الشريط يُبنى قبل الترويسة: وجودُه يغيّر ما تقوله.
+     🔓 b139 · وسقط وصفُ الحال الخالية — «اختيار المادة التي يبدأ فيها
+        التعلّم». **قرارُ صاحب المنصّة: لا داعيَ له.** وهو وصفٌ يقول
+        للطالب ما تقوله الشاشةُ نفسُها: عناوينُ المجموعات فوق البطاقات
+        (`مواد صفّي` · `مهاراتي`) والبطاقاتُ تحتها تُنقر. **وسطرٌ يشرح
+        ما يُرى يُقرأ مرّةً ثمّ يصير فراغاً يُمرّ عليه.**
+     📌 ويبقى وصفُ حالِ الشريط — فذاك يقول ما لا يُرى: **أنّ ثَمّ
+        طريقين**، أوّلُهما ما ينتظر. ولو سقط لصار الشريطُ بلا تفسير.
+     ⚠️ والفارغُ يُخفى ولا يُفرَّغ: `head()` تُسقط `.sub` حين تغيب
+        (`display:none`) فلا تحجز حشوَها — وتعليلُه عندها في ui.js. */
   const strip = todayStrip();
   head("أهلاً " + S.prof.full_name,
-       strip ? "البداية بما ينتظرك، أو باختيار مادة" : "اختيار المادة التي يبدأ فيها التعلّم");
+       strip ? "البداية بما ينتظرك، أو باختيار مادة" : "");
 
   /* ثلاث مجموعات: صفّي · صفوف سابقة · مهارات */
   const grade  = S.subjects.filter(x => x.group_key === '1_grade');
@@ -282,7 +291,20 @@ export async function openSearchHit(hit){
 export async function loadMentors(subj, switching){
   S.subj = subj;
   nav('subjects');
-  head(switching?"الانضمام إلى معلم آخر":"اختيار معلمك", subj.name);
+  /* 🆕 b139 · والوصفُ خلا من اسم المادة — نزل إلى صفّ الفتات تحته.
+     كانت الشاشة ثلاثةَ أسطرٍ فوق ملاحظةٍ واحدة: العنوان ثمّ المادة ثمّ
+     «رجوع للمواد» (قِيس: ١٥ · ٦٠ · ٩٧، والملاحظة عند ١٤٥). **وثلاثةُ
+     أسطرٍ لثلاث كلماتٍ ترويسةٌ تُزاحم ما جاء الطالب من أجله.** */
+  head(switching?"الانضمام إلى معلم آخر":"اختيار معلمك", "");
+
+  /* صفُّ الفتات: **من أين جئت · وأين أنت** في سطر.
+     📌 ونصُّه واحدٌ في المسلكين. وكان أحدُهما «← رجوع» مجرّداً — واسمان
+        لطريقٍ واحد يجعلان الطالبَ يسأل: أراجعٌ إلى المواد أم إلى غيرها؟ */
+  const where = `
+    <div class="crumb-row">
+      <div class="crumb" id="bk">← رجوع للمواد</div>
+      <span class="crumb-at">${esc(subj.name)}</span>
+    </div>`;
   app.innerHTML = skeleton('mentors');
 
   const [mRes, sRes] = await Promise.all([
@@ -294,7 +316,7 @@ export async function loadMentors(subj, switching){
 
   if(switching && !state.can_switch){
     app.innerHTML = `
-      <div class="crumb" id="bk">← رجوع</div>
+      ${where}
       <div class="warnbox" style="font-size:.85rem">
         <b style="font-family:'Almarai';font-weight:800;display:block;margin-bottom:6px">
           فرص الانتقال في هذه المادة استُوفيت</b>
@@ -339,7 +361,7 @@ export async function loadMentors(subj, switching){
   };
 
   app.innerHTML = `
-    <div class="crumb" id="bk">← رجوع للمواد</div>
+    ${where}
     ${errBox(eMentor,'قائمة المعلمين')}
     <div class="warnbox">
       الانضمام إلى معلم يعني أنه سيتابع تقدّمك في هذه المادة، ويصحّح إجاباتك
