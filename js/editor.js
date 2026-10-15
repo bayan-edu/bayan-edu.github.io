@@ -139,7 +139,7 @@ export async function openTools(){
   nav('editor'); setWide(true);
   head("أدوات القياس", "اختبارات قائمة بذاتها — لا تتبع درساً ولا مقرَّراً");
   app.innerHTML = `<div class="ed-bar">
-    <button class="btn ghost" id="bk2">← رجوع إلى التأليف</button></div>
+    <button class="btn ghost" id="bk2">→ رجوع إلى التأليف</button></div>
     <div class="status">جار التحميل…</div>`;
   const { data, error } = await api.listTools();
   /* 🔧 errBox يقرأ error.message — فتمريرُ النصّ يُنتج «خطأ غير معروف» */
@@ -163,7 +163,7 @@ export async function openTools(){
   app.innerHTML = `
     ${narrowNote()}
     <div class="ed-bar">
-      <button class="btn ghost" id="bk2">← رجوع إلى التأليف</button>
+      <button class="btn ghost" id="bk2">→ رجوع إلى التأليف</button>
       <button class="btn primary" id="newst" style="margin-inline-start:auto">＋ محطّة جديدة</button>
     </div>
     ${tools.map(t => `
@@ -308,7 +308,7 @@ export async function openRoutes(tool){
   app.innerHTML = `
     ${narrowNote()}
     <div class="ed-bar">
-      <button class="btn ghost" id="bk3">← رجوع إلى الأدوات</button>
+      <button class="btn ghost" id="bk3">→ رجوع إلى الأدوات</button>
     </div>
 
     <div class="card ${R.ok ? 'rt-ok' : 'rt-bad'}" style="margin-bottom:18px">
@@ -488,7 +488,7 @@ export async function openCourse(course){
   };
 
   app.innerHTML = `
-    <div class="crumb" id="bk">← المقرّرات</div>
+    <div class="crumb" id="bk">→ المقرّرات</div>
     ${errBox(error, 'دروس المقرَّر')}
     ${course.curate ? `<div class="nav" style="margin-bottom:16px">
         <button class="btn primary" id="new">＋ درس جديد</button>
@@ -566,7 +566,7 @@ export async function editLesson(course, lesson){
   const strands = await strandsOf(course.subject_id);
 
   app.innerHTML = `
-    <div class="crumb" id="bk">← دروس المقرَّر</div>
+    <div class="crumb" id="bk">→ دروس المقرَّر</div>
     <div class="ed-form">
       <div class="ed-side">
         <div class="ed-hint">👥 سيصل هذا الدرس إلى

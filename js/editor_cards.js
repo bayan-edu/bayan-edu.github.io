@@ -136,7 +136,7 @@ export async function openCards(course){
 
 function renderNoDeck(){
   app.innerHTML = `
-    <div class="crumb" id="bk">← دروس المقرَّر</div>
+    <div class="crumb" id="bk">→ دروس المقرَّر</div>
     <div class="ed-sec">
       <div class="grp">بطاقات المادة</div>
       <div class="ed-empty">لا مجموعة بعد. وهي حاويةٌ واحدةٌ لبطاقات المادة
@@ -155,7 +155,7 @@ function renderNoDeck(){
 
 function deckForm(d){
   app.innerHTML = `
-    <div class="crumb" id="bk">← بطاقات المادة</div>
+    <div class="crumb" id="bk">→ بطاقات المادة</div>
     <div class="ed-form">
       <div class="ed-side">
         <div class="ed-hint">💡 <b>المجموعة حاوية</b> واحدةٌ للمادة
@@ -360,7 +360,7 @@ function renderCards(){
   const rows = visible();
 
   app.innerHTML = `
-    <div class="crumb" id="bk">← دروس المقرَّر</div>
+    <div class="crumb" id="bk">→ دروس المقرَّر</div>
 
     <div class="nav" style="margin-bottom:16px">
       <button class="btn primary" id="paste">📋 لصق قائمة</button>
@@ -586,7 +586,7 @@ function linkPicker(){
   const st = opt(ctx.strands, byStrand, 'name',  'strand_cards');
 
   app.innerHTML = `
-    <div class="crumb" id="bk">← ${esc(cur.title)}</div>
+    <div class="crumb" id="bk">→ ${esc(cur.title)}</div>
     <div class="ed-sec">
       <div class="grp">على أيّ شيءٍ يتدرّب الطالب؟</div>
 
@@ -629,7 +629,7 @@ function parse(text){
 
 function pasteBox(){
   app.innerHTML = `
-    <div class="crumb" id="bk">← ${esc(cur.title)}</div>
+    <div class="crumb" id="bk">→ ${esc(cur.title)}</div>
     <div class="ed-form">
       <div class="ed-side">
         <div class="ed-hint">📋 <b>سطر لكلّ بطاقة.</b> الوجه ثمّ المعنى،
@@ -765,7 +765,7 @@ const picked = id => [...document.querySelectorAll(`#${id} input:checked`)]
 
 function cardForm(c){
   app.innerHTML = `
-    <div class="crumb" id="bk">← ${esc(cur.title)}</div>
+    <div class="crumb" id="bk">→ ${esc(cur.title)}</div>
     <div class="ed-form">
       <div class="ed-side">
         <div class="ed-hint">🔑 <b>الوجه هو ما يُسأل عنه.</b> ويُختار بما
@@ -913,7 +913,7 @@ function preview(){
   calm = calm === null ? sysReduce : calm === '1';
 
   app.innerHTML = `
-    <div class="crumb" id="bk">← ${esc(cur.title)}</div>
+    <div class="crumb" id="bk">→ ${esc(cur.title)}</div>
     <div class="warnbox" style="margin-bottom:14px">👁 معاينة — لا يُحفظ
       منها تقدير، ولا تدخل جدولة أحد. النصّ الذي تكتبه في حقل
       الاسترجاع لا يُخزَّن هنا أيضاً.</div>

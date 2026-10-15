@@ -102,7 +102,7 @@ function render(list){
     </div>`;
 
   app.innerHTML = `
-    <div class="crumb" id="bk">← دروس المقرَّر</div>
+    <div class="crumb" id="bk">→ دروس المقرَّر</div>
 
     <div class="ed-hint">🌿 الفرع يجيب عمّا لا تجيب عنه الدرجة: <b>أين يسكن الضعف؟</b>
       و«٦٢٪ في المادة» لا تُترجَم إلى فعل غداً، أمّا «نحو ٨٨٪ · بلاغة ٤١٪» فتُترجَم.</div>

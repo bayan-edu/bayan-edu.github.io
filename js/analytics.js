@@ -387,7 +387,7 @@ export async function openStudentCard(uid){
 
 async function drawPerformance(title, sub, back){
   app.innerHTML = skeleton('screen');
-  const crumb = back ? `<div class="crumb" id="bk">← تحليل الأداء</div>` : '';
+  const crumb = back ? `<div class="crumb" id="bk">→ تحليل الأداء</div>` : '';
   const bind  = () => { const b = document.getElementById('bk'); if(b) b.onclick = loadStudents; };
 
   /* ⚠️ b47 · النداء الأول بلا فلتر — ومنه وحده تُبنى القوائم.
@@ -673,7 +673,7 @@ function nextSection(nx, lk, forMe){
 async function openQuiz(quizId, backTitle, backSub, backHas){
   app.innerHTML = skeleton('screen');
   const { data, error } = await api.quizDetail(quizId, M.uid);
-  const crumb = `<div class="crumb" id="bq">← ${M.forMe ? 'أدائي' : 'بطاقة الطالب'}</div>`;
+  const crumb = `<div class="crumb" id="bq">→ ${M.forMe ? 'أدائي' : 'بطاقة الطالب'}</div>`;
   const back  = () => drawPerformance(backTitle, backSub, backHas);
 
   if(error){ app.innerHTML = crumb + errBox(error,'تفاصيل الاختبار');

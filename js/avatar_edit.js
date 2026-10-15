@@ -67,7 +67,7 @@ function render(){
   }).join('');
 
   app.innerHTML = `
-    <div class="crumb" id="bk">← رجوع</div>
+    <div class="crumb" id="bk">→ رجوع</div>
 
     ${/* 🔴 الحجمان معاً — القرارُ عند الكبير والعيشُ عند الصغير */''}
     <div class="card av-prev">

@@ -306,7 +306,7 @@ export async function loadMentors(subj, switching){
         لطريقٍ واحد يجعلان الطالبَ يسأل: أراجعٌ إلى المواد أم إلى غيرها؟ */
   const where = `
     <div class="crumb-row">
-      <div class="crumb" id="bk">← رجوع للمواد</div>
+      <div class="crumb" id="bk">→ رجوع للمواد</div>
       <span class="crumb-at">${esc(subj.name)}</span>
     </div>`;
   app.innerHTML = skeleton('mentors');
@@ -473,7 +473,7 @@ export async function loadLessons(subj){
     </div>`;
 
   app.innerHTML = `
-    <div class="crumb" id="bk">← رجوع للمواد</div>
+    <div class="crumb" id="bk">→ رجوع للمواد</div>
     <div class="nav" style="margin-bottom:14px">
       <button class="btn ghost" id="mnt" style="font-size:.8rem;padding:9px">
         ${/* 🆕 124 · `mentor_g` تصل من `list_subjects`. و«الانتقال» بلا
@@ -600,7 +600,7 @@ export function openLesson(l){
   const done   = items.filter(i=>i.status==='completed').length;
 
   app.innerHTML = `
-    <div class="crumb" id="bk">← ${esc(S.subj.name)}</div>
+    <div class="crumb" id="bk">→ ${esc(S.subj.name)}</div>
     ${/* 🆕 b123 · `dir="auto"` — وعلّتُها في بطاقة الدرس (`lcard`). */''}
     ${l.summary?`<div class="card"><div class="line" dir="auto" style="color:var(--text)">${esc(l.summary)}</div></div>`:''}
     <div class="grp">مصادر الدرس <span class="chip">${AR(done)} / ${AR(items.length)}</span></div>

@@ -681,7 +681,7 @@ function renderResult(){
     </div>`).join("");
 
   app.innerHTML = `
-    <div class="crumb" id="back">← ${S.lesson ? esc(S.lesson.title) : 'قائمة المواد'}</div>
+    <div class="crumb" id="back">→ ${S.lesson ? esc(S.lesson.title) : 'قائمة المواد'}</div>
     ${r.auto?'<div class="err"><b>سُلّم تلقائياً</b>انتهى الوقت قبل إنهائك للاختبار.</div>':''}
     <div class="score-hero">
       <div class="score-num">${AR(r.score)} / ${AR(r.total)}</div>
