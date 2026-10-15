@@ -16,7 +16,7 @@ import * as api from './api.js';
 import { S } from './state.js';
 import { openMatchGame, eligible } from './card_game_match.js';
 import { app, head, toast, esc, AR, errBox, nav, scrollTop,
-         dirOf, backText, shrinkFont, examples, pickExample, sayable, sayGroup, bindSay,
+         dirOf, backText, backMeta, shrinkFont, pickExample, sayable, sayGroup, bindSay,
          cardImg, skeleton, N } from './ui.js';
 
 
@@ -269,9 +269,13 @@ export function openSession(subject, opts = {}){
       /* سطران حين يختلف الخطّان (ui ← backText): الترجمةُ ثمّ التعريف،
          ولكلٍّ اتّجاهُه. والاتّجاهُ على الصفّ يتبع **أوّلَ** سطرٍ —
          فعنده يقف زرُّ النطق. */
-      const bk  = backText(c.back);
+      /* 🆕 b138 · والملحقُ يُنزع **قبل** الشطر — انظر backMeta في ui.js.
+         وبنزعه يُقاس الجوابُ وحدَه في shrinkFont، فلا يُقزّمه ذيلُه. */
+      const [bkMain, bkMeta] = backMeta(c.back);
+      const bk  = backText(bkMain);
       const ans = `<div class="bf-qrow" dir="${dirOf(bk)}">
-          <div class="bf-answer" id="bfAns">${esc(bk)}</div>${grp}</div>`;
+          <div class="bf-answer" id="bfAns">${esc(bk)}</div>${grp}</div>${bkMeta
+        ? `<div class="bf-meta" dir="${dirOf(bkMeta)}">${esc(bkMeta)}</div>` : ''}`;
 
       el("bfBack").innerHTML = `
         ${c.entry === 'dx' && c.dx_note ? `
@@ -287,10 +291,8 @@ export function openSession(subject, opts = {}){
         : ans}
         ${cardImg(c.image, c.front)}
 
-        ${c._ex ? `<div class="bf-divider"></div>
-          <div class="bf-label">مثال${examples(c.note).length > 1
-            ? ` · ${AR(examples(c.note).length)}` : ''}</div>
-          <div class="bf-note" dir="${dirOf(c._ex)}">${esc(c._ex)}</div>` : ''}
+        ${c._ex ? `<div class="bf-ex" dir="${dirOf(c._ex)}"
+            ><span class="sr-only">مثال: </span>${esc(c._ex)}</div>` : ''}
 
         <button class="bf-hint" data-flip="1">العودة للسؤال</button>
         <div class="bf-btn-row">

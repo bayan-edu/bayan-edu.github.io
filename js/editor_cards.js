@@ -21,7 +21,7 @@
       `162` وdue_cards — فبلغت الطالبَ، وقِيس ذلك على الحيّ لا بالظنّ.
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
-import { app, head, toast, esc, AR, errBox, nav, setWide, scrollTop, dirOf, backText, shrinkFont, examples, pickExample, sayable, sayGroup, bindSay, cardImg, N } from './ui.js';
+import { app, head, toast, esc, AR, errBox, nav, setWide, scrollTop, dirOf, backText, backMeta, shrinkFont, examples, pickExample, sayable, sayGroup, bindSay, cardImg, N } from './ui.js';
 
 import { openCourse } from './editor.js';
 import { practiceLinkBox } from './practice_links.js';
@@ -1017,9 +1017,11 @@ function preview(){
     const grp = say && say.side === 'back' ? sayGroup(c) : '';
     /* ومعاينةُ المؤلّف ترى ما يراه الطالب حرفاً (ثابت ⑨) — فالشطرُ
        هنا بعينه لا نظيرٌ له. */
-    const bk  = backText(c.back);
+    const [bkMain, bkMeta] = backMeta(c.back);
+    const bk  = backText(bkMain);
     const ans = `<div class="bf-qrow" dir="${dirOf(bk)}">
-        <div class="bf-answer" id="bfAns">${esc(bk)}</div>${grp}</div>`;
+        <div class="bf-answer" id="bfAns">${esc(bk)}</div>${grp}</div>${bkMeta
+      ? `<div class="bf-meta" dir="${dirOf(bkMeta)}">${esc(bkMeta)}</div>` : ''}`;
 
     back.innerHTML = `
       ${draft ? `
@@ -1031,10 +1033,8 @@ function preview(){
       : ans}
       ${cardImg(c.image, c.front)}
 
-      ${c._ex ? `<div class="bf-divider"></div>
-        <div class="bf-label">مثال${examples(c.note).length > 1
-          ? ` · ${AR(examples(c.note).length)}` : ''}</div>
-        <div class="bf-note" dir="${dirOf(c._ex)}">${esc(c._ex)}</div>` : ''}
+      ${c._ex ? `<div class="bf-ex" dir="${dirOf(c._ex)}"
+          ><span class="sr-only">مثال: </span>${esc(c._ex)}</div>` : ''}
 
       <button class="bf-hint" data-flip="1">العودة للسؤال</button>
       <div class="bf-btn-row">
