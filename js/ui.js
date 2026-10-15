@@ -1149,8 +1149,12 @@ function ensureSearch(){
     <div class="spanel" role="dialog" aria-modal="true" aria-label="البحث">
       <div class="sbar">
         ${svg('search')}
+        ${/* 🔓 b139 · وسقط النائبُ («دروسك ومصادرك وبطاقاتك وأخطائك»)
+              — **قرارُ صاحب المنصّة: من قصد البحثَ يعرف ما يطلب.**
+           ♿ و`aria-label` تبقى: النائبُ زينةٌ بصرية، **والتسميةُ حقُّ
+              قارئ الشاشة** — ولو كانت التسميةَ الوحيدة لصار الحقلُ
+              مجهولاً عنده بسقوطها. وهما منفصلتان هنا أصلاً. */''}
         <input class="sin" id="sin" type="search" dir="auto" autocomplete="off"
-               placeholder="دروسك ومصادرك وبطاقاتك وأخطائك"
                aria-label="نصّ البحث" aria-controls="sres">
         <button class="iconbtn" id="sx" aria-label="إغلاق البحث">${svg('close')}</button>
       </div>
@@ -1187,7 +1191,10 @@ function ensureSearch(){
 function askSearch(q){
   clearTimeout(sTimer);
   const my = ++sSeq;
-  if((q || '').trim().length < 2){ paintSearch(null, ''); return; }
+  /* 🆕 b139 · ويُمرَّر `q` لا الفراغُ: صارت `paintSearch` تفرّق بين
+     **صندوقٍ لم يُكتب فيه شيء** و**حرفٍ واحدٍ كُتب** — وهما حالان
+     لا حال. والفراغُ كان يُرسَل فيستويان. */
+  if((q || '').trim().length < 2){ paintSearch(null, q || ''); return; }
   sTimer = setTimeout(async () => {
     if(!searchRun) return;
     let res;
@@ -1203,9 +1210,21 @@ function paintSearch(hits, q, error){
 
   if(error){ box.innerHTML = errBox(error, 'البحث'); return; }
   if(hits === null){
-    box.innerHTML = `<div class="s-msg"><b>حرفان فأكثر</b>
-      يبحث في دروسك ومصادرها وبطاقاتك — وفي أخطائك وتشخيصها.
-      ويمكن كتابة نوع الخطأ نفسه.</div>`;
+    /* 🔓 b139 · وسقط شرحُ البحث («يبحث في دروسك ومصادرها وبطاقاتك —
+       وفي أخطائك وتشخيصها. ويمكن كتابة نوع الخطأ نفسه») — **قرارُ صاحب
+       المنصّة: من قصد البحثَ يعرف ما يطلب.** وهو يُعرَض قبل أن يُكتب
+       حرف، فيُقرأ مرّةً ثمّ يصير جداراً بين الطالب وحقله.
+
+       🔑 **والصندوقُ الفارغ يصمت، والحرفُ الواحد يُجاب.** وهما حالان
+          كانتا واحدة: `askSearch` تُرسل فراغاً في الحالين. والفرقُ
+          ليس تنميقاً — **من كتب حرفاً ولم يرَ شيئاً يظنّ البحثَ معطّلاً**،
+          وذاك الصمتُ الذي يُصدَّق (AGENTS §٥·⑤). والحدُّ الأدنى حكمٌ
+          في القاعدة (`search_all`)، فيُقال ولا يُترك يُحزَر.
+       ⚠️ وسطرٌ واحد لا سطران: «حرفان فأكثر» جوابٌ تامّ، وما تحته كان
+          شرحاً لا جواباً. */
+    box.innerHTML = q
+      ? `<div class="s-msg"><b>حرفان فأكثر</b></div>`
+      : '';
     return;
   }
   if(!hits.length){

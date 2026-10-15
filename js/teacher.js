@@ -99,7 +99,7 @@ export async function loadInbox(){
         <div><div class="qz-t">${esc(t.name)}</div>
           <div class="qz-m">${esc(t.last)}… · ${new Date(t.at).toLocaleDateString('ar-EG')}</div></div>
         ${t.unread?`<span class="dot">${AR(t.unread)} جديد</span>`:''}
-      </div>`).join(""):'<div class="status">لا توجد رسائل بعد</div>'}`;
+      </div>`).join(""):'<div class="status">لا توجد رسائل جديدة</div>'}`;
 
   app.querySelectorAll(".thr").forEach(el=>el.onclick=()=>openThread(el.dataset.i));
 }
