@@ -1592,11 +1592,41 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
 .bf-front-q{font-size:var(--fs-q);font-weight:700;text-align:center;line-height:1.7}
 .bf-recall{margin-top:auto;padding-top:14px}
 .bf-term{font-size:.95rem;font-weight:700;margin-bottom:10px}
-.bf-label{font-size:.72rem;color:var(--text-muted);margin-bottom:3px}
+/* 🔑 b137 · والوسمُ بـ--fs-tag لا بـ.72rem: تلك ١١٫٥px، وتحت الحدّ
+   المعلن في رأس base.css («ولا شيء تحت ١٢px في أيّ شاشة»). ورقمٌ
+   يُكتب بيده يخرج عن النظام صامتاً، والمتغيّرُ يُبقيه تحت حكمٍ واحد. */
+.bf-label{font-size:var(--fs-tag);font-weight:700;letter-spacing:.02em;
+          color:var(--text-muted);margin-bottom:3px}
 .bf-mine{background:var(--fill-soft);border-radius:9px;padding:8px 10px;margin-bottom:9px;
          font-size:var(--fs-meta);color:var(--text-muted)}
-.bf-answer{font-size:var(--fs-read);line-height:1.8}
-.bf-divider{height:1px;background:var(--line);opacity:.6;margin:13px 0}
+/* 🆕 b137 · الجوابُ بطلُ الظهر — ٦٠٠ لا الوزن الموروث. وقِيس على
+   أطول معنًى في القاعدة (٢٤٤ حرفاً) مع مثاله: لم يُقزّمه shrinkFont،
+   بقي ١٦٫٨px كما كان. فالثِّخَنُ هنا لا يُشترى بتصغير الخطّ. */
+.bf-answer{font-size:var(--fs-read);line-height:1.8;font-weight:600}
+
+/* 🆕 b137 · لوحةُ المثال — وسقط معها وسمُ «مثال» والفاصلُ .bf-divider
+   (وكان لا مستهلكَ له سواه، فذهب ولم يُترك رقعةً لصنفٍ لا وجود له).
+
+   📌 **الوسمُ سقط لأنّ اللوحة تقوله**: أرضيّةٌ ومِسطرةٌ وحبرٌ مكتوم
+      تفصل المثالَ عن الجواب من أوّل نظرة، وكلمةٌ فوق ما يُرى حشوٌ
+      يُقرأ مرّةً ثمّ تتخطّاه العين أبداً.
+   📌 **والعددُ «· ٣٠» سقط معه**: المثالُ يُنتقى عشوائياً في كلّ ظهور
+      (pickExample) فلا يصحّ أن يُقال «الأوّلُ من ثلاثين» — ورقمٌ لا
+      يدلّ على موضعه حِملٌ بلا دلالة. وهو خبرُ تأليفٍ لا خبرُ تعلّم،
+      وله موضعُه حيث يفيد: شارةُ «٣ أمثلة» في قائمة المؤلّف
+      (editor_cards.js) — فلم يُفقد، بل عاد إلى أهله.
+   ♿ ويبقى الوسمُ لقارئ الشاشة في .sr-only: الأعمى لا يرى اللوحةَ
+      التي أغنت البصيرَ عن الكلمة.
+   🎨 **والحبرُ محايدٌ بقصد** (--text-muted على --fill-soft): المثالُ
+      لا يقول جملةَ عائلةٍ من الخمس — لا «أصبتَ» ولا «أخطأتَ» — وصبغةٌ
+      له تُضعف الصبغةَ حين يُحكَم بها فعلاً (ثابت ① في هوية بيان).
+      فالتمييزُ بالدرجة والمِسطرة، لا بصبغةٍ تَعِد بحكمٍ لا يقع.
+   📐 والمِسطرةُ border-inline-start لا border-right: تنتقل وحدَها
+      إلى الطرف الآخر في البطاقة الإنجليزيّة بلا قاعدةٍ ثانية. */
+.bf-ex{margin-top:15px;padding:11px 13px;border-radius:12px;
+       background:var(--fill-soft);border:1px solid var(--line);
+       border-inline-start:3px solid var(--line-strong);
+       font-size:var(--fs-meta);line-height:1.85;color:var(--text-muted)}
 
 .bf-note{font-size:var(--fs-meta);color:var(--text-muted);line-height:1.7}
 
@@ -1625,8 +1655,27 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
            display:flex;align-items:flex-start;justify-content:center}
 .bf-img{display:block;max-width:100%;max-height:100%;width:auto;height:auto;
         border-radius:11px;border:1px solid var(--line);background:var(--fill-soft)}
+/* 🔴 b137 · أزرارُ التقدير كانت **خارج نظام التصميم**: button.btn لا
+   خلفيةَ فيه إلا بـ.primary أو .ghost، وهذه الثلاثة عاريةٌ منهما ⇒
+   كانت تأخذ خلفيةَ المتصفّح الافتراضية — قِيست في Chromium:
+   rgb(239,239,239) بحبرٍ أسود وبلا حدّ. وفي الفاتحة تمرّ بالكاد،
+   **وفي الداكنة ثلاثةُ ألواحٍ بيضاء** أشدُّ ضوءاً من كلّ ما في
+   البطاقة، فالجوابُ يهمس والأزرارُ تصيح.
+   📌 وعلاجُها هنا لا في الصنف: موضعان ينادِيانها (الجلسة والمعاينة)،
+      وقاعدةٌ واحدة تخدمهما — ولا نسختان من مسطرةٍ واحدة تفترقان.
+
+   🎨 **وتبقى محايدةً ولا تُلوَّن بمعناها**: «لم أتذكّرها» إخبارٌ عن
+      النفس لا حكمٌ على إجابة، ولو لبست الحُمرة عاقبنا الصادقَ ودفعنا
+      المتردّدَ إلى «بسهولة» هرباً من اللون — **فتفسد الجدولةُ من حيث
+      أردنا تجميلها**، وهي مبنيّةٌ على صدق هذا الإخبار وحده.
+   👆 و:active يلبس accent وحدَها — وجملتُها «اخترتَ» بنصّها. */
 .bf-btn-row{margin-top:auto;padding-top:14px;display:flex;gap:7px}
-.bf-btn-row .btn{flex:1;font-size:.82rem;padding:10px 4px}
+.bf-btn-row .btn{flex:1;font-size:.82rem;padding:10px 4px;border-radius:12px;
+  background:var(--fill);color:var(--text);border:1px solid var(--line);
+  transition:background .15s,border-color .15s,color .15s,transform .12s}
+.bf-btn-row .btn:hover{background:var(--fill-strong)}
+.bf-btn-row .btn:active{background:var(--accent-fill);
+  border-color:var(--accent-line);color:var(--accent)}
 
 /* التلميح يُخفى بصرياً ولا يُحذف — فيبقى للوحة المفاتيح وقارئ الشاشة */
 .bf-hint{position:absolute;width:1px;height:1px;margin:-1px;padding:0;
@@ -1655,7 +1704,7 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
       (`ed-bk`) · منتقي 🂠 (`cd-b`) · شاشةُ رابط التدرّب (`pr-bk`).
       فـ`backText` تشطر الظهرَ سطرين، **وبلا هذه القاعدة يقع السطران
       باتّجاهٍ واحد** — فنصفُ الإصلاح أسوأُ من تركه. */
-.bf-answer, .bf-note, .bf-mine, .mg-ex, .pick-b, .pick-f,
+.bf-answer, .bf-note, .bf-ex, .bf-mine, .mg-ex, .pick-b, .pick-f,
 .ed-bk, .cd-b, .pr-bk{
   unicode-bidi:plaintext;
   white-space:pre-line;

@@ -1031,10 +1031,8 @@ function preview(){
       : ans}
       ${cardImg(c.image, c.front)}
 
-      ${c._ex ? `<div class="bf-divider"></div>
-        <div class="bf-label">مثال${examples(c.note).length > 1
-          ? ` · ${AR(examples(c.note).length)}` : ''}</div>
-        <div class="bf-note" dir="${dirOf(c._ex)}">${esc(c._ex)}</div>` : ''}
+      ${c._ex ? `<div class="bf-ex" dir="${dirOf(c._ex)}"
+          ><span class="sr-only">مثال: </span>${esc(c._ex)}</div>` : ''}
 
       <button class="bf-hint" data-flip="1">العودة للسؤال</button>
       <div class="bf-btn-row">
