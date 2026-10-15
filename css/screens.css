@@ -1604,6 +1604,12 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
    بقي ١٦٫٨px كما كان. فالثِّخَنُ هنا لا يُشترى بتصغير الخطّ. */
 .bf-answer{font-size:var(--fs-read);line-height:1.8;font-weight:600}
 
+/* 🆕 b138 · سطرُ الملحق المعجميّ — تحت التعريف ودونه درجةً.
+   وهو محايدٌ كالمثال: «الجَمْع» و«المضادّ» بيانٌ لا حكم. ولا وسمَ فوقه،
+   فمفاتيحُه تقول نفسَها («المضادّ: …») — ووسمٌ فوق وسمٍ حشو. */
+.bf-meta{margin-top:8px;font-size:var(--fs-meta);color:var(--text-muted);
+         line-height:1.75}
+
 /* 🆕 b137 · لوحةُ المثال — وسقط معها وسمُ «مثال» والفاصلُ .bf-divider
    (وكان لا مستهلكَ له سواه، فذهب ولم يُترك رقعةً لصنفٍ لا وجود له).
 
@@ -1704,7 +1710,7 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
       (`ed-bk`) · منتقي 🂠 (`cd-b`) · شاشةُ رابط التدرّب (`pr-bk`).
       فـ`backText` تشطر الظهرَ سطرين، **وبلا هذه القاعدة يقع السطران
       باتّجاهٍ واحد** — فنصفُ الإصلاح أسوأُ من تركه. */
-.bf-answer, .bf-note, .bf-ex, .bf-mine, .mg-ex, .pick-b, .pick-f,
+.bf-answer, .bf-note, .bf-ex, .bf-meta, .bf-mine, .mg-ex, .pick-b, .pick-f,
 .ed-bk, .cd-b, .pr-bk{
   unicode-bidi:plaintext;
   white-space:pre-line;
