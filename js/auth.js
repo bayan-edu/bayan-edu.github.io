@@ -181,6 +181,29 @@ export function renderGate(msg){
     : document.getElementById("em"))?.focus();
 }
 
+/* 🆕 b139 · انتظارُ البوّابة يقع **داخل عمود النموذج**، لا محلَّ الشاشة.
+
+   🔴 وكانت `app.innerHTML = '<div class="status">جار التحقق…</div>'` تمحو
+      `#app` كلَّه **و`body` لا يزال يحمل `gate`** — فتذهب شبكةُ `.gatex`
+      وتبقى أنماطُ البوّابة المبنيّةُ عليها: ترويسةٌ مخفيّة · غلافٌ بلا
+      حشوٍ ولا عرضٍ أقصى · ونصفٌ كحليٌّ في خلفيّة `body`. **وقِيس على
+      ١٤٠٠px: سطرٌ وحيدٌ أعلاه صفرٌ ويساره صفرٌ وعرضُه ١٤٠٠ يقطع حدَّ
+      النصفين، وتذييلٌ معلَّقٌ وحده عند ٨٦٤.**
+
+   🔑 **والعلّة أنّ `gate` صنفُ تخطيطٍ لا صنفُ لحظة.** فمن محا الشبكةَ
+      وأبقاه ورّث أنماطاً لا موضوعَ لها. وبابان لا ثالث: يُرفع الصنفُ
+      (وهو ما تفعله `head()` في كلّ شاشةٍ تالية)، أو **تبقى الشبكةُ
+      ويُستبدل ما فيها** — وهذا أولى في انتظارٍ يدوم ثانيةً: اللوحةُ
+      الكحليّةُ والتذييلُ في مواضعهما، ولا يقفز التخطيطُ ثمّ يعود.
+
+   ⚠️ ولا تُنادى إلا من البوّابة، و`.gate-form` قائمةٌ فيها دائماً.
+      والارتدادُ إلى `#app` حارسٌ لا فرعٌ ميّت: **شاشةٌ بلا خبرٍ أسوأ
+      من شاشةٍ بخبرٍ في غير موضعه.** */
+function gateWait(t){
+  const f = app.querySelector('.gate-form');
+  (f || app).innerHTML = `<div class="status">${t}</div>`;
+}
+
 /* 🆕 b92 · نداءٌ على مربّع الموافقة حين يُردّ فعلٌ لأجله.
    🔴 وسببُه أنّ زرّ Google صار يتصدّر الصفحة والمربّعُ تحت النموذج ⇒
       **رسالةٌ عابرة تُشير إلى ما لا يراه المستخدم**، فيقرأ «وافق» ولا
@@ -304,7 +327,7 @@ async function submitGate(){
   const scaleId = gsc ? Number(gsc) : null;
   const levelId = glv ? Number(glv) : null;
 
-  app.innerHTML = `<div class="status">جار التحقق…</div>`;
+  gateWait("جار التحقق…");
   const r = reg
     ? await api.signUp(em, pw, nm.trim(), kl.trim(), scaleId, levelId, POLICY_VERSION, S.gramG)
     : await api.signIn(em, pw);
@@ -338,7 +361,7 @@ async function submitTeacherGate(em, pw){
   if(!f.ok){ toast(f.msg); return; }
 
   keepDraft();
-  app.innerHTML = `<div class="status">جار إنشاء الحساب…</div>`;
+  gateWait("جار إنشاء الحساب…");
 
   /* بريدٌ مسجَّلٌ سلفاً: يُدخَل به بدل أن يُردّ — فمن سجّل طالباً ثمّ
      عاد معلّماً لا يُطلب منه بريدٌ ثانٍ. وخطأُ كلمة المرور يُقال. */
@@ -588,6 +611,11 @@ export async function boot(){
 
   const { data:ri, error:eRole } = await api.myRole();
   if(eProf || eRole){
+    /* 🆕 b139 · و`head("")` ترفع `gate`: هذا المسلك يُبلَغ **بعد نجاح
+       التسجيل** و`boot` لم تُنادِ `head()` بعدُ، فكان الصندوق يرث علّةَ
+       `gateWait` نفسَها — أنماطُ بوّابةٍ بلا شبكتها. وهنا تُرفع ولا
+       تبقى: هذه نهايةُ مسلكٍ لا انتظارُ ثانية. */
+    head("");
     app.innerHTML = errBox(eProf || eRole, 'تحميل حسابك')
       + `<div class="nav"><button class="btn ghost" id="out">خروج</button></div>`;
     document.getElementById("out").onclick = signOut; return;
