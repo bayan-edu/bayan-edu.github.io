@@ -288,6 +288,7 @@ const PT_AR = {
   title:   s => `اختبار تحديد المستوى · ${s}`,
   level:   l => `مستواك: ${l}`,
   go:      'بدء التعلّم ←',
+  splitAria: 'عرض عمود النصّ — يُسحب، أو يُحرَّك بالأسهم',
   num:     AR
 };
 
@@ -317,6 +318,7 @@ const PT_EN = {
   title:   s => `${s} Placement Test`,
   level:   l => `Your level: ${l}`,
   go:      'Start learning →',
+  splitAria: 'Passage column width — drag, or use the arrow keys',
   num:     String
 };
 
@@ -355,6 +357,114 @@ function mountStation(data){
   }, 1000);
 
   renderPage();
+}
+
+/* ═══════════ ③·ب قسمةُ شاشة النصّ المشترك (b143) ═══════════
+
+   عمودان: النصُّ في جَنبة والأسئلة في أخرى، لكلٍّ تمريرُها، وبينهما
+   مقبضٌ يُوسّع أيَّهما شاء الطالب. والوسمُ في `renderPage`، والأنماطُ
+   في `screens.css`، وهذه آلتُه.
+
+   🔒 **القانون الحاكم — b22: المقبضُ يكتب نمطاً ولا يُعيد رسماً.**
+      `renderPage()` عند كلّ حركةِ مؤشّرٍ تهدم `<audio>` (فيعود المقطع
+      إلى صفره) وتُحسب حركتُها في `a.sec` — فيُقاس التردّدُ حركةً لا
+      فهماً، وذاك أساسُ التشخيص كلِّه. ⇒ لا شيءَ هنا يمسّ `innerHTML`.
+
+   ♿ **والمقبضُ لوحةُ مفاتيحٍ كما هو فأرة** — الأسهمُ تحرّكه، و`Home`
+      و`End` طرفاه، والنقرةُ المزدوجة تردّه. وضبطٌ لذي الفأرة وحده
+      مرفوضٌ في هذا المشروع صراحةً (match_dnd.js · ③).                */
+
+const SPLIT_MIN = 24, SPLIT_MAX = 72, SPLIT_DEF = 38;
+const SPLIT_KEY = 'bayan.split';
+
+/* النسبةُ تُحفَظ للجهاز لا للحساب: ضبطُ نافذةٍ لا صفةُ طالب.
+   ⚠️ و`localStorage` يرمي في التصفّح الخاصّ ببعض المتصفّحات، فلولا
+      `try` لسقطت الشاشةُ كلُّها لأجل حفظٍ فاشل (نظيرُ `toggleTheme`). */
+const splitPct = () => {
+  try { const v = +localStorage.getItem(SPLIT_KEY);
+        return v >= SPLIT_MIN && v <= SPLIT_MAX ? v : SPLIT_DEF; }
+  catch(e){ return SPLIT_DEF; }
+};
+
+/* 📐 العلوُّ يُقاس ولا يُقطع: ترويسةُ الشاشة سطرٌ أو سطران بحسب
+   التوجيه، فرقمٌ ثابت في `calc()` يترك فرجةً أو يقطع الزرّ. والقياسُ
+   هنا نظيرُ `shrinkFont` في ui.js — ومذهبُ الملفّ أصلاً: «الدرجة ②
+   تُضاف بالقياس لا بنقطة قطعٍ في @media» (screens.css).
+   📌 و`offsetTop` لا `getBoundingClientRect`: الأوّلُ لا يتأثّر بموضع
+      تمرير الصفحة، فيصحّ القياسُ قبل أن تستقرّ.
+
+   🔴 **وحشوُ `body` السفليُّ يُطرح ولا يُنسى — قِيس قبل العلاج:**
+      `body{padding:0 0 90px}` في base.css، فكان علوُّ المستند ٨٩٦ في
+      نافذةٍ ٨٢٠ **فظهر شريطُ تمريرٍ ثالثٌ للصفحة** بجوار شريطَي
+      الجَنبتين، وتحت الوعاء تسعون بكسلاً فارغة. ويُقرأ من النمط لا
+      يُكتب رقماً: من غيّره في base.css لا يمرّ من هنا.                */
+function fitSplit(){
+  const sp = document.getElementById('split'); if(!sp) return;
+  const pad = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+  sp.style.setProperty('--h',
+    Math.max(340, window.innerHeight - sp.offsetTop - pad - 8) + 'px');
+}
+/* مستمعٌ واحدٌ لعمر الوحدة — والحارسُ أعلاه يُسقطه في كلّ شاشةٍ
+   بلا قسمة. وربطُه عند كلّ رسمٍ يُراكم مستمعاً لكلّ صفحة. */
+addEventListener('resize', fitSplit);
+
+function wireSplit(){
+  const sp = document.getElementById('split'); if(!sp) return;
+  const h  = document.getElementById('splitH'),
+        a  = document.getElementById('splitA'),
+        b  = document.getElementById('splitB');
+
+  /* ⚠️ الجَنبتان تُصفَّران صراحةً: `scrollTop()` في ذيل `renderPage`
+     يحرّك النافذة لا الأوعية — فصفحةٌ جديدة كانت ستُفتح على موضع
+     تمرير سابقتها، وهو صمتٌ يراه الطالب ولا يفهمه. */
+  a.scrollTop = 0; b.scrollTop = 0;
+  fitSplit();
+
+  const set = p => {
+    const v = Math.min(SPLIT_MAX, Math.max(SPLIT_MIN, Math.round(p)));
+    sp.style.setProperty('--split', v + '%');     // 🔒 نمطٌ لا رسم
+    h.setAttribute('aria-valuenow', v);
+    try { localStorage.setItem(SPLIT_KEY, v); } catch(e){}
+  };
+
+  /* النسبةُ **منطقيّة لا فيزيائية**: جَنبةُ النصّ أولى في الوسم، فهي
+     يمينُ الشاشة في الورقة العربية ويسارُها في الإنجليزية. ولولا
+     القلبُ هنا لسار المقبضُ عكسَ اليد في إحداهما. */
+  const pctAt = x => {
+    const r = sp.getBoundingClientRect();
+    const d = getComputedStyle(sp).direction === 'rtl' ? r.right - x : x - r.left;
+    return d / r.width * 100;
+  };
+
+  h.onpointerdown = e => {
+    e.preventDefault();                       // لئلّا يُحدَّد النصُّ تحته
+    sp.classList.add('sizing');
+    /* الالتقاطُ يرمي حين لا يكون المؤشّر حيّاً (يقع في الفحص الآليّ)،
+       ويُلتقط الرميُ ولا يُوقف السحب — نظيرُ ما في match_dnd.js. */
+    try { h.setPointerCapture(e.pointerId); } catch(e){}
+    const move = ev => set(pctAt(ev.clientX));
+    const up = () => {
+      sp.classList.remove('sizing');
+      h.removeEventListener('pointermove', move);
+      h.removeEventListener('pointerup', up);
+      h.removeEventListener('pointercancel', up);
+    };
+    h.addEventListener('pointermove', move);
+    h.addEventListener('pointerup', up);
+    h.addEventListener('pointercancel', up);
+  };
+
+  h.onkeydown = e => {
+    const k = e.key;
+    if(!['ArrowLeft','ArrowRight','Home','End'].includes(k)) return;
+    e.preventDefault();
+    const rtl = getComputedStyle(sp).direction === 'rtl';
+    const cur = +h.getAttribute('aria-valuenow') || SPLIT_DEF;
+    set(k === 'Home' ? SPLIT_MIN : k === 'End' ? SPLIT_MAX
+        : cur + (k === 'ArrowRight' ? 2 : -2) * (rtl ? -1 : 1));
+  };
+
+  h.ondblclick = () => set(SPLIT_DEF);
 }
 
 /* ═══════════ ④ عرض الصفحة ═══════════ */
@@ -462,12 +572,38 @@ function renderPage(){
       </div>`;
   }).join("");
 
-  app.innerHTML = `${pgHtml}${cards}
-    <div id="warn"></div>
+  /* الذيلُ في موضعٍ واحد: يسكن داخل جَنبة الأسئلة حين تُقسَم الشاشة،
+     وفي ذيل العمود حين لا تُقسَم — ونسختان منه تفترقان يوم يتغيّر زرّ. */
+  const tail = `<div id="warn"></div>
     <div class="nav">
       ${S.p>0?`<button class="btn ghost" id="prev">${T.prev}</button>`:''}
       <button class="btn primary" id="next">${LBL_NEXT}</button>
     </div>`;
+
+  /* 🆕 b143 · قسمةُ شاشة النصّ المشترك — عمودان بمقبض.
+     الدَّينُ مسجَّلٌ فوق `.psg` في screens.css منذ كُتب: «والحلّ الناضج
+     عمودان — ينتظر طالباً يقول إن التمرير أزعجه». وقيل، فبُني.
+
+     🔑 **والبنيةُ واحدةٌ في العرضين**: الوعاءُ يُكتب دائماً، و`@media`
+        وحدها تقرّر أعمودان أم عمودٌ واحد. ولو اختُلف الوسمُ بالعرض
+        لاحتاج دورانُ الجهاز إعادةَ رسم — **وإعادةُ الرسم تهدم `<audio>`
+        وتُلوّث `a.sec`**، وهي علّةُ b22 بعينها.
+     🔒 **وللنصّ المقروء وحده**: صفحةُ الصوت ليس فيها نصٌّ يُقسَم،
+        وشريطُها الملتصق مبنيٌّ على حشو `.wrap` (`margin-inline:-18px`)
+        فيفسد داخل جَنبة. */
+  const splitable = !!(pg && pg.body && !isAudio);
+
+  app.innerHTML = !splitable ? `${pgHtml}${cards}${tail}` : `
+    <div class="split" id="split" style="--split:${splitPct()}%">
+      <div class="split-a" id="splitA">${pgHtml}</div>
+      <div class="split-h" id="splitH" role="separator" aria-orientation="vertical"
+           tabindex="0" aria-label="${esc(T.splitAria)}"
+           aria-valuemin="${SPLIT_MIN}" aria-valuemax="${SPLIT_MAX}"
+           aria-valuenow="${splitPct()}"></div>
+      <div class="split-b" id="splitB">${cards}${tail}</div>
+    </div>`;
+
+  if(splitable) wireSplit();
 
   /* ── التفويض: مستمعٌ واحد للصفحة كلها ──
      صارت الصفحة تحمل عشرات الأزرار؛ وربطُ مستمعٍ بكلٍّ منها عملٌ
