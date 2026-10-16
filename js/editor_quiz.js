@@ -47,7 +47,8 @@ import { app, head, toast, esc, fmt, AR, errBox, nav, setWide, scrollTop, L,
 import { attachUpload } from './upload.js';
 import { openCourse, openTools } from './editor.js';
 import { openItems } from './editor_items.js';
-import { questionText, questionBody, KIND_LABEL, gapCount } from './render_q.js';
+import { questionText, questionBody, KIND_LABEL, kindLabel, paperIsEnglish,
+         gapCount } from './render_q.js';
 import { wireMatching } from './match_dnd.js';
 import { practiceLinkBox } from './practice_links.js';
 
@@ -2223,6 +2224,17 @@ function preview(){
   const q = qs[pv];
   const p = (Z.passages||[]).find(x => String(x.id) === String(q.passage_id));
 
+  /* 🆕 b142 · الثابت ⑨: المعاينةُ تُري ما يراه الطالب — ولسانُه يتبع
+     الورقة **في جلسة التسكين وحدها** (quiz.js). فالشرطان معاً: أداةٌ
+     (أي محطّة · `Z.tool`) وورقةٌ إنجليزية.
+     ⚠️ ولو عُلِّق على الورقة وحدها **لكذبت المعاينة** في اختبارٍ عاديٍّ
+        إنجليزيّ: تُري المؤلّفَ `Choose the correct answer` والطالبُ
+        يقرأ «اختيار من متعدد». وكذبُ المعاينة أسوأ من غيابها.
+     📌 والإطارُ حولها عربيٌّ عمداً (فُتات الطريق · لافتة المعاينة ·
+        الأزرار): ذاك خطابُ المؤلّف لا الورقة، فلا يُقلب معها — ولذلك
+        `dir` على غلافِ الورقة (القسم · النصّ · البطاقة) لا على الصفحة. */
+  const pvEn = !!Z.tool && paperIsEnglish(Z);
+
   app.innerHTML = `
     <div class="crumb" id="pvx">→ ${pvOnly ? 'مصادر الدرس' : 'رجوع إلى التحرير'}</div>
     <div class="warnbox">👁️ معاينة — هكذا يرى الطالب هذا السؤال.
@@ -2235,6 +2247,7 @@ function preview(){
       <span class="qcount">${AR(pv+1)} / ${AR(qs.length)}</span>
     </div>
 
+    <div ${pvEn ? 'dir="ltr"' : ''}>
     ${q.section ? `<div class="q-sec" dir="auto">${esc(q.section)}</div>` : ''}
     ${p ? `<div class="card" style="padding:16px">
         ${p.title?`<div class="psg-t" dir="auto">${esc(p.title)}</div>`:''}
@@ -2243,14 +2256,16 @@ function preview(){
       </div>` : ''}
 
     <div class="card" id="qcard">
-          <div class="qnum">سؤال ${AR(pv+1)} · ${KIND_LABEL[q.kind]||'سؤال'}</div>
+          <div class="qnum" dir="auto">${pvEn ? `Question ${pv+1}`
+                                              : `سؤال ${AR(pv+1)}`} · ${kindLabel(q.kind, pvEn)}</div>
           ${(()=>{ const i=srcOf(q.image), a=srcOf(q.audio), v=srcOf(q.video); return `
         ${i?`<img class="media" src="${esc(i)}" alt="">`:''}
         ${a?`<audio controls preload="metadata" src="${esc(a)}"
                     style="width:100%;margin-bottom:12px"></audio>`:''}
         ${v?`<iframe class="media-v" src="${esc(v)}" allowfullscreen></iframe>`:''}`; })()}
-      ${questionText(q)}
-      ${questionBody(q, { bank: q.bank, pairs: [] })}
+      ${questionText(q, [], false, pvEn)}
+      ${questionBody(q, { bank: q.bank, pairs: [], en: pvEn })}
+    </div>
     </div>
 
     <div class="nav">

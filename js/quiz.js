@@ -57,7 +57,10 @@ import { app, bar, head, toast, esc, fmt, AR, mmss, media, pgMedia, srcOf,
            هي في أربعة عشر موضعاً وتلك في موضعٍ واحد. */
         N as عدد } from './ui.js';
 import { loadList, loadLessons } from './student.js';
-import { questionText, questionBody, KIND_LABEL, gapCount, bodyRead } from './render_q.js';
+/* `kindLabel` لا `KIND_LABEL`: اسمُ النمط صار يتبع لسانَ الورقة
+   (render_q.js · b142)، والخريطةُ الخام لم يبقَ لها قارئٌ هنا. */
+import { questionText, questionBody, kindLabel, paperIsEnglish, gapCount,
+         bodyRead } from './render_q.js';
 import { wireMatching } from './match_dnd.js';
 
 /* مشتقّاتُ عرضٍ لا حالةَ محاولة — تُبنى كلُّها من S.quiz و S.ans عند
@@ -171,6 +174,11 @@ function leavePage(){
 export async function startQuiz(meta){
   /* 🆕 b139 · الترويسةُ تُمسح مع وضع الهيكل — انظر `waiting` في ui.js. */
   waiting('screen');
+  /* 🆕 b142 · حارسٌ لا زينة: اتجاهُ ورقة التسكين سمةٌ على `body`، ومسلكُ
+     الخطأ في التسليم يترك الطالبَ في شاشةٍ بلا مخرج. فإن عاد بعدها إلى
+     درسٍ بقيت المنصّةُ كلُّها مقلوبة — ويُردّ هنا حيث يبدأ كلُّ اختبارٍ
+     عاديّ. (ولا يكفي ردُّه عند «بدء التعلّم»: ذاك مسلكُ النجاح وحده.) */
+  paperDir(false);
   const { data, error } = await api.getQuiz(meta.id);
   if(error){ toast(error.message); loadList(); return; }
 
@@ -215,12 +223,110 @@ function paintClock(){
    حدُّ المحطّة حقيقةٌ عن الأداة لا عن التجربة: الطالب لا يرى تسليماً
    ولا نتيجةً ولا دخولاً ثانياً — بل قسماً يتلو قسماً.
    ولا عدّادَ بنود: المجموع ٣٤ إلى ٥٢، فإعلانُ رقمٍ كذب. والزمن
-   هو الإطار الصادق، والدليل مبنيٌّ عليه. */
-let PL = null;                      // { session, subject }
+   هو الإطار الصادق، والدليل مبنيٌّ عليه.
+
+   🔴 **وعنوانُ المحطّة كان يُفشي ما أخفاه الزرّ (b142).** `head()` تكتب
+      `S.quiz.title` فيقرأ الطالب «Routing Station» ثمّ «Panel L» ثمّ
+      «فحص الحدّ ١» — فيعلم أنّه يُوجَّه، وأين وُجِّه، وكم بقي. وهو عينُ
+      ما مُنع في الزرّ أسفلَ الصفحة بالحجّة المكتوبة تحته.
+      ⇒ العنوانُ **اسمُ الاختبار لا اسمُ المحطّة**، ثابتاً في المحطّات
+        كلِّها: `IELTS Placement Test`. والقسمُ يتلو القسمَ بلا حدٍّ يُرى.
+      ⚠️ فلا يُعاد `S.quiz.title` إلى الترويسة ظنّاً أنّ الشاشة بلا عنوان. */
+let PL = null;                      // { session, subject, en }
+
+/* ── لسانُ الورقة ──────────────────────────────────────────────────
+   التوجيهاتُ تتبع لسانَ الأسئلة لا لسانَ المنصّة. والحجّةُ مكتوبةٌ في
+   ui.js منذ وُلد `L_EN`: «الفجوة بين التدريب والامتحان في مادة لغة
+   مسألة تعليمية لا شكلية». ومن يُمتحن في IELTS يقرأ في ورقته
+   `Choose the correct answer` و`You will listen to the track ONCE
+   only` — فلتقل له الشاشةُ ما تقوله الورقة.
+
+   🔑 والمقياسُ نفسُه في `render_q.js` (`paperIsEnglish`) ليقرأه المؤلّفُ
+      كما يقرؤه الطالب — والثابت ⑨ لا يحتمل نسختين.
+   📌 **ويُحسب مرّةً للجلسة لا لكلّ محطّة**: الجلسةُ جَلسةٌ واحدة، ولسانٌ
+      يتبدّل بين قسمٍ وقسم يُقرأ عطلاً لا دقّة. والأولى هي المقياس.
+   🔒 **والتسكينُ وحده** — لا الاختبار العاديّ: ذاك **درسٌ يُقوَّم**، شرحُه
+      وتشخيصُه بلسان الطالب لأنّ التشخيص يُقرأ ليُفهَم؛ وهذا **محاكاةُ
+      امتحان**، فلسانُه لسانُ الامتحان. ⇒ `PL` هي الحارس.              */
+
+/* ── اتجاه الصفحة ─────────────────────────────────────────────────
+   و`dir` سمةٌ على `body` لا صنفٌ ولا نمطٌ في `css/`:
+   ① الترويسة (`#head` · `#subhead`) و`#bar` خارج `#app` كلاهما، وهما
+      أوّلُ ما تقع عليه العين ⇒ الجذرُ وحده يسعهما.
+   ② والسمةُ تجرّ معها عزلَ الاتجاه (`unicode-bidi:isolate`) من نمط
+      المتصفّح نفسِه، وهو ما لا يفعله `direction:ltr` وحده.
+   ③ ولم يُحتَج `css/` بحرف: أنماطُ شاشة الاختبار كلُّها منطقيّة —
+      `border-inline-start` و`text-align:start` و`margin-inline-start`
+      و`margin-inline` — فتنقلب وحدها. (قِيس على `.q-sec` و`.psg`
+      و`.opt` و`.tick` و`.pair-slot` و`.psg-audio` و`.timerbar`.)
+   ⚠️ ويُردّ عند الخروج — وإلّا بقيت المنصّةُ كلُّها مقلوبة. */
+const paperDir = on => on ? document.body.setAttribute('dir', 'ltr')
+                          : document.body.removeAttribute('dir');
+
+/* نصوصُ الجلسة بلسانَيها. والعربيةُ تبقى كما كانت حرفاً — فالمُضاف
+   لسانٌ ثانٍ لا تعديلٌ على الأوّل. */
+const PT_AR = {
+  tip:     'فكّر جيداً، وأجب بتأنّ',
+  tipF:    'فكّري جيداً، وأجيبي بتأنّ',
+  once:    'يُشغَّل المقطع مرّة واحدة — والاطّلاع على الأسئلة قبل تشغيله',
+  plays:   n => `يُشغَّل المقطع ${AR(n)} مرّات — والاطّلاع على الأسئلة أولاً`,
+  free:    'الاطّلاع على الأسئلة أولاً ثمّ تشغيل المقطع',
+  passage: 'أسئلة نصّ واحد — يُرجَع إليه عند الحاجة',
+  next:    'التالي',
+  prev:    'السابق',
+  blank:   'متابعة دون إجابة',
+  q:       n => `سؤال ${AR(n)}`,
+  qShort:  n => 'س' + AR(n),
+  noPlays: 'انتهى التشغيل المتاح',
+  timeUp:  'انتهى وقت هذا القسم',
+  resumed: 'نُستأنف من حيث توقّفت',
+  marking: 'جار التصحيح…',
+  failed:  'تعذّر المتابعة',
+  blanks:  list => `بلا إجابة: ${list} —
+    الجواب إن كان لك ترجيح، وتُترك فارغة إن لم يكن.
+    التخمين يقع في مشتّت فيُسجَّل لك تشخيص لا يخصّك.`,
+  title:   s => `اختبار تحديد المستوى · ${s}`,
+  level:   l => `مستواك: ${l}`,
+  go:      'بدء التعلّم ←',
+  num:     AR
+};
+
+/* 🔑 ولا `tipF` هنا — **ونقصٌ مقصودٌ لا سهو**: الأمرُ الإنجليزيُّ لا
+   جنسَ له، فصيغتان متطابقتان تُوهمان قارئَهما بعد سنةٍ أنّ ثَمّ فرقاً
+   يُحفظ، ومن غيّر إحداهما وحدها لم يُغيّر شيئاً وظنّ أنّه فعل.
+   و`renderPage` تستثني الإنجليزية من `G()` صراحةً عند `TIP_M`. */
+const PT_EN = {
+  tip:     'Think carefully, and answer at your own pace',
+  once:    'You will listen to the track ONCE only — read the questions before you play it',
+  plays:   n => `You may play the track ${n} times — read the questions first`,
+  free:    'Read the questions first, then play the track',
+  passage: 'All the questions below refer to one passage — you may look back at it',
+  next:    'Next',
+  prev:    'Back',
+  blank:   'Continue without answering',
+  q:       n => `Question ${n}`,
+  qShort:  n => 'Q' + n,
+  noPlays: 'No plays left',
+  timeUp:  'Time is up for this section',
+  resumed: 'We will resume where you stopped',
+  marking: 'Marking…',
+  failed:  'Could not continue',
+  blanks:  list => `Unanswered: ${list} —
+    answer if you have a reason to prefer one, and leave it blank if you do not.
+    A guess lands on a distractor, and you are given a diagnosis that is not yours.`,
+  title:   s => `${s} Placement Test`,
+  level:   l => `Your level: ${l}`,
+  go:      'Start learning →',
+  num:     String
+};
+
+/* `PL` غائبةٌ في الاختبار العاديّ ⇒ العربية دائماً، فلا يتبدّل فيه شيء. */
+const PT = () => PL?.en ? PT_EN : PT_AR;
 
 export function startPlacementQuiz(session, quiz, subject, resumed){
-  PL = { session, subject };
-  if(resumed) toast("نُستأنف من حيث توقّفت");
+  PL = { session, subject, en: paperIsEnglish(quiz) };
+  paperDir(PL.en);
+  if(resumed) toast(PT().resumed);
   mountStation(quiz);
 }
 
@@ -245,7 +351,7 @@ function mountStation(data){
   clearInterval(S.tick);
   S.tick = setInterval(()=>{
     S.left--; paintClock();
-    if(S.left<=0){ clearInterval(S.tick); toast("انتهى وقت هذا القسم"); finish(true); }
+    if(S.left<=0){ clearInterval(S.tick); toast(PT().timeUp); finish(true); }
   }, 1000);
 
   renderPage();
@@ -266,8 +372,9 @@ function renderPage(){
      ليست آخرَ الجلسة — المحطّةُ التالية تُركَّب مكانها. فزرٌّ يقول
      «سلّم» يُفشي للطالب حدَّ المحطّة وأصلُه يقول «التالي»، ويُخبره
      أنّ ما مضى قُضي فيه — وهو ما يمنعه التسكين عمداً. */
-  const LBL_NEXT  = last && !PL ? 'إنهاء وتسليم'   : 'التالي';
-  const LBL_BLANK = last && !PL ? 'تسليم دون إكمال' : 'متابعة دون إجابة';
+  const T = PT(), EN = !!PL?.en;
+  const LBL_NEXT  = last && !PL ? 'إنهاء وتسليم'   : T.next;
+  const LBL_BLANK = last && !PL ? 'تسليم دون إكمال' : T.blank;
 
   /* pgMedia تعرض الصوت في كل ما ليس صورةً ولا فيديو — فليكن
      التمييز هنا بالقاعدة نفسها، لا بقائمةٍ ثانية تتباعد عنها. */
@@ -298,18 +405,20 @@ function renderPage(){
         تجاهل أخيه الصادق.
 
      📌 والمذكّر ثابتٌ واحد يُقرأ في خانتيه، فلا تفترق نسختاه —
-        كما فُعل بنصّي الزرّ أعلاه. */
-  const TIP_M = 'فكّر جيداً، وأجب بتأنّ';
+        كما فُعل بنصّي الزرّ أعلاه.
 
-  head(S.quiz.title,
-    !many     ? G(S.prof?.gram_gender, TIP_M, 'فكّري جيداً، وأجيبي بتأنّ', TIP_M)
-    : isAudio ? (lim === 1
-        ? "يُشغَّل المقطع مرّة واحدة — والاطّلاع على الأسئلة قبل تشغيله"
-        : lim ? `يُشغَّل المقطع ${AR(lim)} مرّات — والاطّلاع على الأسئلة أولاً`
-              : "الاطّلاع على الأسئلة أولاً ثمّ تشغيل المقطع")
-    :           "أسئلة نصّ واحد — يُرجَع إليه عند الحاجة");
-   
-  const from = AR(N.get(qs[0].id)), to = AR(N.get(qs[qs.length-1].id));
+     🆕 **b142 · والصيغُ الثلاث للعربية وحدها.** الأمرُ الإنجليزيُّ لا
+        جنسَ له، فلو مرّ على `G()` لحملت خاناتُه الثلاث نصّاً واحداً —
+        وذاك يُوهم قارئَه بعد سنةٍ أنّ ثَمّ فرقاً يُحفظ، ومن غيّر خانةً
+        منها وحدها لم يُغيّر شيئاً وظنّ أنّه فعل. ⇒ تُستثنى صراحةً. */
+  const TIP_M = T.tip;
+
+  head(PL ? T.title(PL.subject?.name || '') : S.quiz.title,
+    !many     ? (EN ? TIP_M : G(S.prof?.gram_gender, TIP_M, T.tipF, TIP_M))
+    : isAudio ? (lim === 1 ? T.once : lim ? T.plays(lim) : T.free)
+    :           T.passage);
+
+  const from = T.num(N.get(qs[0].id)), to = T.num(N.get(qs[qs.length-1].id));
   bar.innerHTML = `<div class="timerbar">
     <span class="clock" id="clock">${mmss(S.left)}</span>
     <span class="track"><span class="trackfill" id="tf"></span></span>
@@ -336,7 +445,7 @@ function renderPage(){
     const picked = o => multi ? a.os.includes(o.id) : a.o === o.id;
 
        const body = questionBody(q, { picked, essay:a.essay, values:a.txt,
-                                      pairs:a.pairs });
+                                      pairs:a.pairs, en:EN });
 
     const sec = (q.section && q.section !== seen)
       ? `<div class="q-sec" dir="auto">${esc(q.section)}</div>` : '';
@@ -344,11 +453,11 @@ function renderPage(){
 
         return `${sec}
       <div class="card qcard" id="q${q.id}" data-q="${q.id}">
-        <div class="qnum">سؤال ${AR(N.get(q.id))} · ${KIND_LABEL[q.kind]||'سؤال'}</div>
+        <div class="qnum" dir="auto">${T.q(N.get(q.id))} · ${kindLabel(q.kind, EN)}</div>
         ${media(q)}
         ${qAudio?`<audio controls preload="metadata" src="${esc(qAudio)}"
                    style="width:100%;margin-bottom:12px"></audio>`:''}
-        ${questionText(q, q.kind === 'cloze' ? a.pairs : a.txt)}
+        ${questionText(q, q.kind === 'cloze' ? a.pairs : a.txt, false, EN)}
         ${body}
       </div>`;
   }).join("");
@@ -356,7 +465,7 @@ function renderPage(){
   app.innerHTML = `${pgHtml}${cards}
     <div id="warn"></div>
     <div class="nav">
-      ${S.p>0?'<button class="btn ghost" id="prev">السابق</button>':''}
+      ${S.p>0?`<button class="btn ghost" id="prev">${T.prev}</button>`:''}
       <button class="btn primary" id="next">${LBL_NEXT}</button>
     </div>`;
 
@@ -371,7 +480,7 @@ function renderPage(){
     a.onplay = () => { n++; };
     a.onended = () => { if(n >= lim){
       a.insertAdjacentHTML('afterend',
-        `<div class="eq-hint" style="display:block;padding:8px 0">انتهى التشغيل المتاح</div>`);
+        `<div class="eq-hint" style="display:block;padding:8px 0">${esc(T.noPlays)}</div>`);
       a.remove(); } };
   });
   /* ⚠️ كلُّ تبديلٍ في الإجابات يمرّ من هذه المستمعات الثلاثة، فيُلحق
@@ -445,10 +554,8 @@ function renderPage(){
          :                  !a.essay.trim();
   });
 
-  const warnHtml = b => `<div class="q-hint">
-    بلا إجابة: ${b.map(q=>'س'+AR(N.get(q.id))).join(' · ')} —
-    الجواب إن كان لك ترجيح، وتُترك فارغة إن لم يكن.
-    التخمين يقع في مشتّت فيُسجَّل لك تشخيص لا يخصّك.</div>`;
+  const warnHtml = b => `<div class="q-hint">${
+    T.blanks(b.map(q => T.qShort(N.get(q.id))).join(' · '))}</div>`;
 
   /* والتنبيهُ لا يتجمّد بعد ظهوره: كلُّ إجابةٍ تُعيد حسابه، فيضيق
      بما بقي فارغاً ويزول هو ونصُّ الزرّ معاً إذا لم يبقَ شيء.
@@ -491,7 +598,7 @@ async function finish(auto){
      وهنا لا يُنتظر محتوى بل **حكم**. والطالبُ الذي سلّم للتوّ يسأل
      «ماذا يجري الآن؟» لا «أين سيقع النصّ؟» — فـ«جارٍ التصحيح» جوابٌ،
      وقضبانٌ رماديةٌ تمحوه. ⇒ الشبح للتحميل، والنصُّ للمعالجة. */
-  app.innerHTML = `<div class="status">جار التصحيح…</div>`; bar.innerHTML = "";
+  app.innerHTML = `<div class="status">${esc(PT().marking)}</div>`; bar.innerHTML = "";
 
     const payload = S.ans.map(a =>
       a.kind==='mcq' ? { q:a.q, o:a.o,   sec:a.sec, chg:a.chg }
@@ -504,24 +611,31 @@ async function finish(auto){
   /* 🔒 في الجلسة: لا مراجعة ولا درجة — المحطّة التالية تُركَّب مكانها.
      ومحطّةٌ تعرض «١٤/١٨» تُخبر الطالب أين وُجِّه. */
   if(PL){
+    const T = PT(), EN = !!PL.en;
     const { data, error } = await api.placementSubmit(
       PL.session, payload, Math.round((Date.now()-S.t0)/1000));
     if(error || !data?.ok){
-      app.innerHTML = `<div class="err"><b>تعذّر المتابعة</b>${
+      app.innerHTML = `<div class="err"><b>${esc(T.failed)}</b>${
         esc(error?.message || data?.error || '')}</div>`; return; }
 
     if(!data.done){ mountStation(data.quiz); return; }
 
+    /* ⚠️ `PL` تُصفَّر هنا، فما بعدها يُبنى من `T` و`EN` المحفوظتين أعلاه —
+       و`PT()` بعد التصفير تردّ العربية. والاتجاهُ يبقى حتى يُغادر
+       الطالبُ الشاشة فعلاً: هذه آخرُ صفحةٍ من الورقة، لا أوّلُ صفحةٍ
+       من المنصّة. */
+    const n = data.stations || 0;
     PL = null;
     app.innerHTML = `
       <div class="card" style="text-align:center;padding:34px;max-width:520px;margin:0 auto">
-        <div class="rev-q">مستواك: ${esc(data.level || '')}</div>
-        <div class="line" style="margin-top:10px">
-          حُدِّد بعد ${عدد(data.stations || 0,'قسم','قسمين','أقسام','قسماً')}. ودروسك صارت على مقاسك.</div>
+        <div class="rev-q">${esc(T.level(data.level || ''))}</div>
+        <div class="line" style="margin-top:10px">${EN
+          ? `Set after ${n} section${n === 1 ? '' : 's'}. Your lessons now match your level.`
+          : `حُدِّد بعد ${عدد(n,'قسم','قسمين','أقسام','قسماً')}. ودروسك صارت على مقاسك.`}</div>
         <div class="nav" style="margin-top:22px">
-          <button class="btn primary" id="plgo">بدء التعلّم ←</button></div>
+          <button class="btn primary" id="plgo">${esc(T.go)}</button></div>
       </div>`;
-    document.getElementById("plgo").onclick = () => loadList();
+    document.getElementById("plgo").onclick = () => { paperDir(false); loadList(); };
     return;
   }
 
