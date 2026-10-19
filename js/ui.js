@@ -13,7 +13,7 @@ import { renderMark, whenReady as avatarReady } from './avatar.js';
    والدمجُ مرّ بلا تعارضٍ **لأنّ الجانبين كتبا السطرَ نفسَه حرفاً** — وهو
    أخبثُ ما في التصادم: لا يشتكي. ⇒ هذه ترفعه، **فالختمُ يجيب «أيُّ شيفرةٍ
    يشغّلها المتصفّح»، وجوابان لسؤالٍ واحدٍ لا جواب.** */
-export const BUILD = "b144";
+export const BUILD = "b145";
 
 /* ── مراسي الصفحة ── */
 export const app = document.getElementById("app");
@@ -609,12 +609,18 @@ const svg = k => `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="curren
    ولا نسخةَ ثانية: نفس المرجع باسمين، فلا يفترق الرسمان يوماً. */
 export const icon = svg;
 
+/* 🆕 b145 · أيقونات ثلاثية الأبعاد للمصادر: تفعيل أيقونة الشرح المرئي
+   (video) أولاً بناءً على طلب المعلم، وتبقى سائر المصادر على رسم ICO الخطي. */
+const ICO_3D = {
+  video: 'img/icon_video.webp'
+};
+
 /* أيقونات أنماط المصادر — مشتقّةٌ من ICO لا مكتوبةٌ ثانية (التعليل عند
-   تصريحها فوق، مع KINDS حيث يبحث عنها القارئ). */
+   تصريحها فوق، مع KINDS حيث يبحث عنها القارئ)، وما خُصِّص بـ 3D يُعرض مجسّماً. */
 ICONS = Object.fromEntries(
   ['pdf','video','audio','image','link','text','quiz','recording',
    'mindmap','infographic','slides','worksheet','simulation']
-  .map(k => [k, svg(k)]));
+  .map(k => [k, ICO_3D[k] ? `<img src="${ICO_3D[k]}" class="ic-3d" alt="${esc(KINDS[k]||k)}">` : svg(k)]));
 
 /* ══════════════════════════════════════════════════════════════
    أشكال المواد — هويةٌ ثابتة لا حالة  (b66)
