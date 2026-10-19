@@ -375,6 +375,43 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
 .lsn-m{font-size:var(--fs-meta);color:var(--text-muted);margin-top:4px}
 .lockmsg{font-size:var(--fs-meta);color:var(--warn);margin-top:5px}
 
+/* ══ صفُّ أيقونات المصادر على بطاقة الدرس  (b146) ══
+   🔑 **٢٨px لا أقلّ.** قِيس بالمتصفّح: دون ٢٢ يصير رمزُ الأيقونة لطخةً
+      ويبقى اللونُ وحده — واللونُ لا يميّز ثلاثةَ عشرَ نمطاً (أدنى ΔE ٤٫٠).
+      فالرمزُ هو حاملُ المعنى، ولا يُصغَّر إلى ما دون قراءته.
+   🔑 والظلُّ هنا لا في الصورة: أُزيل انعكاسُ التوليد عند التفريغ، فيُرسم
+      بـdrop-shadow ليتبع السِمتين (الصورةُ المخبوزُ فيها ظلٌّ أبيضُ
+      تُقرأ لطخةً على الورق الداكن). */
+.kico{display:flex;gap:9px;flex-wrap:wrap;margin-top:11px}
+.kic{position:relative;display:block;width:28px;height:28px;border-radius:9px;
+  cursor:default;outline-offset:3px}
+.kic .ic-3d{width:28px;height:28px;display:block;
+  filter:drop-shadow(0 2px 4px rgba(10,15,26,.16))}
+.kic:hover .ic-3d,.kic:focus-visible .ic-3d{
+  transform:translateY(-3px) scale(1.1);
+  filter:drop-shadow(0 7px 13px rgba(10,15,26,.26))}
+
+/* الاسمُ عند التمرير — ويظهر بالتركيز أيضاً (♿).
+   🔴 **تحت الأيقونة لا فوقها.** جُرّب فوقها فغطّى عنوانَ الدرس — وصفُّ
+      الأيقونات آخرُ ما في البطاقة، فما فوقه عنوانٌ يُقرأ وما تحته فراغ.
+   🔑 **ويُسنَد إلى بداية السطر لا يُوسَّط** (`inset-inline-start:0`):
+      التوسيطُ يُخرج تلميحَ أوّلِ أيقونةٍ عن حافّة البطاقة — والإسنادُ
+      المنطقيّ يجعله يمتدّ إلى داخلها في العربية والإنجليزية معاً. */
+.kic::after{content:attr(data-tip);position:absolute;top:calc(100% + 9px);
+  inset-inline-start:0;transform:translateY(-4px);
+  background:var(--text);color:var(--page);font-size:var(--fs-tag);
+  font-family:'Almarai';font-weight:700;line-height:1.6;white-space:nowrap;
+  max-width:230px;overflow:hidden;text-overflow:ellipsis;
+  padding:5px 10px;border-radius:9px;pointer-events:none;
+  opacity:0;visibility:hidden;transition:opacity .16s ease,transform .16s ease;z-index:9}
+.kic:hover::after,.kic:focus-visible::after{
+  opacity:1;visibility:visible;transform:translateY(0)}
+
+@media(prefers-reduced-motion:reduce){
+  .kic .ic-3d,.kic::after{transition:none}
+  .kic:hover .ic-3d,.kic:focus-visible .ic-3d{transform:none}
+}
+
 /* ═══ الدرس ومصادره ═══ */
 .itm{display:flex;align-items:center;gap:13px;background:var(--fill-soft);
   border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:9px;

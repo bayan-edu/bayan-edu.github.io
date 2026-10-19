@@ -7,7 +7,7 @@
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
 import { S } from './state.js';
-import { app, head, toast, esc, AR, ICONS, KINDS, bubble, errBox, nav,
+import { app, head, toast, esc, escA, AR, ICONS, KINDS, bubble, errBox, nav,
          refreshCounts, scrollTop, scrollBottom, shape, icon,
          skeleton, waiting, G, N, NW } from './ui.js';
 import { startQuiz } from './quiz.js';
@@ -484,8 +484,17 @@ export async function loadLessons(subj){
             سطرٌ تحت كلّ عنوانٍ في قائمةٍ يُطيلها ولا يُقرأ، والطالبُ
             يدخل الدرسَ ليرى لا ليقرأ عنه. **ويبقى للمؤلّف** في المحرّر
             حيث يُكتب ويُراجَع. */''}
-      <div class="chips">
-        ${(l.items||[]).map(i=>`<span class="chip ${i.is_graded?'g':''}">${ICONS[i.kind]||'•'} ${esc(i.title)}</span>`).join("")}
+      ${/* 🆕 b146 · مصادرُ الدرس أيقوناتٌ لا شاراتٍ بأسماء — طلبُ صاحب المنصّة.
+            والعلّة أنّ البطاقة كانت تُطيلها أسماءُ خمسةِ مصادرَ في أسطر،
+            والطالبُ يمسح القائمة ليختار درساً لا ليقرأ فهرسه. والاسمُ
+            لا يسقط بل ينتظر: يظهر عند التمرير وعند التركيز بلوحة المفاتيح.
+         ♿ و`tabindex` و`aria-label` لازمان: تلميحٌ يراه الفأرُ وحده
+            يحجب المعلومةَ عمّن لا فأرَ له — وهو مرفوضٌ صراحةً في هذا
+            المشروع (`match_dnd.js` ③). */''}
+      <div class="kico">
+        ${(l.items||[]).map(i=>`<span class="kic${i.is_graded?' g':''}" tabindex="0"
+          data-tip="${escA(i.title)}" aria-label="${escA((KINDS[i.kind]||i.kind)+' · '+i.title)}"
+          >${ICONS[i.kind]||'•'}</span>`).join("")}
       </div>
       ${l.locked?`<div class="lockmsg">${esc(l.reason||'')}</div>`:''}
     </div>`;
