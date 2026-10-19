@@ -491,10 +491,21 @@ export async function loadLessons(subj){
          ♿ و`tabindex` و`aria-label` لازمان: تلميحٌ يراه الفأرُ وحده
             يحجب المعلومةَ عمّن لا فأرَ له — وهو مرفوضٌ صراحةً في هذا
             المشروع (`match_dnd.js` ③). */''}
+      ${/* 🆕 b148 · والبطاقاتُ آخرَ الصفّ. ولا تنقض «نوعٌ بصريٌّ آخر لا صفٌّ
+            مثلها» (التعليل عند `loadLessonDeck`): الصفُّ **على البطاقة**
+            يقول «ماذا في هذا الدرس»، والبطاقاتُ منه — والطالبُ يستحقّ أن
+            يعرف قبل أن يدخل. والتمييزُ الذي حُفظ يبقى **داخل** الدرس:
+            صفٌّ للمصادر، وبطاقةٌ مستقلّةٌ أسفله.
+         🔑 وعدُّها يصل مع الدرس من `list_lessons` (أضافه `165`) — فلا
+            نداءَ شبكةٍ ثانٍ لرسم أيقونة. */''}
       <div class="kico">
         ${(l.items||[]).map(i=>`<span class="kic${i.is_graded?' g':''}" tabindex="0"
           data-tip="${escA(i.title)}" aria-label="${escA((KINDS[i.kind]||i.kind)+' · '+i.title)}"
           >${ICONS[i.kind]||'•'}</span>`).join("")}
+        ${Number(l.cards||0) ? `<span class="kic" tabindex="0"
+          data-tip="${escA(N(l.cards,'بطاقة','بطاقتان','بطاقات','بطاقة')+' للاسترجاع')}"
+          aria-label="${escA('بطاقات استرجاع · '+N(l.cards,'بطاقة','بطاقتان','بطاقات','بطاقة'))}"
+          >${DECK_IMG}</span>` : ''}
       </div>
       ${l.locked?`<div class="lockmsg">${esc(l.reason||'')}</div>`:''}
     </div>`;
@@ -845,33 +856,38 @@ async function startPlacement(x){
 
 /* ═══════════ بطاقات الدرس — مصدرٌ ثابت لا فعلٌ يقع مرّة ═══════════ */
 
-const DECK_SVG = `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-  <rect x="3"  y="7"  width="12" height="14" rx="2.5" stroke="currentColor"
-        stroke-width="1.6" opacity=".35"/>
-  <rect x="6.5" y="4.5" width="12" height="14" rx="2.5" stroke="currentColor"
-        stroke-width="1.6" opacity=".6"/>
-  <rect x="10" y="2"  width="12" height="14" rx="2.5" fill="currentColor"
-        fill-opacity=".1" stroke="currentColor" stroke-width="1.6"/>
-</svg>`;
+/* 🆕 b147 · صارت مجسَّمةً كأخواتها. وكانت خطّيّةً بـ`currentColor`، فلمّا
+   صارت المصادرُ الثلاثةَ عشرَ مجسَّمةً في `b146` بقيت وحدها خطّيّةً بينها —
+   تنافرٌ أحدثَته تلك الدفعةُ ولم يكن قبلها.
+   🔑 وكحليّةٌ لا ذهبيّة: الذهبيُّ يزاحم «الاختبار» الكهرمانيَّ وهما يقعان
+      في شاشةٍ واحدة. والنسخةُ الذهبية محفوظةٌ في `img/kind/_raw/`.
+   ⚠️ وليست في `ICONS`: البطاقاتُ **ليست `item_kind`** (جدول `item_kinds`
+      فيه ثلاثةَ عشرَ كوداً وليس فيها `deck`)، فلو دخلت الخريطةَ لأوهمت
+      قارئَ الشيفرة أنّها نمطُ مصدرٍ يُؤلَّف — وهي نظامٌ آخر (`decks`). */
+const DECK_IMG = `<img src="img/kind/deck.webp" class="ic-3d" alt=""
+  width="40" height="40" loading="lazy">`;
 
-async function loadLessonDeck(l){
-  let deck;
-  try{
-    const { data } = await api.subjectDecks(S.subj.id);
-    deck = (data || []).find(d => !d.mine &&
-             String(d.lesson_id) === String(l.id) && d.cards > 0);
-  }catch(e){ return; }
-  if(!deck || S.lesson?.id !== l.id) return;   // غادر الدرس قبل أن يصل الردّ
+/* 🔴 b148 · كانت تبحث عن **مجموعةٍ** لها `lesson_id`، فلم تُرسَم قطّ:
+      `subject_decks` لا تُرجع `lesson_id` أصلاً (⇒ `undefined`)، و
+      `decks.lesson_id` فارغٌ في الستّ كلِّها. عطلٌ مزدوجٌ صامت حجب بطاقات
+      **٢١٣ درساً** عن الطلاب منذ كُتب.
+   🔑 والعلّةُ الجذرية نموذجٌ خاطئ: المؤلّفون يسمون **البطاقةَ** بدروسها
+      (`card_lessons`) لا المجموعةَ بدرسٍ واحد — وهو الأصحّ، فبطاقةٌ قد
+      تخدم درسين. ⇒ `165` أنشأ `lesson_cards(lesson_id)`، والعدُّ يصل
+      مع الدرس نفسِه في `list_lessons` فسقط نداءُ الشبكة من هنا كلُّه. */
+function loadLessonDeck(l){
+  const n = Number(l.cards || 0);
+  if(!n) return;
 
   const host = document.createElement('div');
   host.className = 'deck-card';
   host.setAttribute('role', 'button');
   host.tabIndex = 0;
   host.innerHTML = `
-    <div class="deck-ic">${DECK_SVG}</div>
+    <div class="deck-ic">${DECK_IMG}</div>
     <div class="deck-txt">
-      <div class="deck-t">${esc(deck.title)}</div>
-      <div class="deck-m">${N(deck.cards,'بطاقة','بطاقتان','بطاقات','بطاقة')} · تعود إليك بالتباعد</div>
+      <div class="deck-t">بطاقات ${esc(l.title)}</div>
+      <div class="deck-m">${N(n,'بطاقة','بطاقتان','بطاقات','بطاقة')} · تعود إليك بالتباعد</div>
     </div>
     <div class="deck-go">←</div>`;
 
@@ -880,7 +896,7 @@ async function loadLessonDeck(l){
 
   const open = () => openLessonDeck(
     { id: S.subj.id, name: S.subj.name },
-    { ...deck, lesson: l.title },
+    l,
     () => openLesson(l));                       // العودة إلى الدرس لا إلى «تذكّرها»
 
   host.onclick = open;

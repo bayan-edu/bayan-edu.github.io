@@ -461,6 +461,10 @@ export const saveUnit = o => db.rpc('save_unit', {
 
 /* cards — البطاقات: المجموعة تتبع (مادة · صفّ) لا مقرَّراً */
 export const subjectDecks = sid => db.rpc('subject_decks', { p_subject: sid });
+/* 🆕 165 · بطاقاتُ درسٍ بعينه — من `card_lessons` لا من مجموعةٍ بـ`lesson_id`
+   (ذاك العمودُ فارغٌ ولم يُملأ قطّ). وتحمل `note` و`front_image` فسقط
+   نداءُ `deck_cards` الثاني الذي كان يُكمّلهما. */
+export const lessonCards  = lid => db.rpc('lesson_cards',  { p_lesson: lid });
 export const deckCards    = did => db.rpc('deck_cards',    { p_deck: did });
 export const deleteCard   = id  => db.rpc('delete_card',   { p_id: id });
 export const deleteDeck   = id  => db.rpc('delete_deck',   { p_id: id });

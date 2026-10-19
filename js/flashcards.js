@@ -597,15 +597,18 @@ function openBrowseDeck(subject, deck){
       في سياق درسه — والسياق جزءٌ من الترميز. ثمّ تدخل الطابور العامّ
       فتعود متباعدةً بعد أيام.
 */
-export function openLessonDeck(subject, deck, back){
+/* 🆕 b148 · الوسيطُ الثاني صار **الدرسَ** لا المجموعة. والعلّةُ في `165`:
+   بطاقاتُ درسٍ واحد قد تتوزّع على مجموعاتٍ عدّة (`card_lessons`)، فلا
+   مجموعةَ واحدة تُمثّله — و`lesson_cards` تجمعها بحارسَيها. */
+export function openLessonDeck(subject, lesson, back){
   /* 🆕 b139 · الترويسةُ تُمسح مع وضع الهيكل — انظر `waiting` في ui.js. */
   waiting('screen');
 
   openSession(subject, {
-    label: deck.lesson || deck.title,
+    label: lesson.title,
     back,
     fetch: async () => {
-      const { data, error } = await api.browseDeck(deck.id);
+      const { data, error } = await api.lessonCards(lesson.id);
       if(error) throw error;
       const cards = data || [];
 
@@ -617,17 +620,11 @@ export function openLessonDeck(subject, deck, back){
         try{ await api.subscribeCards(fresh); }catch(e){}
       }
 
-      /* browse_deck لا تُرجع note ولا reps — والجلسة تحتاجهما.
-         ⇒ تُكمَّل من deck_cards، وهي مقروءةٌ لمن يرى المجموعة. */
-      let notes = new Map();
-      try{
-        const { data: full } = await api.deckCards(deck.id);
-        (full || []).forEach(c => notes.set(c.id, c));
-      }catch(e){}
-
+      /* 🔓 b148 · وسقط نداءُ `deck_cards` الثاني: `browse_deck` كانت لا
+         تُرجع `note` فتُكمَّل منه — و`lesson_cards` تحملها في ردّها الأوّل
+         (ومعها `front_image` الّتي لم تكن تبلغ هذا المسار منذ `160`). */
       return cards.map(c => ({
         ...c,
-        note:  notes.get(c.id)?.note ?? null,
         reps:  c.mine ? 1 : 0,          // ما كان عنده ليس أوّل لقاء
         entry: 'lesson',
         my_note: null

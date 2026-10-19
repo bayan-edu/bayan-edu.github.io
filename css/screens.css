@@ -1944,8 +1944,14 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
   transition:transform .15s,border-color .15s,background .15s}
 .deck-card:hover{transform:translateY(-2px);border-color:var(--accent)}
 .deck-card:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
-.deck-ic{flex:0 0 auto;width:34px;height:34px;color:var(--accent)}
-.deck-ic svg{width:100%;height:100%;display:block}
+/* 🆕 b147 · صارت صورةً مجسَّمةً لا رسماً خطّياً — فسقط `color` (لا
+   currentColor فيها) ورُفع المقاس إلى ٣٨ كـ`.itm-ic`: البطاقةُ تجاور
+   صفَّ المصادر، ومقاسان متقاربان في شاشةٍ واحدة يُقرآن خطأً لا تنوّعاً. */
+.deck-ic{flex:0 0 auto;width:38px;height:38px}
+.deck-ic .ic-3d{width:38px;height:38px;display:block;
+  filter:drop-shadow(0 2px 5px rgba(10,15,26,.16))}
+.deck-card:hover .deck-ic .ic-3d{transform:translateY(-2.5px) scale(1.08);
+  filter:drop-shadow(0 7px 13px rgba(10,15,26,.26))}
 .deck-txt{flex:1;min-width:0}
 .deck-t{font-weight:700;font-size:.95rem}
 .deck-m{font-size:var(--fs-meta);color:var(--text-muted);margin-top:3px}
