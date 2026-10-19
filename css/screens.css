@@ -383,9 +383,10 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
 .itm.quiz{background:var(--accent-soft);border-color:var(--accent-line)}
 .itm-ic{flex:0 0 40px;height:40px;border-radius:11px;background:var(--fill-strong);
   display:flex;align-items:center;justify-content:center;font-size:1.25rem}
-.itm-ic .ic-3d{width:34px;height:34px;display:block;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.08))}
-.itm:hover .ic-3d,.itm-ic:hover .ic-3d{transform:translateY(-2.5px) scale(1.07);
-  filter:drop-shadow(0 5px 9px rgba(0,0,0,0.14))}
+.itm-ic:has(.ic-3d){background:none}
+.itm-ic .ic-3d{width:38px;height:38px;display:block;filter:drop-shadow(0 2px 5px rgba(0,0,0,0.08))}
+.itm:hover .ic-3d,.itm-ic:hover .ic-3d{transform:translateY(-2.5px) scale(1.08);
+  filter:drop-shadow(0 6px 12px rgba(0,0,0,0.13))}
 .itm.quiz .itm-ic{background:var(--accent-fill)}
 .itm-t{font-family:'Almarai';font-weight:700;font-size:var(--fs-ui)}
 .itm-m{font-size:var(--fs-meta);color:var(--text-muted);margin-top:3px}
