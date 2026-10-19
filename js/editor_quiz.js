@@ -341,9 +341,13 @@ function qCard(q){
   const dx = (S.tree?.dx) || [];
   const fams = [...new Set(dx.map(d => d.family || 'عام'))];
 
+  /* 🔑 164 · الكودُ اختياريّ على المشتّت: خلوُّه حالٌ مقصودةٌ لا نقصٌ
+     يُنبَّه عليه. غيابُه يعني أنّ الخلل في المعرفة، والهدفُ المربوطُ
+     بالسؤال يحمله ⇒ سقطت `.miss` الحمراء، ويقول الخيارُ الفارغ معناه
+     بدل أن يقرأه المؤلّفُ طلباً للتعبئة. */
   const dxSelect = (val, i) => `
-    <select class="eq-dx ${val?'':'miss'}" data-o="${i}" ${locked?'disabled':''}>
-      <option value="">— التشخيص —</option>
+    <select class="eq-dx" data-o="${i}" ${locked?'disabled':''}>
+      <option value="">— بلا كود · نقص معرفة —</option>
       ${fams.map(f => `<optgroup label="${esc(f)}">
         ${dx.filter(d => (d.family||'عام')===f).map(d =>
           `<option value="${esc(d.code)}" ${d.code===val?'selected':''}>${esc(d.name)}</option>`).join("")}
@@ -1236,7 +1240,7 @@ function wire(q){
   });
   main.querySelectorAll(".eq-dx").forEach(el => el.onchange = e => {
     q.options[+el.dataset.o].dx = e.target.value || null;
-    el.classList.toggle('miss', !e.target.value); mark();
+    mark();          // 🔑 164 · ولا toggle('miss'): خلوُّ الكود حالٌ لا نقص
   });
   main.querySelectorAll('input[name="corr"]').forEach(el => el.onchange = () => {
     const i = +el.dataset.o;
@@ -2303,29 +2307,30 @@ const mmssPv = s => { const m = Math.floor(s/60), x = s%60;
 
 /* ═══════════ الاستيراد ═══════════
    يُضيف ولا يستبدل · ويعاين قبل الإدراج · وكل سؤال يمرّ بـ
-   save_question — فالحراسة نفسها: كود تشخيص لكل مشتّت وشرحٌ
-   للخطأ. الاستيراد باب أوسع لا باب خلفي. */
+   save_question — فالحراسة نفسها: شرحٌ للخطأ، وكودُ تشخيصٍ **لمشتّتٍ
+   يكشف خللَ تفكير**. والكودُ اختياريّ (164): غيابُه يعني أنّ الخلل في
+   المعرفة، والهدفُ يحمله. الاستيراد باب أوسع لا باب خلفي. */
 
 const SAMPLE = JSON.stringify({
   passages: [{ ref: "p1", title: "Reading Passage", body: "Egypt is a land…", lang: "en" }],
   questions: [
     { section: "A. Vocabulary", body: "\"Crossroads\" here means a ……",
       explanation: "Crossroads = ملتقى طرق، وأقربها junction.",
-      options: [ { body: "barrier",  dx: "VOC" },
+      options: [ { body: "barrier",  dx: "REV"  },
                  { body: "junction", correct: true },
-                 { body: "pathway",  dx: "VOC" },
-                 { body: "boundary", dx: "VOC" } ] },
+                 { body: "pathway",  dx: "ECHO" },
+                 { body: "boundary" } ] },
     { section: "B. Reading", passage: "p1", body: "The best title is ……",
       explanation: "العنوان يجمع الماضي والحاضر.",
-      options: [ { body: "Trade Routes", dx: "DTL" },
+      options: [ { body: "Trade Routes", dx: "PART" },
                  { body: "A Nation Proud of Its Past", correct: true } ] },
     { kind: "msq", section: "B. Reading", passage: "p1",
       body: "Which statements does the passage support? (Choose all that apply)",
       explanation: "الأوليان منصوصتان في الفقرة؛ والأخريان إسقاط من خارج النصّ.",
       options: [ { body: "Egypt lies where old trade routes met", correct: true },
                  { body: "Its past still shapes its identity",     correct: true },
-                 { body: "Its economy depends mainly on tourism",  dx: "INF" },
-                 { body: "It stayed untouched by other cultures",  dx: "INF" } ] }
+                 { body: "Its economy depends mainly on tourism",  dx: "GAP" },
+                 { body: "It stayed untouched by other cultures",  dx: "GAP" } ] }
   ]
 }, null, 2);
 
@@ -2436,7 +2441,9 @@ function parseImport(txt){
           out.issues.push(`س${n}: مفتاح الخطأ يبدأ برقم الفراغ ثم نقطتين — "${key}"`);
         else if(+key.split(':')[0] > g)
           out.issues.push(`س${n}: الخطأ "${key}" يشير إلى فراغ غير موجود`);
-        if(!dxCodes.has(code)) out.issues.push(`س${n}: كود غير معروف "${code}"`);
+        // سطرٌ كتبه المؤلّف بكودٍ فارغ تردّه القاعدة — فيُقال قبل الرفع
+        if(!code) out.issues.push(`س${n}: الخطأ "${key}" بكودٍ فارغ — يُحذف السطر أو يُكتب كودُه`);
+        else if(!dxCodes.has(code)) out.issues.push(`س${n}: كود غير معروف "${code}"`);
       });
 
       if(Array.isArray(q.bank) && q.bank.length){
@@ -2496,7 +2503,8 @@ function parseImport(txt){
         if(!m){ out.issues.push(`س${n}: مفتاح خلط غير سليم: ${key}`); return; }
         if(!iset.has(m[1])) out.issues.push(`س${n}: خلط لبند لا وجود له: ${key}`);
         if(!bset.has(m[2])) out.issues.push(`س${n}: خلط إلى مقابل لا وجود له: ${key}`);
-        if(!code)           out.issues.push(`س${n}: خلط بلا كود تشخيص: ${key}`);
+        if(!code)           out.issues.push(`س${n}: خلط بكودٍ فارغ: ${key} — يُحذف السطر أو يُكتب كودُه`);
+        else if(!dxCodes.has(code)) out.issues.push(`س${n}: كود غير معروف "${code}"`);
       });
       return;     // 🔴 وبلا هذا السطر يسقط الفرعُ إلى «نمط غير معروف» تحته
     }
@@ -2550,7 +2558,7 @@ function parseImport(txt){
         if(!bset.has(m[2]))  out.issues.push(`س${n}: خلط إلى كلمة لا وجود لها: ${key}`);
         if(pr[m[1]] === m[2])
           out.issues.push(`س${n}: خلط إلى صواب الفراغ نفسه: ${key} — كود لا يُقرأ أبداً`);
-        if(!code)            out.issues.push(`س${n}: خلط بلا كود تشخيص: ${key}`);
+        if(!code)            out.issues.push(`س${n}: خلط بكودٍ فارغ: ${key} — يُحذف السطر أو يُكتب كودُه`);
         else if(!dxCodes.has(code)) out.issues.push(`س${n}: كود غير معروف "${code}"`);
       });
 
@@ -2581,8 +2589,8 @@ function parseImport(txt){
     opts.forEach((o, k) => {
       if(!String(o.body || '').trim()) out.issues.push(`س${n}: خيار ${k+1} بلا نصّ`);
       if(o.correct) return;              // الكود للمشتّت وحده — في النمطين
-      if(!o.dx) out.issues.push(`س${n}: الخيار "${String(o.body||'').slice(0,18)}" بلا كود تشخيص`);
-      else if(!dxCodes.has(o.dx)) out.issues.push(`س${n}: كود غير معروف "${o.dx}"`);
+      // 🔑 164 · مشتّتٌ بلا كود = نقصُ معرفة، والهدفُ يحمله ⇒ لا يُنبَّه عليه
+      if(o.dx && !dxCodes.has(o.dx)) out.issues.push(`س${n}: كود غير معروف "${o.dx}"`);
     });
   });
 
@@ -3717,7 +3725,7 @@ function compareVariant(key){
             <span class="key">${esc(optLabel(o,j))}</span>
             <span class="cmp-tx">${fmt(o.body || '—')}</span>
             ${o.dx ? `<span class="cmp-dx ${odd(o.dx)?'cmp-mark':''}">${esc(dxName(o.dx))}</span>`
-                   : (o.correct ? '' : '<span class="cmp-dx cmp-mark">بلا كود</span>')}
+                   : (o.correct ? '' : '<span class="cmp-dx">نقص معرفة</span>')}
           </div>`).join('')}
         <div class="cmp-lb">شرح الخطأ</div>
         <div class="cmp-note" dir="auto">${esc(x.explanation || '—')}</div>`
