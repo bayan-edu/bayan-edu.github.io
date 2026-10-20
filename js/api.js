@@ -202,6 +202,16 @@ export const listLessons  = sid => db.rpc('list_lessons', { p_subject: sid });
 export const markItemOpened    = id => db.rpc('track_item', { p_item: id, p_status: 'opened' });
 export const markItemCompleted = id => db.rpc('track_item', { p_item: id, p_status: 'completed' });
 
+/* 🆕 b152 · نصُّ المصدر — للكتاب المقلَّب (book.js).
+   `list_lessons` لا تحمل `body` عمداً: النصوصُ طويلة، والقائمةُ تُجلب
+   في كلّ فتحٍ للمادة. ⇒ يُطلب النصُّ وحده حين يُفتح.
+   🔑 **ولا دالّةَ جديدة ولا ملفّ SQL:** `p_items_read` تحرس الصفَّ بحارس
+      الدرس نفسِه (`can_access_lesson` + `can_see_item`)، و`body` ممنوحٌ
+      لـ`authenticated` بالعمود. قِيس بطالبٍ حيٍّ (`set_config` في
+      `from`): ثمانيةَ عشرَ صفّاً تُقرأ، كلُّها من دروسٍ مفتوحةٍ له. */
+export const itemText = id =>
+  db.from('items').select('title, description, body, lang').eq('id', id).maybeSingle();
+
 
 /* ═══════════ ④ الإرشاد ═══════════ */
 

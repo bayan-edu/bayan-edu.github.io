@@ -9,9 +9,10 @@ import * as api from './api.js';
 import { S } from './state.js';
 import { app, head, toast, esc, escA, AR, ICONS, KINDS, bubble, errBox, nav,
          refreshCounts, scrollTop, scrollBottom, shape, icon,
-         skeleton, waiting, G, N, NW } from './ui.js';
+         skeleton, waiting, G, N, NW, fmt,
+         sayable, sayGroup, bindSay, backMeta, backText, dirOf } from './ui.js';
 import { startQuiz } from './quiz.js';
-import { mediaUrl, isManaged } from './media.js';
+import { mediaUrl, isManaged, accents, speak, playAudio, narrate, voiceName, hush } from './media.js';
 import { isSim, openSim } from './simulations.js';
 import { openLessonDeck, loadFlashcards } from './flashcards.js';
 
@@ -605,6 +606,10 @@ export async function loadLessons(subj){
 
       if(i.kind === 'quiz'){ S.lesson = l; return openItem(i); }
 
+      /* 🆕 b152 · ④ النصُّ ⇒ كتابُه مباشرةً، و`S.lesson` تُضبط قبله
+         فترجع «عودة» إلى درسه ويجد زرُّ الاختبار في ختامه اختبارَه. */
+      if(i.kind === 'text'){ S.lesson = l; return openText(i); }
+
       if(canEmbed(i) || isSim(i)){
         openLesson(l);
         openItem(i);
@@ -676,7 +681,7 @@ const itmRow = i => `
             ${i.required&&!i.is_graded?' · إلزامي':''}${credit(i)}</div>
         </div>
         <div class="itm-s" data-s="${i.id}">${i.status==='completed'?'✔'
-          :((canEmbed(i)||isSim(i))?'▶':(i.kind==='quiz'?'←':'↗'))}</div>
+          :((canEmbed(i)||isSim(i))?'▶':((i.kind==='quiz'||i.kind==='text')?'←':'↗'))}</div>
       </div>
       ${(canEmbed(i)||isSim(i))?`<div class="embed-slot" id="slot-${i.id}"></div>`:''}`;
 
@@ -740,6 +745,11 @@ export async function openItem(i){
   /* محاكاةٌ ⇒ تُفتح في مكانها بإطارٍ معزول، لا في تبويب. */
   if(isSim(i)) return openSim(i);
 
+  /* 🆕 b152 · نصٌّ ⇒ كتابٌ يُقلَّب. وكان يقع في «غير متاح بعد» أدناه:
+     النمطُ `text` قائمٌ في `item_kinds` والمحرّرُ يكتب `body` منذ زمن،
+     **والطالبُ وحده لم يكن له ما يقرؤه به.** */
+  if(i.kind === 'text') return openText(i);
+
   if(i.url){
     window.open(i.url,'_blank','noopener');
     await api.markItemCompleted(i.id);
@@ -749,6 +759,206 @@ export async function openItem(i){
     return;
   }
   toast("هذا المصدر غير متاح بعد");
+}
+
+/* ── الكتاب المقلَّب — مصدرُ «نصّ» (b152) ──
+   المحرّكُ في `book.js` لا يعرف المنصّة؛ وهذا الجسرُ يعطيه ما يخصّها:
+   النصَّ من القاعدة، و`fmt` و`AR` و`G()`، وما يقع عند الختام.
+
+   🔑 **والختامُ يصل القراءةَ بالاختبار، وبينهما وقفةُ استرجاع:** الفكرةُ
+      في جملةٍ والكتابُ مغلق، ثمّ المقارنة. وهي أرخصُ ما يُثبّت الفهم —
+      واختبارٌ يتلو قراءةً بلا استرجاعٍ يقيس الذاكرةَ القريبة لا الفهم.
+   🔑 **والإتمامُ عند الختام لا عند الفتح** — مذهبُ مشغّل الصوت أدناه.
+      ومن قلّب إلى الآخر أسرعَ ممّا يُقرأ لا يُنادي المحرّكُ `onEnd` أصلاً،
+      فلا يُسجَّل له شيءٌ ولا يُقال له شيء: صمتٌ صادقٌ خيرٌ من «أحسنت»
+      كاذبة. والحدُّ (٤٥٠ كلمة في الدقيقة) وتعليلُه في `book.js`.
+   ⚠️ **وفجوةٌ معلنة:** الرياضيات (`\(…\)`) تُعرض في الكتاب مصدراً خاماً
+      لا مرسومة — `mathBoot` يغيّر ارتفاعَ السطر بعد القياس فتفيض الصفحة.
+      ونصوصُ القراءة اليوم بلا رياضيات؛ ويُعالَج حين يُكتب أوّلُها. */
+async function openText(i){
+  const l = S.lesson;
+  nav('subjects');
+  /* بلا عنوان: الغلافُ يحمله، واسمٌ يُكتب مرّتين في شاشةٍ واحدة يُقرأ
+     سهواً (b139). */
+  head('', '');
+  app.innerHTML = `
+    <div class="crumb" id="bk">→ عودة</div>
+    <div id="book">${skeleton('rows', 3)}</div>`;
+  const back = () => l ? openLesson(l) : loadLessons(S.subj);
+  document.getElementById("bk").onclick = back;
+
+  /* 🆕 b153 · ومفرداتُ الدرس معه — بنداءٍ موازٍ لا تالٍ. وفشلُها لا يحجب
+     الكتاب: نصٌّ بلا كلماتٍ ملوّنة خيرٌ من نصٍّ لا يُفتح. */
+  const [{ data, error }, cardsRes] = await Promise.all([
+    api.itemText(i.id),
+    l ? api.lessonCards(l.id).catch(e => ({ error: e })) : Promise.resolve({ data: [] })
+  ]);
+  const host = document.getElementById("book");
+  if(!host) return;                                  // غادر قبل وصول النصّ
+  if(error){ host.innerHTML = errBox(error, 'النص'); return; }
+  if(!data?.body?.trim()){ toast("هذا المصدر غير متاح بعد"); back(); return; }
+  api.markItemOpened(i.id);
+
+  const { createBook } = await import('./book.js');
+  if(!host.isConnected) return;
+
+  const title = data.title || i.title;
+  const quiz  = (l?.items || []).find(x => x.kind === 'quiz' && x.quiz_id);
+  const g     = S.prof?.gram_gender;
+  /* عنوانُ الدرس يسقط من الغلاف إن احتوى عنوانَ النصّ («Reading: X» و«X»)
+     وتحلّ الوحدةُ محلَّه — السياقُ نفسُه بلا تكرار. */
+  const lessonLine = l?.title && !l.title.includes(title) ? l.title : (l?.unit || '');
+
+  /* المفردةُ عبارةٌ حتى ثلاث كلمات؛ وما زاد فبطاقةُ استراتيجيةٍ تُشرح ولا
+     تُبحث في النصّ («main idea vs. supporting detail»). */
+  const glossary = (cardsRes?.data || []).filter(c =>
+    String(c.front || '').replace(/\s*\([^)]*\)\s*$/, '').trim().split(/\s+/).length <= 3);
+  const word = wordPanel(g);
+
+  await createBook(host, {
+    title, subtitle: data.description, body: data.body, lang: data.lang || i.lang,
+    kicker: [S.subj?.name, lessonLine],
+    format: fmt, num: AR,
+    storeKey: 'bayan.book.' + i.id,
+    glossary,
+    /* النطقُ الآليّ للإنجليزية وحدها — وهو حكمُ الملفّ `101` في media.js:
+       القراءةُ الآليّة للعربية تُسقط الإعرابَ وتُخطئ الحركات. */
+    tapAny: dir => dir === 'ltr',
+    wordHtml: word.html,
+    onWord: word.bind,
+    /* 🆕 b155 · استمع وتابع — بأحسن صوتٍ على جهاز الطالب، **والإنجليزيةُ وحدها**
+       (قرارُ المالك: العربيةُ مؤجَّلة، وحكمُ `101` قائم). والسرعةُ الأساسُ ٠٫٩
+       كنطق الكلمة: المستمعُ متعلّمٌ لا ناطق. */
+    voice: {
+      available: dir => dir === 'ltr' && typeof window !== 'undefined' && !!window.speechSynthesis,
+      speak: (text, o) => narrate(text, { lang: 'en', rate: 0.9 * o.rate, onend: o.onend, onerror: o.onerror }),
+      stop: hush,
+      name: () => voiceName('en')
+    },
+    onVoiceFail: () => toast("تعذّر النطق على هذا الجهاز"),
+    coverMeta: ({ paragraphs, words, minutes }) => [
+      N(paragraphs, 'فقرة', 'فقرتان', 'فقرات', 'فقرة'),
+      N(words, 'كلمة', 'كلمتان', 'كلمات', 'كلمة'),
+      'نحو ' + N(minutes, 'دقيقة', 'دقيقتين', 'دقائق', 'دقيقة')
+    ].join(' · '),
+    endHtml: () => `
+      <div class="bk-end-orn" aria-hidden="true"><i></i><i></i><i></i></div>
+      <div class="bk-end-t">نهاية النص</div>
+      <div class="bk-ask"><b>${quiz ? 'قبل الاختبار' : 'استرجاع'}</b><span>${G(g,
+        'أغلق الكتاب، وقل فكرة النص في جملة واحدة، ثم افتحه وقارن.',
+        'أغلقي الكتاب، وقولي فكرة النص في جملة واحدة، ثم افتحيه وقارني.',
+        'تُقال فكرة النص في جملة واحدة والكتاب مغلق، ثم يُفتح للمقارنة.')}</span></div>
+      <div class="bk-end-btns">
+        ${quiz ? `<button type="button" class="btn primary" data-act="quiz">الاختبار</button>` : ''}
+        <button type="button" class="btn ghost" data-act="again">قراءة من البداية</button>
+        ${quiz ? '' : `<button type="button" class="btn ghost" data-act="back">العودة إلى الدرس</button>`}
+      </div>`,
+    onAction: (act, book) => {
+      if(act === 'quiz' && quiz) return openItem(quiz);
+      if(act === 'again') return book.restart();
+      if(act === 'back') return back();
+    },
+    onResume: () => toast("فُتح الكتاب على صفحتك الأخيرة"),
+    onEnd: async () => {
+      if(i.status === 'completed') return;
+      const { error: e } = await api.markItemCompleted(i.id);
+      if(e){ toast("لم تُسجَّل قراءتك — ربما تكون المشكلة في الاتصال"); return; }
+      i.status = 'completed';
+      toast("سُجّلت قراءتك ✔");
+    }
+  });
+}
+
+/* ── نافذةُ الكلمة في الكتاب (b153) ──
+   🔑 **التخمينُ قبل الكشف (`GUESS_FIRST`) — والحجّةُ هدفٌ يُقاس لا ذوق:**
+      «inferring word meaning from context» هدفٌ في دروس القراءة، والكلماتُ
+      المسطَّرةُ في النصوص هي بعينها كلماتُ أسئلته. فنافذةٌ تُعطي المعنى
+      لأوّل لمسة **تقرأ عن الطالب ما جاء الدرسُ ليعلّمه إيّاه**. ⇒ تُسمِعه
+      الكلمةَ وتدعوه إلى التخمين، ولمسةٌ ثانية تكشف — فيقارن تخمينَه
+      بالجواب، وتلك المقارنةُ هي التعلّم. **وما كُشف مرّةً يُعرض فوراً
+      بعدها** في الجلسة نفسها: التخمينُ لقاءٌ أوّل لا عقوبةٌ متكرّرة.
+   🔑 **والنطقُ لا يُفشي المعنى** — مذهبُ `sayable` في ui.js: سماعُ الكلمة
+      صفتُها، فيُسمَع عند الفتح بلا انتظار.
+   🔑 **و«إضافة إلى تذكّرها» تصل القراءةَ بالمراجعة المتباعدة:** الكلمةُ
+      التي توقّف عندها تعود إليه بعد أيّام. والنداءُ قائمٌ (`subscribe_cards`)
+      وهو نفسُه الذي تضمّ به «بطاقاتُ الدرس» بطاقاتِها. */
+const GUESS_FIRST = true;
+
+function wordPanel(g){
+  const revealed = new Set();
+  const pseudo = (card, w) => card || { front: w, lang: 'en' };
+  const head = front => {
+    const m = String(front || '').match(/^(.*?)\s*\(([^)]*)\)\s*$/);
+    return m ? [m[1], m[2]] : [String(front || ''), ''];
+  };
+
+  const meaning = card => {
+    const [main, meta] = backMeta(card.back);
+    const [tr, def] = backText(main).split('\n');
+    return `<div class="bk-mean">
+      <div class="bk-tr" dir="auto">${fmt(tr)}</div>
+      ${def ? `<div class="bk-def" dir="auto">${fmt(def)}</div>` : ''}
+      ${meta ? `<div class="bk-meta" dir="auto">${esc(meta)}</div>` : ''}
+      <div class="bk-pfoot">${card.mine
+        ? '<span class="bk-in">في «تذكّرها» ✔</span>'
+        : '<button type="button" class="bk-pbtn" data-pk="add">إضافة إلى «تذكّرها»</button>'}</div>
+    </div>`;
+  };
+
+  const html = (card, w) => {
+    const c = pseudo(card, w);
+    const [t, pos] = card ? head(card.front) : [w, ''];
+    /* السطرُ يأخذ اتجاهَ الكلمة لا اتجاهَ النافذة: زرُّ النطق **بعد** الكلمة
+       في ترتيب قراءتها — حكمُ `sayGroup` في ui.js. */
+    let h = `<div class="bk-pw" dir="${dirOf(t)}"><span class="bk-pw-t">${esc(t)}</span>
+      ${pos ? `<span class="bk-pos" dir="ltr">${esc(pos)}</span>` : ''}
+      ${sayable(c) ? sayGroup(c) : ''}</div>`;
+    if(card){
+      h += (!GUESS_FIRST || revealed.has(card.id)) ? meaning(card)
+        : `<p class="bk-hint">${G(g,
+            'خمّن معناها من الجملة، ثم اكشفه.',
+            'خمّني معناها من الجملة، ثم اكشفيه.',
+            'معناها من الجملة أولاً، ثم الكشف.')}</p>
+           <button type="button" class="bk-pbtn wide" data-pk="reveal">المعنى</button>`;
+    }
+    return h;
+  };
+
+  const bindAdd = (el, card, reflow) => {
+    const b = el.querySelector('[data-pk="add"]');
+    if(!b) return;
+    b.onclick = async () => {
+      b.disabled = true;
+      const { error } = await api.subscribeCards([card.id]);
+      if(error){ b.disabled = false; toast("لم تُضَف — ربما تكون المشكلة في الاتصال"); return; }
+      card.mine = true;
+      b.outerHTML = '<span class="bk-in">في «تذكّرها» ✔</span>';
+      reflow();
+    };
+  };
+
+  const bind = ({ entry: card, word: w, el, reflow }) => {
+    const c = pseudo(card, w);
+    const say = sayable(c);
+    if(say){
+      bindSay(el, c, say);
+      const acc = accents(c.lang || 'en');
+      if(c.audio) playAudio(c.audio);
+      else if(acc.length) speak(say.text, acc[0].code);
+    }
+    if(!card) return;
+    const r = el.querySelector('[data-pk="reveal"]');
+    if(r) r.onclick = () => {
+      revealed.add(card.id);
+      el.querySelector('.bk-hint')?.remove();
+      r.outerHTML = meaning(card);
+      bindAdd(el, card, reflow);
+      reflow();
+    };
+    bindAdd(el, card, reflow);
+  };
+
+  return { html, bind };
 }
 
 /* ── مشغّل الصوت ──

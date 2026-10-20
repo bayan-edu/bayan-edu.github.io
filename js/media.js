@@ -211,6 +211,7 @@ if(typeof window !== 'undefined' && window.speechSynthesis){
       بجزءٍ من الاسم لا بكامله، والساقطُ يقع على أوّل ما بقي. */
 const PREF = [
   /natural/i,                            // Microsoft … (Natural) — أحسنُ ما في ويندوز
+  /premium|enhanced/i,                   // 🆕 b155 · أصواتُ آبل المحسَّنة — أعلى من أصلها
   /google (us|uk) english/i,             // كروم وأندرويد
   /samantha|daniel|karen|moira/i,        // أصوات آبل الأصلية
   /microsoft (aria|jenny|guy|ryan)/i
@@ -279,6 +280,43 @@ export function speak(text, lang = 'en'){
   }catch(err){ return false; }
 }
 
+
+/**
+ * 🆕 b155 · قراءةُ جملةٍ واحدة بأحسن صوتٍ على الجهاز — للكتاب المقلَّب.
+ *
+ * 🔑 **جملةً جملة لا النصَّ كلَّه** — وثلاثُ عللٍ مقيسةٍ في المتصفّحات:
+ *    ① كروم يقطع النطقَ الطويلَ بعد نحو خمسَ عشرةَ ثانيةً صامتاً.
+ *    ② `pause()` و`resume()` لا يُعتمد عليهما على أندرويد وويندوز.
+ *    ③ والجملةُ وحدةُ التظليل: الطالبُ يتابع الجملةَ التي تُقرأ بعينه.
+ * ⇒ ويعود بـ`false` إن تعذّر، والمنادي يقرّر. ولا يُلغي ما قبله إلا إن كان
+ *   يجري فعلاً: الإلغاءُ ثمّ النطقُ فوراً يُسقط الجديدَ على بعض الأنظمة،
+ *   فبينهما مهلةٌ قصيرة.
+ */
+export function narrate(text, { lang = 'en', rate = 0.9, onend, onerror } = {}){
+  const t = String(text || '').trim();
+  const ss = typeof window !== 'undefined' ? window.speechSynthesis : null;
+  if(!t || !ss) return false;
+  try{
+    const u = new SpeechSynthesisUtterance(t);
+    const v = bestVoice(lang);
+    if(v) u.voice = v;
+    u.lang = v ? v.lang : (lang === 'en' ? 'en-US' : lang);
+    u.rate = rate;
+    u.onend = () => onend?.();
+    u.onerror = e => onerror?.(e?.error || 'error');
+    if(ss.speaking || ss.pending){ ss.cancel(); setTimeout(() => ss.speak(u), 60); }
+    else ss.speak(u);
+    return true;
+  }catch(err){ return false; }
+}
+
+/** اسمُ الصوت الذي سيُقرأ به — يُعرض تلميحاً ليعرف المعلّمُ ما يسمعه الطالب. */
+export const voiceName = (lang = 'en') => bestVoice(lang)?.name || '';
+
+/** إيقافُ كلّ نطقٍ جارٍ — عند المغادرة أو الإيقاف المؤقّت. */
+export function hush(){
+  try{ window.speechSynthesis?.cancel(); }catch(err){}
+}
 
 /* ═══════════ ⑤ أدوات صغيرة ═══════════ */
 
