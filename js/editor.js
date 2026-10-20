@@ -431,6 +431,12 @@ function routeForm(tool, fromId, r, stations, levels){
   };
 }
 
+/* أيقونةُ البطاقات — صورةٌ لا رسمٌ خطّيّ، كأخواتها منذ `b146`.
+   ⚠️ وليست في `ICONS`: البطاقاتُ ليست `item_kind` (التعليلُ في
+      `student.js` عند نظيرتها). */
+const DECK_IMG = `<img src="img/kind/deck.webp" class="ic-3d" alt=""
+  width="40" height="40" loading="lazy">`;
+
 /* ═══════════ ② دروس المقرَّر ═══════════ */
 
 export async function openCourse(course){
@@ -491,6 +497,15 @@ export async function openCourse(course){
             data-ed-it="${i.id}" data-tip="${escA(i.title)}"
             aria-label="${escA((KINDS[i.kind]||i.kind)+' · '+i.title)}"
             >${ICONS[i.kind]||'•'}</button>`).join("")}
+          ${/* 🆕 b151 · وبطاقاتُ الدرس آخرَ الصفّ كما عند الطالب — وعدُّها
+                من `author_lessons` (أضافه `167`).
+             🎓 **والخبرُ الحقيقيُّ هو غيابُها لا حضورُها:** ٢١٣ درساً من
+                ٢١٥ لها بطاقات، فالدرسُ الخالي يُفضح بأيقونةٍ ناقصةٍ في
+                صفٍّ تعوّدت العينُ أن تراها فيه. */''}
+          ${Number(l.cards||0) ? `<button type="button" class="kic" data-ed-deck="${l.id}"
+            data-tip="${escA(N(l.cards,'بطاقة','بطاقتان','بطاقات','بطاقة'))}"
+            aria-label="${escA('بطاقات الدرس · '+N(l.cards,'بطاقة','بطاقتان','بطاقات','بطاقة'))}"
+            >${DECK_IMG}</button>` : ''}
         </div>` : ''}
       </div>
       <button class="it-b wide" data-it="${l.id}"${course.curate ? ''
@@ -559,6 +574,10 @@ export async function openCourse(course){
         ولا يُمتحَن، وهو بابُ `openQuiz` نفسُه الذي يفتحه الزرُّ بجواره.
      ⚠️ وما لا رابطَ له (نصٌّ مكتوبٌ في `body`) يفتح شاشةَ المصادر، فهناك
         يُقرأ ويُحرَّر — ولا تُفتح نافذةٌ على `undefined`. */
+  app.querySelectorAll("[data-ed-deck]").forEach(el => el.onclick = e => {
+    e.stopPropagation();
+    openCards(course, el.dataset.edDeck);        // مُرشَّحةً بهذا الدرس
+  });
   app.querySelectorAll("[data-ed-it]").forEach(el => el.onclick = e => {
     e.stopPropagation();
     const l = lessons.find(x => (x.items||[]).some(i => String(i.id) === el.dataset.edIt));

@@ -101,7 +101,13 @@ function visible(){
 
 /* ═══════════ الدخول ═══════════ */
 
-export async function openCards(course){
+/* 🆕 b151 · والوسيطُ الثاني **درسٌ يُرشَّح به عند الفتح** — يأتي من أيقونة
+   البطاقات على صفّ الدرس في المحرّر (`167`). ولم يُبنَ له مرشّحٌ جديد:
+   `F.lesson` قائمٌ في شريط المصفاة منذ كُتب، وهذا يُمهره لا غير.
+   🔑 **والمِصفاةُ تُعرَض لا تُخفى:** المنسدلةُ تُظهر اسمَ الدرس المنتقى
+      و«كلُّ الدروس» على بعد نقرة — فمن جاء من درسٍ يعرف لِمَ يرى بعضاً،
+      ويخرج منه بلا أن يتعلّم مساراً جديداً. */
+export async function openCards(course, lessonId){
   ctx = { course, lessons: [] };
   nav('editor'); setWide(true);
   head("البطاقات", course.title || '');
@@ -128,7 +134,7 @@ export async function openCards(course){
         فراغٍ أدناه · والحذفُ وهي فارغةٌ في شاشة البطاقات · وعدُّ
         مجموعات الطلاب سطرٌ في ذيلها. */
   const off = D.find(d => !d.mine);
-  off ? openDeck(off) : renderNoDeck();
+  off ? openDeck(off, lessonId) : renderNoDeck();
 }
 
 
@@ -195,9 +201,12 @@ function deckForm(d){
 
 /* ═══════════ ③ بطاقات المجموعة ═══════════ */
 
-async function openDeck(d){
+async function openDeck(d, lessonId){
   cur = d; TAG = false; SEL.clear();
-  F = { q: '', lesson: '', strand: '', flag: '', sort: 'pos' };
+  /* والدرسُ نصٌّ لا رقم: المقارنةُ في `pass()` و`sel()` كلتاهما
+     `String(id) === F.lesson` — فرقمٌ هنا يُسقط المصفاة صامتاً. */
+  F = { q: '', lesson: lessonId ? String(lessonId) : '',
+        strand: '', flag: '', sort: 'pos' };
   head("البطاقات", d.title);
   app.innerHTML = `<div class="status">جار التحميل…</div>`;
   const { data, error } = await api.deckCards(d.id);
