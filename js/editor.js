@@ -10,7 +10,8 @@
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
 import { S } from './state.js';
-import { app, head, toast, esc, AR, errBox, nav, setWide, scrollTop, N } from './ui.js';
+import { app, head, toast, esc, escA, AR, errBox, nav, setWide, scrollTop, N,
+         ICONS, KINDS } from './ui.js';
 import { openQuiz } from './editor_quiz.js';
 import { openItems } from './editor_items.js';
 import { openCards } from './editor_cards.js';
@@ -462,14 +463,35 @@ export async function openCourse(course){
   const row = l => `<div class="ed-row${course.curate ? '' : ' ro'}" data-l="${l.id}">
       <div style="flex:1;min-width:0">
         <div class="ed-t">${esc(l.title)}</div>
+        ${/* 🔓 b150 · وسقطت شارتان كانتا تقولان ما يقوله الزرّان بجوارهما —
+              **قرارُ صاحب المنصّة**: «N مصدراً» يقولها زرُّ «📦 المصادر (N)»،
+              و«📝 اختبار» يقولها زرُّ «📝 الاختبار». واحدةٌ تُقرأ وأخرى
+              تُنقَر والمعنى واحد — فبقي القابلُ للنقر وحدَه.
+           🔑 **ولا معلومةَ ضاعت:** تحذيرُ «بلا اختبار» يحمله الزرُّ نفسُه
+              بصنف `warn` ونصِّ «⚠️ إضافة اختبار». */''}
         <div class="ed-m">
           <span class="chip ${l.published ? 'g' : ''}">${l.published ? '✅ منشور' : '✏️ مسودّة'}</span>
-          <span class="chip">${AR(l.official_items)} مصدراً</span>
           ${l.extras ? `<span class="chip">+${AR(l.extras)} إضافي</span>` : ''}
-          <span class="chip ${l.has_quiz ? 'g' : ''}">${l.has_quiz ? '📝 اختبار' : '⚠️ بلا اختبار'}</span>
           ${l.strand ? `<span class="chip">🌿 ${esc(l.strand.name)}</span>`
             : (strands.length ? `<span class="chip w">🌿 بلا فرع</span>` : '')}
         </div>
+        ${/* 🆕 b150 · وحلّ محلّهما صفُّ مصادرِ الدرس — أيقوناتٌ تُنقَر فتفتح
+              مصدرَها، واسمُها عند التمرير. (أضافها `166` إلى `author_lessons`،
+              وكانت تردّ أعداداً فقط.)
+           🎓 **وقيمتُها للمعلّم أكبرُ من اختصار نقرة: يرى غذاءَ الدرس بنظرة.**
+              درسٌ كلُّه ملفّاتٌ للقراءة بلا مرئيٍّ ولا محاكاة يُفضح على
+              البطاقة بلا أن يُفتح — وذاك عائقُ محتوًى يُرى قبل أن يُسأل عنه.
+           ⚠️ والصفُّ يُحذف كلُّه حين لا مصدر: صفٌّ فارغٌ يُزيد ارتفاعَ كلّ
+              سطرٍ بلا خبر. */''}
+        ${(l.items||[]).length ? `<div class="kico ed-kico">
+          ${[...l.items].sort((a,b) => (a.kind==='quiz') - (b.kind==='quiz'))
+            .map((i,x,arr) => `${i.kind==='quiz' && x && arr[x-1].kind!=='quiz'
+                                 ? '<i class="kico-sep"></i>' : ''}
+            <button type="button" class="kic${i.kind==='quiz'?' q':''}"
+            data-ed-it="${i.id}" data-tip="${escA(i.title)}"
+            aria-label="${escA((KINDS[i.kind]||i.kind)+' · '+i.title)}"
+            >${ICONS[i.kind]||'•'}</button>`).join("")}
+        </div>` : ''}
       </div>
       <button class="it-b wide" data-it="${l.id}"${course.curate ? ''
         : ' title="اضغط هنا لإضافة مصدر جديد"'}>📦 المصادر (${AR(l.official_items)})</button>
@@ -531,6 +553,20 @@ export async function openCourse(course){
   app.querySelectorAll("[data-it]").forEach(el => el.onclick = e => {
     e.stopPropagation();
     openItems(course, lessons.find(x => String(x.id) === el.dataset.it));
+  });
+  /* 🆕 b150 · أيقونةُ المصدر على صفّ المعلّم تفتح مصدرَها.
+     🔑 **والاختبارُ يفتح شاشةَ أسئلته لا يبدأ الاختبار** — فالمعلّم يؤلّف
+        ولا يُمتحَن، وهو بابُ `openQuiz` نفسُه الذي يفتحه الزرُّ بجواره.
+     ⚠️ وما لا رابطَ له (نصٌّ مكتوبٌ في `body`) يفتح شاشةَ المصادر، فهناك
+        يُقرأ ويُحرَّر — ولا تُفتح نافذةٌ على `undefined`. */
+  app.querySelectorAll("[data-ed-it]").forEach(el => el.onclick = e => {
+    e.stopPropagation();
+    const l = lessons.find(x => (x.items||[]).some(i => String(i.id) === el.dataset.edIt));
+    const i = l && (l.items||[]).find(x => String(x.id) === el.dataset.edIt);
+    if(!i) return;
+    if(i.kind === 'quiz') return openQuiz(course, l);
+    if(i.url) return window.open(i.url, '_blank', 'noopener');
+    openItems(course, l);
   });
   scrollTop();
 }
