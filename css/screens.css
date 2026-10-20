@@ -301,6 +301,22 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
 /* المستوى وسمُ هوية لا حكمَ تقدّم ⇒ يبقى accent حيث لم تُبلغ الخضرة */
 .st-new .lvl-tag,.st-active .lvl-tag,.st-mid .lvl-tag{background:var(--accent-fill);color:var(--accent)}
 
+/* ── بطاقة المادة ثلاثية الأبعاد (عينة العلوم المتكاملة b146) ── */
+.subj.is-3d{border-radius:20px;padding:18px 12px 15px;box-shadow:0 4px 16px rgba(0,0,0,.04)}
+.subj.is-3d:hover{transform:translateY(-4px);border-color:var(--accent);
+  box-shadow:0 10px 24px rgba(29,78,216,.12)}
+.sh-wrap.is-3d{width:62px;height:62px;display:flex;align-items:center;justify-content:center;margin-bottom:4px}
+.sh-img-3d{width:58px;height:58px;object-fit:contain;filter:drop-shadow(0 4px 8px rgba(0,0,0,.10));
+  transition:transform .22s cubic-bezier(.34,1.4,.64,1)}
+.subj.is-3d:hover .sh-img-3d{transform:scale(1.10) translateY(-2px)}
+.subj.is-3d .subj-t{font-size:1.02rem;line-height:1.4;margin-bottom:6px}
+.subj-act-pill{margin-top:auto;display:inline-flex;align-items:center;gap:6px;background:var(--fill-soft);
+  border:1px solid var(--line);padding:5px 10px;border-radius:999px;font-family:'Almarai',sans-serif;
+  font-size:.76rem;font-weight:700;color:var(--text-muted);transition:all .2s ease;width:100%;justify-content:center}
+.subj.is-3d:hover .subj-act-pill{background:var(--accent-fill);border-color:var(--accent-line);color:var(--accent)}
+.subj-arrow{font-size:.88rem;transition:transform .2s ease}
+.subj.is-3d:hover .subj-arrow{transform:translateX(-3px)}
+
 /* المكتملة تنكمش سطراً أفقياً — تحتفظ بنتيجتها ولا تُزاحم الحيّ */
 .subj.mini{flex-direction:row;text-align:start;justify-content:space-between;
   align-items:center;gap:12px;padding:11px 14px;border-radius:13px;opacity:.6}

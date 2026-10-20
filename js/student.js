@@ -143,10 +143,21 @@ export async function loadList(){
      داخل كلّ مجموعة لبدأت الثلاثُ بالدائرة نفسها في شاشةٍ واحدة. */
   const shapeOf = x => shape(S.subjects.indexOf(x));
 
-  const face = x => `<div class="sh-wrap">${shapeOf(x)}<span
+  /* مادة العلوم المتكاملة عينة تجريبية للشعار ثلاثي الأبعاد */
+  const SUBJ_3D = {
+    'العلوم المتكاملة': 'img/subj_science.webp'
+  };
+
+  const face = (x, isPast = false, isMini = false) => {
+    if (!isPast && !isMini && SUBJ_3D[x.name]) {
+      return `<div class="sh-wrap is-3d"><img src="${SUBJ_3D[x.name]}" class="sh-img-3d" alt="${esc(x.name)}"></div>`;
+    }
+    return `<div class="sh-wrap">${shapeOf(x)}<span
       class="sh-icon">${esc(x.icon || '')}</span></div>`;
+  };
 
   const card = (x, isPast) => {
+    const is3D  = !isPast && !!SUBJ_3D[x.name];
     const empty = !x.needs_placement && bulk(x) === 0;
     const pct   = x.lessons_total ? Math.round(x.lessons_done / x.lessons_total * 100) : 0;
     /* نصٌّ قصير: البطاقة ١٥٠px، وجملةٌ كاملة تلتفّ ثلاثة أسطر فتتفاوت
@@ -162,7 +173,7 @@ export async function loadList(){
        وبهتاناً وشكلاً رمادياً و«قيد الإعداد» — خمسُ إشاراتٍ لمعنىً
        واحد في ١٥٠px. والإفراطُ في الإشارة يُدرِّب على تجاهلها. */
     const tags = [
-      x.my_level && !isPast ? `<span class="lvl-tag">${esc(x.my_level)}</span>` : '',
+      (!is3D && x.my_level && !isPast) ? `<span class="lvl-tag">${esc(x.my_level)}</span>` : '',
       x.elective            ? '<span class="badge lock">اختيارية</span>'        : ''
     ].filter(Boolean).join('');
 
@@ -172,15 +183,17 @@ export async function loadList(){
        وموضعُه الطبيعيّ شاشةُ المادة نفسها.
        ⚠️ والفارغة بلا role ولا tabindex: ليست زرّاً فلا تُعلن زرّاً،
           ولا تُلتقط بالتنقّل بلوحة المفاتيح إلى بابٍ لا يُفتح. */
-    return `<div class="subj ${subjectState(x, isPast)} ${empty ? 'soon' : ''}"
+    return `<div class="subj ${subjectState(x, isPast)} ${empty ? 'soon' : ''} ${is3D ? 'is-3d' : ''}"
                  data-i="${x.id}" ${empty ? '' : 'role="button" tabindex="0"'}
                  ${x.description ? `title="${esc(x.description)}"` : ''}>
-      ${face(x)}
+      ${face(x, isPast)}
       <div class="subj-t" dir="auto"><bdi>${esc(x.name)}</bdi></div>
       ${tags ? `<div class="subj-b">${tags}</div>` : ''}
-      <div class="subj-m">${meta}</div>
-      ${(x.needs_placement || empty || isPast) ? '' :
-        `<div class="pbar"><div class="pfill" style="width:${pct}%"></div></div>`}
+      ${is3D && pct === 0 && !empty && !x.needs_placement ?
+        `<div class="subj-act-pill">${AR(x.lessons_total)} ${NW(x.lessons_total,'درس','درسان','دروس','درساً')} · ابدأ الآن <span class="subj-arrow">←</span></div>` :
+        `<div class="subj-m">${meta}</div>
+         ${(x.needs_placement || empty || isPast) ? '' :
+           `<div class="pbar"><div class="pfill" style="width:${pct}%"></div></div>`}`}
     </div>`;
   };
 
