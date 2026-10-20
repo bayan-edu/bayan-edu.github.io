@@ -143,9 +143,17 @@ export async function loadList(){
      داخل كلّ مجموعة لبدأت الثلاثُ بالدائرة نفسها في شاشةٍ واحدة. */
   const shapeOf = x => shape(S.subjects.indexOf(x));
 
-  /* مادة العلوم المتكاملة عينة تجريبية للشعار ثلاثي الأبعاد */
+  /* شعارات المواد والمهارات ثلاثية الأبعاد */
   const SUBJ_3D = {
-    'العلوم المتكاملة': 'img/subj_science.webp'
+    'العلوم المتكاملة':       'img/subj_science.webp',
+    'اللغة العربية':         'img/subj_arabic.webp',
+    'English':                 'img/subj_english.webp',
+    'الرياضيات':               'img/subj_math.webp',
+    'التاريخ':                 'img/subj_history.webp',
+    'الفلسفة والمنطق':         'img/subj_philosophy.webp',
+    'Reading Comprehension':   'img/subj_reading.webp',
+    'IELTS':                   'img/subj_ielts.webp',
+    'كيف أذاكر؟':              'img/subj_study.webp'
   };
 
   const face = (x, isPast = false, isMini = false) => {
@@ -191,6 +199,8 @@ export async function loadList(){
       ${tags ? `<div class="subj-b">${tags}</div>` : ''}
       ${is3D && pct === 0 && !empty && !x.needs_placement ?
         `<div class="subj-act-pill">${AR(x.lessons_total)} ${NW(x.lessons_total,'درس','درسان','دروس','درساً')} · ابدأ الآن <span class="subj-arrow">←</span></div>` :
+      is3D && x.needs_placement ?
+        `<div class="subj-act-pill">تحديد المستوى <span class="subj-arrow">←</span></div>` :
         `<div class="subj-m">${meta}</div>
          ${(x.needs_placement || empty || isPast) ? '' :
            `<div class="pbar"><div class="pfill" style="width:${pct}%"></div></div>`}`}
