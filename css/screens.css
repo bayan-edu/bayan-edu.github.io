@@ -382,14 +382,42 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
    🔑 والظلُّ هنا لا في الصورة: أُزيل انعكاسُ التوليد عند التفريغ، فيُرسم
       بـdrop-shadow ليتبع السِمتين (الصورةُ المخبوزُ فيها ظلٌّ أبيضُ
       تُقرأ لطخةً على الورق الداكن). */
-.kico{display:flex;gap:9px;flex-wrap:wrap;margin-top:11px}
-.kic{position:relative;display:block;width:28px;height:28px;border-radius:9px;
-  cursor:default;outline-offset:3px}
+.kico{display:flex;gap:9px;flex-wrap:wrap;margin-top:11px;align-items:center}
+/* 🆕 b149 · صارت زرّاً يفتح مصدرَه. و`appearance:none` وتصفيرُ الحشو لازمان:
+   زرُّ المتصفّح يأتي بخلفيةٍ وحدٍّ وحشوٍ تكسر مربّعَ الـ٢٨. */
+.kic{position:relative;display:block;width:28px;height:28px;padding:0;border:0;
+  background:none;appearance:none;border-radius:9px;cursor:pointer;outline-offset:3px;
+  font:inherit;color:inherit}
 .kic .ic-3d{width:28px;height:28px;display:block;
   filter:drop-shadow(0 2px 4px rgba(10,15,26,.16))}
 .kic:hover .ic-3d,.kic:focus-visible .ic-3d{
   transform:translateY(-3px) scale(1.1);
   filter:drop-shadow(0 7px 13px rgba(10,15,26,.26))}
+
+/* ── الاختبارُ مفصولٌ عن المصادر (b149 · قرارُ صاحب المنصّة) ──
+   🔑 والقسمةُ قسمةُ المنصّة نفسِها لا زخرفٌ: ما يُدرَس، وما يَحكم.
+   🔑 **وعلامتان لا واحدة** — الموضعُ والحلقة: الموضعُ وحده يسقط حين
+      يلتفّ السطرُ في الشاشة الضيّقة، فيعود الاختبارُ وسطَ المصادر. */
+.kico-sep{flex:0 0 1px;align-self:stretch;min-height:24px;background:var(--line);
+  margin-inline-start:auto;margin-inline-end:3px}
+/* ⚠️ ولا `z-index:-1` هنا: `.kic` موضعُها `relative` بلا سياقِ تراصّ،
+   فالسالبُ ينزل خلف خلفيّة البطاقة نفسِها فتختفي الحلقة. ⇒ الحلقةُ صفرٌ
+   والأيقونةُ واحد، وكلتاهما داخل الزرّ. */
+.kic.q::before{content:"";position:absolute;inset:-4px;border-radius:12px;
+  border:1.5px solid var(--accent-line);background:var(--accent-soft);z-index:0}
+.kic .ic-3d{position:relative;z-index:1}
+
+/* 🔓 b149 · وسقطت حلقةُ «أُنجز» عن الأيقونة، وكانت خضراء بـ`--ok-edge`.
+   🔴 **والسببُ قانونُ الألوان في رأس `base.css` لا الذوق:** الأخضرُ يقول
+      «أصبتَ» وحدَها، و«اطّلعتَ على المصدر» إنجازٌ لا حكم — وكلُّ أخضرَ
+      خارج الحكم يُضعف الأخضرَ حيث يُحكَم به فعلاً.
+   🔑 **ولا بديلَ محايدٌ يستحقّ:** البطاقةُ تحمل «أُنجز ٨٢٪» سلفاً، وشاشةُ
+      الدرس تحمل `✔` لكلّ مصدر. وثالثةٌ على الأيقونة تُزاحم رسمَها
+      وتُكرّر ما قيل مرّتين. (أُضيفت ثمّ قِيست ثمّ رُفعت — والفجوة تُرى.)
+
+/* ⚠️ وتلميحُ الاختبار يُسنَد إلى الطرف المقابل: هو آخرُ السطر، والإسنادُ
+   العامّ يجعله يمتدّ خارج البطاقة. */
+.kic.q::after{inset-inline-start:auto;inset-inline-end:0}
 
 /* الاسمُ عند التمرير — ويظهر بالتركيز أيضاً (♿).
    🔴 **تحت الأيقونة لا فوقها.** جُرّب فوقها فغطّى عنوانَ الدرس — وصفُّ

@@ -498,14 +498,27 @@ export async function loadLessons(subj){
             صفٌّ للمصادر، وبطاقةٌ مستقلّةٌ أسفله.
          🔑 وعدُّها يصل مع الدرس من `list_lessons` (أضافه `165`) — فلا
             نداءَ شبكةٍ ثانٍ لرسم أيقونة. */''}
+      ${/* 🆕 b149 · والأيقونةُ صارت **تفتح مصدرَها** — طلبُ صاحب المنصّة.
+            ⇒ `<button>` لا `<span tabindex>`: الزرُّ يعمل بـEnter وSpace
+            بحكم نوعه، ويُعلن نفسَه زرّاً للقارئ الشاشيّ. وما كان وسماً
+            يُقرأ صار فعلاً يقع، والوسمُ لا يُنقَر.
+         🔑 **والاختبارُ مفصولٌ عن المصادر** (قرارُ صاحب المنصّة): يُدفَع
+            إلى طرف السطر بفاصلٍ رفيع. والقسمةُ ليست شكلاً — هي قسمةُ
+            المنصّة نفسِها: ما يُدرَس، وما يَحكم. و`.q` تحمل حلقةً لطيفة
+            فيبقى مميَّزاً ولو التفّ السطرُ فسقط ترتيبُه. */''}
       <div class="kico">
-        ${(l.items||[]).map(i=>`<span class="kic${i.is_graded?' g':''}" tabindex="0"
+        ${(l.items||[]).filter(i=>i.kind!=='quiz').map(i=>`<button type="button"
+          class="kic" data-it="${i.id}"
           data-tip="${escA(i.title)}" aria-label="${escA((KINDS[i.kind]||i.kind)+' · '+i.title)}"
-          >${ICONS[i.kind]||'•'}</span>`).join("")}
-        ${Number(l.cards||0) ? `<span class="kic" tabindex="0"
+          >${ICONS[i.kind]||'•'}</button>`).join("")}
+        ${Number(l.cards||0) ? `<button type="button" class="kic" data-deck="1"
           data-tip="${escA(N(l.cards,'بطاقة','بطاقتان','بطاقات','بطاقة')+' للاسترجاع')}"
           aria-label="${escA('بطاقات استرجاع · '+N(l.cards,'بطاقة','بطاقتان','بطاقات','بطاقة'))}"
-          >${DECK_IMG}</span>` : ''}
+          >${DECK_IMG}</button>` : ''}
+        ${(l.items||[]).filter(i=>i.kind==='quiz').map(i=>`<i class="kico-sep"></i>
+          <button type="button" class="kic q" data-it="${i.id}"
+          data-tip="${escA(i.title)}" aria-label="${escA('اختبار تشخيصي · '+i.title)}"
+          >${ICONS[i.kind]||'•'}</button>`).join("")}
       </div>
       ${l.locked?`<div class="lockmsg">${esc(l.reason||'')}</div>`:''}
     </div>`;
@@ -560,6 +573,51 @@ export async function loadLessons(subj){
       const l = S.lessons.find(v=>String(v.id)===el.dataset.i);
       if(l.locked){ toast(l.reason||"هذا الدرس غير متاح بعد"); return; }
       openLesson(l);
+    });
+
+    /* 🆕 b149 · أيقونةُ المصدر تفتح مصدرَها من البطاقة — بثلاثة طرقٍ لا طريق،
+       لأنّ الأنماط ثلاثةُ أصناف لا صنفٌ واحد (قُرئ `openItem` قبل البناء):
+         ① ما يُفتح في تبويب ⇒ **هنا مباشرةً**، ولا يُنادى `openItem`:
+            ذيلُها `openLesson(S.lesson)` و`S.lesson` فارغةٌ على هذه الشاشة
+            ⇒ شاشةٌ مكسورة. والنقرةُ من قائمةٍ لا تُغيّر مكانَ قارئها، فتُعلَّم
+            الأيقونةُ منجَزةً في موضعها ويبقى الطالبُ حيث كان.
+         ② صوتٌ · تسجيلٌ · محاكاة ⇒ تُحقَن في `#slot-<id>` **ولا يُرسم إلا
+            في شاشة الدرس** ⇒ تُفتح الشاشةُ ثمّ يُشغَّل المصدرُ فيها ويُمرَّر
+            إليه. والوعدُ محفوظ: الأيقونةُ تُوصل إلى المصدر دائماً.
+         ③ الاختبارُ ⇒ يبدأ مباشرةً (قرارُ صاحب المنصّة)، و`S.lesson` تُضبط
+            قبله فترجع «عودة» إلى درسه لا إلى فراغ.
+       ⛔ و`stopPropagation` في الثلاثة: البطاقةُ نفسُها تفتح الدرس. */
+    list.querySelectorAll(".kic").forEach(btn => btn.onclick = async e => {
+      e.stopPropagation();
+      const card = btn.closest(".lsn");
+      const l = S.lessons.find(v => String(v.id) === card.dataset.i);
+      if(!l) return;
+      if(l.locked){ toast(l.reason || "هذا الدرس غير متاح بعد"); return; }
+
+      if(btn.dataset.deck){
+        S.lesson = l;
+        return openLessonDeck({ id: S.subj.id, name: S.subj.name }, l,
+                              () => loadLessons(S.subj));
+      }
+
+      const i = (l.items || []).find(x => String(x.id) === btn.dataset.it);
+      if(!i) return;
+
+      if(i.kind === 'quiz'){ S.lesson = l; return openItem(i); }
+
+      if(canEmbed(i) || isSim(i)){
+        openLesson(l);
+        openItem(i);
+        document.querySelector(`.itm[data-i="${i.id}"]`)
+                ?.scrollIntoView({ behavior:'smooth', block:'center' });
+        return;
+      }
+
+      if(!i.url){ toast("هذا المصدر غير متاح بعد"); return; }
+      window.open(i.url, '_blank', 'noopener');
+      await api.markItemCompleted(i.id);
+      i.status = 'completed';
+      toast("سُجّل اطّلاعك على المصدر");
     });
   }
 
