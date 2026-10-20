@@ -787,11 +787,27 @@ async function openText(i){
   const back = () => l ? openLesson(l) : loadLessons(S.subj);
   document.getElementById("bk").onclick = back;
 
+  /* 🆕 b156 · **شبكةُ أمان:** أيُّ خطأٍ بعد الهيكل يُعرض رسالةً بنسخة
+     الواجهة — لا هيكلاً رمادياً يدور إلى الأبد. وهو عَرَضُ b155 بعينه:
+     خطأٌ واحدٌ صامت، والطالبُ ينتظر ما لا يأتي ولا يعرف ما يقول لمعلّمه. */
+  try { await textBook(i, l, back); }
+  catch(e){
+    console.error(e);
+    const host = document.getElementById("book");
+    if(host) host.innerHTML = errBox(e, 'فتح الكتاب');
+  }
+}
+
+async function textBook(i, l, back){
   /* 🆕 b153 · ومفرداتُ الدرس معه — بنداءٍ موازٍ لا تالٍ. وفشلُها لا يحجب
-     الكتاب: نصٌّ بلا كلماتٍ ملوّنة خيرٌ من نصٍّ لا يُفتح. */
+     الكتاب: نصٌّ بلا كلماتٍ ملوّنة خيرٌ من نصٍّ لا يُفتح.
+     ⚠️ b156 · **`.then(نجاح، فشل)` لا `.catch`:** مُنشئُ طلبات Supabase
+     يملك `then` وحدها — `.catch` عليه «ليس دالّة»، فيسقط `openText` كلُّه
+     قبل الكتاب (عطلُ b155). والبديلُ في الفحص كان يُرجع Promise حقيقياً
+     فأخفاه؛ وصار الآن يحاكي المُنشئ تماماً. */
   const [{ data, error }, cardsRes] = await Promise.all([
     api.itemText(i.id),
-    l ? api.lessonCards(l.id).catch(e => ({ error: e })) : Promise.resolve({ data: [] })
+    l ? api.lessonCards(l.id).then(r => r, e => ({ error: e })) : Promise.resolve({ data: [] })
   ]);
   const host = document.getElementById("book");
   if(!host) return;                                  // غادر قبل وصول النصّ
