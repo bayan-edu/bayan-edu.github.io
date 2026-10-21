@@ -102,7 +102,7 @@ function render(){
 }
 
 function wire(){
-  document.getElementById('bk').onclick = () => nav('subjects') || history.back();
+  document.getElementById('bk').onclick = () => nav('avatar') || history.back();
 
   app.querySelectorAll('.av-opts').forEach(box => {
     const ax = box.dataset.ax;
@@ -147,13 +147,16 @@ function wire(){
        — **فيظنّ صاحبُها أنّ الحفظ لم يقع.** */
     Object.assign(S.prof, D);
     toast('حُفظت صورتك');
-    nav('subjects');
+    nav('avatar');
     render();
   };
 }
 
 export async function openAvatarEdit(){
-  nav('subjects');
+  /* 🆕 b166 · 'avatar' لا 'subjects' في المواضع الثلاثة: nav() تكتب العنوانَ
+     من القسم (ui.js · PATHS). وزرُّ الرجوع خاصّةً: لو كتبت /subjects ثمّ
+     رجعت `history.back()` لعادت إلى /avatar نفسِها فرسمتها ثانيةً. */
+  nav('avatar');
   /* 🔓 b107 · بلا وصفٍ تحت العنوان: «أربعة محاور» **عدٌّ لما تحت العين**،
      و«المعاينة حيّة» وعدٌ تفي به الشاشةُ نفسُها في أوّل نقرة. وسطرٌ
      يشرح ما يُرى يُقرأ مرّةً ثمّ يصير حشواً في كلّ فتحةٍ بعدها. */

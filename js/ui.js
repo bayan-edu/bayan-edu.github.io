@@ -13,7 +13,7 @@ import { renderMark, whenReady as avatarReady } from './avatar.js';
    والدمجُ مرّ بلا تعارضٍ **لأنّ الجانبين كتبا السطرَ نفسَه حرفاً** — وهو
    أخبثُ ما في التصادم: لا يشتكي. ⇒ هذه ترفعه، **فالختمُ يجيب «أيُّ شيفرةٍ
    يشغّلها المتصفّح»، وجوابان لسؤالٍ واحدٍ لا جواب.** */
-export const BUILD = "b165";
+export const BUILD = "b166";
 
 /* ── مراسي الصفحة ── */
 export const app = document.getElementById("app");
@@ -490,6 +490,79 @@ export function registerRoutes(map){ Object.assign(ROUTES, map); }
 export function goRoute(key){
   const go = ROUTES[key];
   if(go) go();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   العنوان — لكلّ قسمٍ عنوانُه  (b166 · الخطوة ٢أ)
+
+   كانت المنصّةُ كلُّها `bayanclass.com/`: زرُّ الرجوع يُخرج منها ولو من
+   شاشة التشخيص · والتحديثُ يُعيد إلى البداية · ولا رابطَ لقسمٍ يُرسَل.
+
+   🔑 **والعنوانُ يُكتب في nav() لا في الشاشات** — الممرُّ الذي تعبره كلُّ
+      شاشةٍ معلنةً قسمَها، كما تعبر head() معلنةً عنوانَها. فمن بلغ
+      «تذكّرها» من الدرج أو من البحث أو من زرٍّ داخل شاشة صار عنوانُه
+      /cards في كلّها — ولا سطرَ يُنسى في شاشةٍ تُكتب بعد سنة.
+      ⚠️ فالقسمُ الذي تمرّره الشاشةُ إلى nav() صار يعني عنوانَها لا تظليلَ
+         الدرج وحده: ملفّي وعلامتي كانتا تمرّران 'subjects' فصارتا
+         'profile' و'avatar' — وإلّا كتبتا /subjects فوق شاشتيهما.
+   📌 **القسمُ وحده في هذه الخطوة:** الدرسُ يحمل /subjects حتى ٢ب.
+   📌 **وأوّلُ شاشةٍ تستبدل العنوانَ ولا تضيفه:** «/» يصير /subjects في
+      موضعه. ولو أُضيف لعاد الرجوعُ من /subjects إلى «/» فرسمها ثانيةً —
+      زرٌّ يدور ولا يُرجِع.
+   ⚠️ **والعناوينُ مقطعٌ واحد:** index.html يطلب css/ وjs/ بمساراتٍ نسبيّة،
+      فعنوانٌ من مقطعين (/a/b) يكسرها. ⇒ ٢ب تبدأ بـ`<base href="/">`.
+   ⚠️ **وجلسةُ التدرّب (‎#/t/…‎) لا تُمسّ:** زائرٌ بلا حساب، وعنوانُها رابطُها.
+   📌 والعناوينُ بالإنجليزية (قرارُ المالك ٢١ أكتوبر): العربيةُ تُلصَق
+      في واتساب رموزاً (‎%D8%AF…‎). */
+const PATHS = {
+  subjects: '/subjects',  cards: '/cards',       perf: '/performance',
+  feedback: '/feedback',  chat: '/messages',
+  grade: '/grading',      students: '/students', inbox: '/inbox',
+  mySubjects: '/my-subjects', editor: '/editor', console: '/admin',
+  profile: '/profile',    avatar: '/avatar',
+};
+const KEY_OF = Object.fromEntries(Object.entries(PATHS).map(([k, p]) => [p, k]));
+/* إعدادُ حسابٍ لا وجهةُ عمل (b107) — فلكلّ دور، ولا مقعدَ لها في الدرج */
+const OPEN_TO_ALL = ['profile', 'avatar'];
+
+/* القسمُ الذي يسمّيه العنوانُ الحاضر — و null لـ«/» ولما لا يُعرف */
+export const addressKey = () => KEY_OF[location.pathname.replace(/\/+$/, '')] || null;
+
+/* أيبلغه هذا الدورُ بعنوان؟ — والدرجُ نفسُه يجيب: ما ليس في وجهاته لا يُفتح.
+   🔒 **وليس حارساً** — RLS هي الحارس. هذا ألّا يرى الطالبُ شاشةَ معلّمٍ خاوية. */
+export const keyAllowed = key => !!key &&
+  (OPEN_TO_ALL.includes(key) || destsOf().some(([k]) => k === key));
+
+let here = location.pathname;          // آخرُ عنوانٍ رُسمت عليه شاشة — يُردّ إليه إن مُنع الرجوع
+
+function writeAddress(key){
+  const path = PATHS[key];
+  if(!path || location.pathname === path || /^#\/t\//.test(location.hash)) return;
+  history[addressKey() ? 'pushState' : 'replaceState'](null, '', path);
+  here = path;
+}
+
+/* الرجوعُ والتقدّم — يُستعاد القسمُ من العنوان، ويُنادى مرّةً من start().
+   ⚠️ **والاختبارُ الجاري لا يُغادَر بالرجوع.** شريطُه يحلّ محلّ الدرج فلا
+      مخرجَ منه داخل المنصّة، وذاك مقصود. **وساعتُه (`S.tick`) تعدّ وحدها
+      وتُسلّم عند الصفر** — فلو غادرها الطالبُ بالرجوع لسلّمت إجاباته وهو
+      في شاشةٍ أخرى، ورُسمت النتيجةُ فوقها. ⇒ يُردّ العنوانُ ويُنبَّه.
+      🔑 والدليلُ على الاختبار **ما في الشريط فعلاً** (`.timerbar`) لا علمٌ
+         يُرفع ويُنسى إنزالُه: `finish()` تُفرغ الشريط بيدها.
+      🟡 ومن غادر الموقعَ كلَّه بالرجوع لا تبلغه هذه — حارسُ ذاك ٢ج.
+   📌 و`onHome` من auth.js: «/» وما لا يفتحه الدورُ يُعادان إلى boot(). */
+export function watchAddress(onHome){
+  addEventListener('popstate', () => {
+    if(bar.querySelector('.timerbar')){
+      history.pushState(null, '', here);
+      toast('اختبارك ما زال جارياً — الرجوع بعد تسليمه');
+      return;
+    }
+    if(!S.user) return;                  // البوّابة: لا قسمَ يُستعاد لمن لم يدخل
+    here = location.pathname;
+    const key = addressKey();
+    if(keyAllowed(key)) goRoute(key); else onHome();
+  });
 }
 
 const DEST = {
@@ -1378,6 +1451,7 @@ function wire(root){
 
 // active = مفتاح الوجهة الحالية · النقر على النشط يُعيد التحميل
 export function nav(active){
+  writeAddress(active);      // 🆕 b166 · العنوانُ يتبع القسم — التعليلُ عند PATHS
   setWide(false);
   bar.innerHTML =`<div class="topbar">
     <button class="iconbtn" id="menuBtn" aria-label="التنقّل"

@@ -9,7 +9,8 @@ import * as api from './api.js';
 import { S } from './state.js';
 import { app, bar, head, toast, esc, AR, errBox, nav, registerRoutes,
          registerCounts, registerSearch, registerGram, refreshCounts,
-         mathBoot, scrollTop, N } from './ui.js';
+         mathBoot, scrollTop, N,
+         goRoute, addressKey, keyAllowed, watchAddress } from './ui.js';
 import { loadList, loadFeedback, loadChat, openSearchHit } from './student.js';
 import { loadTeacher, loadInbox, loadMySubjects } from './teacher.js';
 import { openEditor } from './editor.js';
@@ -601,6 +602,20 @@ export function translate(m){
 
 /* ═══════════ ② الإقلاع ═══════════ */
 
+/* 🆕 b166 · بيتُ كلّ دورٍ يمرّ من هنا: من جاء بعنوان قسمٍ يفتحه دورُه بلغه،
+   وإلّا فبيتُ دوره — **والعنوانُ يُردّ إلى «/»** فلا يبقى اسمُ قسمٍ فوق
+   شاشةِ غيره (طالبٌ على /grading مثلاً). ثمّ nav() تكتب عنوانَ البيت.
+   🔑 **ولا يُلمَس مسلكُ التهيئة قبله:** من لم يختر صفَّه أو لم يؤكّد بريدَه
+      يبلغ شاشتَها أوّلاً، والعنوانُ ينتظره — فيصل إلى قسمه بعدها.
+   📌 والدخولُ بـGoogle يعود إلى العنوان نفسه (`redirectTo` في api.js
+      يُبنى من `location.pathname`)، فالرابطُ يعبر البوّابة. */
+function landing(home){
+  const key = addressKey();
+  if(keyAllowed(key)) return goRoute(key);
+  if(location.pathname !== '/') history.replaceState(null, '', '/');
+  return home();
+}
+
 export async function boot(){
   const { data:{ user } } = await api.currentUser();
   if(!user){ renderGate(); return; }
@@ -647,7 +662,7 @@ export async function boot(){
   /* 🔓 b90 · pending_teacher لم يعد يُنتَج: register_teacher تمنح الدور
      فوراً. وتبقى الشاشة لحسابٍ قديمٍ إن وُجد — ولا يوجد اليوم. */
   if(role === 'pending_teacher') return renderPending();
-  if(role === 'admin')           return loadStudents();
+  if(role === 'admin')           return landing(loadStudents);
   /* 🆕 b90 · والمعلّمُ بلا شهادةٍ يُساق إلى خطوتها — **ولا يُحجب عن
      المنصّة**: التأليفُ وحده ينتظر، ومن حُجب كلُّه ظنّ حسابَه معطّلاً. */
   if(role === 'teacher'){
@@ -661,7 +676,7 @@ export async function boot(){
       const { data: mv } = await api.markAuthorVerified();
       if(mv?.ok) S.prof.author_verified_at = mv.at;
     }
-    return S.prof.author_verified_at ? loadTeacher() : renderVerifyAuthor();
+    return S.prof.author_verified_at ? landing(loadTeacher) : renderVerifyAuthor();
   }
 
   /* 🆕 b90 · نيّةُ التعليم تعبر الفجوة: من أنشأ حسابه معلّماً ثمّ ترك
@@ -688,7 +703,7 @@ export async function boot(){
     if(!S.prof.scale_id) return renderGradePicker();
   }
 
-  loadList();
+  landing(loadList);
 }
 
 /* ═══════════ شاشة «صفّك الدراسي» ═══════════
@@ -971,6 +986,11 @@ export function start(){
     profile:    loadProfile,
     out:        signOut
   });
+
+  /* 🆕 b166 · الرجوعُ والتقدّم يستعيدان القسمَ من العنوان — وتعليلُه عند
+     PATHS في ui.js. و«/» وما لا يفتحه الدورُ يمرّان بـboot: هي وحدها تعرف
+     أين يبيت كلُّ دورٍ وأيَّ تهيئةٍ ينتظر. */
+  watchAddress(boot);
 
    /* الرياضيات: مراقبٌ واحد على #app يلتقط أي معادلة تُرسم — هنا
      لا في كل شاشة، فأوّلُ شاشة تُكتب بعد شهر لن تنساه. */

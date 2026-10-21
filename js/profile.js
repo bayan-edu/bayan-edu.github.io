@@ -44,7 +44,9 @@ let Z = null;
 const isTeacher = () => ['teacher','admin'].includes(S.roleInfo?.role || S.prof?.role);
 
 export async function loadProfile(){
-  nav('subjects');
+  /* 🆕 b166 · قسمُها لا قسمُ «المواد»: nav() تكتب العنوانَ من القسم
+     (ui.js · PATHS)، فلو بقيت 'subjects' لصار عنوانُ ملفّي /subjects. */
+  nav('profile');
   /* 🔓 b107 · بلا وصفٍ تحت العنوان: كان الاسمَ، **والاسمُ حقلٌ في هذه
      الشاشة لا ترويسةٌ لها.** وشاشةُ تعديلٍ تعرض القيمةَ في خانتها. */
   head('ملفّي');

@@ -22,6 +22,16 @@
 <meta name="twitter:description" content="بيان — تعلّم صح: منصة تعليمية عربية تُشخّص لك لماذا أخطأت بالضبط وكيف تصحح فهمك، تدلك على طريق التفوّق العلمي وتعمل على توفير جميع أدواته. ابدأ الآن.">
 <meta name="twitter:image" content="https://bayanclass.com/icon-192.png">
 
+<!-- 🆕 b166 · الشرطةُ الأخيرة تُرفع قبل أن تُطلب الأنماطُ والوحدات.
+     المساراتُ في هذا الملفّ نسبيّة (css/… · ./js/…)، وعلى /cards/ تُحلّ إلى
+     /cards/css/… — وCloudflare يجيبها بهذه الصفحة نفسِها (single-page-application)
+     فتُرسم المنصّةُ بلا نمطٍ ولا شيفرة. وقِيس ذلك على wrangler dev قبل الكتابة.
+     🔑 و`replaceState` يبدّل عنوانَ المستند، **وعليه تُحلّ الروابطُ التي تليه**
+        — فموضعُه أوّلُ سكربتٍ قبل أيّ `<link>`.
+     ⚠️ ولا `<base href="/">` بدلاً منه: علاماتُ الحساب تُرسم بـ`<use href="#avf-…">`
+        (js/avatar.js)، والجزءُ مع base يُحلّ على «/» لا على الصفحة فتسقط الأطر.
+        والمقاطعُ المتعدّدة (/lessons/42) مسألةُ ٢ب. -->
+<script>if(/.\/$/.test(location.pathname))history.replaceState(null,'',location.pathname.replace(/\/+$/,'')+location.search+location.hash);</script>
 <script>try{var t=localStorage.getItem("bayan.theme");if(t)document.documentElement.dataset.theme=t;}catch(e){}
 var m=document.querySelector('meta[name=theme-color]');if(m)m.content=m.dataset[t==="dark"?"dark":"light"];</script>
   
