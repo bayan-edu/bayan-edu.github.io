@@ -668,14 +668,18 @@ export function publicUrl(key){
   if(!m){ console.warn("[media] مفتاح بلا مخزن:", key); return null; }
   return db.storage.from(m[1]).getPublicUrl(m[2]).data.publicUrl;
 }
-/* الرفع — نقطة الاختناق الوحيدة نحو المخزن.
+/* الرفع — نقطة الاختناق الوحيدة نحو المخزنين.
+   🆕 b161 · والمفتاحُ يقول أين: `r2:audio/…` ⇒ Cloudflare R2 (uploadR2 أدناه)،
+      وبلا وسم ⇒ Supabase كما كان. والوسمُ يُبنى في media.js (UPLOAD_TO).
    ⚠️ upsert:false عمداً — **وحجّته غير التي كانت مكتوبة هنا.**
       كان هنا «سياسة storage لا تسمح بـupdate أصلاً»، وقِيست السياساتُ
       في `b136` فإذا `audio_update` و`img_update` قائمتان وتأذنان للمدير.
       ⇒ الطمسُ **ممكنٌ** تقنياً، فمنعُه هنا قرارٌ لا وصفٌ لقيدٍ خارجيّ:
       تصادمٌ (احتمالُه في ملياريّ) يصير خطأً ظاهراً لا طمساً صامتاً
-      لوسيطٍ قد يكون مستعملاً في بطاقةٍ أو سؤالٍ آخر. */
+      لوسيطٍ قد يكون مستعملاً في بطاقةٍ أو سؤالٍ آخر.
+      ونظيرُه في R2 `If-None-Match: *` موقَّعاً — فيُردّ الطمسُ بـ`412`. */
 export async function uploadMedia(key, file){
+  if(String(key || "").startsWith("r2:")) return uploadR2(key, file);
   const m = KEY_RX.exec(key || "");
   if(!m) return { error: { message: "مفتاح بلا مخزن: " + key } };
   const { error } = await db.storage.from(m[1]).upload(m[2], file, {
@@ -683,6 +687,39 @@ export async function uploadMedia(key, file){
     upsert: false
   });
   return { error };
+}
+
+/* 🆕 b161 · الرفعُ إلى R2 — خطوتان: توقيعٌ من الدالّة الطرفيّة، ثمّ PUT مباشرة.
+   العقد كعقد uploadMedia: { error } — و`error.status` رمزُ الردّ حين يُعرف.
+
+   📐 لماذا لا يمرّ الملفُّ بالدالّة: الدالّةُ تتحقّق وتوقّع ثمّ تنسحب، فلا
+      تُحمَّل ميغابايتاتٍ لا حاجةَ لها بها، ولا يقف الرفعُ على حدّ جسمها.
+   🔴 والفشلُ في PUT لا يُعرف رمزُه دائماً — **قِيس (٢١ أكتوبر):** R2 يردّ
+      التوقيعَ المخالف (نوعاً أو حجماً) **بلا ترويسات CORS**، فلا يرى المتصفّح
+      `403` بل `TypeError`. ⇒ الرسالةُ لا تتّكئ على الرمز، والمفتاحُ لا يُكتب
+      في الحقل إلا بعد `200` (upload.js). أمّا `412` فردُّه يحمل CORS فيُقرأ.
+   🔒 والحراسةُ هناك لا هنا: `can_upload_media()` بهويّة المستدعي في الدالّة،
+      والنوعُ والحجمُ موقَّعان. فما في هذه الدالّة راحةٌ لا حراسة. */
+async function uploadR2(key, file){
+  const { data, error } = await db.functions.invoke('r2-sign', { body: { key, size: file.size } });
+  if(error){
+    /* ردُّ الدالّة بالعربية في جسمه ({ error }) — يُقرأ ليُعرض كما هو. */
+    let message = error.message, status = error.context?.status;
+    try { const j = await error.context?.json?.(); if(j?.error) message = j.error; } catch(e){}
+    return { error: { message, status } };
+  }
+  /* الدالّةُ تُرجع المفتاحَ موسوماً — ومفتاحٌ غيرُ المطلوب يُكتب في الحقل
+     فيُحيل إلى ملفٍّ لم يُرفع. فيُقارَن ولا يُفترض. */
+  if(!data?.url || data.key !== key)
+    return { error: { message: "ردٌّ غير متوقَّع من الدالّة: " + (data?.key || "بلا رابط") } };
+
+  try{
+    const r = await fetch(data.url, { method: "PUT", headers: data.headers, body: file });
+    if(r.ok) return { error: null };
+    return { error: { message: "R2 " + r.status, status: r.status } };
+  }catch(e){
+    return { error: { message: "رُدّ الطلبُ أو انقطع الاتصال", status: 0 } };
+  }
 }
 
 /* ═══════════ ⑧ التحليلات — 85 · 86 · 87 ═══════════

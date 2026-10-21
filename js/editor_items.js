@@ -173,7 +173,7 @@ function form(item, official, ro){
           ${ro ? `<div class="warnbox">🔒 <b>معاينة</b> — هذا المصدر ${off
             ? 'يعدّله فريق الإشراف' : 'من تأليف زميلٍ لك'}، فيُقرأ هنا ولا يُحفظ.</div>` : ''}
           ${k.needs === 'url' ? `<div class="ed-hint" style="opacity:.75">
-            <b>الصوت:</b> يُرفع إلى المخزن ثمّ يُلصق مفتاحه — <code>audio/l1-a1.mp3</code>
+            <b>الصوت:</b> يُرفع بالزرّ فيُكتب مفتاحه في الحقل — <code>r2:audio/l1-k3j9fq.mp3</code>
             — فيُشغَّل داخل الدرس.<br>
             ${k.code === 'simulation'
               ? '<b>المحاكاة:</b> ملفّ مستقلّ في مستودع الموقع نفسه — الصق مساره النسبي (مثلاً <code>sims/الاسم.html</code>) أو رابطه الكامل. يُضمَّن داخل الدرس، لا يُفتح في تبويب. زرّ الرفع أعلاه للصوت وحده — تجاهله هنا.'
@@ -195,7 +195,7 @@ function form(item, official, ro){
           ${k.needs === 'url' ? `
             <label class="fl" style="margin-top:16px">الرابط *</label>
             <input type="text" id="ur" dir="ltr" value="${esc(item?.url || '')}"${dis}
-                     placeholder="audio/l1-a1.mp3  أو  https://…">` : ''}
+                     placeholder="r2:audio/l1-a1.mp3  أو  https://…">` : ''}
           ${k.needs === 'body' ? `
             <label class="fl" style="margin-top:16px">النصّ *</label>
             <textarea id="bo" style="min-height:150px"${dis}>${esc(item?.body || '')}</textarea>` : ''}
