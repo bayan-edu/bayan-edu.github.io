@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════
-   بيان — book.js · الكتاب المقلَّب  (b152 · b153 · b154 · b155)
+   بيان — book.js · الكتاب المقلَّب  (b152 · b153 · b154 · b155 · b165)
 
    محرّكٌ قائمٌ بنفسه يعرض نصَّ القراءة كتاباً تُقلَّب صفحاته.
    لا يستورد شيئاً من المنصّة: التنسيقُ والأرقامُ والنصوصُ تُمرَّر
@@ -104,12 +104,21 @@ const norm  = s => String(s || '').replace(/[\u064B-\u0652\u0670*_]/g, '')
 const OWN_NUM = /^\s*[(（]\s*([0-9٠-٩]+)\s*[)）]\s*/;
 const LETTERED = /^\s*(\*\*)?[A-H][.)]?(\*\*)?\s+\S/;
 
+/* 🆕 b165 · الصورة سطرٌ وحده: [صورة: المصدر | التعليق] — أو [image: …] في النصّ
+   الإنجليزي، فلا تختلط الكتابتان في سطر المعلّم. والتعليقُ اختياريّ.
+   🔑 وتُعزل سطراً وإن لم يفصلها سطرٌ فارغ: المعلّمُ يُدرجها حيث المؤشّر،
+      ولا يُطالَب بقاعدة فراغٍ لا يراها. */
+const FIG = /^\[\s*(?:صورة|image)\s*[:：]\s*([^|\]\n]+?)\s*(?:\|\s*([^\]\n]*?))?\s*\]$/i;
+
 function parse(body, title){
-  const raw = String(body || '').replace(/\r\n?/g, '\n').trim();
+  const raw = String(body || '').replace(/\r\n?/g, '\n').trim()
+    .split('\n').map(l => FIG.test(l.trim()) ? '\n' + l.trim() + '\n' : l).join('\n');
   const chunks = raw.split(/\n[ \t]*\n+/).map(s => s.trim()).filter(Boolean);
   const blocks = [];
 
   chunks.forEach((c, i) => {
+    const fig = c.match(FIG);
+    if(fig){ blocks.push({ type: 'f', src: fig[1].trim(), cap: (fig[2] || '').trim() }); return; }
     const oneLine = !c.includes('\n');
     const wrapped = oneLine && /^\*\*[^*]+\*\*$/.test(c);
     const bare = c.replace(/^\*\*|\*\*$/g, '').trim();
@@ -146,6 +155,33 @@ function parse(body, title){
 
   const total = ps.reduce((s, p) => s + p.tokens.length, 0);
   return { blocks, paragraphs: ps.length, words: total, numbered: own || !lettered };
+}
+
+/* 🆕 b165 · الصورُ قبل التقسيم — المصدرُ يمرّ بحارس المنصّة (`opt.media`) ويُعرف
+   قياسُ كلِّ صورة: **الصورةُ تحجز مكانها بنسبتها** فيصدُق قياسُ الصفحة ولا يقفز
+   النصّ حين تصل. والكتلةُ تبقى في موضعها وإن سقطت (`drop`)، فلا تنزاح أرقامُ
+   الكتل التي تُحفظ بها صفحةُ القارئ.
+   ⏱ والانتظارُ مسقوف: صورةٌ بطيئةٌ تأخذ نسبةً مفترضة وتصل في مكانها، وصورةٌ
+      مكسورةٌ تسقط — فراغٌ لا يُرسم خيرٌ من إطارٍ فارغ. */
+/* وللمحرّر: مصادرُ الصور في نصٍّ — ليُنذَر المعلّمُ عند الحفظ بما سيسقط عند
+   الطالب. والقاعدةُ هي FIG نفسُها، فلا تفترق نسختان. */
+export const figSources = body => String(body || '').split(/\r?\n/)
+  .map(l => l.trim().match(FIG)).filter(Boolean).map(m => m[1].trim());
+
+const FIG_WAIT = 4000, FIG_R = 0.62;
+const httpsOnly = s => /^https:\/\/[^\s"'<>]+$/.test(s) ? s : null;
+
+function figuresReady(model, resolve){
+  const figs = model.blocks.filter(b => b.type === 'f');
+  return Promise.all(figs.map(f => new Promise(done => {
+    f.url = (resolve || httpsOnly)(f.src);
+    if(!f.url){ f.drop = true; return done(); }
+    const img = new Image();
+    const t = setTimeout(() => { f.r ??= FIG_R; done(); }, FIG_WAIT);
+    img.onload  = () => { clearTimeout(t); f.r ??= (img.naturalHeight / img.naturalWidth) || FIG_R; done(); };
+    img.onerror = () => { clearTimeout(t); if(f.r == null) f.drop = true; done(); };
+    img.src = f.url;
+  })));
 }
 
 /* ═══════════ المعجم — مفرداتُ الدرس داخل نصّه (b153) ═══════════
@@ -298,6 +334,10 @@ const plainText = t => String(t).replace(/\*\*|__|_/g, '').replace(/\\[()[\]]/g,
    🆕 b155 · استمع وتابع:
    opt.voice       { available(dir), speak(text,{rate,onend,onerror}), stop(), name() }
    opt.onVoiceFail () — تعذّر النطق على هذا الجهاز
+
+   🆕 b165 · الصورة — سطرٌ وحده في النصّ: [صورة: المصدر | التعليق]:
+   opt.media       (src) ⇒ رابطٌ أو null — حارسُ المصادر (srcOf في المنصّة)؛
+                   وبدونه لا يُقبل إلا https
    ══════════════════════════════════════════════════════════ */
 
 const SAY = {
@@ -310,6 +350,8 @@ const SAY = {
   listen:  'استماع',
   pause:   'إيقاف',
   rate:    'سرعة القراءة',
+  zoom:    'تكبير الصورة',
+  close:   'إغلاق',
   cover:   'الغلاف',
   end:     'النهاية',
   page:    (a, b, n) => b ? `الصفحتان ${a} و${b} من ${n}` : `الصفحة ${a} من ${n}`,
@@ -345,6 +387,7 @@ export async function createBook(host, opt = {}){
                  ? opt.lang : (dir === 'rtl' ? 'ar' : 'en');
   const paperNum = n => dir === 'rtl' ? INDIC(n) : String(n);
   const model  = parse(opt.body, title);
+  await figuresReady(model, opt.media);
   const reduce = matchMedia('(prefers-reduced-motion: reduce)');
 
   /* المعجم يُطابَق مرّةً عند الفتح — والتقسيمُ يُعاد كثيراً ولا يُعيده */
@@ -361,6 +404,7 @@ export async function createBook(host, opt = {}){
     if(title) sents.push({ cover: true, text: plainText(title) });
     model.blocks.forEach(blk => {
       if(blk.type === 'h'){ blk.sid = sents.length; sents.push({ text: plainText(blk.text) }); return; }
+      if(blk.type !== 'p') return;                 // الصورةُ تُرى ولا تُقرأ
       const T = blk.tokens;
       blk.sids = new Array(T.length);
       let a = 0;
@@ -483,21 +527,56 @@ export async function createBook(host, opt = {}){
       .split(S_CLOSE).join('</span>');
   }
 
+  /* 🆕 b165 · الصورةُ في الصفحة: إطارٌ بنسبتها (`--r`) وسقفُ ارتفاعه في CSS نسبةٌ
+     من الصفحة — فتبقى للنصّ مساحتُه. ولمسةٌ تكبّرها.
+     🔑 والإطارُ ليس `<button>`: السحبُ عليه يقلب الصفحةَ كسائر الورقة (pointerdown
+        يتجاهل الأزرار)، والنقرُ وحده يكبّر. والتعليقُ `alt` الصورة — أصدقُ وصفٍ لها. */
+  const figHtml = blk => {
+    const cap = blk.cap ? `<figcaption class="bk-cap" dir="auto">${fmt(blk.cap)}</figcaption>` : '';
+    return `<figure class="bk-fig" style="--r:${(+blk.r).toFixed(4)}"><div class="bk-fbox" role="button" tabindex="0"`
+      + ` aria-label="${esc(say.zoom)}"><img src="${esc(blk.url)}" alt="${esc(plainText(blk.cap))}"`
+      + ` decoding="async" draggable="false"></div>${cap}</figure>`;
+  };
+
   function paginate(){
     const out = [{ kind: 'cover' }];
     let cur = [], anchor = null, count = 0, headAnchor = null;
+    /* 🆕 b165 · صورةٌ لم يسعها ذيلُ صفحتها تتصدّر التالية، والنصُّ بعدها يملأ ما بقي
+       — مذهبُ الطباعة: لا فراغَ في ذيل صفحة، والصورةُ على مرمى نظرةٍ من فقرتها
+       (وفي المنظر المزدوج غالباً على الصفحة المقابلة). */
+    const defer = [];
     mBody.innerHTML = '';
 
-    const flush = () => {
-      if(!cur.length) return;
+    const emit = () => {
       const html = cur.join('');
       const ids = [...html.matchAll(/data-s="(\d+)"/g)].map(m => +m[1]);
-      out.push({ kind: 'text', html, anchor, words: count,
+      /* صفحةُ صورٍ بلا نصّ (نادرة: صورتان لا تجتمعان، أو صورةٌ في الختام) لا مرسى
+         لها ⇒ تحمل مرسى سابقتها، ولا يُرسى عليها قارئٌ عائد (viewOfAnchor). */
+      out.push({ kind: 'text', html, anchor: anchor ?? out[out.length - 1]?.anchor ?? null,
+                 figOnly: anchor == null, words: count,
                  s0: ids.length ? Math.min(...ids) : -1, s1: ids.length ? Math.max(...ids) : -1 });
       cur = []; anchor = null; count = 0; mBody.innerHTML = '';
     };
+    const flush = () => {
+      if(cur.length) emit();
+      while(defer.length){                       // المؤجَّلةُ تتصدّر الصفحةَ الجديدة
+        mBody.insertAdjacentHTML('beforeend', defer[0]);
+        if(fits() || !cur.length){ cur.push(defer.shift()); continue; }
+        mBody.lastElementChild.remove(); emit();
+      }
+    };
 
     model.blocks.forEach((blk, bi) => {
+      if(blk.type === 'f'){
+        if(blk.drop) return;
+        const h = figHtml(blk);
+        if(defer.length){ defer.push(h); return; }    // لا تسبق صورةٌ صورةً أُجِّلت قبلها
+        mBody.insertAdjacentHTML('beforeend', h);
+        if(fits() || !cur.length){ cur.push(h); return; }
+        mBody.lastElementChild.remove();
+        defer.push(h);
+        return;
+      }
       if(blk.type === 'h'){
         const h = `<h3 class="bk-h" dir="auto">${blk.sid != null
           ? `<span class="bk-s" data-s="${blk.sid}">${fmt(blk.text)}</span>` : fmt(blk.text)}</h3>`;
@@ -564,6 +643,7 @@ export async function createBook(host, opt = {}){
       }
     });
     flush();
+    if(cur.length) emit();                       // صورٌ أُجِّلت بعد آخر النصّ
     out.push({ kind: 'end' });
     let no = 0;
     out.forEach(p => { if(p.kind === 'text') p.no = ++no; });
@@ -632,10 +712,11 @@ export async function createBook(host, opt = {}){
   function viewOfAnchor(a){
     const n = aNum(a);
     let idx = 0;
-    pages.forEach((p, i) => { if(p.kind === 'text' && aNum(p.anchor) <= n) idx = i; });
+    pages.forEach((p, i) => { if(p.kind === 'text' && !p.figOnly && aNum(p.anchor) <= n) idx = i; });
     return spread() ? Math.floor(idx / 2) : idx;
   }
   function currentAnchor(){
+    for(const i of viewPages(view)){ if(pages[i]?.kind === 'text' && !pages[i].figOnly) return pages[i].anchor; }
     for(const i of viewPages(view)){ if(pages[i]?.kind === 'text') return pages[i].anchor; }
     return null;
   }
@@ -1217,6 +1298,12 @@ export async function createBook(host, opt = {}){
   book.addEventListener('pointerup', release);
   book.addEventListener('pointercancel', release);
 
+  /* صورةٌ انكسرت بعد التقسيم (رابطٌ حُذف أو شبكةٌ انقطعت) ⇒ يغيب إطارُها ويبقى
+     تعليقُها — لا مربّعَ فارغاً في ورقة. و`error` لا يصعد، فيُلتقط في النزول. */
+  root.addEventListener('error', e => {
+    if(e.target?.tagName === 'IMG') e.target.closest('.bk-fig')?.classList.add('bk-broken');
+  }, true);
+
   root.addEventListener('click', e => {
     const b = e.target.closest('[data-k]');
     if(b && !b.disabled){
@@ -1240,9 +1327,13 @@ export async function createBook(host, opt = {}){
       }
       return;
     }
+    if(e.target.closest('.bk-zoom')){ closeZoom(); return; }
     if(e.target.closest('.bk-turn, .bk-pop')) return;
     const a = e.target.closest('[data-act]');
     if(a){ opt.onAction?.(a.dataset.act, ctl); return; }
+
+    const fb = e.target.closest('.bk-slot .bk-fbox');
+    if(fb){ if(performance.now() > quietUntil) openZoom(fb); return; }   // ذيلُ السحب ليس نقرة
 
     const w = e.target.closest('.bk-w');
     if(w){ toggleWordEl(w); return; }
@@ -1346,6 +1437,35 @@ export async function createBook(host, opt = {}){
     try{ if(window.Highlight) CSS.highlights.set('bk-tap', new Highlight(hit.range)); }catch(err){}
   }
 
+  /* ═══════════ تكبيرُ الصورة (b165) ═══════════
+     فوق الكتاب لا مكانه: يُغلَق بلمسةٍ في أيّ موضع أو بـEscape، ويعود التركيزُ إلى
+     الصورة. ويوقف «استماع» مؤقّتاً — العينُ انتقلت، فالصوتُ يتبعها لا يسبقها.
+     ♿ `dialog` بزرّ إغلاقٍ يأخذ التركيز، وTab لا يغادره. */
+  let zoom = null;
+  function openZoom(box){
+    const img = box.querySelector('img');
+    if(!img) return;
+    closeWord(false);
+    if(nar.on) narPause();
+    const cap = box.closest('.bk-fig')?.querySelector('.bk-cap');
+    const el = EL('div', 'bk-zoom');
+    el.setAttribute('role', 'dialog');
+    el.setAttribute('aria-modal', 'true');
+    el.setAttribute('aria-label', img.alt || say.zoom);
+    el.innerHTML = `<figure dir="${dir}"><img src="${esc(img.currentSrc || img.src)}" alt="${esc(img.alt)}">`
+      + (cap ? `<figcaption dir="auto">${cap.innerHTML}</figcaption>` : '') + `</figure>`
+      + `<button type="button" class="bk-zx" aria-label="${esc(say.close)}">${ICO.close}</button>`;
+    root.append(el);
+    zoom = { el, back: box };
+    el.querySelector('.bk-zx').focus();
+  }
+  function closeZoom(refocus = true){
+    if(!zoom) return;
+    const z = zoom; zoom = null;
+    z.el.remove();
+    if(refocus && z.back.isConnected) z.back.focus();
+  }
+
   const onDocDown = e => {
     if(!pop) return;
     if(pop.el.contains(e.target) || e.target.closest?.('.bk-w')) return;
@@ -1360,7 +1480,15 @@ export async function createBook(host, opt = {}){
     if(e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
     const t = e.target;
     if(t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable)) return;
+    if(zoom){                                    // الصورةُ المكبَّرة تملك المفاتيح
+      if(e.key === 'Escape') closeZoom();
+      else if(e.key === 'Tab') zoom.el.querySelector('.bk-zx').focus();
+      else return;
+      e.preventDefault(); return;
+    }
     if(e.key === 'Escape' && pop){ closeWord(); e.preventDefault(); return; }
+    const fk = t?.closest?.('.bk-slot .bk-fbox');
+    if(fk && (e.key === 'Enter' || e.key === ' ')){ openZoom(fk); e.preventDefault(); return; }
     const wk = t?.closest?.('.bk-w');
     if(wk && (e.key === 'Enter' || e.key === ' ')){ toggleWordEl(wk); e.preventDefault(); return; }
     if(t?.closest?.('.bk-pop')) return;          // داخل النافذة: الأسهمُ لها لا للكتاب
@@ -1416,6 +1544,7 @@ export async function createBook(host, opt = {}){
     window.removeEventListener('scroll', onScroll);
     clearInterval(endTimer);
     closeWord(false);
+    closeZoom(false);
     narStop();
     ro.disconnect(); mo.disconnect();
   }
@@ -1462,4 +1591,5 @@ const ICO = {
   full:   svg('<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>'),
   listen: svg('<path d="M4 15v-3a8 8 0 0116 0v3"/><rect x="3" y="14" width="4.5" height="6.5" rx="1.6"/><rect x="16.5" y="14" width="4.5" height="6.5" rx="1.6"/>'),
   pause:  svg('<rect x="6.5" y="5" width="4" height="14" rx="1.2"/><rect x="13.5" y="5" width="4" height="14" rx="1.2"/>'),
+  close:  svg('<path d="M6 6l12 12M18 6L6 18"/>'),
 };

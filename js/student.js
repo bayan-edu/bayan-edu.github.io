@@ -10,7 +10,7 @@ import { S } from './state.js';
 import { app, head, toast, esc, escA, AR, ICONS, KINDS, bubble, errBox, nav,
          refreshCounts, scrollTop, scrollBottom, shape, icon,
          skeleton, waiting, G, N, NW, fmt,
-         sayable, sayGroup, bindSay, backMeta, backText, dirOf } from './ui.js';
+         sayable, sayGroup, bindSay, backMeta, backText, dirOf, srcOf } from './ui.js';
 import { startQuiz } from './quiz.js';
 import { mediaUrl, isManaged, accents, speak, playAudio, narrate, voiceName, hush } from './media.js';
 import { isSim, openSim } from './simulations.js';
@@ -922,6 +922,9 @@ async function textBook(i, l, back){
     format: fmt, num: AR,
     storeKey: 'bayan.book.' + i.id,
     glossary,
+    /* 🆕 b165 · الصورُ داخل النصّ تمرّ بالحارس الواحد للوسائط: مفتاحُ مخزننا أو مضيفٌ
+       مأذون، وما سواه يسقط صامتاً — الإنذارُ للمعلّم في محرّره لا للطالب في قراءته. */
+    media: srcOf,
     /* النطقُ الآليّ للإنجليزية وحدها — وهو حكمُ الملفّ `101` في media.js:
        القراءةُ الآليّة للعربية تُسقط الإعرابَ وتُخطئ الحركات. */
     tapAny: dir => dir === 'ltr',

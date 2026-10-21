@@ -10,7 +10,7 @@
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
 import { S } from './state.js';
-import { app, head, toast, esc, AR, errBox, nav, setWide, scrollTop } from './ui.js';
+import { app, head, toast, esc, AR, errBox, nav, setWide, scrollTop, srcOf, SAFE_HOSTS } from './ui.js';
 import { attachUpload } from './upload.js';
 import { openCourse } from './editor.js';
 import { openQuiz, openQuizPreview } from './editor_quiz.js';
@@ -198,7 +198,9 @@ function form(item, official, ro){
                      placeholder="r2:audio/l1-a1.mp3  أو  https://…">` : ''}
           ${k.needs === 'body' ? `
             <label class="fl" style="margin-top:16px">النصّ *</label>
-            <textarea id="bo" style="min-height:150px"${dis}>${esc(item?.body || '')}</textarea>` : ''}
+            <textarea id="bo" style="min-height:150px"${dis}>${esc(item?.body || '')}</textarea>
+            ${ro ? '' : `<p class="hint" style="margin-top:6px">صورةٌ في النصّ: زرُّ «إدراج صورة» يضعها
+              حيث المؤشّر، ويُكتب تعليقُها قبل «]». وأنفعُ تعليقٍ سؤالٌ يوجّه النظر إلى ما في النصّ.</p>`}` : ''}
           ${k.needs === 'quiz' ? (off ? `
             <div class="warnbox" style="margin-top:16px">اختبار الدرس يُنشأ من زرّ
               «الاختبار» في قائمة الدروس — فيُربط ويصير شرط الانتقال تلقائياً.</div>` : `
@@ -239,6 +241,17 @@ function form(item, official, ro){
     document.getElementById("bk").onclick = () => render();
       // ctx.lesson لا S.lesson
     if(!ro) attachUpload('ur', 'l' + (ctx.lesson?.id ?? ''));
+    /* 🆕 b165 · صورةٌ داخل نصّ «الكتاب» — تُرفع وتُدرَج سطراً حيث المؤشّر.
+       وكلمةُ السطر بلغة النصّ (`image` للإنجليزي): سطرٌ عربيٌّ وسط نصٍّ لاتينيّ
+       يقلب اتجاهَ الأسطر في مربّع المعلّم. */
+    if(!ro) attachUpload('bo', 'l' + (ctx.lesson?.id ?? ''), 'image', {
+      label: '⬆ إدراج صورة',
+      insert: (key, f) => {
+        const t = f.value, ar = (t.match(/[\u0600-\u06FF]/g) || []).length,
+              la = (t.match(/[A-Za-z]/g) || []).length;
+        return `[${la > ar ? 'image' : 'صورة'}: ${key} | ]`;
+      }
+    });
     app.querySelectorAll("[data-k]").forEach(el => el.onclick = () => {
       if(!isNew) return;                    // النمط لا يتغيّر بعد الإنشاء
       k = kind(el.dataset.k); draw();
@@ -255,6 +268,13 @@ async function save(item, official, k){
   if(!ti){ toast("العنوان مطلوب"); return; }
   if(k.needs === 'url'  && !v("ur")){ toast(k.label + " يحتاج رابطاً"); return; }
   if(k.needs === 'body' && !v("bo")){ toast(k.label + " يحتاج نصاً"); return; }
+  /* 🆕 b165 · صورةٌ مصدرُها غير مأذون تسقط عند الطالب صامتة (حارسُ srcOf) —
+     فالإنذارُ هنا، للمعلّم قبل الحفظ، لا فجوةٌ يكتشفها طالبٌ في قراءته. */
+  if(k.needs === 'body'){
+    const { figSources } = await import('./book.js');
+    const bad = figSources(v("bo")).find(src => !srcOf(src));
+    if(bad){ toast(`مصدر صورة غير مسموح: ${bad} — المسموح: ${SAFE_HOSTS}`); return; }
+  }
 
   /* 🆕 تدريبٌ باسم المعلّم — خطوتان لا خطوة: الاختبار يُخلق أوّلاً
      (`save_quiz` · official=false ⇒ created_by = صاحبُه ⇒ يملك تحريره)،

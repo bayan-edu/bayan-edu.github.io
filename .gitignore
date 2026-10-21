@@ -6,3 +6,8 @@ Thumbs.db
 node_modules/
 .vscode/
 .idea/
+
+# البناء (tools/build.mjs) — يُولَّد في Cloudflare ولا يُرفع
+dist/
+.wrangler/
+.dev.vars*

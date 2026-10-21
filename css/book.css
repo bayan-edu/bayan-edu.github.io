@@ -324,3 +324,46 @@ body:has(.bk){padding-bottom:0}
   border-radius:12px;padding:10px 12px}
 .ra-done{font-weight:700}
 @media (prefers-reduced-motion:reduce){ .ra-dot{animation:none} }
+
+/* ── الصورة في الصفحة (b165) ──
+   الإطارُ بنسبة الصورة (`--r` ارتفاعٌ÷عرض يحسبه المحرّك) وسقفُ ارتفاعه ٤٢٪ من
+   الصفحة — فتبقى للنصّ مساحتُه، والقياسُ يصدُق قبل أن تصل الصورة.
+   🎨 `multiply` على الورق الفاتح: البياضُ حول صورةٍ مقصوصةٍ يذوب في لون الورق
+      ولا يظهر مربّعاً أبيض. وفي الداكن يُلغى (يُسوِّد الصورةَ كلَّها) وتُخفَّض
+      الإضاءةُ قليلاً فلا تبهر العينَ في صفحةٍ مظلمة.
+   🎨 والحلقةُ عند المرور `accent`: الصورةُ تُلمَس فتكبُر — تفاعلٌ لا حال. */
+.bk-fig{margin:.2em 0 .9em}
+.bk-fig:last-child{margin-bottom:0}
+.bk-fbox{display:block;margin-inline:auto;width:min(100%,calc(var(--ph) * .42 / var(--r)));
+  aspect-ratio:1 / var(--r);border-radius:12px;overflow:hidden;cursor:zoom-in;
+  transition:box-shadow .2s ease}
+.bk-fbox img{display:block;width:100%;height:100%;object-fit:cover;mix-blend-mode:multiply;
+  -webkit-user-drag:none;user-select:none}
+@media (hover:hover){
+  .bk-fbox:hover{box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 40%,transparent)} }
+.bk-fbox:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.bk-cap{margin-top:.55em;font-family:'Almarai',system-ui,sans-serif;font-size:.74em;line-height:1.65;
+  color:var(--bk-ink-soft);text-align:center;text-align-last:center}
+.bk-fig.bk-broken .bk-fbox{display:none}
+/* وفي الداكن لوحٌ دافئٌ تحت الصورة: البياضُ حولها يصير لونَ ورقٍ مطبوع لا بياضاً
+   يبهر — والصورةُ بلا بياضٍ لا يتغيّر فيها شيء يُذكر. */
+:root[data-theme="dark"] .bk-fbox{background:#E8E1D3}
+:root[data-theme="dark"] .bk-fbox img{filter:brightness(.92)}
+
+/* ── الصورة مكبَّرة ── فوق الكتاب لا مكانه، وتُغلَق بلمسةٍ في أيّ موضع */
+.bk-zoom{position:fixed;inset:0;z-index:70;display:grid;place-items:center;
+  padding:clamp(16px,4vw,48px);cursor:zoom-out;
+  background:color-mix(in srgb,#0d0b08 80%,transparent);
+  -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);animation:bk-zin .22s ease}
+.bk-zoom figure{margin:0;display:grid;justify-items:center;gap:14px;max-width:min(1100px,100%)}
+.bk-zoom img{max-width:100%;max-height:calc(100vh - 170px);max-height:calc(100dvh - 170px);
+  border-radius:16px;box-shadow:0 26px 60px -22px rgba(0,0,0,.65)}
+.bk-zoom figcaption{max-width:62ch;font-family:'Almarai',system-ui,sans-serif;font-size:.95rem;
+  line-height:1.75;color:#F4EFE6;text-align:center}
+.bk-zx{position:absolute;top:14px;inset-inline-end:14px;width:44px;height:44px;display:grid;
+  place-items:center;border-radius:999px;cursor:pointer;color:#fff;
+  border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.12);transition:background .2s ease}
+.bk-zx:hover{background:rgba(255,255,255,.22)}
+.bk-zx:focus-visible{outline:2px solid #fff;outline-offset:2px}
+@keyframes bk-zin{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){ .bk-zoom{animation:none} }

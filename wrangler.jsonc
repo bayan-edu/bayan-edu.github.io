@@ -1,0 +1,19 @@
+// بيان — ما ينشره Cloudflare على bayanclass.com (Workers Builds من هذا المستودع).
+//
+// 🔑 الاسمُ اسمُ الـWorker القائم حرفاً: Workers Builds يرفض البناءَ إن اختلفا.
+// 🔑 والنطاقُ لا يُكتب هنا (routes): مربوطٌ من اللوحة، و`wrangler deploy` بلا
+//    routes لا يمسّه — وعليه نُشر كلُّ بناءٍ منذ ١١ أكتوبر.
+// 📌 والإعدادان أدناه سلوكُ النطاق اليوم بعينه — قِيسا ٢١ أكتوبر قبل الكتابة:
+//    عنوانٌ مجهول ⇒ 404 فارغ («none») · و/privacy.html ⇒ يُحوَّل إلى /privacy.
+//    فالخطوةُ الأولى (البناء) لا تغيّر توجيهاً. والروابطُ النظيفة خطوةٌ ثانية
+//    تُبدِّل الأوّل إلى «single-page-application».
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "bayan-edu-github-io",
+  "compatibility_date": "2026-10-13",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "none",
+    "html_handling": "auto-trailing-slash"
+  }
+}
