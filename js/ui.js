@@ -13,7 +13,7 @@ import { renderMark, whenReady as avatarReady } from './avatar.js';
    والدمجُ مرّ بلا تعارضٍ **لأنّ الجانبين كتبا السطرَ نفسَه حرفاً** — وهو
    أخبثُ ما في التصادم: لا يشتكي. ⇒ هذه ترفعه، **فالختمُ يجيب «أيُّ شيفرةٍ
    يشغّلها المتصفّح»، وجوابان لسؤالٍ واحدٍ لا جواب.** */
-export const BUILD = "b161";
+export const BUILD = "b164";
 
 /* ── مراسي الصفحة ── */
 export const app = document.getElementById("app");
@@ -283,6 +283,10 @@ export function shrinkFont(face, target, basePx, minPx){
 }
 
 /* ── الترويسة ── */
+/* 🆕 b163 · عنوانُ index.html كما كُتب هناك — تعود إليه head() حين تخلو
+   الشاشة من عنوان. يُقرأ مرّةً عند التحميل، فلا نسخةَ ثانيةً تُكتب هنا. */
+const SITE_TITLE = document.title;
+
 export function head(t, s, hero, tag){
   /* البوابة وحدها تُخفي الترويسة. وإزالة الصنف هنا لا في كل شاشة:
      head() تُستدعى في كل عرض، فهي المكان الوحيد الذي لا يُنسى.
@@ -314,8 +318,9 @@ export function head(t, s, hero, tag){
         مستطيلاً صغيراً يُقرأ عطلاً. وتعليلُه نظيرُ `.sub` أعلاه.
      📌 و`textContent` لا `innerHTML`: الأسماءُ تأتي من القاعدة. */
   const tg = document.getElementById("headtags");
+  /* 🆕 b163 · خرجت القائمة من `if(tg)`: عنوانُ التبويب أسفلُ يقرؤها أيضاً */
+  const list = (Array.isArray(tag) ? tag : [tag]).filter(Boolean);
   if(tg){
-    const list = (Array.isArray(tag) ? tag : [tag]).filter(Boolean);
     tg.replaceChildren(...list.map(x => {
       const e = document.createElement("span");
       e.className = "head-tag"; e.dir = "auto"; e.textContent = x; return e;
@@ -325,6 +330,17 @@ export function head(t, s, hero, tag){
   /* ⚠️ و`bare` لا تقرأ البرواز: شاشةٌ بلا عنوانٍ ولا وصفٍ لا برواز
      لها أصلاً — فالبروازُ سياقُ عنوانٍ لا بديلٌ عنه. */
   h.closest("header")?.classList.toggle("bare", !t && !s);
+  /* 🆕 b163 · وعنوانُ التبويب يتبع الشاشة — من هنا لا من كلّ شاشة.
+     كان `<title>` واحداً في المنصّة كلّها، فالتبويباتُ المفتوحة متشابهة
+     وسجلُّ المتصفّح سطرٌ واحدٌ يتكرّر. ⇒ «العنوان · المادة — بيان».
+     📌 الأخصُّ أوّلاً: التبويبُ الضيّق يُقصّ من آخره، فيبقى ما يميّزه.
+     📌 والبروازُ الأوّل وحده: هو المادة حيث وُجد، والثاني (المستوى)
+        يُطيل السطرَ ولا يميّز تبويباً من تبويب.
+     🔑 **ويرث تحفُّظَ الترويسة لأنّه يُبنى من نصّها نفسه:** ما أخفته
+        (اسمُ المحطّة في التسكين · b142) لا يظهر في التبويب ولا في السجلّ.
+     ⚠️ وشاشةٌ بلا عنوان (البوّابة · هيكلٌ ينتظر) تعود إلى SITE_TITLE. */
+  document.title = t ? [t, list[0]].filter(Boolean).join(" · ") + " — بيان"
+                     : SITE_TITLE;
 }
 
 /* ── إشعار عابر ── */

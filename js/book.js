@@ -403,6 +403,7 @@ export async function createBook(host, opt = {}){
         <button type="button" class="bk-btn sm" data-k="smaller" aria-label="${esc(say.smaller)}">${ICO.aMinus}</button>
         <button type="button" class="bk-btn sm" data-k="larger" aria-label="${esc(say.larger)}">${ICO.aPlus}</button>
         <button type="button" class="bk-btn sm" data-k="full" aria-label="${esc(say.full)}">${ICO.full}</button>
+        ${opt.slot ? '<span class="bk-x" data-k="x"></span>' : ''}
         ${voice ? `<button type="button" class="bk-btn sm txt" data-k="rate" hidden aria-label="${esc(say.rate)}"></button>
         <button type="button" class="bk-btn sm pill" data-k="listen" aria-pressed="false"
                 aria-label="${esc(say.listen)}">${ICO.listen}<span class="bk-lbl">${esc(say.listen)}</span></button>` : ''}
@@ -1423,6 +1424,15 @@ export async function createBook(host, opt = {}){
     next: () => go(1), prev: () => go(-1), jump,
     restart: () => { endFired = false; jump(0); },
     destroy,
+    /* 🆕 b164 · موضعٌ في الشريط يملؤه الجسر (القراءة الجهرية) — والمحرّكُ لا
+       يعرف ما فيه. و`data-k="x"` يجعل نقرَه لا يقع في معالج الشريط أدناه.
+       و`voiceLock`: من يسجّل صوتَه لا يُسمَع معه صوتُ الكتاب — يُوقَف ويُعطَّل. */
+    get slot(){ return root.querySelector('.bk-x'); },
+    voiceLock(on){
+      const b = btn('listen');
+      if(on && nar.on) narPause();
+      if(b) b.disabled = !!on;
+    },
     get dir(){ return dir; }, get pages(){ return textCount(); },
     get words(){ return model.words; }
   };

@@ -283,3 +283,44 @@ body:has(.bk){padding-bottom:0}
   background:color-mix(in srgb,var(--accent) 8%,var(--surface))}
 @media (max-width:520px){ .bk-lbl{display:none} .bk-btn.pill{padding:0;width:38px;justify-content:center} }
 @media (prefers-reduced-motion:reduce){ .bk-s,.bk-cv-t{transition:none} }
+
+/* ══ القراءة الجهرية (b164 · recorder.js · sql/174) ══
+   🔑 **والتسجيلُ الجاري بلون التفاعل لا بالأحمر:** الأحمرُ في بيان يقول «أخطأتَ»
+      (عائلة danger)، وزرٌّ مضغوطٌ يعمل تفاعلٌ — فيلبس `aria-pressed` كزرّ الاستماع
+      بجواره. ونقطةُ «يسجّل» تنبض بالـaccent نفسه.
+   🔑 **وفشلُ الميكروفون «انتبه» لا «أخطأت»** (عائلة warn): ليس حكماً على قراءة.
+   🔑 **و«وصلت قراءتك» محايدة:** وصولُ ملفٍّ ليس «أصبتَ» — والأخضرُ للحكم وحده. */
+.bk-x{display:contents}
+/* وأثناءَ التسجيل يغيب زرّا الصوت (معطَّلان أصلاً بـvoiceLock) — فيتّسع الشريطُ
+   الضيّق لساعة التسجيل ولا ينضغط عدّادُ الصفحات حتى يتراكب (قِيس على ٤٠٠px). */
+.bk-tools:has(.ra-btn.rec) [data-k="listen"],
+.bk-tools:has(.ra-btn.rec) [data-k="rate"]{display:none}
+.ra-clock{font-variant-numeric:tabular-nums}
+@media (max-width:520px){
+  /* في الضيّق تسقط الأسماءُ وتبقى الأيقونات — إلا ساعةَ التسجيل: هي ما يطمئنّ إليه */
+  .ra-btn.rec{width:auto;padding:0 10px}
+  .ra-btn.rec .bk-lbl{display:inline}
+}
+.ra{width:min(100%,560px);margin:18px auto 0}
+.ra[hidden]{display:none}
+.ra-in{background:var(--surface);border:1px solid var(--line);border-radius:18px;
+  padding:16px 18px 18px;box-shadow:var(--shadow)}
+.ra-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.ra-head b{font-family:'Almarai',system-ui,sans-serif;font-weight:800}
+.ra-x{border:0;background:none;color:var(--text-muted);font-size:1.35rem;line-height:1;
+  cursor:pointer;padding:2px 8px;border-radius:10px}
+.ra-x:hover{background:var(--fill)}
+.ra-x:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.ra p{margin:0 0 10px;line-height:1.75}
+.ra-note,.ra-last{color:var(--text-muted);font-size:var(--fs-meta)}
+.ra-note a{color:inherit;text-underline-offset:3px}
+.ra-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.ra-audio{width:100%;margin-top:2px}
+.ra-live{display:flex;align-items:center;gap:8px;font-weight:700}
+.ra-dot{width:10px;height:10px;border-radius:50%;background:var(--accent);flex:0 0 auto;
+  animation:ra-pulse 1.2s ease-in-out infinite}
+@keyframes ra-pulse{50%{opacity:.3}}
+.ra-err{color:var(--warn-text);background:var(--warn-soft);border:1px solid var(--warn-line);
+  border-radius:12px;padding:10px 12px}
+.ra-done{font-weight:700}
+@media (prefers-reduced-motion:reduce){ .ra-dot{animation:none} }

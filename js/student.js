@@ -15,6 +15,7 @@ import { startQuiz } from './quiz.js';
 import { mediaUrl, isManaged, accents, speak, playAudio, narrate, voiceName, hush } from './media.js';
 import { isSim, openSim } from './simulations.js';
 import { openLessonDeck, loadFlashcards } from './flashcards.js';
+import { canRecord, mountReading } from './recorder.js';
 
 /* ═══════════ ① المواد — الرئيسة ═══════════ */
 
@@ -859,7 +860,8 @@ async function openText(i){
   head('', '');
   app.innerHTML = `
     <div class="crumb" id="bk">→ عودة</div>
-    <div id="book">${skeleton('rows', 3)}</div>`;
+    <div id="book">${skeleton('rows', 3)}</div>
+    <div id="ra" hidden></div>`;
   const back = () => l ? openLesson(l) : loadLessons(S.subj);
   document.getElementById("bk").onclick = back;
 
@@ -881,9 +883,12 @@ async function textBook(i, l, back){
      يملك `then` وحدها — `.catch` عليه «ليس دالّة»، فيسقط `openText` كلُّه
      قبل الكتاب (عطلُ b155). والبديلُ في الفحص كان يُرجع Promise حقيقياً
      فأخفاه؛ وصار الآن يحاكي المُنشئ تماماً. */
-  const [{ data, error }, cardsRes] = await Promise.all([
+  /* 🆕 b164 · والقراءةُ الجهريّة معهما — أيُطلب في هذا النصّ؟ وفشلُها لا يحجب
+     الكتاب: نصٌّ بلا زرّ تسجيلٍ خيرٌ من نصٍّ لا يُفتح. */
+  const [{ data, error }, cardsRes, raRes] = await Promise.all([
     api.itemText(i.id),
-    l ? api.lessonCards(l.id).then(r => r, e => ({ error: e })) : Promise.resolve({ data: [] })
+    l ? api.lessonCards(l.id).then(r => r, e => ({ error: e })) : Promise.resolve({ data: [] }),
+    api.myReading(i.id).then(r => r, e => ({ error: e }))
   ]);
   const host = document.getElementById("book");
   if(!host) return;                                  // غادر قبل وصول النصّ
@@ -906,8 +911,12 @@ async function textBook(i, l, back){
   const glossary = (cardsRes?.data || []).filter(c =>
     String(c.front || '').replace(/\s*\([^)]*\)\s*$/, '').trim().split(/\s+/).length <= 3);
   const word = wordPanel(g);
+  /* القراءةُ الجهريّة تظهر حيث تطلبها القاعدة **ويقدر عليها المتصفّح** — فلا
+     زرٌّ يَعِد بما لا يكون (متصفّحٌ قديم أو صفحةٌ بلا HTTPS). */
+  const raOn = !!raRes?.data?.enabled && canRecord();
 
-  await createBook(host, {
+  const ctl = await createBook(host, {
+    slot: raOn,
     title, subtitle: data.description, body: data.body, lang: data.lang || i.lang,
     kicker: [S.subj?.name, lessonLine],
     format: fmt, num: AR,
@@ -959,7 +968,76 @@ async function textBook(i, l, back){
       toast("سُجّلت قراءتك ✔");
     }
   });
+
+  const sheet = document.getElementById("ra");
+  if(raOn && ctl?.slot && sheet){
+    const en = ctl.dir === 'ltr';
+    mountReading(ctl.slot, sheet, {
+      itemId: i.id, info: raRes.data, dir: en ? 'ltr' : 'rtl',
+      t: en ? READ_EN : readAr(g), num: en ? String : AR,
+      privacyUrl: './privacy.html', toast,
+      api: { start: api.startReading, upload: api.uploadRecording },
+      busy: on => ctl.voiceLock(on)
+    });
+  }
 }
+
+/* ── نصوصُ القراءة الجهريّة (b164) ──
+   🔑 **لغةُ اللوحة لغةُ النصّ:** نصٌّ إنجليزيٌّ يُقرأ جهراً تحت «Reading aloud»،
+      وعربيٌّ تحت «القراءة الجهرية» (الاسمان من المالك · ٢١ أكتوبر).
+   🔑 والخطابُ بـ`G()` بثلاث صيغ حيث كان أمراً، والزرُّ مصدر — §٤ من الهويّة اللغويّة.
+   🔑 وسطرُ الخصوصية هو وعدُ §٢ بحرفه: لا يبدأ إلا بضغطك، ويُحذف خلال ٧ أيام. */
+function readAr(g){
+  return {
+    name: 'القراءة الجهرية',
+    intro: G(g, 'اقرأ النص بصوتك وأنت تقلّب الصفحات، ثم استمع إلى قراءتك وأرسلها.',
+                'اقرئي النص بصوتك وأنت تقلّبين الصفحات، ثم استمعي إلى قراءتك وأرسليها.',
+                'يُقرأ النص بصوت مسموع مع تقليب الصفحات، ثم تُسمع القراءة وتُرسل.'),
+    privacy: 'لا يبدأ التسجيل إلا بضغطك، ويُحذف خلال ٧ أيام.',
+    privacyLink: 'سياسة الخصوصية',
+    start: 'بدء التسجيل',
+    recording: 'التسجيل يعمل',
+    turnPages: G(g, 'قلّب الصفحات كعادتك، والتسجيل مستمر.', 'قلّبي الصفحات كعادتك، والتسجيل مستمر.',
+                    'تقليب الصفحات لا يوقف التسجيل.'),
+    stop: 'إيقاف',
+    review: G(g, 'استمع إلى قراءتك قبل إرسالها.', 'استمعي إلى قراءتك قبل إرسالها.',
+                 'قراءتك جاهزة للاستماع قبل الإرسال.'),
+    send: 'إرسال', retry: 'إعادة الإرسال', again: 'إعادة التسجيل', close: 'إغلاق',
+    sent: 'وصلت قراءتك، وتُحذف خلال ٧ أيام.',
+    last: d => 'آخر قراءة أرسلتها: ' + (d === 0 ? 'اليوم' : d === 1 ? 'أمس'
+             : d === 2 ? 'قبل يومين' : 'قبل ' + AR(d) + (d <= 10 ? ' أيام' : ' يوماً')),
+    denied: 'لم يُسمح باستعمال الميكروفون. يمكنك السماح به من إعدادات المتصفح.',
+    nomic: 'لا يوجد ميكروفون في هذا الجهاز.',
+    micfail: 'تعذّر تشغيل الميكروفون.',
+    short: 'التسجيل قصير جداً.',
+    max: 'بلغ التسجيل خمس دقائق، فتوقّف.',
+    tooBig: 'الملف أكبر من المسموح.',
+    badType: 'صيغة التسجيل غير مقبولة في هذا المتصفح.',
+    fail: 'تعذّر الإرسال'
+  };
+}
+const READ_EN = {
+  name: 'Reading aloud',
+  intro: 'Read the text aloud as you turn the pages, then listen to your reading and send it.',
+  privacy: 'Recording starts only when you press the button, and is deleted within 7 days.',
+  privacyLink: 'Privacy policy',
+  start: 'Start recording',
+  recording: 'Recording',
+  turnPages: 'Turn the pages as usual. Recording continues.',
+  stop: 'Stop',
+  review: 'Listen to your reading before you send it.',
+  send: 'Send', retry: 'Send again', again: 'Record again', close: 'Close',
+  sent: 'Your reading was sent. It will be deleted within 7 days.',
+  last: d => 'Last reading you sent: ' + (d === 0 ? 'today' : d === 1 ? 'yesterday' : d + ' days ago'),
+  denied: 'Microphone access is blocked. You can allow it in your browser settings.',
+  nomic: 'No microphone was found on this device.',
+  micfail: 'The microphone could not start.',
+  short: 'The recording is too short.',
+  max: 'The recording reached five minutes and stopped.',
+  tooBig: 'The file is larger than allowed.',
+  badType: 'This browser records in a format we cannot accept.',
+  fail: 'Sending failed'
+};
 
 /* ── نافذةُ الكلمة في الكتاب (b153) ──
    🔑 **التخمينُ قبل الكشف (`GUESS_FIRST`) — والحجّةُ هدفٌ يُقاس لا ذوق:**

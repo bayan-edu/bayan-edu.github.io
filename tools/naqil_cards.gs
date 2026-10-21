@@ -40,11 +40,12 @@
    │                                                                  │
    │  ⑥  🖼 **والوسيطُ يُرفع قبل أن يُنادى الاعتماد، وذاكرتُه تمنع        │
    │     تكرارَه.** الملفّ يكتب **اسمَ الصورة كما هي في المجلد**         │
-   │     (`cell.png` أو `media/cell.png`)، والناقلُ يرفعها إلى المخزن    │
+   │     (`cell.png` أو `media/cell.png`)، والناقلُ يرفعها إلى R2        │
+   │     (🆕 b161: يطلب التوقيعَ من الدالّة `r2-sign` ثمّ يرفع مباشرةً)   │
    │     ويكتب **مفتاحَها** مكانَ اسمها في الحمولة. وملفُّ Drive لا       │
    │     يُمسّ بحرف: التبديلُ في النسخة المرسَلة وحدَها.                  │
    │     🔑 **والمفتاحُ يُولَّد بمسطرة `js/media.js` نفسِها**             │
-   │     (`مخزن/وسم-ستُّ خاناتٍ.لاحقة`) — فما ترفعه الشاشةُ وما يرفعه     │
+   │     (`r2:مخزن/وسم-ستُّ خاناتٍ.لاحقة`) — فما ترفعه الشاشةُ وما يرفعه  │
    │     الناقلُ شيءٌ واحدٌ في المخزن، لا شكلان.                         │
    │     📌 **والذاكرةُ على ملفِّ الوسيط لا على الـJSON:** صورةٌ رُفعت     │
    │     مرّةً يُعاد مفتاحُها ولا تُرفع ثانيةً، ولو أُعيد حملُ الملفّ       │
@@ -88,8 +89,8 @@
       · `front_image` صورةُ **الوجه** (مع السؤال) · `image` صورةُ **المعنى**
         (بعد الكشف) · `audio` النُّطق.
       · والصورةُ تُقبل `png · jpg · jpeg · webp` وحدُّها ٢ م.ب، والصوتُ
-        `mp3 · m4a · ogg · wav · aac` وحدُّه ١٠ م.ب — **وهي حدودُ المخزن
-        نفسُها**، لا حدودٌ يضعها الناقل.
+        `mp3 · m4a · ogg · wav · aac` وحدُّه ١٠ م.ب — **وهي حدودُ الدالّة
+        `r2-sign` نفسُها** (ومسطرةُ `js/media.js`)، لا حدودٌ يضعها الناقل.
       · 🔴 **ووسيطٌ لا يُعثر عليه يردُّ الدفعةَ كلَّها** ويُسمّى في البريد
         ببطاقته وحقله. وذاك مقصود: بطاقةٌ تشير إلى لا شيءٍ أسوأُ من
         بطاقةٍ بلا صورة — الأولى تُصدَّق والثانية تُرى.
@@ -128,7 +129,10 @@ const CFG = {
        وصيغُه `audio/*`. **ومسطرتان تفترقان**: حدٌّ هنا أوسعُ يُنتج رفعاً
        يُردُّ بعد الانتظار، وأضيقُ يمنع ما يقبله المخزن.
     ⚠️ **والفحصُ هنا راحةٌ لا حراسة** — كما في `js/upload.js` حرفاً:
-       الحارسُ الحقيقيّ سياسةُ المخزن، وما يجري عندنا يُتجاوَز.
+       الحارسُ الحقيقيّ في الخادم، وما يجري عندنا يُتجاوَز.
+    🆕 b161 · **والحارسُ اليومَ الدالّةُ `r2-sign`:** تعيد الفحصَ نفسَه
+       (`supabase/functions/r2-sign/core.js` · RULES) وتوقّع النوعَ والحجم.
+       والحدودُ هنا حدودُها حرفاً — والقياسُ يقابلها بها لا بهذا التعليق.
     📌 واللواحقُ هي لواحقُ `js/media.js` نفسُها (IMG_EXT · AUDIO_EXT).   */
 
 const MEDIA = {
@@ -567,7 +571,9 @@ function carry_(token, file, folder, m, t0) {
        البطاقةُ إلى لا شيء. واحتمالُه أن يُسمّي مؤلّفٌ ملفَّه بستّ خاناتٍ
        عشوائيّةٍ بعد شَرطة — ويُدفع ثمنُه بحثاً في Drive لكلّ قيمةٍ
        لو أردنا اليقين، وذاك أغلى من العلّة.                              */
-const KEY_SHAPE = /^(img|audio)\/[a-z0-9]{1,8}-[a-z0-9]{6}\.[a-z0-9]{2,4}$/;
+/*  🆕 b161 · والوسمُ `r2:` اختياريّ: المفتاحُ الجديد موسوم (R2)، والقديمُ بلا
+    وسمٍ (Supabase) يبقى مفتاحاً صالحاً يمرّ كما هو — فلا يُرفع ثانيةً.     */
+const KEY_SHAPE = /^(r2:)?(img|audio)\/[a-z0-9]{1,8}-[a-z0-9]{6}\.[a-z0-9]{2,4}$/;
 
 
 /**
@@ -668,12 +674,14 @@ function carryMedia_(token, ref, parent, spec, scope) {
 
 
 /*  مسطرةُ `js/media.js` حرفاً: وسمٌ مطهَّرٌ، وستُّ خاناتٍ بأساس ٣٦.
-    و`padEnd` لازمةٌ هناك وهنا: كسرٌ قصير (0.5 ⇒ "0.i") يعود بحرفين.    */
+    و`padEnd` لازمةٌ هناك وهنا: كسرٌ قصير (0.5 ⇒ "0.i") يعود بحرفين.
+    🆕 b161 · **والمفتاحُ موسومٌ `r2:`** — كـ`UPLOAD_TO` في media.js: الوسمُ يقول
+    أين يسكن الملفّ، فيقرؤه `mediaUrl` من النطاق `media.bayanclass.com`.     */
 function mediaKey_(bucket, scope, ext) {
   const rand = Math.random().toString(36).slice(2, 8);
   const pad  = (rand + '000000').slice(0, 6);
   const s = String(scope || 'x').replace(/[^a-z0-9]/gi, '').slice(0, 8).toLowerCase() || 'x';
-  return bucket + '/' + s + '-' + pad + '.' + ext;
+  return 'r2:' + bucket + '/' + s + '-' + pad + '.' + ext;
 }
 
 
@@ -719,44 +727,80 @@ function findFile_(parent, ref) {
 }
 
 
-/*  الرفعُ إلى المخزن — نقطةُ الاختناق الوحيدة نحوَه، كـ`api.uploadMedia`.
+/*  الرفعُ إلى R2 — نقطةُ الاختناق الوحيدة نحوَه، كـ`api.uploadMedia` (uploadR2).
 
-    ⚠️ **`x-upsert: false` عمداً — وحجّتُه غيرُ ما يُظنّ.** قِيست سياساتُ
-       `storage.objects` يوم ١٠ أكتوبر: `img_update` و`audio_update`
-       **قائمتان** ويأذنان للمدير. ⇒ فالطمسُ **ممكنٌ** تقنياً، ولهذا
-       يُمنع هنا صراحةً: تصادمٌ (احتمالُه في ملياريّ) يصير خطأً ظاهراً
-       لا طمساً صامتاً لصورةٍ قد تكون في بطاقةٍ أخرى.
-       📌 وفي `js/api.js` تعليقٌ يقول «السياسةُ لا تسمح بـupdate أصلاً» —
-          **وهو مقيسٌ كاذبٌ اليوم**، وقد صُحّح معه في `b136`.
-    ورمزُ ٤٠٩ يُترجَم لأنّه الوحيدُ الذي قد يُقرأ خطأً.                   */
+    🆕 b161 · خطوتان، كالواجهة حرفاً:
+      ① **التوقيع:** `functions/v1/r2-sign` بجلسة الحساب المثبَّت في BAYAN_EMAIL
+         ⇒ الدالّةُ تتحقّق بـ`can_upload_media()` بهويّته، وتردّ رابطاً موقَّعاً
+         لملفٍّ واحدٍ عشرَ دقائق، ونوعَه الذي قرّرته من اللاحقة.
+      ② **الرفع:** `PUT` إلى الرابط بالنوع نفسِه و`If-None-Match: *`. والطولُ
+         يضعه UrlFetchApp من البايتات، وهو موقَّعٌ فلا يُرفع غيرُه.
+    🔑 **والنوعُ يُقابَل بالنوع:** الدالّةُ تقرّر النوعَ من اللاحقة، وMIME هنا
+       يقرّره أيضاً. فإن اختلفا فمسطرتان افترقتا — **يُردّ الوسيطُ ولا يُرفع**،
+       والسببُ يُسمّى، فيُسوّى الجدولان. (والقياسُ يقابلهما سلفاً.)
+    ⚠️ **ولا طمسَ — نظيرُ `x-upsert: false` القديم:** `If-None-Match: *` موقَّعٌ،
+       فاسمٌ قائمٌ يُردّ بـ`412` لا يُطمَس. وتصادمٌ كهذا احتمالُه في ملياريّ.
+    📌 **وهنا يُرى رمزُ R2 كلُّه** — فلا CORS في Apps Script، خلافَ المتصفّح
+       الذي يرى `TypeError` حين يردّ R2 توقيعاً مخالفاً (مقيسٌ ٢١ أكتوبر).
+    ↩️ وكان قبل b161 يرفع إلى `storage/v1/object` في Supabase.              */
 function upload_(token, key, mime, bytes) {
+  //  ① التوقيع
   let res;
   try {
-    res = UrlFetchApp.fetch(CFG.SUPABASE_URL + '/storage/v1/object/' + key, {
-      method: 'post', contentType: mime,
-      headers: { apikey: CFG.SUPABASE_ANON, Authorization: 'Bearer ' + token,
-                 'x-upsert': 'false' },
+    res = UrlFetchApp.fetch(CFG.SUPABASE_URL + '/functions/v1/r2-sign', {
+      method: 'post', contentType: 'application/json',
+      headers: { apikey: CFG.SUPABASE_ANON, Authorization: 'Bearer ' + token },
+      payload: JSON.stringify({ key: key, size: bytes.length }),
+      muteHttpExceptions: true,
+    });
+  } catch (e) {
+    return { ok: false, why: 'طلبُ التوقيع لم يصل الدالّة r2-sign — ' + e.message };
+  }
+
+  let code = res.getResponseCode(), j = null;
+  try { j = JSON.parse(res.getContentText()); } catch (e) {}
+  if (code !== 200) {
+    const said = (j && j.error) || res.getContentText().slice(0, 300);
+    if (code === 403 || code === 401) {
+      return { ok: false, why: 'الدالّةُ r2-sign ردّت التوقيعَ (' + code + ') — والحسابُ '
+                             + 'المثبَّتُ في BAYAN_EMAIL يلزم أن يكون مأذوناً: '
+                             + 'can_upload_media(). «' + said + '»' };
+    }
+    return { ok: false, why: 'الدالّةُ r2-sign ردّت برمز ' + code + ' — «' + said + '»' };
+  }
+  if (!j || !j.url || j.key !== key) {
+    return { ok: false, why: 'ردٌّ غيرُ متوقَّع من r2-sign — ' + res.getContentText().slice(0, 200) };
+  }
+  const type = j.headers && j.headers['Content-Type'];
+  if (type !== mime) {
+    return { ok: false, why: 'نوعُ الدالّة «' + type + '» غيرُ نوع الناقل «' + mime
+                           + '» — مسطرتان افترقتا (MIME هنا · RULES في r2-sign).' };
+  }
+
+  //  ② الرفع
+  try {
+    res = UrlFetchApp.fetch(j.url, {
+      method: 'put', contentType: type,
+      headers: { 'If-None-Match': j.headers['If-None-Match'] || '*' },
       payload: bytes, muteHttpExceptions: true,
     });
   } catch (e) {
-    return { ok: false, why: 'الرفعُ لم يصل المخزنَ — ' + e.message };
+    return { ok: false, why: 'الرفعُ لم يصل R2 — ' + e.message };
   }
 
-  const code = res.getResponseCode();
+  code = res.getResponseCode();
   if (code === 200) return { ok: true, why: '' };
 
   const txt = res.getContentText().slice(0, 300);
-  if (code === 409) {
-    return { ok: false, why: 'المفتاحُ «' + key + '» موجودٌ سلفاً — '
+  if (code === 412) {
+    return { ok: false, why: 'المفتاحُ «' + key + '» موجودٌ سلفاً في R2 — '
                            + 'وتصادمٌ كهذا احتمالُه في ملياريّ، فيُعاد الحمل.' };
   }
-  if (code === 403 || code === 401) {
-    return { ok: false, why: 'المخزنُ ردَّ الرفعَ (' + code + ') — والحسابُ '
-                           + 'المثبَّتُ في BAYAN_EMAIL يلزم أن يكون مديراً: '
-                           + 'سياسةُ `img` و`audio` تشترط can_upload_media(). '
-                           + txt };
+  if (code === 403) {
+    return { ok: false, why: 'R2 ردّ الرفعَ (403) — والتوقيعُ يربط النوعَ والحجم، '
+                           + 'فما أُرسل غيرُ ما وُقّع. ' + txt };
   }
-  return { ok: false, why: 'المخزنُ ردَّ برمز ' + code + ' — ' + txt };
+  return { ok: false, why: 'R2 ردَّ برمز ' + code + ' — ' + txt };
 }
 
 

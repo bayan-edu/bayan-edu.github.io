@@ -212,6 +212,17 @@ export const markItemCompleted = id => db.rpc('track_item', { p_item: id, p_stat
 export const itemText = id =>
   db.from('items').select('title, description, body, lang').eq('id', id).maybeSingle();
 
+/* 🆕 b164 · القراءة الجهرية (sql/174) — أيُطلب في هذا النصّ؟ ومعه قراءاتي السابقة.
+   والشرطُ في القاعدة وحدها (`reading_aloud_subject`): يقرؤه `my_reading` ليظهر
+   الزرّ، و`start_reading` ليُصدر المسار — فلا زرٌّ يُردّ طلبُه. */
+export const myReading    = id => db.rpc('my_reading', { p_item: id });
+export const startReading = (id, mime) => db.rpc('start_reading', { p_item: id, p_mime: mime });
+/* الرفعُ إلى مخزن Supabase الخاصّ لا إلى R2: صوتُ الطالب يبقى خلف RLS ويُحذف
+   خلال أسبوع (قرارُ «ما يسكن أين»). والمسارُ صدر من `start_reading`، وحارسُ
+   المخزن (`recording_upload_ok`) لا يقبل غيرَه. upsert:false كسائر الرفع. */
+export const uploadRecording = (path, blob, mime) =>
+  db.storage.from('recordings').upload(path, blob, { contentType: mime, upsert: false });
+
 
 /* ═══════════ ④ الإرشاد ═══════════ */
 
