@@ -53,6 +53,40 @@ function lastSubject(){
   return (S.subjects || []).find(v => String(v.id) === String(saved.id)) || null;
 }
 
+/* ── صورُ الموادّ المجسّمة (b157 · b158 · b160) — والوجهُ في loadList ──
+   🔑 بالمعرّف لا بالاسم (b160): الاسمُ يُعدَّل من لوحة الإدارة، فلو كان
+      مفتاحاً لعادت البطاقةُ إلى الشكل المسطّح **بلا شكوى** — والصامتُ
+      يُصدَّق. والمعرّفُ لا يُعدَّل. والاسمُ بجانبه للقارئ لا للشيفرة.
+   📌 والمادةُ بلا صورة تلبس شكلَها ورمزَها **في الإطار نفسه وبالسلوك
+      نفسه**: الصورةُ تُبدّل الوجهَ وحده.
+   📌 والموادُّ العشرون كلُّها بصورة (b160). ومادةٌ جديدة تُضاف بسطر بعد
+      توليد صورتها **بالأسلوب نفسه** وقصِّها بـ`tools/icon_cutout.py` —
+      والطريقةُ والأوصافُ في STATE (b160).
+   🔑 const آمنةٌ هنا كـLAST_KEY فوقها: لا يقرؤها إلا loadList، ولا
+      تُنادى loadList وهذه الوحدةُ تُقيَّم. */
+const SUBJ_IMG = {
+  1: 'science',      // العلوم المتكاملة
+  2: 'arabic',       // اللغة العربية       — وُلّدت من جديد b160 (هالةٌ بيضاء)
+  3: 'english',      // English
+  4: 'math',         // الرياضيات
+  5: 'history',      // التاريخ
+  6: 'philosophy',   // الفلسفة والمنطق
+  7: 'reading',      // Reading Comprehension
+  8: 'ielts',        // IELTS
+  9: 'study',        // كيف أذاكر؟          — وُلّدت من جديد b160 (هالةٌ بيضاء)
+  32: 'physics',     // الفيزياء             — b160 · Figma
+  33: 'chemistry',   // الكيمياء             — b160 · Figma
+  34: 'biology',     // الأحياء              — b160 · Figma
+  35: 'programming', // البرمجة              — b160 · Canva
+  36: 'accounting',  // المحاسبة             — b160 · Canva
+  37: 'business',    // إدارة الأعمال        — b160 · Canva
+  38: 'economics',   // الاقتصاد             — b160 · Canva
+  39: 'psychology',  // علم النفس            — b160 · Canva
+  40: 'french',      // French               — b160 · Canva
+  41: 'statistics',  // الإحصاء              — b160 · Canva
+  42: 'geography',   // الجغرافيا            — b160 · Canva
+};
+
 /* ── حالةُ المادة صنفاً · والألوان في screens.css عند .st-* ──
    ستٌّ لا اثنتان: «بدأتُ» ليست «أوشكتُ»، والفرقُ بينهما هو ما يجعل
    الشبكة تُقرأ بلمحة. والصفُّ السابق لا تقدُّمَ فيه يُقاس: مادّتُه
@@ -143,29 +177,24 @@ export async function loadList(){
      داخل كلّ مجموعة لبدأت الثلاثُ بالدائرة نفسها في شاشةٍ واحدة. */
   const shapeOf = x => shape(S.subjects.indexOf(x));
 
-  /* شعارات المواد والمهارات ثلاثية الأبعاد */
-  const SUBJ_3D = {
-    'العلوم المتكاملة':       'img/subj_science.webp',
-    'اللغة العربية':         'img/subj_arabic.webp',
-    'English':                 'img/subj_english.webp',
-    'الرياضيات':               'img/subj_math.webp',
-    'التاريخ':                 'img/subj_history.webp',
-    'الفلسفة والمنطق':         'img/subj_philosophy.webp',
-    'Reading Comprehension':   'img/subj_reading.webp',
-    'IELTS':                   'img/subj_ielts.webp',
-    'كيف أذاكر؟':              'img/subj_study.webp'
-  };
-
-  const face = (x, isPast = false, isMini = false) => {
-    if (!isPast && !isMini && SUBJ_3D[x.name]) {
-      return `<div class="sh-wrap is-3d"><img src="${SUBJ_3D[x.name]}" class="sh-img-3d" alt="${esc(x.name)}"></div>`;
-    }
-    return `<div class="sh-wrap">${shapeOf(x)}<span
-      class="sh-icon">${esc(x.icon || '')}</span></div>`;
+  /* الوجه: صورةُ المادة المجسّمة إن كانت لها صورة، وإلّا شكلُها برمزه.
+     🆕 b160 · والصورةُ في كلّ موضعٍ تظهر فيه المادة — الحيّةُ والمكتملةُ
+        وموادُّ الصفوف السابقة. كانت السابقةُ تسقط إلى الشكل، **فالمادةُ
+        الواحدة تلبس وجهين بحسب مجموعتها؛ والهويةُ لا تسقط بالإتمام ولا
+        بمرور الصفّ** (وهي حجّةُ «المكتملة» تحتها بحرفها).
+     🔑 و`alt` فارغ: الصورةُ زخرفة واسمُ المادة مكتوبٌ تحتها — ولو حمل
+        الاسمَ لقرأه قارئُ الشاشة مرّتين. والمقاسُ في الوسم نفسِه فلا
+        تقفز البطاقةُ حين تصل الصورة. */
+  const face = x => {
+    const img = SUBJ_IMG[x.id];
+    return img
+      ? `<div class="sh-wrap is-3d"><img class="sh-img-3d" src="img/subj_${img}.webp"
+           alt="" width="58" height="58" decoding="async"></div>`
+      : `<div class="sh-wrap">${shapeOf(x)}<span
+           class="sh-icon">${esc(x.icon || '')}</span></div>`;
   };
 
   const card = (x, isPast) => {
-    const is3D  = !isPast && !!SUBJ_3D[x.name];
     const empty = !x.needs_placement && bulk(x) === 0;
     const pct   = x.lessons_total ? Math.round(x.lessons_done / x.lessons_total * 100) : 0;
     /* نصٌّ قصير: البطاقة ١٥٠px، وجملةٌ كاملة تلتفّ ثلاثة أسطر فتتفاوت
@@ -180,10 +209,40 @@ export async function loadList(){
     /* ⚠️ ولا شارةَ «قريباً»: البطاقةُ الفارغة تحمل أصلاً حدّاً متقطّعاً
        وبهتاناً وشكلاً رمادياً و«قيد الإعداد» — خمسُ إشاراتٍ لمعنىً
        واحد في ١٥٠px. والإفراطُ في الإشارة يُدرِّب على تجاهلها. */
+    /* 🆕 b160 · وسمُ المستوى يسقط حيث يكرّر عنوانَ مجموعته وحدَه:
+       مستوى موادّ الصفّ هو الصفُّ نفسُه («الصف الأول الثانوي») وفوقها
+       «موادّ صفّي» ⇒ حشو. **أمّا المهارات فمستواها نتيجةُ اختبار المستوى**
+       («متوسط — B1» · «نطاق 5.5 — متوسط») — أثمنُ ما على بطاقتها.
+       ⚠️ وكان b157 يُسقطه بشرط الصورة (`!is3D`) فأسقط الاثنين معاً:
+          لم يكن للصورة ذنبٌ، والحشوُ في المجموعة لا في الوجه. */
     const tags = [
-      (!is3D && x.my_level && !isPast) ? `<span class="lvl-tag">${esc(x.my_level)}</span>` : '',
+      x.my_level && !isPast && x.group_key !== '1_grade'
+                            ? `<span class="lvl-tag">${esc(x.my_level)}</span>` : '',
       x.elective            ? '<span class="badge lock">اختيارية</span>'        : ''
     ].filter(Boolean).join('');
+
+    /* 🆕 b158 · مادةٌ لم تُبدأ تدعو إلى البدء، ومادةٌ تنتظر اختبارها تدعو
+       إليه — في رقاقةٍ واحدة الصيغة. وما بدأ يبقى على عدّاده وشريطه:
+       **الشريطُ هو جوابُ «أين أنا» فلا تُغطّيه دعوة.**
+       🔑 b160 · «البدء» مصدرٌ لا أمر. كان b158 كتب «ابدأ الآن» — وهو مذكّرٌ
+          صريح يخاطب الطالبةَ بالمذكّر، والزرُّ سيّدُه المصدر (مهارةُ الهوية
+          اللغوية §٦، وهذا مثالُها الأوّل بعينه). والحالةُ في سلسلةٍ تتبع
+          سلسلتها: «قيد الإعداد» · «٥ / ٣٢ درساً» · «البدء» — أسماءٌ كلُّها.
+       📐 وسطرٌ واحد: كانت «… · ابدأ الآن ←» تنكسر عند ١٥٠px فتسقط «الآن»
+          وحدها في سطرٍ ثانٍ (قِيس: ٥٧px بدل ٣٨).
+       ⚠️ و`lessons_done` لا `pct === 0`: درسٌ من ثلاثمئة يُقرَّب صفراً،
+          فتُدعى إلى البدء مادةٌ بُدئت.
+       📌 والصورةُ لا تحكم هنا — كانت الرقاقةُ لذوات الصور وحدها (`is3D`)،
+          فتلبس المادةُ بلا صورة سلوكاً آخر لا وجهاً آخر فحسب. */
+    const openable = !isPast && !empty;
+    const go   = t => `<div class="subj-act-pill">${t}<span class="subj-arrow" aria-hidden="true">←</span></div>`;
+    const foot =
+        openable && x.needs_placement        ? go('تحديد المستوى')
+      : openable && x.lessons_total && !x.lessons_done
+                                             ? go(`${N(x.lessons_total,'درس واحد','درسان','دروس','درساً')} · البدء`)
+      : `<div class="subj-m">${meta}</div>
+         ${(x.needs_placement || empty || isPast) ? '' :
+           `<div class="pbar"><div class="pfill" style="width:${pct}%"></div></div>`}`;
 
     /* 🔑 الوصفُ في title لا على الوجه: سطران فيه يُطيلان البطاقة حتى
        تفقد الشبكةُ انتظامها — وانتظامُها هو ما يجعل الشكل واللون
@@ -191,19 +250,13 @@ export async function loadList(){
        وموضعُه الطبيعيّ شاشةُ المادة نفسها.
        ⚠️ والفارغة بلا role ولا tabindex: ليست زرّاً فلا تُعلن زرّاً،
           ولا تُلتقط بالتنقّل بلوحة المفاتيح إلى بابٍ لا يُفتح. */
-    return `<div class="subj ${subjectState(x, isPast)} ${empty ? 'soon' : ''} ${is3D ? 'is-3d' : ''}"
+    return `<div class="subj ${subjectState(x, isPast)} ${empty ? 'soon' : ''}"
                  data-i="${x.id}" ${empty ? '' : 'role="button" tabindex="0"'}
                  ${x.description ? `title="${esc(x.description)}"` : ''}>
-      ${face(x, isPast)}
+      ${face(x)}
       <div class="subj-t" dir="auto"><bdi>${esc(x.name)}</bdi></div>
       ${tags ? `<div class="subj-b">${tags}</div>` : ''}
-      ${is3D && pct === 0 && !empty && !x.needs_placement ?
-        `<div class="subj-act-pill">${AR(x.lessons_total)} ${NW(x.lessons_total,'درس','درسان','دروس','درساً')} · ابدأ الآن <span class="subj-arrow">←</span></div>` :
-      is3D && x.needs_placement ?
-        `<div class="subj-act-pill">تحديد المستوى <span class="subj-arrow">←</span></div>` :
-        `<div class="subj-m">${meta}</div>
-         ${(x.needs_placement || empty || isPast) ? '' :
-           `<div class="pbar"><div class="pfill" style="width:${pct}%"></div></div>`}`}
+      ${foot}
     </div>`;
   };
 
