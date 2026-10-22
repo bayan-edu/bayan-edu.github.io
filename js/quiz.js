@@ -55,7 +55,7 @@ import { app, bar, head, toast, esc, fmt, AR, mmss, media, pgMedia, srcOf,
         /* `N` محجوزةٌ هنا لخريطة أرقام الأسئلة (السطر ٦٦) — فتُستورد
            دالّةُ العدد والمعدود باسمٍ آخر، ولا يُعاد تسميةُ المحلّية:
            هي في أربعة عشر موضعاً وتلك في موضعٍ واحد. */
-        N as عدد } from './ui.js';
+        N as عدد, pushView } from './ui.js';
 import { loadList, loadLessons } from './student.js';
 /* `kindLabel` لا `KIND_LABEL`: اسمُ النمط صار يتبع لسانَ الورقة
    (render_q.js · b142)، والخريطةُ الخام لم يبقَ لها قارئٌ هنا. */
@@ -208,6 +208,7 @@ export async function startQuiz(meta){
     if(S.left<=0){ clearInterval(S.tick); toast("انتهى الوقت — تسليم تلقائي"); finish(true); }
   }, 1000);
 
+  pushView();      // 🆕 b168 · الرجوعُ من النتيجة يبلغ الدرس — التعليلُ عند pushView في ui.js
   renderPage();
 }
 
@@ -356,6 +357,7 @@ function mountStation(data){
     if(S.left<=0){ clearInterval(S.tick); toast(PT().timeUp); finish(true); }
   }, 1000);
 
+  pushView();      // 🆕 b168 · ومحطّاتُ التسكين في مدخلٍ واحد (pushView لا تُكرّر)
   renderPage();
 }
 
