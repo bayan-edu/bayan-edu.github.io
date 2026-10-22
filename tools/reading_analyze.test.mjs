@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════
-   قياسُ منطق تحليل القراءة الجهريّة (176) — بلا شبكةٍ ولا Gemini.
+   قياسُ منطق تحليل القراءة الجهريّة (176) — بلا شبكةٍ ولا نموذج.
      node tools/reading_analyze.test.mjs
    المقارنةُ بين ما سُمع ونصّ الدرس: حذفٌ وإبدالٌ وزيادة · الإعرابُ حيث شُكل الطرفان
    · و`readable`: وسومُ القارئ (سطرُ الصورة والفيديو · رقمُ الفقرة · التنسيق) لا تُقارَن.
@@ -25,8 +25,6 @@ ok('ar: خطأ إعراب في الطالب (ضمّ ⇒ فتح)', b.ending_misma
 ok('ar: الإعرابُ لا يُحكم حيث لم يُشكل الطرفان (إلى بلا حركة)', b.ending_checked===4, String(b.ending_checked));
 ok('ar: الهمزات تُطبَّع', C.base('إِلَى','ar')===C.base('الى','ar'));
 ok('ending: الشدّة ليست إعراباً', C.ending('مُبَكِّرًا')==='ً' && C.ending('الحقّ')==='');
-ok('parseGemini: سياج json', C.parseGemini({candidates:[{content:{parts:[{text:'```json\n{"transcript":"x"}\n```'}]}}]}).data.transcript==='x');
-ok('parseGemini: فارغ', !!C.parseGemini({}).error);
 ok('mimeOf', C.mimeOf('a/i1-x.webm')==='audio/webm' && C.mimeOf('x.m4a')==='audio/mp4' && C.mimeOf('x.exe')===null);
 ok('brief', /omitted: «a»/.test(C.alignmentBrief(a)));
 const big='w '.repeat(600), bigH='w '.repeat(590);
@@ -41,4 +39,24 @@ ok('readable: والمقارنةُ بعده نظيفة', C.align(b431, 'Egypt is
 ok('readable: [صورة: …] والفيديو', C.readable('أ ب\n[صورة: r2:x.webp]\n[فيديو: https://y | تعليق]\nج') === 'أ ب\nج', JSON.stringify(C.readable('أ ب\n[صورة: r2:x.webp]\n[فيديو: https://y | تعليق]\nج')));
 ok('readable: رقمُ الفقرة والتنسيق', C.readable('(١) **مصرُ** بلدٌ __عريق__ و_جميل_.\n\n(2) Second \\(x\\) line.') === 'مصرُ بلدٌ عريق وجميل.\n\nSecond x line.', JSON.stringify(C.readable('(١) **مصرُ** بلدٌ __عريق__ و_جميل_.\n\n(2) Second \\(x\\) line.')));
 ok('readable: الحركاتُ لا تُمسّ', C.readable('ذَهَبَ الطالبُ') === 'ذَهَبَ الطالبُ');
+/* الذيلُ المخترَع — نصّ ٤٣١ وما كتبه Whisper حيّاً للتسجيلين ١٣ و١٤ (٢٢ أكتوبر) */
+const REF431 = "Egypt is a land with a heart that has been beating for thousands of years. We are proud to call it our home. It is a place where the past and the present meet in harmony.\nEgypt has always played an important role in the world. Our ancestors built one of the greatest civilizations in history. They gave the world knowledge in writing, mathematics, and medicine. The hieroglyphs carved into temple walls were not just beautiful art; they were a way to record history. The Library of Alexandria once gathered knowledge from all over the world, making Egypt a center of learning.\n\nEgypt was also a crossroads for trade. Merchants traveled along the Nile and across the deserts, carrying goods.";
+const a14 = C.align(REF431, "Egypt, a land, is with a heart that has been beating for thousands of years. We are proud to call it our home. It is a place where the past and the present meet in harmony. Egypt has always played an important role in the world. Our predecessors built one of the greatest civilizations in history. They gave the world knowledge in writing, mathematics, and medicine. The higher carved into temple walls were not just a beautiful art. They were a way to record history. The library of Alexandria once gathered knowledge from all over the world, making Egypt a center of learn. Egypt is also a crossroads for trade. Merchants traveled along the Nile and across the desert carrying things. Thanks. Thanks. Thanks. Thanks for listening.", 'en');
+ok('ذيل ١٤: «Thanks…» بعد النصّ ولا يُعدّ', a14.after_text.length === 6 && a14.inserted === 2, JSON.stringify({after:a14.after_text, ins:a14.inserted}));
+ok('ذيل ١٤: «goods» ⇐ «things» لا «Thanks»', a14.issues.some(o => o.op === 'sub' && o.ref === 'goods.' && o.hyp === 'things.'), JSON.stringify(a14.issues.slice(-3)));
+ok('ذيل ١٤: الأخطاءُ المتعمَّدة كلُّها في القائمة', ['predecessors','higher','learn.'].every(h => a14.issues.some(o => o.op === 'sub' && o.hyp === h))
+   && a14.issues.some(o => o.op === 'sub' && o.ref === 'was' && o.hyp === 'is') && a14.issues.some(o => o.op === 'ins' && o.hyp === 'a'), JSON.stringify(a14.issues));
+const a13 = C.align(REF431, "Egypt is a land with a heart that has been beating for thousands of years. We are proud to call it our home. It is a place where the past and the present meet in harmony. Egypt has always played an important role in the world. Our ancestors built one of the greatest civilizations in history. They gave the world knowledge in writing, mathematics, and medicine. The hieroglyphs carved into temple walls were not just beautiful art. They were a way to record history. The Library of Alexandria once gathered knowledge from all over the world, making Egypt a center of learning. Egypt was also a crossroads for trade. Merchants traveled along the Nile and across the desert carrying goods. Merchants get an embrace. Even change in the world.", 'en');
+ok('ذيل ١٣: جملةٌ مخترَعةٌ كاملة بعد النصّ ولا تُعدّ', a13.after_text.length === 9 && a13.inserted === 0 && a13.substituted === 1, JSON.stringify({after:a13.after_text, sub:a13.substituted, ins:a13.inserted}));
+ok('بلا ذيل: لا شيء بعد النصّ', C.align('one two three', 'one two three', 'en').after_text.length === 0);
+ok('عنوانٌ قُرئ قبل النصّ ⇒ before_text لا زيادة', (r => r.before_text.length === 2 && r.inserted === 0)(C.align('one two three', 'Reading time one two three', 'en')));
+ok('زيادةٌ داخل النصّ تبقى زيادة', C.align('one two three', 'one two two three', 'en').inserted === 1);
+
+/* asrInfo — السرعةُ على كلمات القراءة وحدها */
+const seg = [{ start: 0, end: 6, words: [{word:'x',start:0.5,end:0.8},{word:'one',start:1,end:1.3},{word:'two',start:1.4,end:1.6},{word:'three',start:2.9,end:3.0},{word:'Thanks',start:5,end:5.2}] }];
+const f1 = C.asrInfo({ segments: seg, transcription_info: { duration: 6 } }, 'en', { start: 1, end: 1 });
+ok('asrInfo: الطرفان يسقطان والمدّةُ من أوّل كلمةٍ مقروءة إلى آخرها', f1.words === 3 && f1.duration_s === 2 && f1.wpm === 90 && f1.long_pauses === 1, JSON.stringify(f1));
+const f2 = C.asrInfo({ text: 'a b c', segments: [{ start: 0, end: 6 }] });
+ok('asrInfo: بلا توقيتٍ للكلمات ⇒ مدّةُ آخر مقطع والوقفاتُ null', f2.duration_s === 6 && f2.wpm === 30 && f2.long_pauses === null, JSON.stringify(f2));
+ok('asrInfo: ردٌّ فارغ لا ينكسر', C.asrInfo({}).wpm === null && C.asrInfo(null).words === 0);
 console.log(`${n-bad}/${n}`); process.exit(bad?1:0);

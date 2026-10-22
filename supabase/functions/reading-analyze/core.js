@@ -3,12 +3,16 @@
    المنطقُ النقيّ لتحليل القراءة الجهريّة: لا Deno ولا شبكة ولا سرّ.
    فيُقاس في node كما يُشحن (`node tools/reading_analyze.test.mjs`).
 
-   🎯 لماذا مرّتان لا مرّة؟ — النموذجُ الذي يرى نصَّ الدرس وهو يسمع يميل
-      إلى أن «يسمع» النصَّ لا الطالب: يُصلح الكلمةَ المحذوفة ويُكمل الناقصة.
-      ⇒ **المرّة الأولى يكتب ما سمعه حرفيّاً ولا يرى النصّ** · ثمّ تُقارَن
-      كتابتُه بالنصّ **هنا، بشيفرةٍ لا بنموذج** (حذف · إبدال · زيادة) · ثمّ
-      **المرّة الثانية** يسمع ثانيةً ومعه النصُّ والمقارنة، فيؤكّد أو ينفي،
-      ويضيف ما سمعه من نطقٍ وإعراب — **وما لم يتيقّنه لا يذكره.**
+   🎯 الطريقُ: Whisper يكتب ما سمعه ⇐ **والمقارنةُ بنصّ الدرس هنا، بشيفرةٍ
+      لا بنموذج** (حذف · إبدال · زيادة · والإعرابُ حيث شُكل الطرفان) ⇐ والسرعةُ
+      والوقفاتُ من توقيت Whisper نفسِه. **لا نموذجَ يكتب حكماً** — المقارنةُ هي
+      الملاحظة، دقيقةٌ ولا تخترع.
+   🔴 وWhisper يخترع جملاً كاملةً في صمت الختام، وبغير ما اخترعه في المرّة السابقة
+      (قِيس ٢٢ أكتوبر · ومرشّحُ الصوت `vad_filter` يُضاعفه ٣٦ كلمة ⇒ مردود). ⇒ ما بعد
+      آخر كلمةٍ في النصّ يُحفظ «بعد النصّ» ولا يُعدّ على الطالب.
+   ⛔ وكان التصميمُ الأوّل Gemini على مرّتين — وأُسقط ٢٢ أكتوبر: شروطُ Google
+      (Gemini API وVertex AI) تمنع خدمةً «likely to be accessed by individuals
+      under the age of 18». التفصيلُ في STATE.md عند `176`.
    ══════════════════════════════════════════════════════════ */
 
 /* ═══════════ تطبيعُ الكلمة ═══════════ */
@@ -65,6 +69,7 @@ export function words(text, lang){
 /* ═══════════ المقارنة: كتابةُ الطالب مقابل نصّ الدرس ═══════════
    مسافةُ تحريرٍ على مستوى الكلمة (Levenshtein) ثمّ تتبُّعٌ عكسيّ.
    ⇒ لكلّ كلمةٍ في النصّ: صحيحة · مُبدَلة · محذوفة، وما زاده الطالب: زيادة.
+   ⇒ وما قبل النصّ وما بعده (`before_text` · `after_text`) يُحفظ ولا يُعدّ.
    🔑 والإعرابُ يُقارَن حيث كُتبت حركةُ الآخر في **الطرفين** — نصٌّ غيرُ مشكول
       لا يُحكم منه على إعراب، وهذا يُقال صراحةً (`ending_checked`). */
 export function align(refText, hypText, lang){
@@ -82,6 +87,11 @@ export function align(refText, hypText, lang){
   const ops = [];
   let i = n, j = m;
   while(i > 0 || j > 0){
+    /* 🔑 بعد آخر كلمةٍ في النصّ: الزيادةُ أولى عند التساوي — فما يخترعه Whisper في صمت
+       الختام يبقى «بعد النصّ» ولا يبتلع آخرَ كلمةٍ قالها الطالب (قِيس: «goods» ⇐ «Thanks») */
+    if(i === n && j > 0 && D[i][j] === D[i][j - 1] + 1){
+      ops.push({ op: 'ins', hyp: H[j - 1].raw, at: i }); j--; continue;
+    }
     if(i > 0 && j > 0 && D[i][j] === D[i - 1][j - 1] + (R[i - 1].b === H[j - 1].b ? 0 : 1)){
       ops.push({ op: R[i - 1].b === H[j - 1].b ? 'ok' : 'sub', ref: R[i - 1].raw, hyp: H[j - 1].raw, at: i - 1 });
       i--; j--;
@@ -106,73 +116,72 @@ export function align(refText, hypText, lang){
     }
   }
 
-  const count = k => ops.filter(o => o.op === k).length;
+  /* ما قبل أوّل كلمةٍ وما بعد آخرها ليس من القراءة: عنوانٌ قرأه الطالب، أو ما ملأ به
+     Whisper الصمت. يُحفظ ويُعرض **ولا يُعدّ خطأً** — والزيادةُ داخل النصّ وحدها زيادة. */
+  const edge = o => o.op === 'ins' && (o.at === 0 || o.at === n);
+  const before_text = ops.filter(o => o.op === 'ins' && o.at === 0).map(o => o.hyp);
+  const after_text  = n ? ops.filter(o => o.op === 'ins' && o.at === n).map(o => o.hyp) : [];
+  const inner = ops.filter(o => !edge(o));
+  const count = k => inner.filter(o => o.op === k).length;
   const ok = count('ok');
   return {
     ref_words: n, heard_words: m,
     correct: ok, substituted: count('sub'), omitted: count('del'), inserted: count('ins'),
     accuracy: n ? Math.round((ok / n) * 1000) / 10 : 0,
     ending_checked: endingChecked, ending_mismatch: endings,
-    issues: ops.filter(o => o.op !== 'ok')
+    before_text, after_text,
+    issues: inner.filter(o => o.op !== 'ok')
   };
 }
 
-/** خلاصةُ المقارنة للنموذج في المرّة الثانية — قصيرةٌ ومحدودة (لا نُغرقه بنصٍّ طويل) */
+/** خلاصةُ المقارنة سطوراً — قصيرةٌ ومحدودة: تُقرأ في السجلّ، وتصلح مدخلاً لحكم التحدّث لاحقاً */
 export function alignmentBrief(a, max = 40){
   const lines = a.issues.slice(0, max).map(o =>
     o.op === 'sub' ? `- replaced: expected «${o.ref}» heard «${o.hyp}»`
   : o.op === 'del' ? `- omitted: «${o.ref}»`
   :                  `- inserted: «${o.hyp}»`);
   for(const e of a.ending_mismatch.slice(0, 20)) lines.push(`- ending differs: expected «${e.ref}» heard «${e.hyp}»`);
+  if(a.after_text?.length) lines.push(`- after the text (not counted): ${a.after_text.length} words`);
   return `words in text: ${a.ref_words} · read correctly: ${a.correct} · replaced: ${a.substituted} · omitted: ${a.omitted} · inserted: ${a.inserted}\n`
        + (lines.length ? lines.join('\n') : '- no word-level differences found');
 }
 
-/* ═══════════ التعليمات للنموذج ═══════════ */
-
-export function transcribePrompt(lang){
-  const common = 'You are a careful transcriber of a learner reading a text aloud. '
-    + 'Write EXACTLY what the speaker says, word by word, including mistakes, skipped words, repeated words, '
-    + 'false starts and mispronounced words as they sound. Do NOT correct anything, do NOT complete missing words, '
-    + 'do NOT guess the intended text. If a part is unclear write [unclear]. ';
-  const ar = 'The speech is Arabic (Modern Standard Arabic). Write the Arabic WITH full diacritics (tashkeel) exactly as '
-    + 'pronounced, especially the vowel on the LAST letter of every word (case endings). ';
-  const en = 'The speech is English. Use normal spelling for correctly pronounced words. ';
-  return common + (lang === 'ar' ? ar : en)
-    + 'Return JSON only: {"transcript": "<the words>", "clear": true|false}';
+/* ═══════════ ما يقوله توقيتُ Whisper عن الطلاقة ═══════════
+   السرعةُ (كلمةٌ في الدقيقة) والوقفاتُ الطويلة (ثانيةٌ فأكثر بين كلمتين) — **محسوبةً على
+   كلمات القراءة وحدها:** تُسقط `skip.start` كلمةً من أوّل التوقيت و`skip.end` من آخره
+   (ما قبل النصّ وما بعده في المقارنة)، والمدّةُ من أوّل كلمةٍ مقروءة إلى آخرها — فلا يُحسب
+   صمتُ البدء والختام ولا ما اخترعه Whisper فيه. وبلا توقيتٍ للكلمات ⇒ مدّةُ الملفّ كلُّه.
+   وما غاب يُقال `null` لا صفراً — فالصفرُ حكمٌ والغيابُ جهل. */
+const r1 = x => Math.round(x * 10) / 10;
+export function asrInfo(res, lang = 'en', skip = { start: 0, end: 0 }){
+  const segs = Array.isArray(res?.segments) ? res.segments : [];
+  const all = segs.flatMap(sg => Array.isArray(sg?.words) ? sg.words : [])
+                  .filter(w => Number.isFinite(Number(w?.start)) && Number.isFinite(Number(w?.end)));
+  const s0 = Math.max(0, skip?.start | 0), s1 = Math.max(0, skip?.end | 0);
+  const ws = all.slice(s0, Math.max(s0, all.length - s1));
+  let dur, wc, pauses = null;
+  if(ws.length > 1){
+    dur = Number(ws[ws.length - 1].end) - Number(ws[0].start);
+    wc = ws.length;
+    pauses = 0;
+    for(let k = 1; k < ws.length; k++) if(Number(ws[k].start) - Number(ws[k - 1].end) >= 1) pauses++;
+  } else {
+    const last = segs.length ? Number(segs[segs.length - 1]?.end) : NaN;
+    dur = Number(res?.transcription_info?.duration) || (Number.isFinite(last) ? last : 0);
+    wc = Math.max(0, words(res?.text, lang).length - s0 - s1);
+  }
+  return {
+    duration_s: dur > 0 ? r1(dur) : null,
+    words: wc,
+    wpm: dur > 0 ? Math.round(wc / (dur / 60)) : null,
+    long_pauses: pauses,
+    language: res?.transcription_info?.language ?? null,
+    segments: segs.length,
+    word_timing: all.length > 0
+  };
 }
 
-export function feedbackPrompt(lang, reference, transcript, brief){
-  const langNote = lang === 'ar'
-    ? 'The text is Arabic. Check pronunciation of letters (makharij), and case endings (i\'rab) on word endings. '
-    : 'The text is English. Check pronunciation of sounds (e.g. th, v/w, vowel length), word stress, and fluency. ';
-  return 'You are an experienced reading teacher. A learner read the TEXT aloud; the audio is attached. '
-    + 'A first listening produced the TRANSCRIPT, and a program compared it with the TEXT (COMPARISON). '
-    + langNote
-    + 'Listen to the audio again. For each difference in COMPARISON, confirm it only if you clearly hear it. '
-    + 'Add other pronunciation problems ONLY if you are sure; when unsure, leave it out — a wrong correction harms the learner more than a missed one. '
-    + 'Be specific (the word, what was heard, what is expected). '
-    + 'Write "summary_ar" in simple Arabic (max 3 short sentences) for the teacher, and "student_note" in simple '
-    + (lang === 'ar' ? 'Arabic' : 'English')
-    + ' addressed to the learner: one strength, then at most 3 things to practise.\n'
-    + `TEXT:\n${reference}\n\nTRANSCRIPT:\n${transcript}\n\nCOMPARISON:\n${brief}\n\n`
-    + 'Return JSON only: {"confirmed":[{"word":"","heard":"","expected":"","type":"omission|substitution|insertion|pronunciation|ending|fluency","note":""}],'
-    + '"strengths":[""],"fluency":"smooth|some hesitation|slow","summary_ar":"","student_note":"","confidence":"high|medium|low"}';
-}
-
-/* ═══════════ قراءةُ ردّ Gemini ═══════════ */
-
-/** النصُّ من أوّل مرشّح، ثمّ JSON — ويحتمل سياجَ ```json الذي تضعه النماذج أحياناً */
-export function parseGemini(resp){
-  const parts = resp?.candidates?.[0]?.content?.parts || [];
-  const text = parts.map(p => p.text || '').join('').trim();
-  if(!text) return { error: resp?.promptFeedback?.blockReason ? 'blocked: ' + resp.promptFeedback.blockReason : 'empty response' };
-  const clean = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
-  try { return { data: JSON.parse(clean) }; }
-  catch(e){ return { error: 'not json', raw: text.slice(0, 500) }; }
-}
-
-/** نوعُ الملفّ من لاحقته — لما يقبله Gemini */
+/** نوعُ الملفّ من لاحقته */
 export function mimeOf(path){
   const ext = String(path || '').split('.').pop().toLowerCase();
   return ({ webm: 'audio/webm', ogg: 'audio/ogg', m4a: 'audio/mp4', mp4: 'audio/mp4', mp3: 'audio/mp3',

@@ -85,7 +85,11 @@ function render(list){
 
   const row = x => `<div class="ed-row">
       <div style="flex:1;min-width:0">
-        <div class="ed-t">${
+        ${/* 🆕 b172 · `dir="auto"` كصفّ الدرس في `editor.js` وصفّ الهدف في
+              `editor_objectives.js` — **وهذه وحدها كانت بلا اتجاه.** وفروعُ
+              الإنجليزية إنجليزيّةُ الاسم (`Grammar` · `Listening`)، وشاشةٌ
+              تُصحِّح وأختُها لا تُصحِّح أسوأُ من شاشتين تُخطئان. */''}
+        <div class="ed-t" dir="auto">${
           x.parent_name ? `<span style="opacity:.65">${esc(x.parent_name)} › </span>` : ''
         }${esc(x.name)}</div>
         <div class="ed-m">

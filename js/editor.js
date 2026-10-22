@@ -468,7 +468,22 @@ export async function openCourse(course){
      حيّة، وعليها تنويهٌ يقول ما تفعل. */
   const row = l => `<div class="ed-row${course.curate ? '' : ' ro'}" data-l="${l.id}">
       <div style="flex:1;min-width:0">
-        <div class="ed-t">${esc(l.title)}</div>
+        ${/* 🆕 b172 · `dir="auto"` — وهي القاعدةُ نفسُها التي يحملها عنوانُ
+              الدرس عند الطالب (`lsn-t` · `b123`)، **وسقطت من شاشة المؤلّف**.
+           🔴 والصفحةُ `rtl`، فعنوانٌ إنجليزيٌّ فيها فقرةٌ عربيّةُ الاتجاه:
+              علامتُه الأخيرة محايدةٌ **تتبع الفقرةَ لا جملتَها** فتُرحَّل إلى
+              أوّل السطر — `?Reading: Whose Responsibility Is It`.
+           🔑 و`auto` لا `ltr`: الاتجاهُ من أوّل حرفٍ قويّ، فيصحّ للّسانين
+              بسطرٍ واحد. وقِيس في Chromium بصندوق الحرف نفسِه (`Range`):
+              الإنجليزيُّ انقلب إلى موضعه، **والعربيُّ لم يتزحزح بكسرٍ واحد.**
+           📌 ولم تُقلَب الشاشة: الاتجاهُ لسانُ النصّ لا تخطيطُ الصفّ —
+              فالشاراتُ والأزرارُ عربيّةٌ باقيةٌ على منطقها.
+           📊 **والعطلُ لم يكن في صفٍّ دون صفّ** (قِيس في القاعدة · ٢٢ أكتوبر):
+              ٩٩ عنواناً من ٢٦٦ يبدأ بلاتينيّ — ٥١ في الثاني الثانوي و٤٦ في
+              الأول و٢ في IELTS، **وكلُّها كانت تُحاذى يميناً**. وثلاثةٌ تنتهي
+              بمحايدٍ فتُرحَّل علامتُها إلى الصدر — واحدٌ منها في الأوّل الثانوي
+              واثنان في الثاني، **فظهر الكسرُ حيث كثُر لا حيث وقع وحدَه.** */''}
+        <div class="ed-t" dir="auto">${esc(l.title)}</div>
         ${/* 🔓 b150 · وسقطت شارتان كانتا تقولان ما يقوله الزرّان بجوارهما —
               **قرارُ صاحب المنصّة**: «N مصدراً» يقولها زرُّ «📦 المصادر (N)»،
               و«📝 اختبار» يقولها زرُّ «📝 الاختبار». واحدةٌ تُقرأ وأخرى
@@ -478,7 +493,14 @@ export async function openCourse(course){
         <div class="ed-m">
           <span class="chip ${l.published ? 'g' : ''}">${l.published ? '✅ منشور' : '✏️ مسودّة'}</span>
           ${l.extras ? `<span class="chip">+${AR(l.extras)} إضافي</span>` : ''}
-          ${l.strand ? `<span class="chip">🌿 ${esc(l.strand.name)}</span>`
+          ${/* 🔑 و`bdi` في الشارة لا `dir`: الشارةُ وسمٌ وعبارة، فقلبُها كلِّها
+                يُخرج 🌿 من صدرها. **وقِيس: `🌿 Grammar` لا يتبدّل بها حرفاً**
+                — والمكسبُ في اسمٍ ينتهي بمحايد: `Listening & Speaking?` بلا
+                عزلٍ تُرحَّل علامتُه إلى صدر الشارة (`?Listening…`)، وبه تبقى.
+             📌 **فهي حارسُ فجوةٍ نائمة:** ٣٤ فرعاً اليوم، ٨ لاتينيّةُ الاسم،
+                **وصفرٌ ينتهي بمحايد** (قِيس ٢٢ أكتوبر) — فما يُكتب غداً لا
+                ينكسر، ولا يُنتظر أن ينكسر ليُرى. */''}
+          ${l.strand ? `<span class="chip">🌿 <bdi>${esc(l.strand.name)}</bdi></span>`
             : (strands.length ? `<span class="chip w">🌿 بلا فرع</span>` : '')}
         </div>
         ${/* 🆕 b150 · وحلّ محلّهما صفُّ مصادرِ الدرس — أيقوناتٌ تُنقَر فتفتح
@@ -520,7 +542,13 @@ export async function openCourse(course){
 
   const block = (title, uid) => {
     const ls = group(uid);
-    return `<div class="grp">${esc(title)} <span class="chip">${AR(ls.length)}</span></div>
+    /* 🆕 b172 · وعنوانُ الوحدة كعنوان الدرس — `UNIT 1 · Living Well…`
+          كان يُرسم من اليمين وعدّادُه عن يساره.
+       🔑 والعدّادُ لا يُفسد الحكم: أرقامُه هنديّةٌ (`AR`)، **والرقمُ ليس
+          حرفاً قويّاً** في خوارزمية `auto` — فالحَكَمُ أوّلُ حرفٍ من العنوان
+          وحده. وقِيس: وحدةٌ عربيّةٌ بعدّادها لم تتبدّل.
+       📊 و٤١ عنوانَ وحدةٍ من ٧٧ يبدأ بلاتينيّ (٢٢ أكتوبر). */
+    return `<div class="grp" dir="auto">${esc(title)} <span class="chip">${AR(ls.length)}</span></div>
       ${ls.length ? ls.map(row).join("") : '<div class="ed-empty">لا دروس بعد</div>'}`;
   };
 
@@ -637,7 +665,10 @@ export async function editLesson(course, lesson){
 
       <div class="card" style="flex:1">
         <label class="fl">عنوان الدرس *</label>
-        <input type="text" id="ti" value="${esc(lesson?.title || '')}"
+        ${/* 🆕 b172 · والحقلان `dir="auto"` كمربّع النصّ في `editor_items.js`
+              (`b170`): العنوانُ الإنجليزيُّ كان يُكتب من اليمين فتقفز نقطتُه
+              إلى أوّله — **والمؤلّفُ يرى ما لا يراه الطالب.** */''}
+        <input type="text" id="ti" dir="auto" value="${esc(lesson?.title || '')}"
                placeholder="مثال: الغلاف المائي على كوكب الأرض">
         <p class="small">العنوان فريد داخل المقرَّر — والتشابه يُكشف بعد التطبيع
           (الهضمي = الهضمى)</p>
@@ -656,7 +687,7 @@ export async function editLesson(course, lesson){
           «بلاغة ٤١٪» بدل «العربية ٦٢٪». وشرط النشر.</p>` : ''}
 
         <label class="fl" style="margin-top:16px">ملخّص <span style="opacity:.6">(اختياري)</span></label>
-        <textarea id="su" style="min-height:80px"
+        <textarea id="su" dir="auto" style="min-height:80px"
           placeholder="سطر أو سطران — للتأليف والمراجعة، ولا يراهما الطالب">${esc(lesson?.summary || '')}</textarea>
 
         <div class="ed-3">
