@@ -10,8 +10,9 @@
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
 import { S } from './state.js';
-import { app, head, toast, esc, AR, errBox, nav, setWide, scrollTop, srcOf, SAFE_HOSTS } from './ui.js';
-import { attachUpload } from './upload.js';
+import { app, head, toast, esc, AR, errBox, nav, setWide, scrollTop, srcOf, SAFE_HOSTS,
+         videoOf, VIDEO_HOSTS } from './ui.js';
+import { attachUpload, insertLine } from './upload.js';
 import { openCourse } from './editor.js';
 import { openQuiz, openQuizPreview } from './editor_quiz.js';
 
@@ -198,9 +199,11 @@ function form(item, official, ro){
                      placeholder="r2:audio/l1-a1.mp3  أو  https://…">` : ''}
           ${k.needs === 'body' ? `
             <label class="fl" style="margin-top:16px">النصّ *</label>
-            <textarea id="bo" style="min-height:150px"${dis}>${esc(item?.body || '')}</textarea>
-            ${ro ? '' : `<p class="hint" style="margin-top:6px">صورةٌ في النصّ: زرُّ «إدراج صورة» يضعها
-              حيث المؤشّر، ويُكتب تعليقُها قبل «]». وأنفعُ تعليقٍ سؤالٌ يوجّه النظر إلى ما في النصّ.</p>`}` : ''}
+            <textarea id="bo" dir="auto" style="min-height:150px"${dis}>${esc(item?.body || '')}</textarea>
+            ${ro ? '' : `<p class="hint" style="margin-top:6px">صورةٌ أو فيديو في النصّ: الزرّان يضعان
+              السطرَ حيث المؤشّر، ويُكتب التعليقُ قبل «]». وأنفعُ تعليقٍ سؤالٌ يوجّه النظر إلى ما في النصّ.
+              <b>وموضعُ الفيديو قبل النصّ أو بعده لا وسطه:</b> مقطعٌ يحكي مضمونَ النصّ يُشاهَد بدل أن يُقرأ،
+              فيقيس الاختبارُ الاستماعَ لا القراءة.</p>`}` : ''}
           ${k.needs === 'quiz' ? (off ? `
             <div class="warnbox" style="margin-top:16px">اختبار الدرس يُنشأ من زرّ
               «الاختبار» في قائمة الدروس — فيُربط ويصير شرط الانتقال تلقائياً.</div>` : `
@@ -246,12 +249,9 @@ function form(item, official, ro){
        يقلب اتجاهَ الأسطر في مربّع المعلّم. */
     if(!ro) attachUpload('bo', 'l' + (ctx.lesson?.id ?? ''), 'image', {
       label: '⬆ إدراج صورة',
-      insert: (key, f) => {
-        const t = f.value, ar = (t.match(/[\u0600-\u06FF]/g) || []).length,
-              la = (t.match(/[A-Za-z]/g) || []).length;
-        return `[${la > ar ? 'image' : 'صورة'}: ${key} | ]`;
-      }
+      insert: (key, f) => `[${kw(f, 'image', 'صورة')}: ${key} | ]`
     });
+    if(!ro) attachVideo('bo');
     app.querySelectorAll("[data-k]").forEach(el => el.onclick = () => {
       if(!isNew) return;                    // النمط لا يتغيّر بعد الإنشاء
       k = kind(el.dataset.k); draw();
@@ -260,6 +260,64 @@ function form(item, official, ro){
     if(sv) sv.onclick = () => save(item, off, k);
   };
   draw();
+}
+
+/* كلمةُ سطر الوسيط بلغة النصّ (`image`/`video` للإنجليزي): سطرٌ عربيٌّ وسط نصٍّ
+   لاتينيّ يقلب اتجاهَ الأسطر في مربّع المعلّم. */
+/* 🆕 b170 · ومربّعُ النصّ نفسُه `dir="auto"`: كان النصُّ الإنجليزيّ يُعرض فيه من اليمين،
+   فتقفز علامةُ الوقف إلى أوّل السطر ويبدو سطرُ الوسيط مكسوراً («[?video: …»). */
+function kw(f, en, ar){
+  const t = f.value, a = (t.match(/[\u0600-\u06FF]/g) || []).length,
+        l = (t.match(/[A-Za-z]/g) || []).length;
+  return l > a ? en : ar;
+}
+
+/* 🆕 b170 · «إدراج فيديو» — لا رفعَ هنا: المقطعُ رابطٌ (YouTube · Drive)، ورفعُ ملفّات
+   الفيديو إلى R2 قرارٌ لم يُتّخذ (حجمٌ وكلفةٌ ودالّةٌ طرفيّة لا تعرف الفيديو). ⇒ حقلٌ
+   يُلصق فيه الرابط **ويُفحص لحظةَ الإدراج بحارس الطالب نفسِه (videoOf)** — فلا يُكتشف
+   رابطٌ معطوبٌ يومَ القراءة. والمؤشّرُ يُحفظ قبل أن ينتقل التركيزُ إلى الحقل، فيُدرَج
+   السطرُ حيث كان المعلّم. وزرُّه بجوار زرّ الصورة لا تحته في سطرٍ بعيد. */
+function attachVideo(id){
+  const inp = document.getElementById(id);
+  if(!inp || inp.dataset.vid) return;
+  inp.dataset.vid = "1";
+  const wrap = document.createElement("div");
+  wrap.className = "mf";
+  wrap.innerHTML = `<button type="button" class="mf-up">إدراج فيديو</button>
+    <span class="mf-row" hidden><input type="url" dir="ltr" class="mf-url" placeholder="https://youtu.be/…"
+      aria-label="رابط المقطع"><button type="button" class="mf-up">إدراج</button></span>
+    <span class="mf-note"></span>`;
+  const near = inp.nextElementSibling?.classList.contains("mf") ? inp.nextElementSibling : inp;
+  near.insertAdjacentElement("afterend", wrap);
+
+  const [open, ok] = wrap.querySelectorAll("button");
+  const row = wrap.querySelector(".mf-row"), url = wrap.querySelector(".mf-url");
+  const note = wrap.querySelector(".mf-note");
+  const say = (t, bad) => { note.textContent = t; note.className = "mf-note" + (bad ? " bad" : ""); };
+  let sel = null;
+
+  open.onclick = () => {
+    sel = [inp.selectionStart, inp.selectionEnd];
+    row.hidden = false; url.value = "";
+    say("يُلصق رابطُ المقطع من YouTube أو Google Drive");
+    url.focus();
+  };
+  const go = () => {
+    const v = url.value.trim();
+    /* «|» و«]» يكسران السطر — ولا يحملهما رابطُ مقطعٍ صحيح */
+    if(/[|\]\s]/.test(v) || !videoOf(v)) return say(`رابطٌ لا يُشغَّل — المقبول: ${VIDEO_HOSTS}`, true);
+    if(sel) inp.setSelectionRange(sel[0], sel[1]);
+    insertLine(inp, `[${kw(inp, 'video', 'فيديو')}: ${v} | ]`);
+    inp.dispatchEvent(new Event("input",  { bubbles: true }));
+    inp.dispatchEvent(new Event("change", { bubbles: true }));
+    row.hidden = true;
+    say("أُدرج المقطع ✔ — ويُكتب تعليقُه قبل «]»، ثمّ الحفظ");
+  };
+  ok.onclick = go;
+  url.onkeydown = e => {
+    if(e.key === "Enter"){ e.preventDefault(); go(); }
+    else if(e.key === "Escape"){ row.hidden = true; say(""); inp.focus(); }
+  };
 }
 
 async function save(item, official, k){
@@ -271,9 +329,13 @@ async function save(item, official, k){
   /* 🆕 b165 · صورةٌ مصدرُها غير مأذون تسقط عند الطالب صامتة (حارسُ srcOf) —
      فالإنذارُ هنا، للمعلّم قبل الحفظ، لا فجوةٌ يكتشفها طالبٌ في قراءته. */
   if(k.needs === 'body'){
-    const { figSources } = await import('./book.js');
-    const bad = figSources(v("bo")).find(src => !srcOf(src));
-    if(bad){ toast(`مصدر صورة غير مسموح: ${bad} — المسموح: ${SAFE_HOSTS}`); return; }
+    const { mediaLines } = await import('./book.js');
+    const bad = mediaLines(v("bo")).find(m => m.kind === 'vid' ? !videoOf(m.src) : !srcOf(m.src));
+    if(bad){
+      toast(bad.kind === 'vid' ? `رابط فيديو لا يُشغَّل: ${bad.src} — المقبول: ${VIDEO_HOSTS}`
+                               : `مصدر صورة غير مسموح: ${bad.src} — المسموح: ${SAFE_HOSTS}`);
+      return;
+    }
   }
 
   /* 🆕 تدريبٌ باسم المعلّم — خطوتان لا خطوة: الاختبار يُخلق أوّلاً

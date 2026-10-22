@@ -91,6 +91,19 @@ async function shrinkImage(f, maxMb){
 }
 
 
+/* 🆕 b170 · سطرُ وسيطٍ في نصّ — يشترك فيه زرّا الصورة (هنا) والفيديو (editor_items).
+   سطرٌ وحده: يُفصل عمّا قبله وما بعده بسطرٍ جديد إن لم يكن، ويقف المؤشّرُ قبل «]»
+   فيُكتب التعليقُ في الحال. والحدثان يُطلقهما المنادي (المحرّرُ يحفظ بأحدهما). */
+export function insertLine(inp, line){
+  const a = inp.selectionStart ?? inp.value.length, b = inp.selectionEnd ?? a;
+  const pre  = a > 0 && inp.value[a - 1] !== "\n" ? "\n" : "";
+  const post = inp.value[b] === "\n" ? "" : "\n";
+  inp.setRangeText(pre + line + post, a, b, "end");
+  const at = a + pre.length + line.length - 1;
+  inp.focus(); inp.setSelectionRange(at, at);
+}
+
+
 /**
  * يُركّب زرّ رفعٍ بجوار حقلٍ قائم.
  *
@@ -162,16 +175,8 @@ export function attachUpload(inputId, scope, kind = 'audio', o = {}){
       return say(note, upMsg(up, K.max), true);
     }
 
-    if(o.insert){
-      /* سطرٌ وحده: يُفصل عمّا قبله وما بعده بسطرٍ جديد إن لم يكن */
-      const a = inp.selectionStart ?? inp.value.length, b = inp.selectionEnd ?? a;
-      const pre  = a > 0 && inp.value[a - 1] !== "\n" ? "\n" : "";
-      const post = inp.value[b] === "\n" ? "" : "\n";
-      const line = o.insert(key, inp);
-      inp.setRangeText(pre + line + post, a, b, "end");
-      const at = a + pre.length + line.length - 1;       // قبل «]» ⇒ يُكتب التعليق
-      inp.focus(); inp.setSelectionRange(at, at);
-    } else inp.value = key;
+    if(o.insert) insertLine(inp, o.insert(key, inp));
+    else inp.value = key;
     /* الحدثان معاً: المحرّرات تربط أحدهما لا كليهما، والإسناد
        البرمجيّ لا يُطلق شيئاً من نفسه. فبدونهما يمتلئ الحقل
        ولا يُحفظ — وهو أسوأ عطلٍ ممكن هنا: يبدو ناجحاً. */

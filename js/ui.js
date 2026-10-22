@@ -13,7 +13,7 @@ import { renderMark, whenReady as avatarReady } from './avatar.js';
    والدمجُ مرّ بلا تعارضٍ **لأنّ الجانبين كتبا السطرَ نفسَه حرفاً** — وهو
    أخبثُ ما في التصادم: لا يشتكي. ⇒ هذه ترفعه، **فالختمُ يجيب «أيُّ شيفرةٍ
    يشغّلها المتصفّح»، وجوابان لسؤالٍ واحدٍ لا جواب.** */
-export const BUILD = "b169";
+export const BUILD = "b170";
 
 /* ── مراسي الصفحة ── */
 export const app = document.getElementById("app");
@@ -412,6 +412,51 @@ export function srcOf(v){
   if(/["'<>]/.test(v)) return null;        // لا محرفٍ يكسر سمة HTML
   if(isManaged(v))     return mediaUrl(v); // مفتاح
   return SAFE.test(v) ? v : null;          // رابط خارجيّ
+}
+
+/* 🆕 b170 · الفيديو — حارسُه أخو srcOf، ولا يُضمِّن رابطَ المعلّم كما هو:
+   يُستخرج منه **معرّفُ المقطع وحده** (YouTube: أحدَ عشرَ حرفاً · Drive: معرّفُ
+   الملفّ)، ثمّ نبني نحن رابطَ التشغيل وصورتَه — فلا يصل إلى الصفحة حرفٌ لم نكتبه.
+   🔑 YouTube من `youtube-nocookie`: لا ملفّاتِ تتبّعٍ قبل التشغيل — والطلابُ قاصرون.
+   🔑 ويُقبل ما يلصقه المعلّمُ فعلاً: watch?v= · youtu.be · shorts · embed · live ·
+      ‏m. وبلا www، ووقتُ البدء (t=90 · t=1m30s). وكان SAFE لا يعرف إلا www ⇒
+      رابطٌ صحيحٌ من الهاتف يُرفض صامتاً.
+   ⇒ { embed, poster } أو null. */
+export const VIDEO_HOSTS = 'YouTube · Google Drive';
+const YT_HOST = /^(?:www\.|m\.)?(?:youtube\.com|youtube-nocookie\.com)$/;
+export function videoOf(v){
+  let u;
+  try { u = new URL(String(v || '').trim()); } catch(e){ return null; }
+  if(!/^https?:$/.test(u.protocol)) return null;   // والرابطُ المبنيُّ https دائماً
+  const h = u.hostname.toLowerCase();
+
+  let id = null;
+  if(h === 'youtu.be') id = u.pathname.slice(1).split('/')[0];
+  else if(YT_HOST.test(h))
+    id = u.pathname === '/watch' ? u.searchParams.get('v')
+       : (u.pathname.match(/^\/(?:shorts|embed|live|v)\/([^/]+)/) || [])[1];
+  if(id){
+    if(!/^[A-Za-z0-9_-]{11}$/.test(id)) return null;
+    const t = ytStart(u.searchParams.get('t') || u.searchParams.get('start'));
+    return { embed: `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&playsinline=1`
+                    + (t ? `&start=${t}` : ''),
+             poster: `https://i.ytimg.com/vi/${id}/hqdefault.jpg` };
+  }
+
+  if(h === 'drive.google.com'){
+    const d = (u.pathname.match(/^\/file\/d\/([^/]+)/) || [])[1] || u.searchParams.get('id');
+    if(d && /^[A-Za-z0-9_-]{10,}$/.test(d))
+      return { embed: `https://drive.google.com/file/d/${d}/preview`,
+               poster: `https://drive.google.com/thumbnail?id=${d}&sz=w960` };
+  }
+  return null;
+}
+/* «90» · «90s» · «1m30s» · «1h2m» ⇒ ثوانٍ */
+function ytStart(t){
+  if(!t) return 0;
+  if(/^\d+$/.test(t)) return +t;
+  const m = String(t).match(/^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$/);
+  return m ? (+m[1] || 0) * 3600 + (+m[2] || 0) * 60 + (+m[3] || 0) : 0;
 }
 
 /* 🆕 b167 · رابطُ مصدرٍ من القاعدة يُحلّ على جذر الموقع لا على عنوان الصفحة.

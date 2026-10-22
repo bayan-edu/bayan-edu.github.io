@@ -1610,6 +1610,12 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
 .mf-up:disabled{opacity:.55;cursor:default}
 .mf-note{font-size:var(--fs-meta);color:var(--text-muted)}
 .mf-note.bad{color:var(--danger-text)}
+/* 🆕 b170 · حقلُ رابط الفيديو بجوار زرّه — يظهر بالضغط ويغيب بالإدراج */
+.mf-row{display:inline-flex;align-items:center;gap:6px;flex:1 1 260px;min-width:0}
+.mf-row[hidden]{display:none}
+.mf-url{flex:1;min-width:0;padding:6px 10px;border:1px solid var(--line);border-radius:9px;
+ font:inherit;font-size:var(--fs-meta);background:var(--surface);color:var(--text)}
+.mf-url:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:transparent}
 
 /* ══════════════════════════════════════════════════════════════
    بيان — أنماط التحليلات · b50

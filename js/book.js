@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════
-   بيان — book.js · الكتاب المقلَّب  (b152 · b153 · b154 · b155 · b165)
+   بيان — book.js · الكتاب المقلَّب  (b152 · b153 · b154 · b155 · b165 · b170)
 
    محرّكٌ قائمٌ بنفسه يعرض نصَّ القراءة كتاباً تُقلَّب صفحاته.
    لا يستورد شيئاً من المنصّة: التنسيقُ والأرقامُ والنصوصُ تُمرَّر
@@ -107,8 +107,10 @@ const LETTERED = /^\s*(\*\*)?[A-H][.)]?(\*\*)?\s+\S/;
 /* 🆕 b165 · الصورة سطرٌ وحده: [صورة: المصدر | التعليق] — أو [image: …] في النصّ
    الإنجليزي، فلا تختلط الكتابتان في سطر المعلّم. والتعليقُ اختياريّ.
    🔑 وتُعزل سطراً وإن لم يفصلها سطرٌ فارغ: المعلّمُ يُدرجها حيث المؤشّر،
-      ولا يُطالَب بقاعدة فراغٍ لا يراها. */
-const FIG = /^\[\s*(?:صورة|image)\s*[:：]\s*([^|\]\n]+?)\s*(?:\|\s*([^\]\n]*?))?\s*\]$/i;
+      ولا يُطالَب بقاعدة فراغٍ لا يراها.
+   🆕 b170 · والفيديو أخوها في السطر نفسِه: [فيديو: الرابط | التعليق] — أو [video: …]. */
+const FIG = /^\[\s*(صورة|image|فيديو|video)\s*[:：]\s*([^|\]\n]+?)\s*(?:\|\s*([^\]\n]*?))?\s*\]$/i;
+const figKind = w => /^(فيديو|video)$/i.test(w) ? 'vid' : 'img';
 
 function parse(body, title){
   const raw = String(body || '').replace(/\r\n?/g, '\n').trim()
@@ -118,7 +120,7 @@ function parse(body, title){
 
   chunks.forEach((c, i) => {
     const fig = c.match(FIG);
-    if(fig){ blocks.push({ type: 'f', src: fig[1].trim(), cap: (fig[2] || '').trim() }); return; }
+    if(fig){ blocks.push({ type: 'f', kind: figKind(fig[1]), src: fig[2].trim(), cap: (fig[3] || '').trim() }); return; }
     const oneLine = !c.includes('\n');
     const wrapped = oneLine && /^\*\*[^*]+\*\*$/.test(c);
     const bare = c.replace(/^\*\*|\*\*$/g, '').trim();
@@ -163,17 +165,25 @@ function parse(body, title){
    الكتل التي تُحفظ بها صفحةُ القارئ.
    ⏱ والانتظارُ مسقوف: صورةٌ بطيئةٌ تأخذ نسبةً مفترضة وتصل في مكانها، وصورةٌ
       مكسورةٌ تسقط — فراغٌ لا يُرسم خيرٌ من إطارٍ فارغ. */
-/* وللمحرّر: مصادرُ الصور في نصٍّ — ليُنذَر المعلّمُ عند الحفظ بما سيسقط عند
-   الطالب. والقاعدةُ هي FIG نفسُها، فلا تفترق نسختان. */
-export const figSources = body => String(body || '').split(/\r?\n/)
-  .map(l => l.trim().match(FIG)).filter(Boolean).map(m => m[1].trim());
+/* وللمحرّر: وسائطُ النصّ [{ kind: 'img'|'vid', src }] — ليُنذَر المعلّمُ عند الحفظ بما
+   سيسقط عند الطالب. والقاعدةُ هي FIG نفسُها، فلا تفترق نسختان. */
+export const mediaLines = body => String(body || '').split(/\r?\n/)
+  .map(l => l.trim().match(FIG)).filter(Boolean)
+  .map(m => ({ kind: figKind(m[1]), src: m[2].trim() }));
 
-const FIG_WAIT = 4000, FIG_R = 0.62;
+/* 🆕 b170 · والفيديو لا يُنتظر: إطارُه ١٦:٩ معلومٌ سلفاً، وصورتُه تصل في مكانها.
+   ومصدرُه يمرّ بحارسه (`opt.video` = videoOf) فيعود { embed, poster } أو يسقط. */
+const FIG_WAIT = 4000, FIG_R = 0.62, VID_R = 0.5625;
 const httpsOnly = s => /^https:\/\/[^\s"'<>]+$/.test(s) ? s : null;
 
-function figuresReady(model, resolve){
+function figuresReady(model, resolve, video){
   const figs = model.blocks.filter(b => b.type === 'f');
   return Promise.all(figs.map(f => new Promise(done => {
+    if(f.kind === 'vid'){
+      f.v = video ? video(f.src) : null;
+      if(!f.v) f.drop = true; else f.r = VID_R;
+      return done();
+    }
     f.url = (resolve || httpsOnly)(f.src);
     if(!f.url){ f.drop = true; return done(); }
     const img = new Image();
@@ -338,6 +348,10 @@ const plainText = t => String(t).replace(/\*\*|__|_/g, '').replace(/\\[()[\]]/g,
    🆕 b165 · الصورة — سطرٌ وحده في النصّ: [صورة: المصدر | التعليق]:
    opt.media       (src) ⇒ رابطٌ أو null — حارسُ المصادر (srcOf في المنصّة)؛
                    وبدونه لا يُقبل إلا https
+
+   🆕 b170 · الفيديو — [فيديو: الرابط | التعليق]:
+   opt.video       (src) ⇒ { embed, poster } أو null — حارسُه (videoOf)؛ وبدونه يسقط
+   opt.onNotice    (msg) — تنبيهٌ للقارئ (مقطعٌ أثناء التسجيل)
    ══════════════════════════════════════════════════════════ */
 
 const SAY = {
@@ -352,6 +366,9 @@ const SAY = {
   rate:    'سرعة القراءة',
   zoom:    'تكبير الصورة',
   close:   'إغلاق',
+  video:   'مقطع فيديو',
+  play:    c => c ? `تشغيل المقطع: ${c}` : 'تشغيل المقطع',
+  vidLocked: 'المقطع لا يعمل أثناء التسجيل، فلا يدخل صوته فيه',
   cover:   'الغلاف',
   end:     'النهاية',
   page:    (a, b, n) => b ? `الصفحتان ${a} و${b} من ${n}` : `الصفحة ${a} من ${n}`,
@@ -387,7 +404,7 @@ export async function createBook(host, opt = {}){
                  ? opt.lang : (dir === 'rtl' ? 'ar' : 'en');
   const paperNum = n => dir === 'rtl' ? INDIC(n) : String(n);
   const model  = parse(opt.body, title);
-  await figuresReady(model, opt.media);
+  await figuresReady(model, opt.media, opt.video);
   const reduce = matchMedia('(prefers-reduced-motion: reduce)');
 
   /* المعجم يُطابَق مرّةً عند الفتح — والتقسيمُ يُعاد كثيراً ولا يُعيده */
@@ -531,8 +548,16 @@ export async function createBook(host, opt = {}){
      من الصفحة — فتبقى للنصّ مساحتُه. ولمسةٌ تكبّرها.
      🔑 والإطارُ ليس `<button>`: السحبُ عليه يقلب الصفحةَ كسائر الورقة (pointerdown
         يتجاهل الأزرار)، والنقرُ وحده يكبّر. والتعليقُ `alt` الصورة — أصدقُ وصفٍ لها. */
-  const figHtml = blk => {
+  const figHtml = (blk, bi) => {
     const cap = blk.cap ? `<figcaption class="bk-cap" dir="auto">${fmt(blk.cap)}</figcaption>` : '';
+    /* 🆕 b170 · الفيديو بطاقةٌ في الورقة لا مشغّلٌ فيها: صورتُه وزرُّ تشغيل، واللمسةُ تفتحه
+       فوق الكتاب. مشغّلٌ داخل ورقةٍ تنثني يومض ويُقطع بالتقليب — والبطاقةُ صورةٌ تنثني
+       مع الورق كغيرها. والصورةُ بلا مُحيل (`no-referrer`): لا يعرف YouTube من أين نُظر. */
+    if(blk.kind === 'vid')
+      return `<figure class="bk-fig bk-vid" style="--r:${VID_R}"><div class="bk-fbox" role="button" tabindex="0"`
+        + ` data-v="${bi}" aria-label="${esc(say.play(plainText(blk.cap)))}"><img src="${esc(blk.v.poster)}" alt=""`
+        + ` decoding="async" draggable="false" referrerpolicy="no-referrer"><span class="bk-play" aria-hidden="true">`
+        + `${ICO.play}</span></div>${cap}</figure>`;
     return `<figure class="bk-fig" style="--r:${(+blk.r).toFixed(4)}"><div class="bk-fbox" role="button" tabindex="0"`
       + ` aria-label="${esc(say.zoom)}"><img src="${esc(blk.url)}" alt="${esc(plainText(blk.cap))}"`
       + ` decoding="async" draggable="false"></div>${cap}</figure>`;
@@ -569,7 +594,7 @@ export async function createBook(host, opt = {}){
     model.blocks.forEach((blk, bi) => {
       if(blk.type === 'f'){
         if(blk.drop) return;
-        const h = figHtml(blk);
+        const h = figHtml(blk, bi);
         if(defer.length){ defer.push(h); return; }    // لا تسبق صورةٌ صورةً أُجِّلت قبلها
         mBody.insertAdjacentHTML('beforeend', h);
         if(fits() || !cur.length){ cur.push(h); return; }
@@ -1301,7 +1326,9 @@ export async function createBook(host, opt = {}){
   /* صورةٌ انكسرت بعد التقسيم (رابطٌ حُذف أو شبكةٌ انقطعت) ⇒ يغيب إطارُها ويبقى
      تعليقُها — لا مربّعَ فارغاً في ورقة. و`error` لا يصعد، فيُلتقط في النزول. */
   root.addEventListener('error', e => {
-    if(e.target?.tagName === 'IMG') e.target.closest('.bk-fig')?.classList.add('bk-broken');
+    const f = e.target?.tagName === 'IMG' && e.target.closest('.bk-fig');
+    /* وصورةُ مقطعٍ تعذّرت لا تُسقط بطاقتَه: يبقى زرُّ التشغيل على لون الورق */
+    if(f) f.classList.add(f.classList.contains('bk-vid') ? 'bk-noposter' : 'bk-broken');
   }, true);
 
   root.addEventListener('click', e => {
@@ -1327,13 +1354,13 @@ export async function createBook(host, opt = {}){
       }
       return;
     }
-    if(e.target.closest('.bk-zoom')){ closeZoom(); return; }
+    if(e.target.closest('.bk-zoom')){ if(!e.target.closest('.bk-player')) closeZoom(); return; }
     if(e.target.closest('.bk-turn, .bk-pop')) return;
     const a = e.target.closest('[data-act]');
     if(a){ opt.onAction?.(a.dataset.act, ctl); return; }
 
     const fb = e.target.closest('.bk-slot .bk-fbox');
-    if(fb){ if(performance.now() > quietUntil) openZoom(fb); return; }   // ذيلُ السحب ليس نقرة
+    if(fb){ if(performance.now() > quietUntil) openMedia(fb); return; }   // ذيلُ السحب ليس نقرة
 
     const w = e.target.closest('.bk-w');
     if(w){ toggleWordEl(w); return; }
@@ -1442,23 +1469,43 @@ export async function createBook(host, opt = {}){
      الصورة. ويوقف «استماع» مؤقّتاً — العينُ انتقلت، فالصوتُ يتبعها لا يسبقها.
      ♿ `dialog` بزرّ إغلاقٍ يأخذ التركيز، وTab لا يغادره. */
   let zoom = null;
+  let micOn = false;             // 🆕 b170 · التسجيلُ جارٍ (voiceLock) ⇒ لا مقطعَ يُشغَّل
+  function overlay(inner, label, back, vid){
+    closeWord(false);
+    if(nar.on) narPause();
+    const el = EL('div', 'bk-zoom' + (vid ? ' bk-zv' : ''));
+    el.setAttribute('role', 'dialog');
+    el.setAttribute('aria-modal', 'true');
+    el.setAttribute('aria-label', label);
+    el.innerHTML = inner
+      + `<button type="button" class="bk-zx" aria-label="${esc(say.close)}">${ICO.close}</button>`;
+    root.append(el);
+    zoom = { el, back, vid };
+    el.querySelector('.bk-zx').focus();
+  }
+  const capOf = box => {
+    const c = box.closest('.bk-fig')?.querySelector('.bk-cap');
+    return c ? `<figcaption dir="auto">${c.innerHTML}</figcaption>` : '';
+  };
   function openZoom(box){
     const img = box.querySelector('img');
     if(!img) return;
-    closeWord(false);
-    if(nar.on) narPause();
-    const cap = box.closest('.bk-fig')?.querySelector('.bk-cap');
-    const el = EL('div', 'bk-zoom');
-    el.setAttribute('role', 'dialog');
-    el.setAttribute('aria-modal', 'true');
-    el.setAttribute('aria-label', img.alt || say.zoom);
-    el.innerHTML = `<figure dir="${dir}"><img src="${esc(img.currentSrc || img.src)}" alt="${esc(img.alt)}">`
-      + (cap ? `<figcaption dir="auto">${cap.innerHTML}</figcaption>` : '') + `</figure>`
-      + `<button type="button" class="bk-zx" aria-label="${esc(say.close)}">${ICO.close}</button>`;
-    root.append(el);
-    zoom = { el, back: box };
-    el.querySelector('.bk-zx').focus();
+    overlay(`<figure dir="${dir}"><img src="${esc(img.currentSrc || img.src)}" alt="${esc(img.alt)}">`
+      + `${capOf(box)}</figure>`, img.alt || say.zoom, box, false);
   }
+  /* 🆕 b170 · المقطعُ فوق الكتاب: يُبنى الإطارُ عند الفتح ويُهدَم عند الإغلاق — فيقف الصوتُ
+     بالإغلاق لا بزرٍّ يُنسى، ولا يُحمَّل مشغّلٌ لم يُطلب. والنقرُ داخل المشغّل له لا للنافذة.
+     🔑 **ولا مقطعَ أثناء التسجيل الجهريّ:** صوتُه يدخل في قراءة الطالب فيُفسدها. */
+  function openVideo(box){
+    const blk = model.blocks[+box.dataset.v];
+    if(!blk?.v) return;
+    if(micOn){ opt.onNotice?.(say.vidLocked); return; }
+    const t = plainText(blk.cap) || say.video;
+    overlay(`<figure dir="${dir}"><div class="bk-player"><iframe src="${esc(blk.v.embed)}" title="${esc(t)}"`
+      + ` allow="autoplay; encrypted-media; picture-in-picture; fullscreen"`
+      + ` referrerpolicy="strict-origin-when-cross-origin"></iframe></div>${capOf(box)}</figure>`, t, box, true);
+  }
+  const openMedia = box => box.closest('.bk-vid') ? openVideo(box) : openZoom(box);
   function closeZoom(refocus = true){
     if(!zoom) return;
     const z = zoom; zoom = null;
@@ -1482,13 +1529,16 @@ export async function createBook(host, opt = {}){
     if(t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable)) return;
     if(zoom){                                    // الصورةُ المكبَّرة تملك المفاتيح
       if(e.key === 'Escape') closeZoom();
-      else if(e.key === 'Tab') zoom.el.querySelector('.bk-zx').focus();
+      else if(e.key === 'Tab'){
+        const x = zoom.el.querySelector('.bk-zx'), f = zoom.el.querySelector('iframe');
+        (f && document.activeElement === x ? f : x).focus();
+      }
       else return;
       e.preventDefault(); return;
     }
     if(e.key === 'Escape' && pop){ closeWord(); e.preventDefault(); return; }
     const fk = t?.closest?.('.bk-slot .bk-fbox');
-    if(fk && (e.key === 'Enter' || e.key === ' ')){ openZoom(fk); e.preventDefault(); return; }
+    if(fk && (e.key === 'Enter' || e.key === ' ')){ openMedia(fk); e.preventDefault(); return; }
     const wk = t?.closest?.('.bk-w');
     if(wk && (e.key === 'Enter' || e.key === ' ')){ toggleWordEl(wk); e.preventDefault(); return; }
     if(t?.closest?.('.bk-pop')) return;          // داخل النافذة: الأسهمُ لها لا للكتاب
@@ -1561,6 +1611,9 @@ export async function createBook(host, opt = {}){
       const b = btn('listen');
       if(on && nar.on) narPause();
       if(b) b.disabled = !!on;
+      micOn = !!on;                                    // 🆕 b170 · والمقاطعُ معه
+      root.classList.toggle('bk-mic', micOn);
+      if(micOn && zoom?.vid) closeZoom(false);
     },
     get dir(){ return dir; }, get pages(){ return textCount(); },
     get words(){ return model.words; }
@@ -1592,4 +1645,5 @@ const ICO = {
   listen: svg('<path d="M4 15v-3a8 8 0 0116 0v3"/><rect x="3" y="14" width="4.5" height="6.5" rx="1.6"/><rect x="16.5" y="14" width="4.5" height="6.5" rx="1.6"/>'),
   pause:  svg('<rect x="6.5" y="5" width="4" height="14" rx="1.2"/><rect x="13.5" y="5" width="4" height="14" rx="1.2"/>'),
   close:  svg('<path d="M6 6l12 12M18 6L6 18"/>'),
+  play:   '<svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M8.5 5.8v12.4L18.6 12z" fill="currentColor"/></svg>',
 };
