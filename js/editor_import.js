@@ -66,6 +66,23 @@ const SAMPLE_CARDS = JSON.stringify({
   }]
 }, null, 2);
 
+const SAMPLE_MAP = JSON.stringify({
+  subject: "English",
+  level: "الصف الثاني الثانوي",
+  term: "الفصل الدراسي الأول",
+  source: "اسم الكتاب وطبعته وأرقام صفحاته",
+  strands: [{ code: "GRAM", name: "Grammar" }, { code: "WRITE", name: "Writing" }],
+  lessons: [{
+    order: 1,
+    key: "U1.SELFIMAGE",
+    unit: "UNIT 1 · Living Well in a Complex World",
+    title: "Listening: Social Media and Self-Image",
+    strand: "LIST",
+    summary: "ما يقدر عليه الطالب بعد الدرس — جملةٌ واحدة.",
+    note: "ما يحتاجه المؤلّف بعدك — ولا يراه الطالب."
+  }]
+}, null, 2);
+
 /* ── عرضُ الخطّة كما تردُّها الدالّة — بلا إعادة حساب ──
    🔑 كلُّ رقمٍ هنا من القاعدة، فلا ينحرف عن الذي سيُكتب. */
 function planBox(pl){
@@ -110,6 +127,66 @@ function planCards(pl){
     </div>`;
 }
 
+/* خطّةُ الخريطة — ثلاثُ مجموعاتٍ تردُّها الدالّةُ بمفاتيحَ عربية.
+   🔑 **والصفرُ يُعرض ولا يُخفى:** «سيُنشأ ٠» عند إعادة الملفّ نفسِه هي
+   أهمُّ سطرٍ في الشاشة — تقول إنّ الخريطةَ مستقرّةٌ ولا تكرار.
+   🔴 و«خارج الخريطة» بلون تنبيهٍ ومعه عددُ أسئلة كلّ درس: لأنّ المشرفَ
+   يحتاج أن يعرف ما وزنُ ما سيبقى خارجاً قبل أن يعتمد. */
+function planMap(pl){
+  if(!pl) return '';
+  const mk = pl['سيُنشأ'], up = pl['سيُحدَّث'], out = pl['خارج الخريطة'];
+  if(!mk && !up && !out) return '';
+  const rows = (list, q) => (list || []).map(r => `
+    <div class="line" style="display:flex;gap:10px;align-items:baseline;
+         flex-wrap:wrap;padding:4px 0">
+      ${r.order != null ? `<span class="chip">${AR(r.order)}</span>` : ''}
+      <code dir="ltr" style="font-size:.76rem">${esc(r.key || '')}</code>
+      <span>${esc(r.title || '')}</span>
+      ${r.id != null ? `<span class="ed-m">#${AR(r.id)}</span>` : ''}
+      ${q && r['أسئلة'] != null ? `<span class="chip${
+        r['أسئلة'] ? ' g' : ''}">${N(r['أسئلة'], 'سؤال', 'سؤالان',
+        'أسئلة', 'سؤالاً')}</span>` : ''}
+    </div>`).join('') || '<div class="ed-m" style="padding:4px 0">—</div>';
+  const grp = (t, list, q) => `
+    <div class="grp" style="margin-top:12px">${t}
+      <span class="chip${(list || []).length ? ' g' : ''}">${
+        AR((list || []).length)}</span></div>
+    ${rows(list, q)}`;
+  /* 🔴 الفروعُ تُعرض لأنّ الملفّ يحملها والدالّةَ تُنشئها وتُحدّثها.
+     والمواصفةُ لم تذكرها — فكشفها فحصُ الرادّ الحقيقيّ. ولو خُفيت
+     لاعتمد المشرفُ تغييراً في فروع المادة لم يره، وذاك نقضُ الشاشة. */
+  const strands = o => {
+    const sn = o['فروعٌ ستُنشأ'] || [], su = o['فروعٌ ستُحدَّث'] || [];
+    const ren = su.filter(r => r['الاسم السابق'] && r['الاسم السابق'] !== r.name);
+    if(!sn.length && !ren.length) return '';
+    const line = r => `
+      <div class="line" style="display:flex;gap:10px;align-items:baseline;
+           flex-wrap:wrap;padding:4px 0">
+        <code dir="ltr" style="font-size:.76rem">${esc(r.code || '')}</code>
+        <span>${esc(r.name || '')}</span>
+        ${r['الاسم السابق'] && r['الاسم السابق'] !== r.name
+          ? `<span class="ed-m">كان: ${esc(r['الاسم السابق'])}</span>` : ''}
+      </div>`;
+    return `
+      <div class="grp" style="margin-top:12px">فروعُ المادة
+        <span class="chip${sn.length + ren.length ? ' g' : ''}">${
+          AR(sn.length + ren.length)}</span></div>
+      ${sn.map(line).join('')}${ren.map(line).join('')}`;
+  };
+
+  return `
+    ${grp('سيُنشأ', mk)}
+    ${grp('سيُحدَّث', up)}
+    ${strands(pl)}
+    ${(out || []).length ? `<div class="warnbox" style="margin-top:12px">
+        <div class="grp" style="margin:0">خارج الخريطة
+          <span class="chip">${AR(out.length)}</span></div>
+        ${rows(out, true)}
+        <div style="margin-top:7px">هذه الدروسُ لن تُمَسّ.
+          الحذفُ لا يقع من هنا أبداً.</div>
+      </div>` : grp('خارج الخريطة', [])}`;
+}
+
 /* ═══════════ جدولُ الصيغتين — وهو كلُّ الفرق بينهما ═══════════
    🔑 ما اختلف بُيّن هنا، وما اتّفق بقي أسفلُ مرّةً واحدة. وزيادةُ
    بوّابةٍ ثالثةٍ يوماً سطرٌ في هذا الجدول، لا ملفٌّ ثالث. */
@@ -129,6 +206,31 @@ const K = {
     count: pl => N(pl?.['أسئلة'] || 0, 'سؤال', 'سؤالين', 'أسئلة', 'سؤالاً'),
     done: d => `اعتُمد ${N(d.questions || 0, 'سؤال', 'سؤالان', 'أسئلة', 'سؤالاً')}`,
     okline: 'اعتُمد — والاختبار غير منشور، فلا يراه الطالب بعد'
+  },
+  map: {
+    head: ['استيراد خريطة الدروس', 'ملفّ واحد لمقرّر واحد'],
+    card: '⇪ استيراد خريطة دروس المقرّر',
+    intro: `يُلصق ملفّ الخريطة كما سلّمه معلّم المادة. والدرس يُعرف
+      <b>بمفتاح مؤلّفه</b> (<code dir="ltr">key</code>) لا برقمه، فإعادةُ
+      الملفّ تصحيحٌ لا تكرار.<br>
+      <b>ويُنشئ ويُحدّث ولا يحذف:</b> درسٌ في القاعدة ليس في الخريطة
+      يُعرض في «خارج الخريطة» ويبقى كما هو بأسئلته.<br>
+      وعنوانُ درسٍ قائمٍ لا يُغيَّر إلا بإذنك الصريح.`,
+    ph: '{ "subject": "…", "strands": [ … ], "lessons": [ { "key": "U1.X", "order": 1, "title": "…" } ] }',
+    sample: SAMPLE_MAP,
+    call: (course, payload, dry, o) =>
+      api.importLessonMap(course.id, payload, dry, !!o.retitle),
+    plan: planMap,
+    /* 🔑 الخريطةُ تردُّ مجموعاتِها في جسم الرادّ لا تحت «الخطّة» */
+    pickPlan: d => d,
+    retitle: true,
+    count: pl => N((pl?.['سيُنشأ'] || []).length + (pl?.['سيُحدَّث'] || []).length,
+                   'درس', 'درسين', 'دروس', 'درساً'),
+    done: d => `حُفظت الخريطة — ${N((d['سيُنشأ'] || []).length,
+                 'درس', 'درسان', 'دروس', 'درساً')} أُنشئ` +
+               ((d['سيُحدَّث'] || []).length
+                 ? ` · و${AR(d['سيُحدَّث'].length)} حُدّث` : ''),
+    okline: 'حُفظت الخريطة. أعِد الإرسالَ بعد أيّ تصحيح — المفتاحُ يمنع التكرار.'
   },
   cards: {
     head: ['استيراد بطاقات', 'دفعة واحدة إلى مجموعة المادة'],
@@ -152,6 +254,7 @@ const K = {
 };
 
 export const openQuizImport  = course => openImport(course, 'quiz');
+export const openMapImport   = course => openImport(course, 'map');
 export const openCardsImport = course => openImport(course, 'cards');
 
 async function openImport(course, kind){
@@ -161,6 +264,7 @@ async function openImport(course, kind){
 
   let parsed = null;                 // الحمولةُ بعد التحليل المحليّ
   let plan   = null;                 // خطّةُ الجافّة كما ردّتها القاعدة
+  let retitle = false;               // إذنُ تغيير عناوين الدروس القائمة
 
   const draw = () => {
     app.innerHTML = `
@@ -216,6 +320,17 @@ async function openImport(course, kind){
       e.preventDefault(); dz.classList.remove('on'); }));
     dz.addEventListener('drop', e => readFile(e.dataTransfer?.files?.[0]));
 
+    /* 🔒 الحارس: «الاعتمادُ يشترط فرقاً مرئيّاً **لنفس النصّ**».
+       فتعديلُ حرفٍ بعد عرض الفرق يُبطل الخطّةَ ويُخفي زرَّ الاعتماد —
+       فلا يُعتمد نصٌّ لم تمرّ عليه الجافّة. */
+    ta.oninput = () => {
+      if(!plan) return;
+      plan = null; parsed = null;
+      document.getElementById("out").innerHTML =
+        `<div class="warnbox" style="margin-top:14px">تغيّر النصّ —
+           أعِد التجربة الجافّة قبل الاعتماد.</div>`;
+    };
+
     document.getElementById("dry").onclick = () => run(ta.value || '', true);
   };
 
@@ -226,7 +341,9 @@ async function openImport(course, kind){
     out.innerHTML = `<div class="status" style="margin-top:14px">${
       dry ? 'جار الفحص…' : 'جار الاعتماد…'}</div>`;
 
-    if(dry){
+    /* نصٌّ مُرسَلٌ ⇒ يُحلَّل. وفراغٌ مع حمولةٍ محلولةٍ ⇒ إعادةُ الجافّة
+       على الحمولة نفسِها (تغيّرَ إذنُ العنوان لا النصّ). */
+    if(dry && (txt || !parsed)){
       try { parsed = JSON.parse(txt); }
       catch(e){
         out.innerHTML = `<div class="eq-ready" style="margin-top:14px">
@@ -235,10 +352,10 @@ async function openImport(course, kind){
       }
     }
 
-    const { data, error } = await C.call(course, parsed, dry);
+    const { data, error } = await C.call(course, parsed, dry, { retitle });
     if(error){ out.innerHTML = errBox(error, 'الاستيراد'); return; }
 
-    plan = data?.['الخطّة'] || null;
+    plan = C.pickPlan ? C.pickPlan(data) : (data?.['الخطّة'] || null);
     const warns = data?.['تحذيرات'] || [];
     const errs  = data?.['أخطاء']   || [];
 
@@ -295,12 +412,23 @@ async function openImport(course, kind){
         ${warns.map(x => `<div>⚠️ ${esc(x)}</div>`).join('')}
         <div style="margin-top:7px;opacity:.85">تحذير يُرى ولا يمنع — والاعتماد ممكن.</div>
         </div>` : ''}
+      ${C.retitle && warns.some(x => String(x).includes('العنوان')) ? `
+        <label class="line" style="display:flex;gap:8px;align-items:center;
+               margin-top:12px;cursor:pointer">
+          <input type="checkbox" id="rt"${retitle ? ' checked' : ''}>
+          <span>اسمح بتغيير عناوين الدروس القائمة</span>
+        </label>` : ''}
       <div class="nav" style="margin-top:12px">
         <button class="btn primary" id="go">اعتماد ${C.count(plan)}</button>
         <button class="btn ghost" id="again">ملفّ آخر</button>
       </div>`;
+    /* 🔑 والإذنُ يُعيد الجافّةَ لا يُمرَّر وحده: الخطّةُ المعروضةُ حُسبت
+       بإذنٍ مطفأ، فلو اعتُمدت بإذنٍ مشتعلٍ لخالف الأثرُ ما قُرئ. */
+    const rt = document.getElementById("rt");
+    if(rt) rt.onchange = () => { retitle = rt.checked; run('', true); };
     document.getElementById("go").onclick    = () => run('', false);
-    document.getElementById("again").onclick = () => { parsed = null; plan = null; draw(); };
+    document.getElementById("again").onclick = () => {
+      parsed = null; plan = null; retitle = false; draw(); };
   }
 
   draw();

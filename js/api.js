@@ -428,6 +428,15 @@ export const importQuiz = (course, payload, dry = true) =>
 export const importCards = (course, payload, dry = true) =>
   db.rpc('import_cards', { p_course: course, p_payload: payload, p_dry_run: dry });
 
+/* 🗺️ عقدُ استيراد خريطة الدروس (131) — وفرقُه عن أخويه فرقان:
+   · **يُنشئ ويُحدّث ولا يحذف.** درسٌ في القاعدة ليس في الخريطة يُعرض
+     في «خارج الخريطة» ويبقى كما هو — والحذفُ لا يقع من هنا أبداً.
+   · و`p_allow_retitle` مطفأةٌ افتراضاً: عنوانُ درسٍ قائمٍ لا يُمسّ إلا
+     بإذنٍ صريحٍ من المشرف، فما حرّره بيده لا يُمحى أثراً جانبيّاً. */
+export const importLessonMap = (course, payload, dry = true, allowRetitle = false) =>
+  db.rpc('import_lesson_map', { p_course: course, p_payload: payload,
+    p_dry_run: dry, p_allow_retitle: allowRetitle });
+
 export const saveQuestion = o => db.rpc('save_question', {
   p_id:          o.id      ?? null,
   p_quiz:        o.quiz,
