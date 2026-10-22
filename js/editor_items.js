@@ -77,7 +77,11 @@ function render(){
     <div class="it-row" data-i="${i.id}">
       <div class="itm-ic">${esc(i.icon || '•')}</div>
       <div style="flex:1;min-width:0">
-        <div class="ed-t">${esc(i.title)}</div>
+        ${/* 🆕 b172 · وعنوانُ المصدر كعنوان الدرس (`editor.js`). **وقِيس قبل أن
+              يُدَّعى: ٢٢٤ مصدراً، منها اثنان يبدآن بلاتينيّ** (٢٣ أكتوبر) —
+              فالمؤلّفون يُعنونون بالعربية وإن كان المصدرُ إنجليزيّاً.
+              ⇒ **حارسٌ قبل أن يكبر**، ومربّعُ نصِّه يحمل الاتجاه منذ `b170`. */''}
+        <div class="ed-t" dir="auto">${esc(i.title)}</div>
         <div class="ed-m">
           <span class="chip">${esc(kLabel(i.label, i.needs, i.official) || i.kind)}</span>
           ${i.is_graded ? '<span class="chip g">⭐ يُحتسب في البوّابة</span>' : ''}

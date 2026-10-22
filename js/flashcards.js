@@ -47,7 +47,9 @@ export async function loadFlashcards(){
 
   const row = s => `
     <div class="ed-row" data-s="${s.id}">
-      <div style="flex:1;min-width:0"><div class="ed-t">${esc(s.name)}</div></div>
+      ${/* 🆕 b172 · واسمُ المادّة عند الطالب كاسمِها عند المؤلّف — والوجهان
+            يقرآن الاسمَ نفسَه، فاختلافُهما يُقرأ عطلاً في أحدهما. */''}
+      <div style="flex:1;min-width:0"><div class="ed-t" dir="auto">${esc(s.name)}</div></div>
       ${s.due > 0
         ? `<span class="chip g">${AR(s.due)}</span>`
         : `<span class="ed-empty" style="padding:0">لا شيء اليوم</span>`}
@@ -499,10 +501,18 @@ function openAdd(subject){
 
       ${decks.length ? `
         <div class="ed-sec">
-          <div class="grp">أو من مجموعات ${esc(subject.name)}</div>
+          ${/* 🆕 b172 · **و`bdi` هنا لا `dir`** — وهي الحالةُ التي أجّلها `b123`
+                («عربيٌّ يحمل عنواناً إنجليزياً فيحتاج `bdi` لا `dir` وحده»).
+             🔑 **و`dir="auto"` هنا لا يصنع شيئاً — قِيس لا قُدِّر:** حَكَمُها
+                أوّلُ حرفٍ قويّ وهو «أ» من «أو»، فتبقى `rtl` كما هي. ⇒ العلّةُ
+                ليست اتجاهَ الجملة بل اسمٌ أجنبيٌّ في جوفها.
+             📌 **وأثرُه يظهر عند اسمٍ ينتهي بمحايد:** «أو من مجموعات ‎English?‎»
+                بلا عزلٍ تُرحَّل علامتُها إلى أقصى اليسار فتنفصل عن كلمتها،
+                وبالعزل تلزمها. وصفرُ مادّةٍ لاتينيّةٍ تنتهي بمحايدٍ اليوم. */''}
+          <div class="grp">أو من مجموعات <bdi>${esc(subject.name)}</bdi></div>
           ${decks.map(d => `
             <div class="ed-row" data-deck="${d.id}">
-              <div style="flex:1"><div class="ed-t">${esc(d.title)}</div></div>
+              <div style="flex:1"><div class="ed-t" dir="auto">${esc(d.title)}</div></div>
               <span class="chip">${AR(d.cards)}</span>
             </div>`).join("")}
         </div>` : ''}`;
@@ -563,7 +573,10 @@ function openBrowseDeck(subject, deck){
     app.innerHTML = `
       <div class="crumb" id="bk">→ ${esc(subject.name)}</div>
       <div class="ed-sec">
-        <div class="grp">${esc(deck.title)}</div>
+        ${/* 🆕 b172 · وعنوانُ المجموعة وحدَه في ترويسته ⇒ `dir="auto"` لا `bdi`.
+              **وستُّ مجموعاتٍ اليوم صفرٌ لاتينيّةُ العنوان** (٢٣ أكتوبر) —
+              فهذه وأختُها فوقَها حارسان، وما يُنشأ غداً يجد الحكم. */''}
+        <div class="grp" dir="auto">${esc(deck.title)}</div>
         ${cards.map(row).join("")}
       </div>
       <div class="nav" style="margin-top:16px;position:sticky;bottom:12px">

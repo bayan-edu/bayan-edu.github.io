@@ -304,12 +304,22 @@ export function head(t, s, hero, tag){
   document.body.classList.remove("gate");
   const b = document.getElementById("brand"), h = document.getElementById("head");
   b.classList.toggle("hero", !!hero);
+  /* 🆕 b172 · والعنوانُ والوصفُ `dir="auto"` كبرواز السياق تحتهما
+     (`head-tag` · `b163`) — **وكانا وحدَهما بلا اتجاه في صفٍّ واحد.**
+     🔑 وموضعُها هنا لا في كلّ شاشة: `head()` ممرٌّ إجباريّ، وأربعُ موادّ
+        من عشرين لاتينيّةُ الاسم (`English` · `French` · `IELTS` ·
+        `Reading Comprehension` — قِيس ٢٢ أكتوبر)، وعنوانُ الدرس يصل
+        هنا من القاعدة كما كتبه مؤلّفه.
+     📌 وتُكتب في كلّ نداء لا مرّةً عند الإقلاع: الوسمُ يُقرأ من المحتوى،
+        وشاشةٌ عربيّةٌ تخلف إنجليزيّةً تُعيد الحكمَ لنفسها. */
+  h.dir = "auto";
   h.textContent = t || "";
   h.style.display = t ? "" : "none";
   /* ⚠️ والوصفُ يُخفى حين يغيب لا يُفرَّغ: ‎.sub‎ فيها ‎margin-top‎،
      فالفارغُ يحجز حشوَه في صدر كلّ شاشةٍ بلا وصف. وهو نظيرُ ‎.bare‎
      أدناه: لا يُحجز فراغٌ لمحتوًى غير موجود. */
   const sb = document.getElementById("subhead");
+  sb.dir = "auto";
   sb.textContent = s || "";
   sb.style.display = s ? "" : "none";
   /* شاشةٌ بلا عنوان ولا وصف كانت تحجز ٢٤px حشواً فارغاً — و.bare تُلغيه.

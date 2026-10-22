@@ -659,7 +659,12 @@ export async function loadLessons(subj){
          خيرٌ من شاشةٍ فارغةٍ تُقرأ «لا مادّةَ هنا». */
       : !ls.length      ? '<div class="status">لا دروس في هذا الفرع</div>'
       : Object.keys(groups).map(g=>`
-          ${many?`<div class="grp">${esc(g)}</div>`:''}
+          ${/* 🆕 b172 · `dir="auto"` كأخواتها في شاشة المؤلّف. و`g` اسمُ
+                المستوى من القاعدة (`list_lessons` ⇐ `levels.name`).
+             📌 **وحارسٌ لا إصلاح — قِيس ٢٢ أكتوبر:** ١٨ مستوًى، **صفرٌ
+                يبدأ بلاتينيّ**، فالشاشةُ اليوم لا تتبدّل بها حرفاً. ومستوًى
+                لاتينيٌّ يُكتب غداً (`Band 5.0`) يجد الحكمَ مكتوباً. */''}
+          ${many?`<div class="grp" dir="auto">${esc(g)}</div>`:''}
           ${groups[g].map(lcard).join("")}`).join("");
 
     list.querySelectorAll(".lsn").forEach(el=>el.onclick=()=>{

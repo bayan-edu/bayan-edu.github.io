@@ -332,8 +332,12 @@ function tags(c){
   const ls = c.lessons || [], ss = c.strands || [];
   if(!ls.length && !ss.length)
     return '<span class="chip warn">بلا درس ولا فرع</span>';
-  return ls.map(l => `<span class="chip">${esc(l.title)}</span>`).join('')
-       + ss.map(s => `<span class="chip g">${esc(s.name)}</span>`).join('');
+  /* 🆕 b172 · `dir="auto"` على الشارة نفسِها: متنُها نصُّ مؤلّفٍ خالصٌ
+     (عنوانُ درس · اسمُ فرع) لا وسمَ معه — فلا حاجةَ إلى `bdi` كشارةِ 🌿
+     في `editor.js`. وعنوانٌ ينتهي بعلامةٍ محايدة كان يُقرأ
+     `?Reading: Whose Responsibility Is It` داخل الشارة. */
+  return ls.map(l => `<span class="chip" dir="auto">${esc(l.title)}</span>`).join('')
+       + ss.map(s => `<span class="chip g" dir="auto">${esc(s.name)}</span>`).join('');
 }
 
 /* 🆕 b134 · والصفُّ خرج من جوف الرسم لأنّ `redrawList` تُنادِيه وحدَها */
@@ -394,7 +398,10 @@ function renderCards(){
     ${C.length ? filterBar() : ''}
 
     <div class="ed-sec">
-      <div class="grp">${esc(cur.title)} <span class="chip">${AR(C.length)}</span></div>
+      ${/* 🆕 b172 · وترويسةُ المجموعة كترويسة الوحدة في `editor.js`:
+            اسمُ المادّة قد يكون لاتينيّاً (`English`)، والعدّادُ أرقامٌ
+            هنديّةٌ لا تَحكم الاتجاه. */''}
+      <div class="grp" dir="auto">${esc(cur.title)} <span class="chip">${AR(C.length)}</span></div>
       <div id="cdList">${rows.length ? rows.map(cardRow).join("") : emptyNote()}</div>
     </div>
 
@@ -585,9 +592,12 @@ function linkPicker(){
     (c.strands || []).forEach(s => byStrand.set(s.id, (byStrand.get(s.id) || 0) + 1));
   });
 
+  /* 🆕 b172 · و`dir="auto"` على الزرّ: متنُه اسمُ درسٍ أو فرعٍ من القاعدة
+     وعدّادُه أرقامٌ هنديّة — فالحَكَمُ الاسمُ وحده، ودروسُ الإنجليزية
+     كلُّها لاتينيّةُ العنوان. */
   const opt = (rows, map, label, kind) => rows
     .filter(r => map.get(r.id))
-    .map(r => `<button class="it-b wide" data-k="${kind}" data-s="${r.id}"
+    .map(r => `<button class="it-b wide" dir="auto" data-k="${kind}" data-s="${r.id}"
                  data-t="${esc(r[label])}">${esc(r[label])}
                <span class="chip">${AR(map.get(r.id))}</span></button>`).join('');
 
@@ -609,7 +619,7 @@ function linkPicker(){
       ${st || '<div class="ed-empty">لا فرعَ له بطاقاتٌ بعد.</div>'}
 
       <div class="grp" style="margin-top:14px">أو المادة كلُّها</div>
-      <button class="it-b wide" data-k="cards" data-s="${cur.id}"
+      <button class="it-b wide" dir="auto" data-k="cards" data-s="${cur.id}"
         data-t="${esc(cur.title)}">${esc(cur.title)}
         <span class="chip">${AR(C.length)}</span></button>
     </div>`;
@@ -713,10 +723,14 @@ function pasteBox(){
       ${ready.length ? `
         <div class="grp" style="margin-top:12px">سيُحفظ
           <span class="chip g">${AR(ready.length)}</span></div>
+        ${/* 🆕 b172 · ومعاينةُ اللصق تُوزَن بميزان `cardRow` نفسِه
+              (`dirOf` على الوجه والظهر كلٍّ على حدة) — **ومعاينةٌ تخالف
+              ما سيُرسم بعد الحفظ تكذب على صاحبها.** */''}
         ${ready.slice(0, 6).map(r => `<div class="ed-row">
-            <div style="flex:0 0 34%"><div class="ed-t">${esc(r.front)}</div></div>
+            <div style="flex:0 0 34%"><div class="ed-t"
+              dir="${dirOf(r.front)}">${esc(r.front)}</div></div>
             <div class="ed-bk" style="flex:1;color:var(--text-muted);font-size:var(--fs-meta)"
-              >${esc(backText(r.back))}</div></div>`).join("")}
+              dir="${dirOf(r.back)}">${esc(backText(r.back))}</div></div>`).join("")}
         ${ready.length > 6 ? `<div class="ed-empty">…و${AR(ready.length-6)} غيرها</div>` : ''}`
       : '<div class="warnbox">لا سطر صالح.</div>'}`;
 

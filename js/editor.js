@@ -90,9 +90,12 @@ export async function openEditor(scaleId, levelId){
     return `<div class="ed-card ${c.curate?'':'ro'}" data-c="${c.id}">
       <div class="ed-ic">${esc(s.icon || '📘')}</div>
       <div style="flex:1;min-width:0">
-        <div class="ed-t">${esc(s.name || c.title)}</div>
+        ${/* 🆕 b172 · بطاقةُ المقرَّر — والشاشةُ السابقةُ لقائمة الدروس، فلو
+              صحّت الثانيةُ وحدَها لانتقل القارئُ من سطرٍ مستقيمٍ إلى مائل.
+              وأربعُ موادّ من عشرين لاتينيّةُ الاسم (٢٢ أكتوبر). */''}
+        <div class="ed-t" dir="auto">${esc(s.name || c.title)}</div>
         <div class="ed-m">
-          ${p ? `<span class="chip g">${esc(p.name)}</span>` : ''}
+          ${p ? `<span class="chip g" dir="auto">${esc(p.name)}</span>` : ''}
           ${c.elective_group ? '<span class="chip">اختيارية</span>' : ''}
           <span class="chip">👥 ${N(c.students,'طالب','طالبان','طلاب','طالباً')}</span>
           <span class="chip ${c.lessons ? 'g' : ''}">${N(c.lessons,'درس','درسان','دروس','درساً')}</span>
@@ -151,7 +154,10 @@ export async function openTools(){
     <div class="ed-card" data-q="${st.id}">
       <div class="ed-ic">${st.published ? '🟢' : '⚪'}</div>
       <div style="flex:1;min-width:0">
-        <div class="ed-t">${esc(st.title || st.code)}</div>
+        ${/* 🆕 b172 · وأدواتُ القياس أشدُّ المواضع حاجةً لا أقلَّها: **تسعُ
+              محطّاتٍ من تسع لاتينيّةُ العنوان** (`Routing Station` …) —
+              قِيس ٢٣ أكتوبر. وعنوانُ المحطّة هو لسانُ ورقتها. */''}
+        <div class="ed-t" dir="auto">${esc(st.title || st.code)}</div>
         <div class="ed-m">
           ${st.station != null ? `<span class="chip g">محطّة ${AR(st.station)}</span>` : ''}
           <span class="chip ${st.n ? 'g' : ''}">${AR(st.n || 0)} بنداً</span>
@@ -170,8 +176,9 @@ export async function openTools(){
     ${tools.map(t => `
       <div class="ed-sec">
         <div class="ed-sec-h">
-          <span class="ed-t">${esc(t.tool)}</span>
-          <span class="chip">${esc(t.subject)}</span>
+          ${/* واسمُ الأداة لاتينيٌّ دائماً (`ielts_placement`) — ومعه المادّة. */''}
+          <span class="ed-t" dir="auto">${esc(t.tool)}</span>
+          <span class="chip" dir="auto">${esc(t.subject)}</span>
           <span class="chip g">${AR((t.stations||[]).length)} محطّة</span>
           <button class="btn ghost" data-rt="${esc(t.tool)}"
                   style="margin-inline-start:auto;padding:5px 12px;font-size:.85em">⇢ شجرة التوجيه</button>          
@@ -445,7 +452,12 @@ export async function openCourse(course){
   const s = byId(t.subjects, course.subject_id) || {};
   const p = byId(t.paths, course.path_id);
 
-  head(esc(s.name || course.title),
+  /* 🔓 b172 · وسقطت `esc` من النداء: `head()` تكتب بـ`textContent` لا
+     بـ`innerHTML` (مصرَّحٌ به عندها: «الأسماءُ تأتي من القاعدة»)، فالتهريبُ
+     هنا **يُظهر `&amp;` حرفاً** في اسم مادّةٍ فيها «&».
+     ⚠️ وهذا بابُها الوحيد (قِيس على `js/` كلِّه: نداءٌ واحد)، **وصفرُ مادّةٍ
+        اليوم فيها محرفُ تهريب** — فالعطلُ نائمٌ لا قائم، ويُسدّ قبل أن يستيقظ. */
+  head(s.name || course.title,
        `${N(course.students,'طالب','طالبان','طلاب','طالباً')}${p ? ' · ' + p.name : ''}`);
   app.innerHTML = `<div class="status">جار تحميل الدروس…</div>`;
 

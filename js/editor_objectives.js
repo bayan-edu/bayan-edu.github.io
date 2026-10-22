@@ -175,7 +175,10 @@ function render(){
 
     ${hs.length ? byStrand.map(g => `
       <section class="ob-s">
-      <div class="grp">${esc(g.name)} ${g.k !== '—'
+      ${/* 🆕 b172 · وترويسةُ الفرع كترويسة الوحدة في `editor.js`: الحَكَمُ
+            أوّلُ حرفٍ من الاسم، والكودُ بعده شارةٌ لا تَحكم. وثمانيةُ فروعٍ
+            من أربعةٍ وثلاثين لاتينيّةُ الاسم (٢٢ أكتوبر). */''}
+      <div class="grp" dir="auto">${esc(g.name)} ${g.k !== '—'
         ? `<span class="chip">${esc(g.k)}</span>` : ''}
         <span class="chip">${N(g.hs.length,'عنوان','عنوانان','عناوين','عنواناً')}</span></div>
       ${g.hs.map(headBlock).join('')}</section>`).join('')
