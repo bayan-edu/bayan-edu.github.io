@@ -17,6 +17,13 @@
          للمنشور، حرفاً بحرف. فإن اختلفا فقد تغيّر غيرُ التعليق.
       ② كلُّ مسارٍ محلّيّ في المنشور له ملفٌّ في dist/ — إن كان له
          ملفٌّ في المستودع. (والغائبُ عنهما معاً عطلٌ قديم يُنبَّه إليه.)
+      ③ 🆕 b167 · وكلُّ مسارٍ يُحلّ على **عنوان الصفحة** مطلقٌ يبدأ بـ«/»:
+         ما في index.html وما تكتبه الشيفرةُ نصّاً (img/ · vendor/ …).
+         فـindex.html تُقدَّم على كلّ عنوان (/subjects/7/lessons/42)، والنسبيُّ
+         يُطلب حينئذٍ من /subjects/7/lessons/… فيُجاب بالمنصّة لا بالملفّ.
+         ⚠️ **ولا يرى ما بُني بـ`${…}`** (`img/kind/${k}.webp`) **ولا مجلّداً بلا
+            لاحقة** (`vendor/arabic-mathjax`) — ثلاثةٌ أُصلحت باليد في b167، وقِيس
+            أنّه يرى الأحدَ عشرَ الباقية على شيفرة b166. فما لا يراه يُكتب مطلقاً ابتداءً.
       وأيُّ فشلٍ يُنهي البناءَ برمزٍ غير الصفر ⇐ Cloudflare لا ينشر،
       **ويبقى الموقعُ الحيّ على ما كان.**
 
@@ -91,14 +98,18 @@ const EXTERNAL = /^(?:[a-z][a-z0-9+.-]*:|\/\/|#)/i;   // http: · data: · mailt
 const ASSET    = /\.(?:png|jpe?g|webp|gif|svg|ico|js|css|html|mp3|ogg|wav|json|woff2?)$/i;
 
 function refsOf(r, text){
-  const out = [];            // [مسارٌ كما كُتب, أساسُ حلّه]
+  const out = [];            // [مسارٌ كما كُتب, أساسُ حلّه, أيُحلّ على عنوان الصفحة؟]
   const here = posix.dirname(r);
-  const add = (p, base) => {
+  const add = (p, base, page = false) => {
     p = p.split(/[?#]/)[0];
-    if (p && !EXTERNAL.test(p)) out.push([p, base]);
+    if (p && !EXTERNAL.test(p)) out.push([p, base, page]);
   };
   if (r.endsWith('.html')) {
-    for (const m of text.matchAll(/\s(?:src|href)\s*=\s*["']([^"']+)["']/gi)) add(m[1], here);
+    /* index.html وحدها تُقدَّم على كلّ عنوان — فمساراتُها وحدها «على الصفحة» (③).
+       ووحدةُ الإقلاع داخلها (`import … from '/js/auth.js'`) تُقرأ معها. */
+    const shell = r === 'index.html';
+    for (const m of text.matchAll(/\s(?:src|href)\s*=\s*["']([^"']+)["']/gi)) add(m[1], here, shell);
+    for (const m of text.matchAll(/\bfrom\s*["']([^"']+)["']/g))                 add(m[1], here, shell);
   } else if (r.endsWith('.css')) {
     for (const m of text.matchAll(/url\(\s*["']?([^"')]+)["']?\s*\)/gi)) add(m[1], here);
   } else if (r.endsWith('.js')) {
@@ -106,8 +117,8 @@ function refsOf(r, text){
     for (const m of text.matchAll(/(?:\bfrom|\bimport)\s*\(?\s*["'](\.{1,2}\/[^"']+)["']/g)) add(m[1], here);
     /* … والمسارُ النصّيّ (img/… · vendor/… · sims/…) من موضع الصفحة:
        يُكتب في src أو يُمرَّر إلى fetch، فيُحلّ على index.html لا على الوحدة. */
-    for (const m of text.matchAll(/["'`]((?:img|vendor|sims|css|js|brand)\/[^"'`$\s?#]+)["'`?#]/g))
-      if (ASSET.test(m[1])) add(m[1], '.');
+    for (const m of text.matchAll(/["'`]((?:\.?\/)?(?:(?:img|vendor|sims|css|js|brand)\/[^"'`$\s?#]+|privacy\.html))["'`?#]/g))
+      if (ASSET.test(m[1])) add(m[1], '.', true);
   }
   return out;
 }
@@ -166,7 +177,10 @@ for (const entry of PUBLISH) {
 for (const r of published) {
   if (!/\.(?:html|css|js)$/.test(r) || r.startsWith('vendor/')) continue;
   const text = await readFile(join(OUT, r), 'utf8');
-  for (const [p, base] of refsOf(r, text)) {
+  for (const [p, base, page] of refsOf(r, text)) {
+    /* الفحص ③ — ما يُحلّ على عنوان الصفحة يبدأ بـ«/» */
+    if (page && !p.startsWith('/'))
+      fail.push(`${r}: «${p}» نسبيٌّ يُحلّ على عنوان الصفحة — على /subjects/7/lessons/42 يُطلب من غير موضعه. اكتبه «/${p.replace(/^\.\//, '')}»`);
     const target = p.startsWith('/') ? p.slice(1) : posix.normalize(posix.join(base, p));
     if (target.startsWith('..')) continue;
     checked++;
@@ -193,4 +207,4 @@ if (fail.length) {
   console.error(`\n⛔ فشل البناء (${fail.length}) — لا يُنشر شيء، والموقعُ الحيّ باقٍ على ما كان.`);
   process.exit(1);
 }
-console.log(`  ✅ الفحصان: التصغيرُ الكامل متطابق · وكلُّ مسارٍ يجد ملفَّه (${checked} مساراً)`);
+console.log(`  ✅ الفحوص الثلاثة: التصغيرُ الكامل متطابق · وكلُّ مسارٍ يجد ملفَّه (${checked} مساراً) · وما على الصفحة مطلق`);

@@ -13,7 +13,7 @@ import { renderMark, whenReady as avatarReady } from './avatar.js';
    والدمجُ مرّ بلا تعارضٍ **لأنّ الجانبين كتبا السطرَ نفسَه حرفاً** — وهو
    أخبثُ ما في التصادم: لا يشتكي. ⇒ هذه ترفعه، **فالختمُ يجيب «أيُّ شيفرةٍ
    يشغّلها المتصفّح»، وجوابان لسؤالٍ واحدٍ لا جواب.** */
-export const BUILD = "b166";
+export const BUILD = "b167";
 
 /* ── مراسي الصفحة ── */
 export const app = document.getElementById("app");
@@ -32,10 +32,14 @@ export const L_EN = ["A","B","C","D","E","F"];
    القرار وأدلّته في STATE.md ← «الرياضيات — قرارٌ مقيس». */
 
 /* موضع المكتبة. للفحص الأول يجوز توجيهه إلى CDN، وفي الإنتاج
-   يُستضاف في المستودع: لا طرفَ ثالثاً في مسار عرضِ الطالب. */
+   يُستضاف في المستودع: لا طرفَ ثالثاً في مسار عرضِ الطالب.
+   🆕 b167 · **ومطلقٌ يبدأ بـ«/»** كلُّ مسارٍ يُحلّ على عنوان الصفحة لا على
+   الوحدة (هذان · وصورُ img/ · ورابطُ الخصوصية): على /subjects/7/lessons/42
+   يُطلب النسبيُّ من /subjects/7/lessons/… فيُجاب بالمنصّة نفسها لا بالملفّ.
+   والبناءُ يرفض نسبيّاً جديداً (tools/build.mjs · الفحص ③). */
 
-  export const MATHJAX_SRC = 'vendor/mathjax/MathJax.js?config=TeX-MML-AM_CHTML';
-export const ARABIC_EXT  = 'vendor/arabic-mathjax';
+  export const MATHJAX_SRC = '/vendor/mathjax/MathJax.js?config=TeX-MML-AM_CHTML';
+export const ARABIC_EXT  = '/vendor/arabic-mathjax';
 
 /* علم اللفّ — أيُقلب المحتوى إلى اتجاه الكتاب العربيّ؟
    🔴 الرياضيات نعم؛ والفيزياء والكيمياء تُكتبان LTR في كتبهما،
@@ -410,6 +414,16 @@ export function srcOf(v){
   return SAFE.test(v) ? v : null;          // رابط خارجيّ
 }
 
+/* 🆕 b167 · رابطُ مصدرٍ من القاعدة يُحلّ على جذر الموقع لا على عنوان الصفحة.
+   `items.url` يحمل مساراتِ المحاكيات نسبيّةً (`sims/…html` · ثلاثةُ صفوف —
+   قِيس ٢١ أكتوبر)، وكانت تُحلّ على «/» لأنّ المنصّةَ كلَّها كانت «/». فلمّا
+   صار للدرس عنوانُه (/subjects/7/lessons/42) طُلبت من /subjects/7/lessons/sims/…
+   فأجاب Cloudflare بالمنصّة نفسها **داخلَ إطار المحاكاة.**
+   ⇒ ما بدأ بمخطّطٍ (https: · r2:) أو بـ«/» يمرّ كما هو، وما سواه يُسبَق بـ«/».
+   ⚠️ وليست حارساً: من شاء الحراسةَ فـsrcOf أعلاه. هذه تحلّ ولا تحكم. */
+export const siteUrl = u =>
+  !u || /^(?:[a-z][a-z0-9+.-]*:|\/)/i.test(u) ? u : '/' + u.replace(/^\.\//, '');
+
 /* وسيط الفقرة: واحد ونوعه في kind */
 export function pgMedia(p){
   if(!p?.media) return '';
@@ -505,12 +519,26 @@ export function goRoute(key){
       ⚠️ فالقسمُ الذي تمرّره الشاشةُ إلى nav() صار يعني عنوانَها لا تظليلَ
          الدرج وحده: ملفّي وعلامتي كانتا تمرّران 'subjects' فصارتا
          'profile' و'avatar' — وإلّا كتبتا /subjects فوق شاشتيهما.
-   📌 **القسمُ وحده في هذه الخطوة:** الدرسُ يحمل /subjects حتى ٢ب.
+   🆕 b167 · **والمادّةُ والدرسُ عنوانان داخل قسمهما (٢ب):**
+      `/subjects/7` قائمةُ دروس المادّة · `/subjects/7/lessons/42` الدرس.
+      ⇒ الدرسُ داخل مادّته لا وحدَه: يُفتح بمعرّفَيه بلا استعلامٍ جديد
+        (`openLessonAt` في student.js — وهي نفسُها مهبطُ البحث)، والرجوعُ
+        منه يبلغ مادّتَه طبعاً. والمعلّمُ يرسل الرابطَ فيفتحه الطالبُ مباشرةً.
+      🔑 والشاشةُ تسمّي عنوانَها حين يكون أدقَّ من قسمها: nav(القسم, العنوان).
+         **وإن سكتت عنه وكان العنوانُ الحاضر في قسمها بقي** — نصُّ الدرس
+         والنتيجةُ واختيارُ المعلّم شاشاتٌ داخل الدرس أو المادّة، فلا تمحو
+         عنوانَهما إلى /subjects. ⇒ وبيتُ القسم يسمّيه صراحةً (loadList).
+      ⚠️ وشاشاتُ التهيئة (البريد · الصفّ · التفاصيل) لا تمرّر قسماً: كانت تمرّر
+         'subjects' فتمحو رابطاً جاء به صاحبُه قبل أن يصل إليه.
    📌 **وأوّلُ شاشةٍ تستبدل العنوانَ ولا تضيفه:** «/» يصير /subjects في
       موضعه. ولو أُضيف لعاد الرجوعُ من /subjects إلى «/» فرسمها ثانيةً —
       زرٌّ يدور ولا يُرجِع.
-   ⚠️ **والعناوينُ مقطعٌ واحد:** index.html يطلب css/ وjs/ بمساراتٍ نسبيّة،
-      فعنوانٌ من مقطعين (/a/b) يكسرها. ⇒ ٢ب تبدأ بـ`<base href="/">`.
+      🆕 b167 · **وكذلك أوّلُ شاشةٍ بعد فتح عنوان** (`openAddress`): درسٌ مقفلٌ
+         أو غائب يردّ إلى مادّته — فيُستبدل العنوانُ ولا يُضاف، وإلّا أعاده
+         الرجوعُ إلى الدرس الممنوع فردّه ثانيةً.
+   ⚠️ **وما يُحلّ على عنوان الصفحة مطلقٌ يبدأ بـ«/»** (b167): index.html تُقدَّم
+      على /subjects/7/lessons/42، والنسبيُّ يُطلب حينئذٍ من غير موضعه.
+      والبناءُ يرفض نسبيّاً جديداً (tools/build.mjs · الفحص ③).
    ⚠️ **وجلسةُ التدرّب (‎#/t/…‎) لا تُمسّ:** زائرٌ بلا حساب، وعنوانُها رابطُها.
    📌 والعناوينُ بالإنجليزية (قرارُ المالك ٢١ أكتوبر): العربيةُ تُلصَق
       في واتساب رموزاً (‎%D8%AF…‎). */
@@ -525,8 +553,39 @@ const KEY_OF = Object.fromEntries(Object.entries(PATHS).map(([k, p]) => [p, k]))
 /* إعدادُ حسابٍ لا وجهةُ عمل (b107) — فلكلّ دور، ولا مقعدَ لها في الدرج */
 const OPEN_TO_ALL = ['profile', 'avatar'];
 
+/* 🆕 b167 · العناوينُ العميقة: نمطٌ ⇒ قسمُه ومَن يفتحه بما التقطه النمط.
+   تُسجَّل من start() كما registerRoutes — فتبقى هذه الوحدةُ ورقةً لا تعرف
+   الشاشات. والقسمُ لها حارسُ الدور نفسُه (keyAllowed). */
+const DEEP = [];
+export function registerDeep(list){ DEEP.push(...list); }
+
+/* ما يسمّيه العنوانُ الحاضر: { key, open } — أو null لـ«/» ولما لا يُعرف */
+function addressRoute(){
+  const p = location.pathname.replace(/\/+$/, '');
+  for(const d of DEEP){
+    const m = d.re.exec(p);
+    if(m) return { key: d.key, open: () => d.open(...m.slice(1)) };
+  }
+  const key = KEY_OF[p];
+  return key ? { key, open: () => goRoute(key) } : null;
+}
+
 /* القسمُ الذي يسمّيه العنوانُ الحاضر — و null لـ«/» ولما لا يُعرف */
-export const addressKey = () => KEY_OF[location.pathname.replace(/\/+$/, '')] || null;
+export const addressKey = () => addressRoute()?.key || null;
+
+/* يفتح ما يسمّيه العنوان إن فتحه الدور — ويُخبر أفعل.
+   🔑 وأوّلُ كتابةٍ بعده تستبدل ولا تضيف (`replaceNext`): الفاتحُ قد يردّ إلى
+      غير ما طُلب (درسٌ مقفل ⇒ مادّتُه)، وسجلٌّ يحفظ الممنوعَ يُعيده الرجوعُ إليه.
+   ⚠️ والعلمُ يُستهلك في أوّل nav() بعده ولو لم يتغيّر العنوان — فلا يبقى
+      مرفوعاً فتستبدل نقرةُ الطالب التالية ما كان ينبغي أن تضيفه. */
+let replaceNext = false;
+export function openAddress(){
+  const r = addressRoute();
+  if(!r || !keyAllowed(r.key)) return false;
+  replaceNext = true;
+  r.open();
+  return true;
+}
 
 /* أيبلغه هذا الدورُ بعنوان؟ — والدرجُ نفسُه يجيب: ما ليس في وجهاته لا يُفتح.
    🔒 **وليس حارساً** — RLS هي الحارس. هذا ألّا يرى الطالبُ شاشةَ معلّمٍ خاوية. */
@@ -535,11 +594,16 @@ export const keyAllowed = key => !!key &&
 
 let here = location.pathname;          // آخرُ عنوانٍ رُسمت عليه شاشة — يُردّ إليه إن مُنع الرجوع
 
-function writeAddress(key){
-  const path = PATHS[key];
-  if(!path || location.pathname === path || /^#\/t\//.test(location.hash)) return;
-  history[addressKey() ? 'pushState' : 'replaceState'](null, '', path);
-  here = path;
+/* path: عنوانُ الشاشة إن كان أدقَّ من قسمها (b167). وإن سكتت عنه والعنوانُ
+   الحاضرُ في قسمها بقي كما هو — والتعليلُ عند PATHS. */
+function writeAddress(key, path){
+  const replace = replaceNext; replaceNext = false;
+  if(!key || /^#\/t\//.test(location.hash)) return;
+  const cur = addressRoute();
+  const want = path || (cur?.key === key ? null : PATHS[key]);
+  if(!want || location.pathname === want) return;
+  history[replace || !cur ? 'replaceState' : 'pushState'](null, '', want);
+  here = want;
 }
 
 /* الرجوعُ والتقدّم — يُستعاد القسمُ من العنوان، ويُنادى مرّةً من start().
@@ -560,8 +624,7 @@ export function watchAddress(onHome){
     }
     if(!S.user) return;                  // البوّابة: لا قسمَ يُستعاد لمن لم يدخل
     here = location.pathname;
-    const key = addressKey();
-    if(keyAllowed(key)) goRoute(key); else onHome();
+    if(!openAddress()) onHome();
   });
 }
 
@@ -720,7 +783,7 @@ const KIND_3D = ['pdf','video','audio','image','link','text','quiz','recording',
 /* أيقونات أنماط المصادر — المجسَّمة صورةٌ، وما لا مجسَّمَ له يرجع إلى
    رسم ICO الخطّيّ (مصدرٌ واحد لرسمٍ واحد، والتعليل عند تصريح ICONS فوق). */
 ICONS = Object.fromEntries(KIND_3D.map(k =>
-  [k, `<img src="img/kind/${k}.webp" class="ic-3d" alt="" loading="lazy"`
+  [k, `<img src="/img/kind/${k}.webp" class="ic-3d" alt="" loading="lazy"`
     + ` width="40" height="40">`]));
 
 /* ══════════════════════════════════════════════════════════════
@@ -1450,8 +1513,8 @@ function wire(root){
 }
 
 // active = مفتاح الوجهة الحالية · النقر على النشط يُعيد التحميل
-export function nav(active){
-  writeAddress(active);      // 🆕 b166 · العنوانُ يتبع القسم — التعليلُ عند PATHS
+export function nav(active, path){
+  writeAddress(active, path);   // 🆕 b166 · العنوانُ يتبع القسم · b167 · وعنوانَ الشاشة إن سمّته — التعليلُ عند PATHS
   setWide(false);
   bar.innerHTML =`<div class="topbar">
     <button class="iconbtn" id="menuBtn" aria-label="التنقّل"

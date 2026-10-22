@@ -434,7 +434,7 @@ function routeForm(tool, fromId, r, stations, levels){
 /* أيقونةُ البطاقات — صورةٌ لا رسمٌ خطّيّ، كأخواتها منذ `b146`.
    ⚠️ وليست في `ICONS`: البطاقاتُ ليست `item_kind` (التعليلُ في
       `student.js` عند نظيرتها). */
-const DECK_IMG = `<img src="img/kind/deck.webp" class="ic-3d" alt=""
+const DECK_IMG = `<img src="/img/kind/deck.webp" class="ic-3d" alt=""
   width="40" height="40" loading="lazy">`;
 
 /* ═══════════ ② دروس المقرَّر ═══════════ */

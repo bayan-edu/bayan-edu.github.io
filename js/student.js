@@ -10,7 +10,7 @@ import { S } from './state.js';
 import { app, head, toast, esc, escA, AR, ICONS, KINDS, bubble, errBox, nav,
          refreshCounts, scrollTop, scrollBottom, shape, icon,
          skeleton, waiting, G, N, NW, fmt,
-         sayable, sayGroup, bindSay, backMeta, backText, dirOf, srcOf } from './ui.js';
+         sayable, sayGroup, bindSay, backMeta, backText, dirOf, srcOf, siteUrl } from './ui.js';
 import { startQuiz } from './quiz.js';
 import { mediaUrl, isManaged, accents, speak, playAudio, narrate, voiceName, hush } from './media.js';
 import { isSim, openSim } from './simulations.js';
@@ -132,7 +132,9 @@ function todayStrip(){
 }
 
 export async function loadList(){
-  nav('subjects');
+  /* 🆕 b167 · بيتُ القسم يسمّي عنوانَه: الشاشةُ الساكتة تُبقي عنوانَ قسمها
+     (ui.js · PATHS)، فلو سكتت هذه لبقي /subjects/7 فوق الرئيسة. */
+  nav('subjects', '/subjects');
   /* 🆕 b139 · والترحيبُ معروفٌ قبل الجلب — فيُكتب الآن لا بعد الشبكة.
      وهو موضعُ البلاغ: كان البرواز يبقى من الشاشة السابقة حتى يصل الردّ. */
   waiting('subjects', null, "أهلاً " + S.prof.full_name, "");
@@ -189,7 +191,7 @@ export async function loadList(){
   const face = x => {
     const img = SUBJ_IMG[x.id];
     return img
-      ? `<div class="sh-wrap is-3d"><img class="sh-img-3d" src="img/subj_${img}.webp"
+      ? `<div class="sh-wrap is-3d"><img class="sh-img-3d" src="/img/subj_${img}.webp"
            alt="" width="58" height="58" decoding="async"></div>`
       : `<div class="sh-wrap">${shapeOf(x)}<span
            class="sh-icon">${esc(x.icon || '')}</span></div>`;
@@ -347,13 +349,24 @@ export async function openSearchHit(hit){
     return loadMyPerformance();
   }
 
+  if(!hit.lesson_id) return loadList();
+  return openLessonAt(hit.subject_id, hit.lesson_id);
+}
+
+/* 🆕 b167 · درسٌ أو مادّةٌ بمعرّفيهما — من نتيجة بحث ومن رابط
+   (/subjects/7 · /subjects/7/lessons/42 — ui.js · PATHS). كانت متنَ
+   openSearchHit فاستُخرجت: **البابان سواءٌ في الحاجة، وحارسٌ واحد للقفل**
+   خيرٌ من اثنين يفترقان. ⇒ lessonId فارغٌ ⇒ قائمةُ دروس المادّة.
+   ⚠️ ومادّةٌ لا تبلغها قائمتُك (صفٌّ آخر · رابطٌ قديم) ⇒ الرئيسة، بلا خطأ. */
+export async function openLessonAt(subjectId, lessonId){
   /* الشبكةُ قد تكون فارغةً إن دخل الطالب من رابطٍ مباشر ولم يمرّ بالرئيسة */
   if(!(S.subjects || []).length){
     const { data } = await api.listSubjects();
     S.subjects = data || [];
   }
-  const subj = (S.subjects || []).find(v => String(v.id) === String(hit.subject_id));
-  if(!subj || !hit.lesson_id) return loadList();
+  const subj = (S.subjects || []).find(v => String(v.id) === String(subjectId));
+  if(!subj) return loadList();
+  if(lessonId == null) return loadLessons(subj);
 
   const { data, error } = await api.listLessons(subj.id);
   if(error){ toast('تعذّر فتح الدرس'); return loadLessons(subj); }
@@ -361,10 +374,12 @@ export async function openSearchHit(hit){
   /* الترتيبُ لازم: openLesson تقرأ S.subj و S.lessons ولا تجلبهما */
   S.subj = subj; S.lessons = data || [];
   rememberSubject(subj);
-  const l = S.lessons.find(v => String(v.id) === String(hit.lesson_id));
+  const l = S.lessons.find(v => String(v.id) === String(lessonId));
 
   /* 🔒 ولا يُلتَفّ على القفل: البحث يكشف ما يراه الطالب، والرؤيةُ
-     ليست الإتاحة. درسٌ مقفل يُقال سببُه وتُعرض قائمتُه. */
+     ليست الإتاحة. درسٌ مقفل يُقال سببُه وتُعرض قائمتُه.
+     🆕 b167 · **والرابطُ كالبحث:** من أرسل /subjects/7/lessons/42 لطالبٍ لم
+        يبلغه لم يفتحه له — والعنوانُ يُستبدل بالمادّة (ui.js · openAddress). */
   if(!l)        return loadLessons(subj);
   if(l.locked){ toast(l.reason || 'هذا الدرس غير متاح بعد'); return loadLessons(subj); }
   openLesson(l);
@@ -498,7 +513,7 @@ export async function loadLessons(subj){
   /* الأثرُ يُكتب هنا لا في openLesson: المادةُ هي وحدةُ الاستئناف،
      ودرسٌ بعينه قد يُتمّ فيصير «متابعة» يفتح ما فُرغ منه. */
   rememberSubject(subj);
-  nav('subjects');
+  nav('subjects', `/subjects/${subj.id}`);     // 🆕 b167 · عنوانُ المادّة — ui.js · PATHS
   /* 🆕 b139 · برواز السياق هنا كما في شاشة البطاقات — طلبُ صاحب المنصّة.
      كانت: «العلوم المتكاملة» عنواناً · «مستواك: الصف الأول الثانوي» وصفاً ·
      ثمّ الفتات — ثلاثةُ أسطر. ⇒ **المادةُ إلى البرواز، والمستوى يرتفع
@@ -696,7 +711,7 @@ export async function loadLessons(subj){
       }
 
       if(!i.url){ toast("هذا المصدر غير متاح بعد"); return; }
-      window.open(i.url, '_blank', 'noopener');
+      window.open(siteUrl(i.url), '_blank', 'noopener');   // 🆕 b167 · انظر siteUrl
       await api.markItemCompleted(i.id);
       i.status = 'completed';
       toast("سُجّل اطّلاعك على المصدر");
@@ -764,7 +779,7 @@ const itmRow = i => `
 
 export function openLesson(l){
   S.lesson = l;
-  nav('subjects');
+  nav('subjects', `/subjects/${S.subj.id}/lessons/${l.id}`);   // 🆕 b167 · الدرسُ داخل مادّته
   /* 🆕 b139 · المادةُ إلى البرواز كأخواتها، والوحدةُ تبقى وصفاً —
      فهي سياقُ الدرس داخل المادة لا اسمَ مكانٍ آخر. ولمّا صارت المادةُ
      في البرواز لم يبقَ للوصف بديلٌ عنها حين تغيب الوحدة. */
@@ -828,7 +843,7 @@ export async function openItem(i){
   if(i.kind === 'text') return openText(i);
 
   if(i.url){
-    window.open(i.url,'_blank','noopener');
+    window.open(siteUrl(i.url),'_blank','noopener');
     await api.markItemCompleted(i.id);
     i.status = 'completed';
     toast("سُجّل اطّلاعك على المصدر");
@@ -978,7 +993,7 @@ async function textBook(i, l, back){
     mountReading(ctl.slot, sheet, {
       itemId: i.id, info: raRes.data, dir: en ? 'ltr' : 'rtl',
       t: en ? READ_EN : readAr(g), num: en ? String : AR,
-      privacyUrl: './privacy.html', toast,
+      privacyUrl: '/privacy.html', toast,
       api: { start: api.startReading, upload: api.uploadRecording },
       busy: on => ctl.voiceLock(on)
     });
@@ -1305,7 +1320,7 @@ async function startPlacement(x){
    ⚠️ وليست في `ICONS`: البطاقاتُ **ليست `item_kind`** (جدول `item_kinds`
       فيه ثلاثةَ عشرَ كوداً وليس فيها `deck`)، فلو دخلت الخريطةَ لأوهمت
       قارئَ الشيفرة أنّها نمطُ مصدرٍ يُؤلَّف — وهي نظامٌ آخر (`decks`). */
-const DECK_IMG = `<img src="img/kind/deck.webp" class="ic-3d" alt=""
+const DECK_IMG = `<img src="/img/kind/deck.webp" class="ic-3d" alt=""
   width="40" height="40" loading="lazy">`;
 
 /* 🔴 b148 · كانت تبحث عن **مجموعةٍ** لها `lesson_id`، فلم تُرسَم قطّ:

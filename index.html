@@ -23,14 +23,19 @@
 <meta name="twitter:image" content="https://bayanclass.com/icon-192.png">
 
 <!-- 🆕 b166 · الشرطةُ الأخيرة تُرفع قبل أن تُطلب الأنماطُ والوحدات.
-     المساراتُ في هذا الملفّ نسبيّة (css/… · ./js/…)، وعلى /cards/ تُحلّ إلى
-     /cards/css/… — وCloudflare يجيبها بهذه الصفحة نفسِها (single-page-application)
-     فتُرسم المنصّةُ بلا نمطٍ ولا شيفرة. وقِيس ذلك على wrangler dev قبل الكتابة.
+     كانت المساراتُ هنا نسبيّة (css/… · ./js/…)، وعلى /cards/ تُحلّ إلى /cards/css/…
+     — وCloudflare يجيبها بهذه الصفحة نفسِها (single-page-application) فتُرسم
+     المنصّةُ بلا نمطٍ ولا شيفرة. وقِيس ذلك على wrangler dev قبل الكتابة.
      🔑 و`replaceState` يبدّل عنوانَ المستند، **وعليه تُحلّ الروابطُ التي تليه**
         — فموضعُه أوّلُ سكربتٍ قبل أيّ `<link>`.
-     ⚠️ ولا `<base href="/">` بدلاً منه: علاماتُ الحساب تُرسم بـ`<use href="#avf-…">`
-        (js/avatar.js)، والجزءُ مع base يُحلّ على «/» لا على الصفحة فتسقط الأطر.
-        والمقاطعُ المتعدّدة (/lessons/42) مسألةُ ٢ب. -->
+     🆕 b167 · **وصارت المساراتُ مطلقةً** (/css/… · /js/…) لأجل عناوين الدروس
+        (/subjects/7/lessons/42) — فلم تعد الشرطةُ تكسر شيئاً هنا. ويبقى السطرُ
+        شبكةً لما فات الفحصَ ③ في البناء (نسبيٌّ في محتوى القاعدة مثلاً)،
+        وليرى المُوجِّهُ صورةً واحدة للعنوان.
+     🔓 **وصُحِّح في b167 قولٌ كان هنا بلا قياس:** أنّ `<base href="/">` يُسقط أطرَ
+        العلامة (`<use href="#avf-…">`). **قِيس في Chromium فلم يُسقطها.** واختير
+        المطلقُ عليه لأنّه صريحٌ في موضعه ويحرسه البناء، ولأنّ base يمسّ كلَّ
+        رابطٍ نسبيٍّ في المستند — ومنها `url(#…)` في محرّكاتٍ لم تُقَس هنا. -->
 <script>if(/.\/$/.test(location.pathname))history.replaceState(null,'',location.pathname.replace(/\/+$/,'')+location.search+location.hash);</script>
 <script>try{var t=localStorage.getItem("bayan.theme");if(t)document.documentElement.dataset.theme=t;}catch(e){}
 var m=document.querySelector('meta[name=theme-color]');if(m)m.content=m.dataset[t==="dark"?"dark":"light"];</script>
@@ -57,8 +62,8 @@ var m=document.querySelector('meta[name=theme-color]');if(m)m.content=m.dataset[
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700;800&family=Readex+Pro:wght@400;600&family=Amiri&family=Nunito:wght@900&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="css/base.css">
-<link rel="stylesheet" href="css/screens.css">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/screens.css">
 </head>
 <body>
 
@@ -159,7 +164,7 @@ var m=document.querySelector('meta[name=theme-color]');if(m)m.content=m.dataset[
 <!-- تذييل الموقع: صفحاتٌ ثابتة لا تحتاج دخولاً ولا جافاسكربت.
      خارج .wrap عمداً — لا يتبع عرضَ المحتوى ولا يُمحى مع #app. -->
 <footer class="site-foot">
-  <a href="privacy.html">سياسة الخصوصية</a>
+  <a href="/privacy.html">سياسة الخصوصية</a>
 </footer>
 
 <div class="toast" id="toast" data-nosnippet>تم</div>
@@ -186,7 +191,7 @@ var m=document.querySelector('meta[name=theme-color]');if(m)m.content=m.dataset[
          والبوّابة تُرسم بجافاسكربت. فمن أطفأها يجد الرابط هنا صريحاً
          — **وهو عقدٌ لا يُعلَّق على شيفرة**، وشرطُ Google لنشر تطبيق
          OAuth (رأس privacy.html). والتعليل كاملاً عند .site-foot. -->
-    <footer class="site-foot"><a href="privacy.html">سياسة الخصوصية</a></footer>
+    <footer class="site-foot"><a href="/privacy.html">سياسة الخصوصية</a></footer>
   </div>
 </noscript>
 
@@ -222,7 +227,7 @@ var m=document.querySelector('meta[name=theme-color]');if(m)m.content=m.dataset[
 </script>
 
 <script type="module">
-  import { start } from './js/auth.js';
+  import { start } from '/js/auth.js';
   start();
 </script>
 </body>

@@ -16,7 +16,7 @@
    ══════════════════════════════════════════════════════════ */
 
 export const POLICY_VERSION = '2026-10-21';
-export const POLICY_URL     = './privacy.html';
+export const POLICY_URL     = '/privacy.html';
 
 /* مربّعُ الموافقة — نصُّه فعلٌ لا إقرارٌ مبهم، والرابط يُفتح في تبويبةٍ
    أخرى فلا يُفقد ما كُتب في النموذج. */

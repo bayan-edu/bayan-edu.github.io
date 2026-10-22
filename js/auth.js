@@ -10,8 +10,8 @@ import { S } from './state.js';
 import { app, bar, head, toast, esc, AR, errBox, nav, registerRoutes,
          registerCounts, registerSearch, registerGram, refreshCounts,
          mathBoot, scrollTop, N,
-         goRoute, addressKey, keyAllowed, watchAddress } from './ui.js';
-import { loadList, loadFeedback, loadChat, openSearchHit } from './student.js';
+         openAddress, registerDeep, watchAddress } from './ui.js';
+import { loadList, loadFeedback, loadChat, openSearchHit, openLessonAt } from './student.js';
 import { loadTeacher, loadInbox, loadMySubjects } from './teacher.js';
 import { openEditor } from './editor.js';
 import { openAvatarEdit } from './avatar_edit.js';
@@ -408,7 +408,7 @@ async function submitTeacherGate(em, pw){
 
 export function renderCompleteProfile(msg){
   S.role ||= 'student';
-  nav('subjects');
+  nav();   // 🆕 b167 · التهيئةُ بلا قسم: 'subjects' كانت تمحو الرابطَ قبل أن يُبلَغ (ui.js · PATHS)
   head("أهلاً بك في بيان", S.prof?.full_name || '');
   const need = !S.prof?.policy_accepted_at;
 
@@ -480,7 +480,7 @@ export function renderCompleteProfile(msg){
       `role_form.js` لا نسختان. */
 
 export function renderTeacherDetails(msg){
-  nav('subjects');
+  nav();   // 🆕 b167 · التهيئةُ بلا قسم: 'subjects' كانت تمحو الرابطَ قبل أن يُبلَغ (ui.js · PATHS)
   head("إكمال بيانات المعلّم", S.prof?.full_name || '');
   app.innerHTML = `
     ${msg ? `<div class="err"><b>تنبيه</b>${esc(msg)}</div>` : ''}
@@ -518,7 +518,7 @@ export function renderTeacherDetails(msg){
       تقرأ طريقةَ الجلسة من `auth.mfa_amr_claims` — جدولُ المصادِق. */
 
 export function renderVerifyAuthor(msg){
-  nav('subjects');
+  nav();   // 🆕 b167 · التهيئةُ بلا قسم: 'subjects' كانت تمحو الرابطَ قبل أن يُبلَغ (ui.js · PATHS)
   head("بريدك", S.prof?.full_name || '');
   app.innerHTML = `
     ${msg ? `<div class="err"><b>تنبيه</b>${esc(msg)}</div>` : ''}
@@ -610,8 +610,7 @@ export function translate(m){
    📌 والدخولُ بـGoogle يعود إلى العنوان نفسه (`redirectTo` في api.js
       يُبنى من `location.pathname`)، فالرابطُ يعبر البوّابة. */
 function landing(home){
-  const key = addressKey();
-  if(keyAllowed(key)) return goRoute(key);
+  if(openAddress()) return;            // 🆕 b167 · القسمُ أو المادّةُ أو الدرس — ما يسمّيه العنوان
   if(location.pathname !== '/') history.replaceState(null, '', '/');
   return home();
 }
@@ -829,7 +828,7 @@ async function submitTeacher(){
 /* ═══════════ ④ شاشة الانتظار ═══════════ */
 
 export function renderPending(){
-  nav('subjects');
+  nav();   // 🆕 b167 · التهيئةُ بلا قسم: 'subjects' كانت تمحو الرابطَ قبل أن يُبلَغ (ui.js · PATHS)
   const rq = S.roleInfo?.request || {};
   head("طلبك قيد المراجعة", S.prof.full_name);
   app.innerHTML = `
@@ -990,6 +989,13 @@ export function start(){
   /* 🆕 b166 · الرجوعُ والتقدّم يستعيدان القسمَ من العنوان — وتعليلُه عند
      PATHS في ui.js. و«/» وما لا يفتحه الدورُ يمرّان بـboot: هي وحدها تعرف
      أين يبيت كلُّ دورٍ وأيَّ تهيئةٍ ينتظر. */
+  /* 🆕 b167 · المادّةُ والدرسُ بمعرّفَيهما — والنمطُ يُطابَق على العنوان بلا شرطةٍ
+     أخيرة. وكلاهما يمرّ بـopenLessonAt: هي تحمل القفلَ والغياب، فلا يُلتفّ
+     عليهما برابطٍ كما لا يُلتفّ ببحث. */
+  registerDeep([
+    { re: /^\/subjects\/(\d+)\/lessons\/(\d+)$/, key: 'subjects', open: (s, l) => openLessonAt(s, l) },
+    { re: /^\/subjects\/(\d+)$/,                 key: 'subjects', open: s => openLessonAt(s, null) },
+  ]);
   watchAddress(boot);
 
    /* الرياضيات: مراقبٌ واحد على #app يلتقط أي معادلة تُرسم — هنا

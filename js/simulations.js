@@ -22,7 +22,7 @@
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
 import { S } from './state.js';
-import { toast } from './ui.js';
+import { toast, siteUrl } from './ui.js';
 
 /* عنصرٌ بنمط محاكاة وله رابط ⇒ يُضمَّن، لا يُفتح في تبويب.
    بخلاف الصوت لا حاجة لفحص الصيغة — كل رابط simulation يُضمَّن. */
@@ -81,7 +81,7 @@ export function openSim(i){
 
   /* ⚠️ الرابط يُسنَد خاصيةً لا يُدرَج في HTML — كالصوت في student.js
      ولنفس السبب: علامة اقتباسٍ في رابطٍ قديم تكسر الوسم. */
-  frame.src = i.url;
+  frame.src = siteUrl(i.url);     // 🆕 b167 · sims/… نسبيٌّ في القاعدة — انظر siteUrl
   curSim = { id: i.id, win: frame.contentWindow };
 
   slot.querySelector('[data-a="full"]').onclick = e => {

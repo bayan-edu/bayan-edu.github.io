@@ -151,7 +151,7 @@ export function mountReading(slot, sheet, o){
     if(state === 'open' || state === 'asking'){
       body = `<p>${esc(t.intro)}</p>
         <p class="ra-note">${esc(t.privacy)}
-          <a href="${esc(o.privacyUrl || './privacy.html')}" target="_blank" rel="noopener">${esc(t.privacyLink)}</a></p>
+          <a href="${esc(o.privacyUrl || '/privacy.html')}" target="_blank" rel="noopener">${esc(t.privacyLink)}</a></p>
         ${lastLine()}
         <div class="ra-btns"><button type="button" class="btn primary" data-ra="start"
           ${state === 'asking' ? 'disabled' : ''}>${state === 'asking' ? '…' : esc(t.start)}</button></div>`;
