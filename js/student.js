@@ -1022,6 +1022,7 @@ function readAr(g){
                  'قراءتك جاهزة للاستماع قبل الإرسال.'),
     send: 'إرسال', retry: 'إعادة الإرسال', again: 'إعادة التسجيل', close: 'إغلاق',
     sent: 'وصلت قراءتك، وتُحذف خلال ٧ أيام.',
+    teacherNote: 'ملاحظة معلّمك',
     last: d => 'آخر قراءة أرسلتها: ' + (d === 0 ? 'اليوم' : d === 1 ? 'أمس'
              : d === 2 ? 'قبل يومين' : 'قبل ' + AR(d) + (d <= 10 ? ' أيام' : ' يوماً')),
     denied: 'لم يُسمح باستعمال الميكروفون. يمكنك السماح به من إعدادات المتصفح.',
@@ -1046,6 +1047,7 @@ const READ_EN = {
   review: 'Listen to your reading before you send it.',
   send: 'Send', retry: 'Send again', again: 'Record again', close: 'Close',
   sent: 'Your reading was sent. It will be deleted within 7 days.',
+  teacherNote: "Your teacher's note",
   last: d => 'Last reading you sent: ' + (d === 0 ? 'today' : d === 1 ? 'yesterday' : d + ' days ago'),
   denied: 'Microphone access is blocked. You can allow it in your browser settings.',
   nomic: 'No microphone was found on this device.',

@@ -367,3 +367,17 @@ body:has(.bk){padding-bottom:0}
 .bk-zx:focus-visible{outline:2px solid #fff;outline-offset:2px}
 @keyframes bk-zin{from{opacity:0}to{opacity:1}}
 @media (prefers-reduced-motion:reduce){ .bk-zoom{animation:none} }
+
+/* ── ملاحظةُ المعلّم على القراءة (b169 · sql/175) ──
+   🔑 **محايدةٌ لا عائلة:** ملاحظةُ معلّمٍ ليست «أصبتَ» ولا «أخطأتَ» — قد تجمعهما.
+      فلا أخضرَ ولا أحمر، بل ورقٌ هادئ وحافّةٌ تفصلها عن تعليمات اللوحة.
+   🔑 **ونقطةُ الزرّ `accent`:** «انظر هنا» دعوةٌ إلى التفاعل — وتسقط عند الفتح. */
+.ra-tnote{background:var(--fill-soft);border:1px solid var(--line);border-inline-start:3px solid var(--line-strong);
+  border-radius:12px;padding:10px 12px;margin:0 0 12px}
+.ra-tnote b{display:block;font-family:'Almarai',system-ui,sans-serif;font-weight:800;font-size:var(--fs-meta);
+  color:var(--text-muted);margin-bottom:4px}
+.ra-tnote p{margin:0;white-space:pre-line}
+.ra-btn.has-note{position:relative}
+.ra-btn.has-note::after{content:'';position:absolute;top:3px;inset-inline-end:3px;width:9px;height:9px;
+  border-radius:50%;background:var(--accent);box-shadow:0 0 0 2px var(--surface)}
+

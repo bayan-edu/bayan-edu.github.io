@@ -1,6 +1,6 @@
 /* ══════════════════════════════════════════════════════════
    بيان — teacher.js
-   لوحة المعلم: التصحيح المقالي · رسائل الطلاب · اختيار الموادّ
+   لوحة المعلم: التصحيح المقالي · القراءات الجهرية · رسائل الطلاب · اختيار الموادّ
 
    ⚠️ عزل بيانات المعلمين مضمون في RLS عبر teaches()،
       لا في هذه الواجهة. لا تعتمد على تصفية الواجهة أماناً.
@@ -15,7 +15,11 @@ import { app, head, toast, esc, fmt, AR, bubble, errBox, nav, BUILD,
 export async function loadTeacher(){
   nav('grade'); head("لوحة المعلم — "+S.prof.full_name, "الإجابات المقالية بانتظار تصحيحك");
   app.innerHTML = `<div class="status">جار التحميل…</div>`;
-  const { data, error } = await api.attemptsToGrade();
+  /* 🆕 b169 · والقراءاتُ الجهريّة معها بنداءٍ موازٍ — وفشلُها لا يحجب التصحيح */
+  const [{ data, error }, rd] = await Promise.all([
+    api.attemptsToGrade(),
+    api.teacherReadings().then(r => r, e => ({ error: e }))
+  ]);
 
   const all  = data || [];
   const wait = all.filter(a=>!a.teacher_comment), done = all.filter(a=>a.teacher_comment);
@@ -29,9 +33,89 @@ export async function loadTeacher(){
     <h2 class="sec">بانتظار التصحيح (${AR(wait.length)})</h2>
     ${wait.length?wait.map(a=>card(a,false)).join(""):'<div class="status">لا توجد محاولات معلّقة 🎉</div>'}
     ${done.length?`<h2 class="sec">مُصحَّحة</h2>${done.slice(0,20).map(a=>card(a,true)).join("")}`:''}
+    ${readingsHtml(rd)}
     <p class="hint">استُلم ${N(all.length,'صف','صفان','صفوف','صفاً')} من قاعدة البيانات · نسخة الواجهة ${BUILD}</p>`;
 
-  app.querySelectorAll(".pend").forEach(el=>el.onclick=()=>openGrade(+el.dataset.a));
+  app.querySelectorAll(".pend[data-a]").forEach(el=>el.onclick=()=>openGrade(+el.dataset.a));
+  app.querySelectorAll(".pend[data-r]").forEach(el=>el.onclick=()=>openReading(+el.dataset.r));
+}
+
+/* ═══════════ ①ب القراءات الجهرية (b169 · sql/175) ═══════════
+   الطالبُ قرأ نصَّ الدرس بصوته (b164)، والمعلّمُ هنا يسمع ويكتب ملاحظته.
+   🔑 **في شاشة التصحيح لا في قسمٍ جديد:** عملُ طالبٍ ينتظر المعلّم — كالمقاليّ.
+      فلا رابطَ جديدَ ولا بندَ في القائمة، والمعلّمُ يجدها حيث يبحث عمّا ينتظره.
+   🔑 **والوقتُ يحكم:** الصوتُ يُحذف بعد خمسة أيام (`173`)، والملاحظةُ تبقى.
+      فالقائمةُ تقول كم بقي لكلّ قراءة — وما حُذف صوتُه يبقى في القائمة بلا مشغّل.
+   📐 والملاحظةُ نصٌّ وحده — كودُ التشخيص للنطق ينتظر قراراً تربويّاً (رأس `175`). */
+const READ_KEEP_DAYS = 5;            // حدُّ الكنّاس في `173` — غيّرتَه هناك؟ غيّره هنا
+
+function readingsHtml(rd){
+  if(rd?.error) return errBox(rd.error, 'القراءات الجهرية');
+  const list = Array.isArray(rd?.data) ? rd.data : [];
+  if(!list.length) return '';
+  const wait = list.filter(r => !r.noted && !r.deleted);
+  /* <bdi>: عنوانُ نصٍّ إنجليزيّ في سطرٍ عربيّ يقلب ترتيبَ الفواصل حوله (قِيس) — فيُعزل */
+  const card = r => `<div class="pend ${(r.noted || r.deleted) ? 'done' : ''}" data-r="${r.id}">
+      <div class="qz-t">${esc(r.student || '')}</div>
+      <div class="qz-m"><bdi>${esc(r.text || '')}</bdi> · <bdi>${esc(r.subject || '')}</bdi> · ${new Date(r.at).toLocaleDateString('ar-EG')}
+        · ${r.noted ? 'كُتبت ملاحظتك' : r.deleted ? 'حُذف الصوت' : leftLabel(r.at)}</div>
+    </div>`;
+  return `<h2 class="sec">القراءات الجهرية — ${wait.length ? 'تنتظر الاستماع (' + AR(wait.length) + ')' : 'لا شيء ينتظر'}</h2>
+    ${list.map(card).join('')}`;
+}
+
+/* كم يوماً بقي قبل حذف الصوت — بالساعات لا بالتقويم: الكنّاسُ يقيس العمرَ هكذا */
+function leftLabel(at){
+  const left = READ_KEEP_DAYS - (Date.now() - new Date(at).getTime()) / 864e5;
+  if(left <= 1) return 'يُحذف الصوت خلال يوم';
+  return 'يُحذف الصوت بعد ' + N(Math.floor(left), 'يوم', 'يومين', 'أيام', 'يوماً');
+}
+
+export async function openReading(id){
+  app.innerHTML = `<div class="status">جار الفتح…</div>`;
+  const { data: r, error } = await api.teacherReading(id);
+  if(error || !r){
+    app.innerHTML = `<div class="crumb" id="bk">→ قائمة التصحيح</div>`
+      + errBox(error || { message: 'لم تُوجد القراءة' }, 'فتح القراءة');
+    document.getElementById("bk").onclick = loadTeacher; return;
+  }
+  /* الرابطُ الموقَّع بعد التحقّق — ولا يُطلب لصوتٍ حُذف */
+  let src = null, urlErr = null;
+  if(r.path){
+    const { data: u, error: e2 } = await api.recordingUrl(r.path);
+    src = u?.signedUrl || null; urlErr = e2;
+  }
+
+  head("القراءة الجهرية", r.student);
+  const paras = String(r.body || '').split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
+  app.innerHTML = `
+    <div class="crumb" id="bk">→ قائمة التصحيح</div>
+    <div class="card">
+      <div class="qnum"><bdi>${esc(r.text || '')}</bdi> · <bdi>${esc(r.subject || '')}</bdi> · ${new Date(r.at).toLocaleString('ar-EG')}</div>
+      ${src ? `<audio controls preload="metadata" src="${src}" style="width:100%;margin:12px 0 4px"></audio>
+               <div class="line">${leftLabel(r.at)}</div>`
+            : `<div class="line">${r.deleted ? 'حُذف الصوت بعد خمسة أيام، وتبقى ملاحظتك عند الطالب.'
+                                             : 'تعذّر تحميل الصوت' + (urlErr ? ' — ' + esc(urlErr.message) : '')}</div>`}
+      <label class="fl" style="margin-top:16px">النص الذي قرأه</label>
+      <div class="essaybox" dir="auto" style="max-height:340px;overflow:auto">${
+        paras.map(p => `<p style="margin:0 0 .8em">${esc(p)}</p>`).join('')}</div>
+      <label class="fl" style="margin-top:16px">ملاحظتك للطالب</label>
+      <textarea id="fb" maxlength="1000" placeholder="ما أحسنه في القراءة، وما يحتاج تدريباً…">${esc(r.note || '')}</textarea>
+      ${r.noted_at ? `<div class="hint">آخر حفظ: ${new Date(r.noted_at).toLocaleString('ar-EG')}</div>` : ''}
+    </div>
+    <div class="nav"><button class="btn primary" id="sv">حفظ وإرسال</button></div>`;
+
+  document.getElementById("bk").onclick = loadTeacher;
+  document.getElementById("sv").onclick = async e => {
+    const fb = (document.getElementById("fb").value || "").trim();
+    if(!fb){ toast("ملاحظتك أولاً"); return; }
+    const b = e.currentTarget; b.disabled = true;
+    const { data, error: e3 } = await api.reviewReading(id, fb);
+    if(e3 || !data?.ok){ b.disabled = false; toast(e3?.message || data?.error || "تعذّر الحفظ"); return; }
+    toast("أُرسلت الملاحظة");
+    loadTeacher();
+  };
+  scrollTop();
 }
 
 export async function openGrade(id){

@@ -286,6 +286,16 @@ export const saveGrade = (id, essayScore, comment, graderId) =>
     read_by_student: false
   }).eq('id', id);
 
+/* 🆕 b169 · القراءات الجهريّة عند المعلّم (sql/175) — قراءاتُ طلّابه في موادّه.
+   والحارسُ `teaches_subject` في القاعدة: من لا يعلّم الطالبَ في مادّتها لا يرى
+   القراءةَ ولا يكتب عليها — والمشرفُ بصفته ليس منهم (الخصوصية §٥). */
+export const teacherReadings = ()         => db.rpc('teacher_readings');
+export const teacherReading  = id         => db.rpc('teacher_reading', { p_id: id });
+export const reviewReading   = (id, note) => db.rpc('review_reading', { p_id: id, p_note: note });
+/* رابطٌ موقَّعٌ لساعة: المخزنُ خاصّ لا رابطَ عامَّ فيه، وحارسُه (`can_hear_recording`)
+   يقرّر من يُعطى الرابط — فطلبُ غير المعلّم يُردّ من المخزن نفسه. */
+export const recordingUrl = path => db.storage.from('recordings').createSignedUrl(path, 3600);
+
 
 /* ═══════════ ⑦ الرسائل ═══════════ */
 /* 🔴 أسماء المفاتيح الأجنبية أدناه هشّة: تغييرها في SQL يكسر الرسائل

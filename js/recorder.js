@@ -107,7 +107,11 @@ export function mountReading(slot, sheet, o){
   slot.innerHTML = `<button type="button" class="bk-btn sm pill ra-btn" aria-pressed="false"
       aria-label="${esc(t.name)}">${ICO.mic}<span class="bk-lbl">${esc(t.name)}</span></button>`;
   const btn = slot.querySelector('button');
+  /* 🆕 b169 · نقطةٌ على الزرّ حين يكون للمعلّم ملاحظة — وإلّا بقيت في لوحةٍ لا تُفتح.
+     وتسقط عند أوّل فتح: رآها. */
+  if(recent.some(x => x?.note)) btn.classList.add('has-note');
   btn.onclick = () => {
+    btn.classList.remove('has-note');
     if(state === 'rec') return stop();
     if(state === 'idle' || state === 'sent'){ state = 'open'; draw(); reveal(); }
     else reveal();
@@ -135,6 +139,14 @@ export function mountReading(slot, sheet, o){
     return d == null ? '' : `<p class="ra-last">${esc(t.last(d))}</p>`;
   };
 
+  /* 🆕 b169 · ملاحظةُ المعلّم على أحدث قراءةٍ كُتب عليها (sql/175) — تبقى بعد
+     حذف الصوت، وهي «الأثرُ» الذي وعدت به الخصوصية. وتُقرأ قبل القراءة التالية:
+     فيها ما يُنتبه إليه، وهذا موضعُها. */
+  const noteLine = () => {
+    const r = recent.find(x => x?.note);
+    return r ? `<div class="ra-tnote"><b>${esc(t.teacherNote)}</b><p dir="auto">${esc(r.note)}</p></div>` : '';
+  };
+
   function draw(){
     btn.setAttribute('aria-pressed', state === 'rec' ? 'true' : 'false');
     btn.classList.toggle('rec', state === 'rec');
@@ -152,6 +164,7 @@ export function mountReading(slot, sheet, o){
       body = `<p>${esc(t.intro)}</p>
         <p class="ra-note">${esc(t.privacy)}
           <a href="${esc(o.privacyUrl || '/privacy.html')}" target="_blank" rel="noopener">${esc(t.privacyLink)}</a></p>
+        ${noteLine()}
         ${lastLine()}
         <div class="ra-btns"><button type="button" class="btn primary" data-ra="start"
           ${state === 'asking' ? 'disabled' : ''}>${state === 'asking' ? '…' : esc(t.start)}</button></div>`;
