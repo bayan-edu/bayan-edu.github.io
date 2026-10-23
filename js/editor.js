@@ -17,7 +17,7 @@ import { openItems } from './editor_items.js';
 import { openCards } from './editor_cards.js';
 import { openStrands, strandsOf, strandSelect, clearStrands } from './editor_strands.js';
 import { openObjectives } from './editor_objectives.js';
-import { openQuizImport, openCardsImport, openMapImport } from './editor_import.js';
+import { openQuizImport, openCardsImport, openMapImport, openIndexImport } from './editor_import.js';
 
 /* شجرة التأليف تُحمَّل مرة وتُخزَّن — لا تتغيّر أثناء الجلسة */
 async function tree(){
@@ -576,7 +576,8 @@ export async function openCourse(course){
         <button class="btn ghost" id="imq">⇪ استيراد اختبار</button>
         <button class="btn ghost" id="imc">⇪ استيراد بطاقات</button>
         <button class="btn ghost" id="imm">⇪ استيراد خريطة</button>
-      </div>` : `<div class="warnbox">تستطيع إضافة مصادر إلى الدروس القائمة.</div>`}
+        <button class="btn ghost" id="imo">⇪ استيراد فهرس الأهداف</button>
+      </div>` :`<div class="warnbox">تستطيع إضافة مصادر إلى الدروس القائمة.</div>`}
 
     ${units.map(u => block(u.title, u.id)).join("")}
     ${group(null).length || !units.length ? block('دروس بلا وحدة', null) : ''}
@@ -600,6 +601,8 @@ export async function openCourse(course){
   if(imq) imq.onclick = () => openQuizImport(course);
   const imm = document.getElementById("imm");
   if(imm) imm.onclick = () => openMapImport(course);
+  const imo = document.getElementById("imo");               // 🎯 b177 · المرحلة ②
+  if(imo) imo.onclick = () => openIndexImport(course);
   const imc = document.getElementById("imc");
   if(imc) imc.onclick = () => openCardsImport(course);
   if(course.curate) app.querySelectorAll(".ed-row").forEach(el =>
