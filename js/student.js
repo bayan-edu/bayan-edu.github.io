@@ -715,10 +715,14 @@ export async function loadLessons(subj){
      فالفرعُ يتبع المادّة (ثابتُ ③). */
   let pick = null;
 
-  const lcard = l => `
-    <div class="lsn ${l.locked?'locked':''} ${l.done?'done':''}" data-i="${l.id}">
+  /* 🆕 b175 · `next` يمرّره `paint` — والتعليلُ عنده. و`aria-current="step"` يقول لقارئ
+     الشاشة ما يقوله الوسمُ للعين: هذه خطوتُك في السلسلة. */
+  const lcard = (l, next) => `
+    <div class="lsn ${l.locked?'locked':''} ${l.done?'done':''} ${next?'next':''}" data-i="${l.id}"
+         ${next?'aria-current="step"':''}>
       <div class="lsn-t" dir="auto">${esc(l.title)}
         ${l.done?'<span class="badge ok">أُنجز'+(l.best!=null?' '+AR(l.best)+'٪':'')+'</span>':''}
+        ${next?'<span class="badge next">التالي</span>':''}
         ${l.locked?'<span class="badge lock">🔒</span>':''}</div>
       ${/* 🆕 b123 · `dir="auto"` كالعنوان فوقه: الصفحةُ `rtl`، فملخّصٌ
             إنجليزيٌّ داخلها فقرةٌ عربيّةُ الاتجاه — ونقطتُه محايدةٌ
@@ -809,6 +813,14 @@ export async function loadLessons(subj){
           تُقرأ دروسَ الثاني قبل هذا البناء. */
     const many = subj.past || Object.keys(groups).length>1;
 
+    /* 🆕 b175 · «التالي» — أوّلُ درسٍ في المعروض لم يُنجَز ولم يُقفَل.
+       🔑 **من المعروض لا من الكلّ:** من صفّى بفرعٍ يسأل «من أين في هذا الفرع؟»،
+          والتالي من الكلّ قد يقع خارج التصفية فيُميَّز ولا يُرى.
+       🔑 **وأوّلُ فجوةٍ لا ما بعد آخرِ مُنجَز:** الترتيبُ ترتيبُ المنهج (`list_lessons`)،
+          فدرسٌ تُرك قبل مُنجَزٍ هو موضعُ المتابعة — والسلسلةُ يُتبَع أوّلُها.
+       📌 **ولا «تالي» في الوجه السابق:** مراجعةٌ لا مسار (`isDone` · b173). */
+    const nx = subj.past ? null : ls.find(l => !l.done && !l.locked);
+
     list.innerHTML =
       !S.lessons.length ? '<div class="status">لا توجد دروس في هذه المادة بعد</div>'
       /* ولا يقع ما دامت الخياراتُ من الموجود — ولافتةٌ تُقال
@@ -821,7 +833,7 @@ export async function loadLessons(subj){
                 يبدأ بلاتينيّ**، فالشاشةُ اليوم لا تتبدّل بها حرفاً. ومستوًى
                 لاتينيٌّ يُكتب غداً (`Band 5.0`) يجد الحكمَ مكتوباً. */''}
           ${many?`<div class="grp" dir="auto">${esc(g)}</div>`:''}
-          ${groups[g].map(lcard).join("")}`).join("");
+          ${groups[g].map(l => lcard(l, l === nx)).join("")}`).join("");
 
     list.querySelectorAll(".lsn").forEach(el=>el.onclick=()=>{
       const l = S.lessons.find(v=>String(v.id)===el.dataset.i);

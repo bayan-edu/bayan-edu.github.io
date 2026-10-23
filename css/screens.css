@@ -445,13 +445,37 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
   .sh,.pfill,.sh-img-3d,.subj-arrow{transition:none}
 }
 
-/* ═══ الدروس ═══ */
-.lsn{background:var(--fill-soft);border:1px solid var(--line);border-radius:12px;
+/* ═══ الدروس ═══
+   🆕 b175 · بطاقةُ الدرس سطحٌ بظلّ النظام — كبطاقة المادة منذ b160.
+   كانت `--fill-soft` بلا ظلّ منذ ٢٧ أغسطس، والصفحةُ يومئذٍ كريميّة تفصلها عنها ١٫١٢.
+   فلمّا حُيّدت الصفحةُ (b61) صار الفرقُ ١٫٠٤ — ‎#FAFAF9 على ‎#F5F5F4 (قِيس) — ولم يبقَ
+   يرسمها إلا حدُّها، فـ«تذوب في الصفحة» بعبارة المالك. **والتحييدُ لم يمرّ بها.**
+   ⇒ `--surface` يرفعها إلى ١٫٠٩ (والداكنة ١٫٠٨ ← ١٫١٨)، والظلُّ `--shadow` نفسُه لا قيمةٌ جديدة.
+   ⚠️ والمقفلُ لا ينهض: النهوضُ يقول «التقطني» وهو لا يُفتح — حجّةُ `.subj.soon` بحرفها. */
+.lsn{background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);
   padding:15px;margin-bottom:10px;cursor:pointer;transition:border-color .18s}
+/* 🆕 b175 · «التالي» — أوّلُ درسٍ في المعروض لم يُنجَز ولم يُقفَل (يحسبه `paint` في student.js).
+   🔑 العمودُ يقول «تابِع» (رأسُ الشبكة أعلاه) ولم يكن يقول **من أين**: للبطاقة حالتان
+      «مقفل» و«أُنجز» لا ثالثةَ لهما. ⇒ تُميَّز بطاقةٌ واحدة لا كلُّها: التباينُ يُنفَق
+      على ما يُفعل الآن، وما يُرفع في كلّ بطاقةٍ لا يُبرز واحدة.
+   🔑 والعائلةُ accent لأنّ جملتَها «اضغط هنا» بعينها — والمعنى على الوسم «التالي»
+      لا على اللون وحده (رأسُ base.css).
+   ⚠️ **والصبغةُ طبقةٌ فوق السطح لا بدلَه.** `--accent-soft` شفّافةٌ في الداكنة، فخلفيّةً
+      وحدَها يُرى عبرها لونُ الصفحة لا السطح: ١٫٢١ وأخواتُها ١٫١٨ — أهمُّها لا يعلو.
+      وفوق السطح ١٫٤٧. والتدرّجُ لونٌ واحد لا تدرّج: صيغةُ CSS لطبقةِ لونٍ فوق لون.
+   📐 وفي الفاتحة الصبغةُ صلبة (‎#EFF6FF) وفرقُها عن الصفحة ١٫٠٠ — فالتمييزُ هناك
+      بالصبغة والحدّ والوسم، والنهوضُ بالظلّ كأخواتها.
+   ⚠️ وقبل `:hover` عمداً: الوزنُ واحد، فالتحويمُ بعده يغلب حدَّه. */
+.lsn.next{background:linear-gradient(var(--accent-soft),var(--accent-soft)) var(--surface);
+  border-color:var(--accent-line)}
 .lsn:hover{border-color:var(--accent)}
-.lsn.locked{opacity:.5;cursor:not-allowed;border-style:dashed}
+.lsn.locked{opacity:.5;cursor:not-allowed;border-style:dashed;box-shadow:none}
 .lsn.locked:hover{border-color:var(--line)}
 .lsn.done{border-color:var(--ok-edge)}
+/* 🆕 b175 · وسمُ «التالي» محدَّدٌ على السطح لا `.badge.on`: تعبئةُ on فوق صبغة البطاقة
+   تُنزل نصَّها في الداكنة إلى ٤٫٤٥ — دون حدّ ٤٫٥ (وعلى السطح وحده ٥٫٣٢). وهذا ٦٫٧٠
+   فاتحةً و٨٫٣٩ داكنة (قِيس). */
+.badge.next{background:var(--surface);color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent-line)}
 .lsn-t{font-family:'Almarai';font-weight:700;font-size:var(--fs-read)}
 .lsn-m{font-size:var(--fs-meta);color:var(--text-muted);margin-top:4px}
 .lockmsg{font-size:var(--fs-meta);color:var(--warn);margin-top:5px}
@@ -523,12 +547,20 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
   .kic:hover .ic-3d,.kic:focus-visible .ic-3d{transform:none}
 }
 
-/* ═══ الدرس ومصادره ═══ */
-.itm{display:flex;align-items:center;gap:13px;background:var(--fill-soft);
+/* ═══ الدرس ومصادره ═══
+   🆕 b175 · ووصفةُ بطاقة الدرس نفسُها (`.lsn` أعلاه، وتعليلُها هناك): سطحٌ بظلّ النظام
+   لا `--fill-soft` — ١٫٠٤ على الصفحة ⇒ ١٫٠٩ (والداكنة ١٫٠٨ ⇒ ١٫١٨). */
+.itm{display:flex;align-items:center;gap:13px;background:var(--surface);box-shadow:var(--shadow);
   border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:9px;
   cursor:pointer;transition:border-color .18s}
+/* 🆕 b175 · وصبغةُ الاختبار طبقةٌ فوق السطح لا بدلَه — علّةُ `.lsn.next` بحرفها: `--accent-soft`
+   شفّافةٌ في الداكنة، فلو بقيت خلفيّةً وحدَها والسطحُ تحت أخواته لظهرت الصفحةُ عبرها، فوقف صفُّ
+   الاختبار عند ١٫٢١ وأخواتُه ١٫١٨. وفوق السطح ١٫٤٧ — والخافتُ عليه ٤٫٨٣ (كان ٥٫٨٩) وفوق ٤٫٥.
+   ⚠️ وقبل `:hover` لا بعده: كان بعده بالوزن نفسه فغلبه — فالصفُّ الوحيد الذي لا يجيب التحويم
+      كان الاختبار، وهو ما يُتمّ الدرس. */
+.itm.quiz{background:linear-gradient(var(--accent-soft),var(--accent-soft)) var(--surface);
+  border-color:var(--accent-line)}
 .itm:hover{border-color:var(--accent)}
-.itm.quiz{background:var(--accent-soft);border-color:var(--accent-line)}
 .itm-ic{flex:0 0 40px;height:40px;border-radius:11px;background:var(--fill-strong);
   display:flex;align-items:center;justify-content:center;font-size:1.25rem}
 .itm-ic:has(.ic-3d){background:none}
