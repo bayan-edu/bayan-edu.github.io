@@ -49,7 +49,7 @@ import { app, head, esc, fmt, AR, errBox, nav, BUILD, scrollTop,
    شخّصنا في هذه الجلسة ثلاثَ مرّات منطقاً سليماً وسببُ العطل ملفٌّ
    لم يصل. ⇒ حين يختلف الختمان يُعلَن الاختلاف في الشاشة.
    ⚠️ ويُرفع مع BUILD في كلّ نسخة — وإلّا صار إنذاراً كاذباً يُتجاهل. */
-const MOD = "b182";
+const MOD = "b184";
 
 const F = { level:null, subject:null, view:'list', search:'', opts:null };
 const M = { uid:null, forMe:false, subject:null, strand:null,
@@ -193,17 +193,21 @@ async function drawChart(tr){
   };
 
   /* ① الإتقانُ والإنجاز — كلاهما نسبةٌ مئوية، فمحورٌ واحد يسعهما.
-     (وهذا ما حلّ مشكلة المقياسين: الجهدُ عددٌ فنُقل إلى لوحته.) */
+     (وهذا ما حلّ مشكلة المقياسين: الجهدُ عددٌ فنُقل إلى لوحته.)
+     🆕 b183 · و«الإنجاز» نجاحٌ منذ `179` لا تغطية — فشرحُه «أتممته» لا «قطعته»،
+        والإتقانُ «في الاختبارات التي دخلتها» لا «أنجزتها»: الجذرُ لمعنىً واحد
+        (قرارُ المالك). وبصيغة الناظر كعنوان الاتجاه (`trendLine`): كان المعلّمُ
+        يقرأ «صفّك» في بطاقة طالبه. */
   _chart = new C(ctx, {
     type:'line',
     data:{ labels, datasets:[
-    { label:'الإنجاز — ما قطعته من دروس صفّك',
+    { label: M.forMe ? 'الإنجاز — ما أتممته من دروس صفّك' : 'الإنجاز — ما أتمّه من دروس صفّه',
       data: pts.map(p => p.done),
       spanGaps:true, tension:.2, borderWidth:2, borderColor:MUT,
       borderDash:[5,4], fill:false, pointRadius:0, pointHoverRadius:4,
       datalabels:{ display:false } },
     {
-      label:'الإتقان — في الاختبارات التي أنجزتها',
+      label: M.forMe ? 'الإتقان — في الاختبارات التي دخلتها' : 'الإتقان — في الاختبارات التي دخلها',
       data: pts.map(p => p.mastery),
       /* ⚠️ الأسبوع الفارغ لا يُوصَل بما بعده: وصلُه يرسم تعلّماً لم يقع */
       spanGaps:false, tension:.35, borderWidth:2.6, borderColor:ACC,
@@ -224,9 +228,10 @@ async function drawChart(tr){
       interaction:{ mode:'index', intersect:false },
       plugins:{
         /* وسيلةُ إيضاحٍ لازمة الآن: خطّان لا يُفرَّق بينهما بالشكل وحده */
+        /* 🆕 b183 · ١٢ لا ١٠٫٥: أرضيةُ المنصّة للنصّ المقروء (السلّم في base.css) */
         legend:{ display:true, position:'top', align:'end', rtl:true,
           labels:{ color:MUT, boxWidth:22, boxHeight:2, usePointStyle:false,
-                   font:{ size:10.5 }, padding:12 } },
+                   font:{ size:12 }, padding:12 } },
         tooltip:{ ...tip, callbacks:{
           label: c => c.parsed.y==null ? 'لا نشاط هذا الأسبوع'
                     : (c.datasetIndex===0 ? 'الإنجاز ' : 'الإتقان ')
@@ -503,13 +508,18 @@ async function drawPerformance(title, sub, back){
         <div class="an-two">
           <div class="an-one">
             ${gauge(o.mastery, false, 'إتقان', true, judge)}
-            <div class="an-note">في الاختبارات التي أُنجزت</div>
+            <div class="an-note">${you ? 'في الاختبارات التي دخلتها' : 'في الاختبارات التي دخلها'}</div>
           </div>
           <div class="an-one">
             ${gauge(cp.pct, false, 'إنجاز', true, false)}
+            ${/* 🆕 b183 · «الإنجاز» دروسٌ نجح فيها (179)، بعدّاد البطاقات نفسِه «٥ / ٣٨ درساً» — الرقمُ
+                  واحدٌ في الشاشتين فصيغتُه واحدة. ومن دخل ولم ينجح لا يُعدّ إنجازاً **ولا يضيع**:
+                  سطرٌ ثانٍ «و٣ دروس قيد المحاولة» عدداً لا نسبةً ثانية (قرارُ المالك). */''}
             <div class="an-note">${cp.required
-              ? `${AR(cp.done)} من ${AR(cp.required)} ${fl.subject?'في هذه المادة':'من دروس صفّه'}`
-              : 'لا دروس منشورة مطلوبة'}</div>
+              ? `${AR(cp.done)} / ${AR(cp.required)} ${NW(cp.required,'درس','درسان','دروس','درساً')} ${
+                  fl.subject ? 'في هذه المادة' : you ? 'في صفّك' : 'في صفّه'}${
+                  cp.trying ? `<br>و${N(cp.trying,'درس واحد','درسان','دروس','درساً')} قيد المحاولة` : ''}`
+              : 'لا دروس منشورة بعد'}</div>
           </div>
         </div>
       </div>

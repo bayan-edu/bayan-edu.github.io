@@ -208,6 +208,99 @@ function todayStrip(back, face){
     acts.length ? `<div class="today-side">${acts.map(act).join('')}</div>` : ''}</div>`;
 }
 
+/* ── 🆕 b184 · حلقةُ الإنجاز — في عنوان «موادّ صفّي» لا في الترحيب ──
+   🔑 **مجموعُ البطاقات تحتها لا نداءٌ ثانٍ:** `lessons_done / lessons_total` لموادّ الصفّ — وهو
+      بعينه «الإنجاز» في الأداء منذ `179` (بابُه `lesson_progress` قِيس عليها: صفرُ فرق). فالاسمُ
+      اسمُه («إنجاز»)، والعدّادُ صيغةُ البطاقات.
+   ⚠️ **والنسبةُ المكتوبة عددٌ صحيح، والقوسُ بمنزلته العشريّة:** `AR()` تُبقي النقطةَ اللاتينيّة،
+      و«١٣.٢» بأرقامٍ هنديّة تُقرأ «١٣٠٢» — علّةُ «·» بعينها (b179). والأداءُ يكتبها كذلك اليوم:
+      بابُها `AR()` نفسُها لا هذه الحلقة.
+   🔑 **وموضعُها جوارُ ما تجمعه:** في الترحيب تنافس «متابعة» — الزرَّ الممتلئَ الوحيد — على أوّل
+      نظرة، وهنا تُقرأ عنواناً لما تحتها (خطّةُ الحلقة كما اعتمدها المالك).
+   📌 ولونُها سُلّمُ حالة المادّة (`subjectState`) على المجموع: الهويةُ لا تتبدّل بالموضع (b160).
+   📌 و`role="img"` باسمٍ بـ«من»: «٥ / ٣٨» يقرؤها قارئُ الشاشة بشَرطتها.
+   ⚠️ و`--p` المرسومُ هو النهائيّ: الحركةُ (`homeMotion`) تُضاف على صحيحٍ ولا تصنعه. */
+function gradeRing(grade){
+  const total = grade.reduce((s, x) => s + (x.lessons_total || 0), 0);
+  const done  = grade.reduce((s, x) => s + (x.lessons_done  || 0), 0);
+  if(!total) return { pct: null, html: `<div class="grp">موادّ صفّي</div>` };
+  const p  = Math.round(done / total * 1000) / 10;
+  const st = subjectState({ group_key: '1_grade', lessons_total: total, lessons_done: done }, false);
+  const n  = NW(total,'درس','درسان','دروس','درساً');
+  return { pct: p, html: `
+    <div class="grp grp-ring">موادّ صفّي
+      <div class="gring ${st}" role="img" style="--p:${p}" ${p ? '' : 'data-zero'}
+           aria-label="الإنجاز ${AR(Math.round(p))}٪، ${AR(done)} من ${AR(total)} ${n}">
+        <span class="gr-c">${AR(done)} / ${AR(total)} ${n}</span>
+        <span class="gr">
+          <svg viewBox="0 0 60 60" aria-hidden="true">
+            <circle class="gr-bg" cx="30" cy="30" r="26" pathLength="100"/>
+            <circle class="gr-fg" cx="30" cy="30" r="26" pathLength="100" transform="rotate(-90 30 30)"/>
+          </svg>
+          <span class="gr-t"><b class="gr-n">${AR(Math.round(p))}٪</b><span class="gr-l">إنجاز</span></span>
+        </span>
+      </div>
+    </div>` };
+}
+
+/* ── 🆕 b184 · حركةُ الرئيسة — حركةٌ تقول شيئاً، لا زينة ──
+   ① أوّلُ دخولٍ في الجلسة: البطاقاتُ تصعد متتابعة، والأشرطةُ والحلقةُ تمتلئ من الصفر.
+   ② وعودةٌ بعد تقدّم: الحلقةُ من قيمتها السابقة إلى الجديدة — «تقدّمتَ» بلا كلمة.
+   ③ وما سواهما بلا حركة: الرئيسةُ يُعاد إليها كثيراً، ودخولٌ يتكرّر يؤخّر ولا يُخبر (سابقةُ مشهد
+      الافتتاح: مرّةً في الجلسة · `bayan.splash.seen`). ولا حركةَ دائمة: نبضٌ يشغل العينَ عن الدرس.
+   ⚠️ و«تقليلُ الحركة» في الجهاز أو صفحةٌ مخفيّة ⇒ الحالةُ النهائيّة فوراً، وهي المرسومةُ أصلاً.
+   ⚠️ وحارسٌ بعد ١٫٤ ثانية يُتمّ ما بقي: إطارٌ متوقّف لا يُبقي بطاقةً شفّافة ولا حلقةً على قديمها. */
+function homeMotion(to){
+  const calm = document.hidden || matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let seen = false, from = null;
+  try{
+    seen = sessionStorage.getItem('bayan.home.seen') === '1';
+    const f = sessionStorage.getItem('bayan.home.ring');
+    from = f === null ? null : Number(f);
+    sessionStorage.setItem('bayan.home.seen', '1');
+    if(to != null) sessionStorage.setItem('bayan.home.ring', String(to));
+  }catch(e){}
+  if(calm) return;
+
+  const ring  = to != null ? app.querySelector('.gring') : null;
+  const start = ring ? (seen ? from : 0) : null;
+  const moves = start != null && start !== to;
+  const rise  = seen ? [] : [...app.children];
+  const fills = seen ? [] : [...app.querySelectorAll('.pfill')];
+  if(!rise.length && !moves) return;
+
+  const widths = fills.map(f => f.style.width);
+  rise.forEach((el, i) => { el.classList.add('rise'); el.style.setProperty('--i', Math.min(i, 12)); });
+  fills.forEach(f => { f.style.width = '0'; });
+  if(moves) ring.style.setProperty('--p', start);
+  app.getBoundingClientRect();     // البدايةُ تُحسَب قبل النهاية — وإلّا قفز الانتقالُ إليها
+  fills.forEach((f, k) => { f.style.width = widths[k]; });
+  if(moves){ ring.style.setProperty('--p', to); countUp(ring, start, to); }
+
+  setTimeout(() => {
+    rise.forEach(el => el.classList.remove('rise'));
+    if(!moves) return;
+    ring.getAnimations?.({ subtree: true }).forEach(a => { try{ a.finish(); }catch(e){} });
+    const n = ring.querySelector('.gr-n');
+    if(n) n.textContent = AR(Math.round(to)) + '٪';
+  }, 1400);
+}
+
+/* العدُّ مع امتلاء الحلقة — بأعدادٍ صحيحة كالمكتوب (والعلّةُ عند gradeRing). واسمُ الحلقة لقارئ
+   الشاشة نهائيٌّ من أوّلها: العدُّ للعين وحدها. */
+function countUp(ring, from, to){
+  const n = ring.querySelector('.gr-n');
+  if(!n) return;
+  const t0 = performance.now(), ease = k => 1 - Math.pow(1 - k, 3);
+  const step = now => {
+    if(!n.isConnected) return;
+    const k = Math.min(1, (now - t0) / 900);
+    n.textContent = AR(Math.round(from + (to - from) * ease(k))) + '٪';
+    if(k < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
 /* 🆕 b176 · «متابعة» بطاقةٌ رئيسة لا ثالثةُ ثلاث — والتعليلُ عند `.today-hero` في screens.css.
    🔑 **والعنوانُ أخصُّ ما يُعرف:** الدرسُ التالي إن حُفظ (`lastNext`)، وإلّا المادّة —
       ونزلت المادّةُ حينها إلى سطر السياق فوقه: «الدرس التالي، العلوم المتكاملة».
@@ -429,11 +522,12 @@ export async function loadList(){
 
   const live = grade.filter(x => !isDone(x));
   const done = grade.filter(isDone);
+  const ring = gradeRing(grade);   // 🆕 b184 · حلقةُ الإنجاز في عنوان المجموعة
 
   app.innerHTML = `
     ${strip}
     ${paths.length ? pathAsk(paths) : ''}
-    ${grade.length?`<div class="grp">موادّ صفّي</div>
+    ${grade.length?`${ring.html}
       ${live.map(x => card(x)).join("")}
       ${/* 🆕 b179 · «أتممتها: ٣» لا «أتممتها · ٣» — النقطةُ قبل رقمٍ هنديّ تُقرأ صفراً («٠ ٣»).
             والنقطتان لا الفاصلة: عنوانٌ وعددُه علاقةُ «وسمٍ: قيمة»، كـ«مستواك: …» و«بلا إجابة: …». */''}
@@ -510,6 +604,7 @@ export async function loadList(){
     loadList();
   });
 
+  homeMotion(ring.pct);   // 🆕 b184 · والتعليلُ عندها
   scrollTop();
 }
 
