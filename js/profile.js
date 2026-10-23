@@ -2,7 +2,7 @@
    بيان — profile.js  ·  الملفّ الشخصيّ — للطالب وللمعلّم
 
    ثلاثةُ أقسام: **البيانات الشخصية** · القسمُ الخاصُّ بالدور · **الحساب**.
-     الطالب:  الاسم · الصفّ · الصورة   ‖  تعلّمي
+     الطالب:  الاسم · الصفّ والمسار · الصورة   ‖  تعلّمي
      المعلّم: الاسم · المدرسة · الخبرة · النبذة · الصورة  ‖  تدريسي
 
    🔑 **وشاشةٌ واحدةٌ تتفرّع لا شاشتان — وهذا قرارُ الملفّ الأوّل.**
@@ -108,9 +108,52 @@ function studentFields(p){
 
     <label class="fl" style="margin-top:16px">صفّك الدراسيّ</label>
     <select id="pfGrade"><option value="">— الصفّ —</option>${opts}</select>
+
+    ${/* 🆕 b173 · والمسارُ تحت الصفّ — ويظهر حين يكون لصفٍّ مختارٍ مسارات.
+          🔴 كان هنا سطرٌ في «تعلّمي» يقول «الشعبة: محفوظة» بلا اسم، **ولا
+             حقلَ يُختار فيه** — فطالبُ الثاني بلا مسارٍ لا يرى إلا الموادَّ
+             المشتركة، ولا بابَ له إلى غيرها. وخياراتُه تُبنى من الصفّ
+             المختار في القائمة فوقه لا المحفوظ (`fillPaths`). */''}
+    <div id="pfPathWrap" hidden>
+      <label class="fl" style="margin-top:16px">مسارك</label>
+      <select id="pfPath"></select>
+    </div>
     ${/* 🔑 والتنبيهُ يُقال قبل الحفظ لا بعده: تغييرُ الصفّ يُبدّل
           الموادَّ المعروضة، وهو أثرٌ يُفاجئ من ظنّه تصحيحَ بيان. */''}
-    <p class="small">تغيير الصفّ يُبدّل الموادّ التي تظهر لك.</p>`;
+    <p class="small">تغيير الصفّ أو المسار يُبدّل الموادّ التي تظهر لك.</p>`;
+}
+
+/* 🆕 b173 · مساراتُ الصفّ المختار — بحكم `set_my_grade` بحرفه: مسارٌ نشطٌ في
+   سلّمه بلغ الصفُّ رتبتَه (`from_rank <= rank`)، و`from_rank` الفارغُ لا يبلغه صفّ.
+   والقيمةُ «سلّم|صفّ» كما في قائمة الصفّ. */
+function pathsFor(value){
+  const [sc, lv] = String(value || '').split('|');
+  const scale = Z.scales.find(s => String(s.id) === sc);
+  const level = (scale?.levels || []).find(l => String(l.id) === lv);
+  if(!level) return [];
+  return (scale.paths || [])
+    .filter(x => x.active && x.from_rank != null && x.from_rank <= level.rank)
+    .sort((a, b) => a.sort_order - b.sort_order);
+}
+
+/* اسمُ المسار المحفوظ — من السلّم نفسِه، فلا نداءَ له */
+function pathName(p){
+  const scale = Z.scales.find(s => String(s.id) === String(p.scale_id));
+  return (scale?.paths || []).find(x => String(x.id) === String(p.path_id))?.name || '';
+}
+
+/* يملأ حقلَ المسار بحسب الصفّ المختار، ويُبقي المحفوظَ مختاراً ما دام صالحاً.
+   ⚠️ وصفٌّ بلا مسارات يُخفي الحقلَ **ويُفرغه**: الحفظُ يقرأ القيمة، ومسارٌ
+      قديمٌ باقٍ في حقلٍ مخفيٍّ يُرسَل مع صفٍّ لا يقبله فيُردّ الحفظُ كلُّه. */
+function fillPaths(value){
+  const wrap = document.getElementById('pfPathWrap'), sel = document.getElementById('pfPath');
+  if(!wrap || !sel) return;
+  const list = pathsFor(value);
+  wrap.hidden = !list.length;
+  sel.innerHTML = list.length
+    ? `<option value="">— المسار —</option>` + list.map(x => `
+        <option value="${x.id}" ${String(x.id) === String(S.prof?.path_id) ? 'selected' : ''}>${esc(x.name)}</option>`).join('')
+    : '';
 }
 
 function teacherFields(p){
@@ -140,7 +183,11 @@ function learnCard(p){
     <div class="card">
       <div class="pf-row"><span>الصفّ الحاليّ</span>
         <b>${esc(subs[0]?.my_level || p.klass || '—')}</b></div>
-      ${p.path_id ? `<div class="pf-row"><span>الشعبة</span><b>محفوظة</b></div>` : ''}
+      ${/* 🆕 b173 · المسارُ باسمه — وكان «الشعبة: محفوظة»: خبرٌ لا يقول شيئاً.
+            وصفٌّ له مساراتٌ ولم يُختر فيه ⇒ يُقال ذلك، فالحقلُ فوقه ينتظر. */''}
+      ${p.path_id ? `<div class="pf-row"><span>المسار</span><b>${esc(pathName(p) || '—')}</b></div>`
+        : pathsFor(p.scale_id + '|' + p.level_id).length
+          ? `<div class="pf-row"><span>المسار</span><b>لم يُختر بعد</b></div>` : ''}
       <div class="pf-row"><span>موادّ صفّك</span><b>${AR(subs.length)}</b></div>
 
       <div class="grp" style="margin-top:18px">من يتابعني</div>
@@ -241,6 +288,10 @@ function wire(){
   /* وجهاتُ المعلّم تمرّ بالمُوجِّه نفسِه الذي يخدم الدرج — لا نسخةَ ثانية */
   app.querySelectorAll('[data-go]').forEach(b => b.onclick = () => goRoute(b.dataset.go));
 
+  /* 🆕 b173 · حقلُ المسار يتبع الصفَّ المختار لحظةَ اختياره، لا بعد الحفظ */
+  const grade = document.getElementById('pfGrade');
+  if(grade){ fillPaths(grade.value); grade.onchange = () => fillPaths(grade.value); }
+
   document.getElementById('pfSave').onclick = async e => {
     const b = e.currentTarget;
     const name = document.getElementById('pfName').value.trim();
@@ -281,17 +332,24 @@ function wire(){
     }
 
     /* ② الصفّ — دالّةٌ لا UPDATE: تتحقّق أنّ الصفّ ينتمي للسلّم.
-       وللطالب وحده: المعلّمُ لا صفَّ له، والحقلُ غيرُ مرسومٍ عنده. */
+       وللطالب وحده: المعلّمُ لا صفَّ له، والحقلُ غيرُ مرسومٍ عنده.
+       🆕 b173 · **والمسارُ معه في نداءٍ واحد** — والدالّةُ تكتبهما معاً:
+          حفظُ الصفّ بلا مسارٍ يمحو المسارَ المحفوظ (api.setMyGrade). فيُرسَل
+          ما في الحقل، والحقلُ يحمل المحفوظَ ما دام صالحاً للصفّ (`fillPaths`). */
     const g = document.getElementById('pfGrade')?.value || '';
     if(g){
       const [sc, lv] = g.split('|');
-      if(String(sc) !== String(S.prof.scale_id) || String(lv) !== String(S.prof.level_id)){
-        const { data:r, error } = await api.setMyGrade(Number(sc), Number(lv));
+      const pv  = document.getElementById('pfPathWrap')?.hidden ? ''
+                : (document.getElementById('pfPath')?.value || '');
+      const pth = pv ? Number(pv) : null;
+      if(String(sc) !== String(S.prof.scale_id) || String(lv) !== String(S.prof.level_id)
+         || pth !== (S.prof.path_id ?? null)){
+        const { data:r, error } = await api.setMyGrade(Number(sc), Number(lv), pth);
         if(error || !r?.ok){
           b.disabled = false; b.textContent = 'حفظ';
           toast('تعذّر حفظ الصفّ — ' + (error?.message || r?.error || '')); return;
         }
-        S.prof.scale_id = Number(sc); S.prof.level_id = Number(lv); changed++;
+        S.prof.scale_id = Number(sc); S.prof.level_id = Number(lv); S.prof.path_id = pth; changed++;
       }
     }
 

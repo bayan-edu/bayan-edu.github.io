@@ -98,8 +98,12 @@ export const myProfile = uid => db.from('profiles').select('*').eq('id', uid).si
 export const myRole    = ()  => db.rpc('my_role');
 
 // دالة لا UPDATE: تتحقّق أن الصف ينتمي للمنهج، وتُعيد {ok,error}
-export const setMyGrade = (scaleId, levelId) =>
-  db.rpc('set_my_grade', { p_scale: scaleId, p_level: levelId });
+/* 🆕 b173 · والمسارُ ثالثُها — والدالّةُ تقبله منذ زمن (`p_path`) والواجهةُ
+   لم ترسله قطّ. ⚠️ **وغيابُه ليس «بلا تغيير»:** `set_my_grade` تكتب
+   `path_id` في كلّ نداء، فحفظُ الصفّ بلا مسارٍ **يمحو المسارَ المحفوظ**.
+   ⇒ من غيّر الصفَّ وحده يمرّر مسارَه القائم إن بقي صالحاً (profile.js). */
+export const setMyGrade = (scaleId, levelId, pathId) =>
+  db.rpc('set_my_grade', { p_scale: scaleId, p_level: levelId, p_path: pathId ?? null });
 
 /* 🆕 b103 · الاسم — `update` مباشر ومنحٌ عموديّ يحرسه (٥٠). ولا دالّةَ
    له: لا حكمَ يُحرس، بخلاف الصفّ الذي يُتحقَّق انتماؤه للسلّم.
@@ -160,9 +164,13 @@ export const sealGram = async (uid, profile, meta) => {
   return error;
 };
 
+/* 🆕 b173 · والمساراتُ معها — يقرؤها «ملفّي» وبطاقةُ «مسارك» في الرئيسة.
+   ⚠️ `p_paths_read` تشترط الجلسة، فالبوّابةُ (قبل الدخول) تتسلّم `paths: []`
+      **بلا خطأ** — ولا تقرؤها أصلاً. فلا يُبنى على ما جلبته البوّابة حكمُ
+      «لا مسارَ لهذا الصفّ» (ولهذا لا تقرأ الرئيسةُ `S.scales`). */
 export const academicScales = () =>
   db.from('scales')
-    .select('id,name,country,sort_order,levels(id,name,rank)')
+    .select('id,name,country,sort_order,levels(id,name,rank),paths(id,name,from_rank,sort_order,active)')
     .eq('kind','academic').order('sort_order');
 
 /* 🆕 b93 · موادّ التسجيل — دالّةٌ لا قراءةُ جدول (122).

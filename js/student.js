@@ -23,13 +23,48 @@ import { canRecord, mountReading } from './recorder.js';
    الوحدة لا داخل loadList (b66)، وconst في وحدةٍ داخلةٍ في استيرادٍ
    دائريّ تسقط في TDZ إن سبقها نداء. والتصريحُ يُرفَع فلا يسقط. */
 
-/* مادة صفّ سابق دروسها في lessons_review لا lessons_total —
-   فلا يصحّ قياس «الفراغ» على lessons_total وحده. */
-function bulk(x){ return (x.lessons_total || 0) + (x.lessons_review || 0); }
+/* ── المادّةُ وجهان: صفُّك · وما سبقه (b173) ──
+   🔴 بلاغُ المالك (٢٣ أكتوبر): طالبُ الثاني الثانوي يفتح «English» من
+      «موادّ صفّي» فيرى دروسَ الأوّل وحدها. `list_subjects` تضع المادّةَ
+      كلَّها في صفّه متى كان لها فيه مقرَّر، و`list_lessons` تُرجع دروسَ
+      المقرَّرين معاً — ومقرَّرُ الثاني بلا درسٍ منشور، فلم يبقَ إلا الأوّل،
+      **بلا عنوانِ مستوى** (العنوانُ لا يُكتب إلا لمستويين)، والبطاقةُ
+      تقول «٠ / ٠ دروس» ثمّ تفتح عشرة.
+   ⇒ وجهُ الصفّ دروسُ صفّه وحدها، والوجهُ السابقُ نسخةٌ تحمل `past`
+     وتسكن «موادّ صفوف سابقة» المطويّة.
+   🔑 **والقسمةُ هنا لا في القاعدة:** `list_subjects` تُرسل العددين منفصلين
+      (`lessons_total` · `lessons_review`)، و`list_lessons` تَسِم كلَّ درسٍ
+      بـ`own_level` — فالمعرفةُ كانت واصلة، والخلطُ في العرض وحده.
+   📌 وللمهارات وجهٌ واحدٌ كما كانت: مستوياتُها الأدنى سُلّمُ تدرّجٍ في
+      قائمةٍ واحدة بعناوينها، لا صفٌّ مضى. */
+function pastOf(x){ return { ...x, past: true }; }
+/* الوجهُ الذي تُفتح به المادّةُ بلا قرينة: مادّةُ صفٍّ مضى كلُّها سابقة */
+function viewOf(x){ return x.group_key === '2_past' ? pastOf(x) : x; }
+/* والوجهُ المطلوب: «سابقٌ» يصدق على مادّة الصفّ وحدها — والمهاراتُ وجهٌ واحد */
+function pickView(x, past){ return past && x.group_key === '1_grade' ? pastOf(x) : viewOf(x); }
+
+/* أيسكن الدرسُ هذا الوجه؟ — بوسم القاعدة (`own_level` ⇐ `my_courses().is_current`).
+   ⚠️ ووجهُ الصفّ بـ«ليس سابقاً» لا بـ«حاضرٌ صراحةً»: درسٌ وصل بلا وسمٍ
+      يبقى حيث كان قبل b173، ولا يختفي من الوجهين معاً. */
+function inView(x){
+  if(x.past)                    return l => l.own_level === false;
+  if(x.group_key === '1_grade') return l => l.own_level !== false;
+  return () => true;
+}
+
+/* ما في الوجه من دروس — وفيه يُقاس «الفراغ».
+   ⚠️ ووجهُ الصفّ لا يستعير دروسَ ما مضى: كان يجمع العددين فلا يفرغ ما دام
+      للمادّة صفٌّ سابق — وهو بعينه ما أظهر دروسَ الأوّل في «صفّي» (b173). */
+function bulk(x){
+  if(x.past) return x.lessons_review || 0;
+  if(x.group_key === '1_grade') return x.lessons_total || 0;
+  return (x.lessons_total || 0) + (x.lessons_review || 0);
+}
 
 /* ⚠️ lessons_total > 0 شرط لازم: بدونه تُطوى المواد الفارغة
-   بوسم «أتممتها» — إذ 0 === 0 صحيح. */
-function isDone(x){ return x.lessons_total > 0 && x.lessons_done >= x.lessons_total; }
+   بوسم «أتممتها» — إذ 0 === 0 صحيح.
+   📌 والوجهُ السابقُ لا يُتَمّ: مراجعةٌ لا مسار (b173). */
+function isDone(x){ return !x.past && x.lessons_total > 0 && x.lessons_done >= x.lessons_total; }
 
 /* ── أين تركتَ؟ ──
    🔑 محلّيٌّ لا في القاعدة عمداً: هذا **تسهيلٌ لا سجلّ**. لو سكن
@@ -40,18 +75,23 @@ function isDone(x){ return x.lessons_total > 0 && x.lessons_done >= x.lessons_to
    ⚠️ وlocalStorage يرمي في التصفّح الخاصّ ⇒ try في الطرفين. */
 const LAST_KEY = 'bayan.last';
 
+/* 🆕 b173 · والوجهُ يُحفظ مع المادّة: «متابعة» تعود إلى ما كان يُدرَس —
+   دروسِ صفّه أو مراجعةِ ما سبقه — لا إلى وجهٍ آخر للمادّة نفسِها. */
 function rememberSubject(x){
-  try{ localStorage.setItem(LAST_KEY, JSON.stringify({ id:x.id })); }catch(e){}
+  try{ localStorage.setItem(LAST_KEY, JSON.stringify({ id:x.id, past:!!x.past })); }catch(e){}
 }
 
 /* تُطابَق بالقائمة الحيّة لا بما حُفظ: المادة قد تُسحب أو يتغيّر
    تسجيلُ الطالب فيها، فمعرّفٌ محفوظٌ يقود إلى بابٍ لا يُفتح.
-   ⚠️ ولا تُنادى قبل أن تُملأ S.subjects. */
+   ⚠️ ولا تُنادى قبل أن تُملأ S.subjects.
+   📌 والمحفوظُ قبل b173 بلا وجه ⇒ وجهُ المادّة بلا قرينة (`viewOf`). */
 function lastSubject(){
   let saved = null;
   try{ saved = JSON.parse(localStorage.getItem(LAST_KEY) || 'null'); }catch(e){}
   if(!saved?.id) return null;
-  return (S.subjects || []).find(v => String(v.id) === String(saved.id)) || null;
+  const x = (S.subjects || []).find(v => String(v.id) === String(saved.id));
+  if(!x) return null;
+  return saved.past ? pastOf(x) : viewOf(x);
 }
 
 /* ── صورُ الموادّ المجسّمة (b157 · b158 · b160) — والوجهُ في loadList ──
@@ -115,19 +155,25 @@ function todayStrip(){
   const c = S.counts || {}, acts = [];
   const back = lastSubject();
 
+  /* 🆕 b173 · والوجهُ السابقُ يُسمّى: المادّةُ الواحدة قد تكون في «صفّي» و«صفوف
+     سابقة» معاً، و«متابعة · الرياضيات» تفتح مراجعةَ الأوّل لمن ظنّها رياضياتِ صفّه.
+     ⚠️ والاسمُ في `<bdi>`: `dir="auto"` يتخطّى ما فيها، فيُقرأ السطرُ من «صفوف»
+        عربيّاً — ولولاها لقلب «English» السطرَ كلَّه `ltr`. ⇒ فالقيمةُ تصل
+        القالبَ مهرَّبةً من موضعها، لا يُهرّبها القالب. */
   if(back && bulk(back) > 0 && !isDone(back) && !back.needs_placement)
-    acts.push(['go-resume', 'resume',   'ta-accent', 'متابعة',  back.name]);
+    acts.push(['go-resume', 'resume',   'ta-accent', 'متابعة',
+               back.past ? `<bdi>${esc(back.name)}</bdi> · صفوف سابقة` : esc(back.name)]);
   if((c.due || 0) > 0)
-    acts.push(['go-cards',  'cards',    'ta-ok',     'استرجاع', `${N(c.due,'بطاقة','بطاقتان','بطاقات','بطاقة')} استحقّت`]);
+    acts.push(['go-cards',  'cards',    'ta-ok',     'استرجاع', esc(`${N(c.due,'بطاقة','بطاقتان','بطاقات','بطاقة')} استحقّت`)]);
   if((c.feedback || 0) > 0)
-    acts.push(['go-fb',     'feedback', 'ta-dx',     'معالجة',  N(c.feedback,'ملاحظة جديدة','ملاحظتان جديدتان','ملاحظات جديدة','ملاحظة جديدة')]);
+    acts.push(['go-fb',     'feedback', 'ta-dx',     'معالجة',  esc(N(c.feedback,'ملاحظة جديدة','ملاحظتان جديدتان','ملاحظات جديدة','ملاحظة جديدة'))]);
 
   if(!acts.length) return '';
   return `<div class="today">${acts.map(([id, ic, fam, lbl, val]) => `
     <button class="today-act ${fam}" id="${id}">
       <span class="ta-ic">${icon(ic)}</span>
       <span class="ta-lbl">${lbl}</span>
-      <span class="ta-val" dir="auto">${esc(val)}</span>
+      <span class="ta-val" dir="auto">${val}</span>
     </button>`).join('')}</div>`;
 }
 
@@ -139,7 +185,8 @@ export async function loadList(){
      وهو موضعُ البلاغ: كان البرواز يبقى من الشاشة السابقة حتى يصل الردّ. */
   waiting('subjects', null, "أهلاً " + S.prof.full_name, "");
 
-  const { data, error } = await api.listSubjects();
+  /* 🆕 b173 · ومساراتُ الصفّ معها لا بعدها — نداءان متوازيان لا متتابعان */
+  const [{ data, error }, paths] = await Promise.all([api.listSubjects(), pathChoices()]);
   if(error){
     head("أهلاً "+S.prof.full_name, "");
     app.innerHTML = `<div class="err"><b>تعذّر التحميل</b>${esc(error.message)}</div>`; return; }
@@ -171,14 +218,27 @@ export async function loadList(){
   const strip = todayStrip();
   head("أهلاً " + S.prof.full_name, "");
 
-  /* ثلاث مجموعات: صفّي · صفوف سابقة · مهارات */
+  /* ثلاث مجموعات: صفّي · صفوف سابقة · مهارات
+     🆕 b173 · و«صفوف سابقة» تجمع **الوجهَ السابق** من كلّ مادّةٍ مضت لها
+        دروس: مادّةُ صفٍّ مضى كلُّها (`2_past`)، ومادّةُ صفّك التي سبقها صفّ.
+        فالمادّةُ الواحدة قد تظهر في المجموعتين — دروسُ صفّها هنا، وما سبقه
+        هناك — **ولا يتسلّل أحدُ الوجهين إلى الآخر** (التعليلُ عند `pastOf`).
+     📌 وترتيبُها ترتيبُ الموادّ نفسِه (`sort`) لا ترتيبُ مصدرَيها: لولاه
+        تقدّمت موادُّ الصفّ على موادّ ما مضى كلِّها، فاضطرب ترتيبٌ يحفظه الطالب. */
   const grade  = S.subjects.filter(x => x.group_key === '1_grade');
-  const past   = S.subjects.filter(x => x.group_key === '2_past');
+  const past   = S.subjects
+    .filter(x => x.group_key === '2_past'
+              || (x.group_key === '1_grade' && (x.lessons_review || 0) > 0))
+    .sort((a, b) => (a.sort ?? 1e9) - (b.sort ?? 1e9))
+    .map(pastOf);
   const skills = S.subjects.filter(x => !['1_grade','2_past'].includes(x.group_key));
 
   /* الشكلُ بموضع المادة في القائمة الكاملة لا في مجموعتها: لو عُدَّ
-     داخل كلّ مجموعة لبدأت الثلاثُ بالدائرة نفسها في شاشةٍ واحدة. */
-  const shapeOf = x => shape(S.subjects.indexOf(x));
+     داخل كلّ مجموعة لبدأت الثلاثُ بالدائرة نفسها في شاشةٍ واحدة.
+     ⚠️ بالمعرّف لا بالمرجع (b173): الوجهُ السابقُ نسخةٌ لا يجدها `indexOf`،
+        و`shape(-1)` لا يرمي بل يُعطي آخرَ الأشكال — فتلبس المادّةُ شكلاً
+        غيرَ شكلها في المجموعة الأخرى، بلا شكوى. */
+  const shapeOf = x => shape(S.subjects.findIndex(v => v.id === x.id));
 
   /* الوجه: صورةُ المادة المجسّمة إن كانت لها صورة، وإلّا شكلُها برمزه.
      🆕 b160 · والصورةُ في كلّ موضعٍ تظهر فيه المادة — الحيّةُ والمكتملةُ
@@ -197,7 +257,10 @@ export async function loadList(){
            class="sh-icon">${esc(x.icon || '')}</span></div>`;
   };
 
-  const card = (x, isPast) => {
+  /* 🆕 b173 · والوجهُ يُقرأ من المادّة نفسِها (`past`) لا من وسيطٍ يُمرَّر —
+     فلا تُرسم نسخةٌ سابقةٌ بوجه الصفّ لأنّ نداءً نسي وسيطَه. */
+  const card = x => {
+    const isPast = !!x.past;
     const empty = !x.needs_placement && bulk(x) === 0;
     const pct   = x.lessons_total ? Math.round(x.lessons_done / x.lessons_total * 100) : 0;
     /* نصٌّ قصير: البطاقة ١٥٠px، وجملةٌ كاملة تلتفّ ثلاثة أسطر فتتفاوت
@@ -218,10 +281,12 @@ export async function loadList(){
        («متوسط — B1» · «نطاق 5.5 — متوسط») — أثمنُ ما على بطاقتها.
        ⚠️ وكان b157 يُسقطه بشرط الصورة (`!is3D`) فأسقط الاثنين معاً:
           لم يكن للصورة ذنبٌ، والحشوُ في المجموعة لا في الوجه. */
+    /* ⚠️ و«اختيارية» وصفُ مقرَّر الصفّ لا المادّة (b173): الوجهُ السابقُ نسخةٌ
+       ترث الحقل، ورياضياتُ الأوّل ليست اختياريّةً لأنّ رياضياتِ المسار كذلك. */
     const tags = [
       x.my_level && !isPast && x.group_key !== '1_grade'
                             ? `<span class="lvl-tag">${esc(x.my_level)}</span>` : '',
-      x.elective            ? '<span class="badge lock">اختيارية</span>'        : ''
+      x.elective && !isPast ? '<span class="badge lock">اختيارية</span>'        : ''
     ].filter(Boolean).join('');
 
     /* 🆕 b158 · مادةٌ لم تُبدأ تدعو إلى البدء، ومادةٌ تنتظر اختبارها تدعو
@@ -254,7 +319,7 @@ export async function loadList(){
        ⚠️ والفارغة بلا role ولا tabindex: ليست زرّاً فلا تُعلن زرّاً،
           ولا تُلتقط بالتنقّل بلوحة المفاتيح إلى بابٍ لا يُفتح. */
     return `<div class="subj ${subjectState(x, isPast)} ${empty ? 'soon' : ''}"
-                 data-i="${x.id}" ${empty ? '' : 'role="button" tabindex="0"'}
+                 data-i="${x.id}" ${isPast ? 'data-past="1"' : ''} ${empty ? '' : 'role="button" tabindex="0"'}
                  ${x.description ? `title="${esc(x.description)}"` : ''}>
       ${face(x)}
       <div class="subj-t" dir="auto"><bdi>${esc(x.name)}</bdi></div>
@@ -277,15 +342,16 @@ export async function loadList(){
 
   app.innerHTML = `
     ${strip}
+    ${paths.length ? pathAsk(paths) : ''}
     ${grade.length?`<div class="grp">موادّ صفّي</div>
-      ${live.map(x => card(x,false)).join("")}
+      ${live.map(x => card(x)).join("")}
       ${done.length?`<div class="fold-lbl">أتممتها · ${AR(done.length)}</div>${done.map(mini).join("")}`:''}`:''}
 
     ${past.length?`<div class="grp fold" id="pastHdr">موادّ صفوف سابقة
         <span class="chip">${AR(past.length)}</span><span class="caret">▾</span></div>
-      <div id="pastBox" hidden>${past.map(x => card(x,true)).join("")}</div>`:''}
+      <div id="pastBox" hidden>${past.map(x => card(x)).join("")}</div>`:''}
 
-    ${skills.length?`<div class="grp">مهاراتي</div>${skills.map(x => card(x,false)).join("")}`:''}
+    ${skills.length?`<div class="grp">مهاراتي</div>${skills.map(x => card(x)).join("")}`:''}
 
     ${!S.subjects.length?`<div class="card" style="text-align:center;padding:28px">
         <div style="font-size:2rem;margin-bottom:10px">📚</div>
@@ -297,8 +363,10 @@ export async function loadList(){
      ولا div بلا هذا: الطالبُ الذي لا يستعمل فأرةً يقف عند الرئيسة. */
   app.querySelectorAll(".subj").forEach(el => {
     const go = () => {
-      const x = S.subjects.find(v => String(v.id) === el.dataset.i);
-      if(!x) return;
+      const base = S.subjects.find(v => String(v.id) === el.dataset.i);
+      if(!base) return;
+      /* 🆕 b173 · والوجهُ من البطاقة: المادّةُ الواحدة بطاقتان في مجموعتين */
+      const x = el.dataset.past ? pastOf(base) : base;
       if(!x.needs_placement && bulk(x) === 0){
         toast("دروس هذه المادة قيد الإعداد — ستصلك عند جهوزها"); return; }
       if(x.needs_placement) return startPlacement(x);
@@ -323,7 +391,77 @@ export async function loadList(){
     ph.classList.toggle('open', !box.hidden);
   };
 
+  /* 🆕 b173 · المسارُ بنقرة — والتعليلُ عند pathAsk */
+  app.querySelectorAll('[data-path]').forEach(b => b.onclick = async () => {
+    const all = app.querySelectorAll('[data-path]');
+    all.forEach(x => x.disabled = true);
+    const p = S.prof, pid = Number(b.dataset.path);
+    const { data:r, error } = await api.setMyGrade(p.scale_id, p.level_id, pid);
+    if(error || !r?.ok){
+      all.forEach(x => x.disabled = false);
+      toast('تعذّر حفظ المسار — ' + (error?.message || r?.error || '')); return;
+    }
+    p.path_id = pid;
+    toast('حُفظ مسارك: ' + (r.path || b.textContent.trim()));
+    loadList();
+  });
+
   scrollTop();
+}
+
+/* ═══════════ ①أ «مسارك» — بطاقةٌ أعلى الرئيسة (b173) ═══════════
+   🔴 بلاغُ المالك (٢٣ أكتوبر): طالبُ الثاني الثانوي لا يرى إلا الموادَّ
+      المشتركة، ولا موضعَ يسجّل فيه مسارَه. **والقاعدةُ كانت جاهزة:**
+      `set_my_grade` تقبل المسارَ وتُخبر بـ`needs_path`، والواجهةُ لم ترسله
+      قطّ — و`my_courses()` تحجب كلَّ مقرَّرٍ ذي مسارٍ عمّن لا مسارَ له.
+   🔑 **طلبٌ لا شرط** — حكمُ الدالّة نفسِها («المسار يُطلب ولا يُشترط»):
+      بطاقةٌ فوق الموادّ لا شاشةٌ تحجبها. فالمشتركةُ تُدرَس قبل الاختيار،
+      ومن تردّد لم يُحبَس عن صفّه.
+   📌 ونقرةٌ واحدةٌ تحفظ بلا تأكيد: المسارُ يُغيَّر من «ملفّي» متى شاء،
+      والسطرُ يقول ذلك قبل النقر لا بعده.
+   📌 و«المسار» اسمُه في البكالوريا المصرية وفي لوحة الإدارة (`paths`).
+      ⚠️ وهو في معجم الفروق (مهارةُ الهوية اللغوية §١٠) «طريقُ التسكين»
+         — وذاك اسمٌ لا يراه الطالبُ في شاشةٍ من شاشاته، والتقاؤهما مكتوبٌ
+         في STATE ليُحسم هناك لا هنا. */
+function pathAsk(paths){
+  return `
+    <div class="card path-ask">
+      <div class="rev-q">مسارك</div>
+      <div class="line">موادّ مسارك تظهر هنا بعد اختياره، ويمكنك تغييره لاحقاً من ملفّك.</div>
+      <div class="path-opts">${paths.map(x => `
+        <button type="button" class="btn ghost" data-path="${x.id}">${esc(x.name)}</button>`).join('')}
+      </div>
+    </div>`;
+}
+
+/* مساراتُ صفّ الطالب إن لم يختر — وإلّا فلا شيء.
+   🔑 **والحكمُ حكمُ `set_my_grade` بحرفه:** مسارٌ نشطٌ في سلّمه بلغ صفُّه
+      رتبتَه (`from_rank <= rank`) — و`from_rank` الفارغُ لا يبلغه صفّ.
+   📌 ويُحفظ لكلّ (سلّم · صفّ) في الجلسة: طالبُ الأوّل لا مسارَ له، ولولا
+      الحفظُ لدفع نداءً في كلّ عودةٍ إلى الرئيسة ليسمع «لا شيء» نفسَها.
+      والمساراتُ للسلّم لا للطالب، فما حُفظ يصدق لكلّ من شاركه صفَّه.
+   ⚠️ ولا تقرأ `S.scales`: تملؤها البوّابةُ قبل الدخول، والمساراتُ فيها
+      فارغةٌ بحكم RLS **بلا خطأ** — فتُقرأ «لا مسارَ لهذا الصفّ» كذباً.
+   ⚠️ وفشلُ الجلب لا يحجب الرئيسة ولا يُحفظ: تُرسم الموادّ بلا بطاقة،
+      ويُعاد السؤال في العودة التالية.
+   🔑 و`let` آمنةٌ هنا كـLAST_KEY: لا يقرؤها إلا pathChoices، ولا تُنادى
+      إلا من loadList — ولا تُنادى loadList وهذه الوحدةُ تُقيَّم. */
+let pathMemo = null;   // { key, list }
+async function pathChoices(){
+  const p = S.prof || {};
+  if(!p.scale_id || !p.level_id || p.path_id) return [];
+  const key = p.scale_id + '|' + p.level_id;
+  if(pathMemo?.key === key) return pathMemo.list;
+
+  const { data, error } = await api.academicScales();
+  if(error){ console.warn('[بيان · b173] تعذّر جلبُ المسارات:', error.message); return []; }
+  const sc = (data || []).find(s => s.id === p.scale_id);
+  const lv = (sc?.levels || []).find(l => l.id === p.level_id);
+  const list = !lv ? [] : (sc.paths || [])
+    .filter(x => x.active && x.from_rank != null && x.from_rank <= lv.rank)
+    .sort((a, b) => a.sort_order - b.sort_order);
+  pathMemo = { key, list };
+  return list;
 }
 
 /* ═══════════ ①ب وجهةُ نتيجة البحث ═══════════
@@ -357,24 +495,31 @@ export async function openSearchHit(hit){
    (/subjects/7 · /subjects/7/lessons/42 — ui.js · PATHS). كانت متنَ
    openSearchHit فاستُخرجت: **البابان سواءٌ في الحاجة، وحارسٌ واحد للقفل**
    خيرٌ من اثنين يفترقان. ⇒ lessonId فارغٌ ⇒ قائمةُ دروس المادّة.
-   ⚠️ ومادّةٌ لا تبلغها قائمتُك (صفٌّ آخر · رابطٌ قديم) ⇒ الرئيسة، بلا خطأ. */
-export async function openLessonAt(subjectId, lessonId){
+   ⚠️ ومادّةٌ لا تبلغها قائمتُك (صفٌّ آخر · رابطٌ قديم) ⇒ الرئيسة، بلا خطأ.
+   🆕 b173 · و`past` من العنوان (/subjects/7/past) — الوجهُ السابقُ للمادّة. */
+export async function openLessonAt(subjectId, lessonId, past){
   /* الشبكةُ قد تكون فارغةً إن دخل الطالب من رابطٍ مباشر ولم يمرّ بالرئيسة */
   if(!(S.subjects || []).length){
     const { data } = await api.listSubjects();
     S.subjects = data || [];
   }
-  const subj = (S.subjects || []).find(v => String(v.id) === String(subjectId));
-  if(!subj) return loadList();
-  if(lessonId == null) return loadLessons(subj);
+  const base = (S.subjects || []).find(v => String(v.id) === String(subjectId));
+  if(!base) return loadList();
+  if(lessonId == null) return loadLessons(pickView(base, past));
 
-  const { data, error } = await api.listLessons(subj.id);
-  if(error){ toast('تعذّر فتح الدرس'); return loadLessons(subj); }
+  const { data, error } = await api.listLessons(base.id);
+  if(error){ toast('تعذّر فتح الدرس'); return loadLessons(pickView(base, past)); }
+
+  /* 🆕 b173 · والدرسُ يُفتح في وجهه هو، والقرينةُ وسمُ القاعدة لا العنوان:
+     رابطُ الدرس واحدٌ للوجهين (/subjects/7/lessons/42)، ودرسُ صفٍّ مضى
+     يُفتح في وجهه السابق — فـ«عودة» منه تبلغ قائمتَه، لا قائمةَ صفٍّ لا
+     يسكنها فيبدو أنّه اختفى. */
+  const l    = (data || []).find(v => String(v.id) === String(lessonId));
+  const subj = pickView(base, l ? l.own_level === false : past);
 
   /* الترتيبُ لازم: openLesson تقرأ S.subj و S.lessons ولا تجلبهما */
-  S.subj = subj; S.lessons = data || [];
+  S.subj = subj; S.lessons = (data || []).filter(inView(subj));
   rememberSubject(subj);
-  const l = S.lessons.find(v => String(v.id) === String(lessonId));
 
   /* 🔒 ولا يُلتَفّ على القفل: البحث يكشف ما يراه الطالب، والرؤيةُ
      ليست الإتاحة. درسٌ مقفل يُقال سببُه وتُعرض قائمتُه.
@@ -513,7 +658,10 @@ export async function loadLessons(subj){
   /* الأثرُ يُكتب هنا لا في openLesson: المادةُ هي وحدةُ الاستئناف،
      ودرسٌ بعينه قد يُتمّ فيصير «متابعة» يفتح ما فُرغ منه. */
   rememberSubject(subj);
-  nav('subjects', `/subjects/${subj.id}`);     // 🆕 b167 · عنوانُ المادّة — ui.js · PATHS
+  /* 🆕 b167 · عنوانُ المادّة — ui.js · PATHS
+     🆕 b173 · وللوجه السابق عنوانُه: من حدّث الصفحةَ على مراجعة الأوّل
+        لا يُعاد إلى وجه صفّه — وهو «قيد الإعداد» فيبدو أنّ الدروس ضاعت. */
+  nav('subjects', `/subjects/${subj.id}${subj.past ? '/past' : ''}`);
   /* 🆕 b139 · برواز السياق هنا كما في شاشة البطاقات — طلبُ صاحب المنصّة.
      كانت: «العلوم المتكاملة» عنواناً · «مستواك: الصف الأول الثانوي» وصفاً ·
      ثمّ الفتات — ثلاثةُ أسطر. ⇒ **المادةُ إلى البرواز، والمستوى يرتفع
@@ -526,13 +674,17 @@ export async function loadLessons(subj){
         واحد يحفظان السطرَ الواحد ويردّان المستوى إلى `--fs-ui`، وهو
         حجمُه الأوّل. ⇒ **المادةُ ثمّ المستوى: الأعمُّ قبل الأخصّ.**
      📌 و«الدروس» اسمٌ قائمٌ في المنصّة لا مخترَع (`دروس المقرَّر` في
-        المحرّر · `٥ / ٧ دروس` في بطاقة المادة · ورأسُ القسم ③ هنا). */
-  head("الدروس", "", false, [subj.name, subj.my_level]);
+        المحرّر · `٥ / ٧ دروس` في بطاقة المادة · ورأسُ القسم ③ هنا).
+     🆕 b173 · **والوجهُ السابقُ لا يحمل مستوى الطالب:** `my_level` صفُّه
+        الحاضر، ودروسُ هذا الوجه من صفٍّ مضى — فبروازُه اسمُ مجموعته في
+        الرئيسة، ومستوى كلِّ درسٍ عنوانٌ فوق دروسه (`paint` أدناه). */
+  head("الدروس", "", false, [subj.name, subj.past ? 'صفوف سابقة' : subj.my_level]);
   app.innerHTML = skeleton('rows');
 
   const { data, error } = await api.listLessons(subj.id);
   if(error){ app.innerHTML = `<div class="err"><b>تعذّر التحميل</b>${esc(error.message)}</div>`; return; }
-  S.lessons = data || [];
+  /* 🆕 b173 · دروسُ الوجه وحده — التعليلُ عند `pastOf` في رأس الملفّ */
+  S.lessons = (data || []).filter(inView(subj));
 
   /* ══ شريط تصفية الفروع · b122 ═════════════════════════
      🔑 ثابتُ ⑤ — الشريط يُبنى ممّا ظهر في دروس الطالب لا من
@@ -650,8 +802,12 @@ export async function loadLessons(subj){
     const groups = {};
     ls.forEach(l=>{ (groups[l.level||'—'] ||= []).push(l); });
     /* وعنوانُ المستوى يُحسب بعد التصفية لا قبلها، فلا يبقى
-       عنوانٌ فوق فراغ، ولا يُكتب عنوانٌ واحدٌ لما لا يحتمل قسيماً. */
-    const many = Object.keys(groups).length>1;
+       عنوانٌ فوق فراغ، ولا يُكتب عنوانٌ واحدٌ لما لا يحتمل قسيماً.
+       🆕 b173 · **إلّا في الوجه السابق:** هناك يُكتب ولو كان واحداً —
+          فهو وحده ما يقول «هذه دروسُ الصفّ الأوّل»، إذ البروازُ يقول
+          «صفوف سابقة» ولا يسمّي أيَّها. وغيابُه هو ما جعل دروسَ الأوّل
+          تُقرأ دروسَ الثاني قبل هذا البناء. */
+    const many = subj.past || Object.keys(groups).length>1;
 
     list.innerHTML =
       !S.lessons.length ? '<div class="status">لا توجد دروس في هذه المادة بعد</div>'

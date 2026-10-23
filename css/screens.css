@@ -380,6 +380,19 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
   transition:transform .22s}
 .grp.fold.open .caret{transform:rotate(180deg)}
 
+/* 🆕 b173 · بطاقةُ «مسارك» أعلى الرئيسة — والتعليلُ عند pathAsk في student.js.
+   📌 شبكةُ زرَّي الدور بمقاسها (`.rf-roles` في base.css): `auto-fit` يُقيم
+      المساراتِ الأربعةَ صفّاً حيث تتّسع، وينزلها اثنين اثنين حيث تضيق —
+      بلا استعلامِ وسائط. ⚠️ و`min-width:0` لأنّ `button.btn` فيه `flex:1`
+      ولا أثرَ له في grid، فالاسمُ الطويلُ يلتفّ داخل خانته ولا يفيض.
+   ⚠️ ولا لونَ جديد: البطاقةُ `.card` والأزرارُ `.ghost` — الدعوةُ في الموضع
+      والنصّ، لا في لونٍ خارج عائلات المعنى الخمس. */
+.path-ask{margin-bottom:4px}
+.path-opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;
+  margin-top:12px}
+.path-opts .btn{min-width:0}
+.path-opts .btn:disabled{opacity:.45;cursor:not-allowed}
+
 /* ══════════════════════════════════════════════════════════
    شريط «اليوم» — ثلاثة أفعالٍ فوق قائمة المواد  (b66)
 

@@ -992,8 +992,11 @@ export function start(){
   /* 🆕 b167 · المادّةُ والدرسُ بمعرّفَيهما — والنمطُ يُطابَق على العنوان بلا شرطةٍ
      أخيرة. وكلاهما يمرّ بـopenLessonAt: هي تحمل القفلَ والغياب، فلا يُلتفّ
      عليهما برابطٍ كما لا يُلتفّ ببحث. */
+  /* 🆕 b173 · والوجهُ السابقُ للمادّة عنوانُه — دروسُ الصفوف التي مضت.
+     ورابطُ الدرس واحدٌ للوجهين: openLessonAt تعرف وجهَه من وسم القاعدة. */
   registerDeep([
     { re: /^\/subjects\/(\d+)\/lessons\/(\d+)$/, key: 'subjects', open: (s, l) => openLessonAt(s, l) },
+    { re: /^\/subjects\/(\d+)\/past$/,           key: 'subjects', open: s => openLessonAt(s, null, true) },
     { re: /^\/subjects\/(\d+)$/,                 key: 'subjects', open: s => openLessonAt(s, null) },
   ]);
   watchAddress(boot);
