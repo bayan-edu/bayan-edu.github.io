@@ -452,6 +452,7 @@ export async function createBook(host, opt = {}){
         <div class="bk-slot b"></div>
         <button type="button" class="bk-hot prev" tabindex="-1" aria-hidden="true"></button>
         <button type="button" class="bk-hot next" tabindex="-1" aria-hidden="true"></button>
+        <div class="bk-fold"></div>
       </div>
     </div>
     <div class="bk-bar">
@@ -476,6 +477,7 @@ export async function createBook(host, opt = {}){
 
   const stage = root.querySelector('.bk-stage');
   const book  = root.querySelector('.bk-book');
+  const foldBox = root.querySelector('.bk-fold');
   const slots = { a: root.querySelector('.bk-slot.a'), b: root.querySelector('.bk-slot.b') };
   const bar   = root.querySelector('.bk-bar');
   const live  = root.querySelector('.bk-live');
@@ -941,8 +943,10 @@ export async function createBook(host, opt = {}){
     const single = !spread();
 
     const layer = EL('div', 'bk-turn');
-    layer.style.left = spineX + 'px';
-    layer.style.top = top + 'px';
+    /* 🆕 b185 · الطبقةُ في حيّز الطيّ لا في الكتاب مباشرة (العلّةُ عند `.bk-fold`) —
+       والحيّزُ أوسعُ من الكتاب، فتُزاح بسعته ليبقى الكعبُ حيث كان. */
+    layer.style.left = (spineX - foldBox.offsetLeft) + 'px';
+    layer.style.top = (top - foldBox.offsetTop) + 'px';
     if(s < 0) layer.style.transform = 'scaleX(-1)';
     /* 🔴 وفي الصفحة الواحدة يُقصّ الطيُّ على حدود الصفحة — قِيس: جُرِّب أوّلاً
        أن يذوب الظهرُ حين يتجاوز الكعب، **فصار شفّافاً فوق نصّ الوجه فبدا
@@ -970,7 +974,7 @@ export async function createBook(host, opt = {}){
     const flap  = EL('div', 'bk-flap');                       // يحمل ظلَّ الظهر على ما تحته
     flap.append(back, sheen);
     layer.append(front, cast, flap);
-    book.append(layer);
+    foldBox.append(layer);
     book.classList.add('turning');
 
     const topC = corner === 'top';
