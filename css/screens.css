@@ -412,35 +412,79 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
    ⚠️ ولا يظهر الشريط ببطاقةٍ صفرية: «لا شيء ينتظرك» يُقال بغياب
       البطاقة لا بصفرٍ يُعرض. وصفرٌ معروضٌ ثلاثَ مرّات كلَّ يوم
       يُدرِّب على ألّا يُنظر إلى الشريط أصلاً.
+   🆕 b176 · و«تابِع» خرج من الثلاثة بطاقةً رئيسة (`.today-hero` أدناه) — والاثنان
+      عمودٌ بجانبها. وأسرتُه باقية: زرُّه بلون التفاعل.
    ══════════════════════════════════════════════════════════ */
 .today{display:flex;gap:9px;flex-wrap:wrap;margin:2px 0 4px}
+/* 🆕 b176 · والبطاقاتُ بظلّ النظام كأخواتها في الصفحة — وكانت بلا ظلٍّ وتحتها بطاقاتُ
+   المواد بظلّ، فبدا الفعلُ أخفضَ من الجرد. وظلُّ التحويم كان قيمةً حرفيّة لا تتبع
+   الداكنة (`rgba(0,0,0,.07)`) فسقط: النهوضُ يكفي، والحدُّ بلون الأسرة. ونصفُ القطر ١٦. */
 .today-act{flex:1 1 128px;min-width:0;display:flex;flex-direction:column;
-  align-items:center;gap:6px;padding:14px 10px;border-radius:15px;text-align:center;
-  background:var(--surface);border:1px solid var(--line);cursor:pointer;
+  align-items:center;gap:6px;padding:14px 10px;border-radius:16px;text-align:center;
+  background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);cursor:pointer;
   font-family:inherit;color:var(--text);
-  transition:border-color .18s,box-shadow .18s,transform .18s}
-.today-act:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,.07)}
+  transition:border-color .18s,transform .18s}
+.today-act:hover{transform:translateY(-2px)}
 .today-act:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
-.ta-ic{width:38px;height:38px;border-radius:11px;display:flex;
+.ta-ic{width:38px;height:38px;border-radius:11px;display:flex;flex:0 0 auto;
   align-items:center;justify-content:center}
 .ta-ic .ic{width:21px;height:21px}
+.ta-tx{display:grid;gap:1px;min-width:0;max-width:100%}
 .ta-lbl{font-family:'Almarai';font-weight:800;font-size:var(--fs-ui)}
-.ta-val{font-size:var(--fs-tag);color:var(--text-muted);line-height:1.5;
+/* 🆕 b176 · `--fs-meta` لا `--fs-tag`: السلّمُ يجعل tag «وسماً يُلمَح»، و«سطرٌ وصفيّ قصير
+   تحت عنوان» meta — وهذا وصفُه بالحرف (رأسُ السلّم في base.css). */
+.ta-val{font-size:var(--fs-meta);color:var(--text-muted);line-height:1.5;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
 
-.ta-accent .ta-ic{background:var(--accent-fill);color:var(--accent)}
-.ta-accent:hover{border-color:var(--accent)}
 .ta-ok     .ta-ic{background:var(--ok-fill);color:var(--ok)}
 .ta-ok:hover{border-color:var(--ok)}
 .ta-dx     .ta-ic{background:var(--dx-soft);color:var(--dx)}
 .ta-dx:hover{border-color:var(--dx-edge)}
 
+/* ══ 🆕 b176 · «متابعة» بطاقةٌ رئيسة — قرارُ المالك من نموذج الرئيسة ══
+   🔴 **التراتبُ كان مقلوباً:** مبدأُ الشريط «حالتُك قبل قائمتك»، وأفعالُه الثلاثة بلا ظلّ
+      ومحتواها وسطَ صناديقَ تمتدّ نصفَ الصفحة — وبطاقاتُ المواد تحتها بظلٍّ وصورٍ مجسّمة.
+      فكانت العينُ تبلغ الجردَ قبل الفعل.
+   ⇒ الاستئنافُ بطاقةٌ واحدةٌ عريضة: وجهُ المادّة · الدرسُ التالي باسمه · شريطُها ·
+      وزرٌّ ممتلئٌ بلون التفاعل («اضغط هنا» جملتُه) — والاسترجاعُ والمعالجة عمودٌ بجانبها.
+   🔑 **والتباينُ يُنفَق هنا:** الزرُّ الممتلئُ الوحيدُ في الرئيسة. وما سواه سطحٌ بظلّ
+      النظام — فلا ينافسه شيء.
+   📐 ثلثان وثلث، وتحت ٦٤٠px عمودٌ واحد والزرُّ بعرض البطاقة. والبطاقةُ وحدها (لا
+      استرجاعَ ولا معالجة) تملأ السطر: `flex` الشريط يمدّها. */
+.today.has-side{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:12px}
+.today-side{display:grid;gap:10px}
+.today-side .today-act{flex-direction:row;justify-content:flex-start;gap:12px;
+  text-align:start;padding:14px 16px}
+.today-hero{flex:1 1 100%;min-width:0;display:flex;align-items:center;gap:16px;padding:18px 20px;
+  background:var(--surface);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);
+  cursor:pointer;transition:border-color .18s,transform .18s}
+.today-hero:hover{border-color:var(--accent);transform:translateY(-2px)}
+.today-hero:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.today-hero .sh-wrap{flex:0 0 auto}
+.today-hero .sh-wrap.is-3d{width:72px;height:72px}
+.today-hero .sh-img-3d{width:68px;height:68px}
+.th-tx{flex:1;min-width:0;display:grid;gap:3px}
+.th-eye{font-size:var(--fs-meta);color:var(--text-muted)}
+.th-t{font-family:'Almarai';font-weight:800;font-size:var(--fs-h);line-height:1.5}
+.th-prog{display:flex;align-items:center;gap:10px;font-size:var(--fs-meta);color:var(--text-muted)}
+.th-prog .pbar{flex:0 1 220px;margin-top:0}
+/* 📐 العدّادُ سطرٌ واحد: عند ٣٧٥px كان الشريطُ يأخذ حصّته فانكسر «٠ / ٣ دروس» سطرين (قِيس) */
+.th-prog > span{white-space:nowrap}
+.th-go{flex:0 0 auto;background:var(--accent);color:var(--on-accent);border-radius:11px;padding:12px 22px;
+  font-family:'Almarai';font-weight:800;font-size:var(--fs-ui)}
+.today-hero:hover .th-go{filter:brightness(1.08)}
+@media(max-width:640px){
+  .today.has-side{grid-template-columns:minmax(0,1fr)}
+  .today-hero{flex-wrap:wrap}
+  .th-go{flex:1 1 100%;text-align:center}
+}
+
 /* 🆕 b160 · والوجهُ المجسّم ورقاقتُه داخلَ الحكم. كانت `.is-3d:hover`
    أثقلَ وزناً من `.subj:hover` هنا فتغلبها — فترتفع البطاقةُ ٤px وتكبر
    الصورةُ ١٠٪ عند من طلب ألّا يتحرّك شيء (قِيس في المتصفّح). */
 @media(prefers-reduced-motion:reduce){
-  .subj,.today-act{transition:border-color .18s}
-  .subj:not(.soon):hover,.today-act:hover{transform:none}
+  .subj,.today-act,.today-hero{transition:border-color .18s}
+  .subj:not(.soon):hover,.today-act:hover,.today-hero:hover{transform:none}
   .subj:not(.soon):hover .sh-img-3d,.subj:not(.soon):hover .subj-arrow{transform:none}
   .sh,.pfill,.sh-img-3d,.subj-arrow{transition:none}
 }

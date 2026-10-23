@@ -76,9 +76,31 @@ function isDone(x){ return !x.past && x.lessons_total > 0 && x.lessons_done >= x
 const LAST_KEY = 'bayan.last';
 
 /* 🆕 b173 · والوجهُ يُحفظ مع المادّة: «متابعة» تعود إلى ما كان يُدرَس —
-   دروسِ صفّه أو مراجعةِ ما سبقه — لا إلى وجهٍ آخر للمادّة نفسِها. */
-function rememberSubject(x){
-  try{ localStorage.setItem(LAST_KEY, JSON.stringify({ id:x.id, past:!!x.past })); }catch(e){}
+   دروسِ صفّه أو مراجعةِ ما سبقه — لا إلى وجهٍ آخر للمادّة نفسِها.
+   🆕 b176 · **ومعهما الدرسُ التالي** ({id, title}) — تسمّيه بطاقةُ «متابعة» في الرئيسة
+      وتفتحه، بلا نداء شبكة (التعليلُ عند `resumeCard`). ويُكتب حيث تُجلب الدروس
+      (`loadLessons` · `openLessonAt`) لا حيث تُرسم: الرسمُ يتبع تصفيةَ الفرع، والمحفوظُ
+      تالي المادّة كلِّها.
+   ⚠️ **ومن لا يعرفه يُبقيه ولا يمحوه:** `loadLessons` تكتب المادّةَ قبل الجلب، فلو محت
+      التاليَ لأفقر فشلُ الشبكة بطاقةَ الرئيسة من اسمٍ صحيح. ⇒ `next` الغائب (undefined)
+      يُبقي ما حُفظ للمادّة ووجهها نفسيهما، و`null` يقول «لا تالي» صراحةً. */
+function rememberSubject(x, next){
+  try{
+    let keep = null;
+    if(next === undefined){
+      const prev = JSON.parse(localStorage.getItem(LAST_KEY) || 'null');
+      if(prev && String(prev.id) === String(x.id) && !!prev.past === !!x.past) keep = prev.next || null;
+    }
+    const nx = next === undefined ? keep : (next && { id:next.id, title:next.title });
+    localStorage.setItem(LAST_KEY, JSON.stringify({ id:x.id, past:!!x.past, next:nx }));
+  }catch(e){}
+}
+
+/* 🆕 b176 · «التالي» في قائمة دروس: أوّلُ ما لم يُنجَز ولم يُقفَل — ولا تاليَ في الوجه
+   السابق (مراجعةٌ لا مسار · b173). حكمُ `paint` في قائمة الدروس (b175) بحرفه، استُخرج
+   حين صارت الرئيسةُ تحفظه: **وحكمان لسؤالٍ واحد يتفارقان.** */
+function nextOf(subj, ls = S.lessons){
+  return subj.past ? null : (ls || []).find(l => !l.done && !l.locked) || null;
 }
 
 /* تُطابَق بالقائمة الحيّة لا بما حُفظ: المادة قد تُسحب أو يتغيّر
@@ -92,6 +114,14 @@ function lastSubject(){
   const x = (S.subjects || []).find(v => String(v.id) === String(saved.id));
   if(!x) return null;
   return saved.past ? pastOf(x) : viewOf(x);
+}
+
+/* 🆕 b176 · والتالي المحفوظُ معها — `null` لما حُفظ قبل b176 ولمادّةٍ لا تاليَ لها.
+   ⚠️ **وقد يتقادم:** يُحسب حين تُجلب الدروس، فمن أتمّ درساً ثمّ بلغ الرئيسة بلا مرورٍ
+      بقائمته رأى اسمَه حتى يمرّ بها. ونتيجةُ الاختبار تعود إلى القائمة (quiz.js) فتجدّده،
+      والنقرُ عليه يمرّ بحارس `openLessonAt` — فالمتقادمُ يُفتح أو يُردّ، ولا يُضلّ. */
+function lastNext(){
+  try{ return JSON.parse(localStorage.getItem(LAST_KEY) || 'null')?.next || null; }catch(e){ return null; }
 }
 
 /* ── صورُ الموادّ المجسّمة (b157 · b158 · b160) — والوجهُ في loadList ──
@@ -150,31 +180,64 @@ function subjectState(x, isPast){
    يُعيد '' حين لا ينتظر شيء: الغيابُ يقول «لا جديد» أصدقَ من ثلاثة
    أصفارٍ تُعرض كلَّ يوم حتى يُكفَّ عن النظر إلى الشريط أصلاً.
    🔒 ولا نداءَ شبكةٍ هنا: الأعداد من S.counts التي ملأها refreshCounts،
-      و«أين تركتَ» من الجهاز. ثلاثُ بطاقاتٍ بلا طلبٍ واحد. */
-function todayStrip(){
+      و«أين تركتَ» من الجهاز. ثلاثُ بطاقاتٍ بلا طلبٍ واحد.
+   🆕 b176 · والاستئنافُ صار بطاقةً رئيسة (`resumeCard`) والاثنان عمودٌ بجانبها —
+      `back` و`face` من loadList: الأوّلُ تقرؤه بطاقةُ المادّة أيضاً، والثاني وجهُها. */
+function todayStrip(back, face){
   const c = S.counts || {}, acts = [];
-  const back = lastSubject();
 
-  /* 🆕 b173 · والوجهُ السابقُ يُسمّى: المادّةُ الواحدة قد تكون في «صفّي» و«صفوف
-     سابقة» معاً، و«متابعة · الرياضيات» تفتح مراجعةَ الأوّل لمن ظنّها رياضياتِ صفّه.
-     ⚠️ والاسمُ في `<bdi>`: `dir="auto"` يتخطّى ما فيها، فيُقرأ السطرُ من «صفوف»
-        عربيّاً — ولولاها لقلب «English» السطرَ كلَّه `ltr`. ⇒ فالقيمةُ تصل
-        القالبَ مهرَّبةً من موضعها، لا يُهرّبها القالب. */
-  if(back && bulk(back) > 0 && !isDone(back) && !back.needs_placement)
-    acts.push(['go-resume', 'resume',   'ta-accent', 'متابعة',
-               back.past ? `<bdi>${esc(back.name)}</bdi> · صفوف سابقة` : esc(back.name)]);
   if((c.due || 0) > 0)
     acts.push(['go-cards',  'cards',    'ta-ok',     'استرجاع', esc(`${N(c.due,'بطاقة','بطاقتان','بطاقات','بطاقة')} استحقّت`)]);
   if((c.feedback || 0) > 0)
     acts.push(['go-fb',     'feedback', 'ta-dx',     'معالجة',  esc(N(c.feedback,'ملاحظة جديدة','ملاحظتان جديدتان','ملاحظات جديدة','ملاحظة جديدة'))]);
 
-  if(!acts.length) return '';
-  return `<div class="today">${acts.map(([id, ic, fam, lbl, val]) => `
+  const hero = back && bulk(back) > 0 && !isDone(back) && !back.needs_placement
+             ? resumeCard(back, face) : '';
+  if(!hero && !acts.length) return '';
+
+  /* 📌 والقيمةُ تحت اسمها في `.ta-tx`: في العمود الجانبيّ تصطفّ البطاقةُ أفقيّاً،
+     فلو بقي الاثنان أخوين للأيقونة لتجاورا سطراً واحداً. */
+  const act = ([id, ic, fam, lbl, val]) => `
     <button class="today-act ${fam}" id="${id}">
       <span class="ta-ic">${icon(ic)}</span>
-      <span class="ta-lbl">${lbl}</span>
-      <span class="ta-val" dir="auto">${val}</span>
-    </button>`).join('')}</div>`;
+      <span class="ta-tx"><span class="ta-lbl">${lbl}</span>
+        <span class="ta-val" dir="auto">${val}</span></span>
+    </button>`;
+  if(!hero) return `<div class="today">${acts.map(act).join('')}</div>`;
+  return `<div class="today${acts.length ? ' has-side' : ''}">${hero}${
+    acts.length ? `<div class="today-side">${acts.map(act).join('')}</div>` : ''}</div>`;
+}
+
+/* 🆕 b176 · «متابعة» بطاقةٌ رئيسة لا ثالثةُ ثلاث — والتعليلُ عند `.today-hero` في screens.css.
+   🔑 **والعنوانُ أخصُّ ما يُعرف:** الدرسُ التالي إن حُفظ (`lastNext`)، وإلّا المادّة —
+      ونزلت المادّةُ حينها إلى سطر السياق فوقه: «الدرس التالي · العلوم المتكاملة».
+      و«الدرس التالي» اسمٌ قائم في المنصّة (quiz.js: «والدرس التالي في متناولك»).
+   🔑 والوجهُ وجهُ المادّة في الشبكة، وحالتُها صنفُها (`subjectState`) — فقاعدتُه
+      البيضاويّةُ وشريطُه بلونها هناك: **الهويةُ لا تتبدّل بالموضع** (b160).
+   ⚠️ و`div` بدور زرّ لا `button`: الوجهُ `div` (face)، ولا يسكن الزرَّ إلا نصٌّ مُصاغ.
+      وهو نمطُ `.subj` بعينه — role و tabindex ولوحةُ المفاتيح في loadList.
+   📌 والاسمُ في `<bdi>` (b173): `dir="auto"` يتخطّى ما فيها، فـ«English» لا تقلب سطرَ
+      السياق `ltr`. والوجهُ السابقُ يُسمّى كما كان: «صفوف سابقة» — لئلّا تُظنّ مراجعةُ
+      الأوّل رياضياتِ الصفّ الحاضر. */
+function resumeCard(back, face){
+  const n     = lastNext();
+  const name  = `<bdi>${esc(back.name)}</bdi>`;
+  const eye   = n ? `الدرس التالي · ${name}` : (back.past ? 'صفوف سابقة' : '');
+  const done  = back.lessons_done || 0, total = back.lessons_total || 0;
+  const prog  = back.past
+      ? `<span>${AR(back.lessons_review || 0)} للمراجعة</span>`
+      : total ? `<div class="pbar"><div class="pfill" style="width:${Math.round(done / total * 100)}%"></div></div>
+                 <span>${AR(done)} / ${AR(total)} ${NW(total,'درس','درسان','دروس','درساً')}</span>` : '';
+  return `
+    <div class="today-hero ${subjectState(back, back.past)}" id="go-resume" role="button" tabindex="0">
+      ${face(back)}
+      <div class="th-tx">
+        ${eye ? `<div class="th-eye">${eye}</div>` : ''}
+        <div class="th-t" dir="auto">${n ? esc(n.title) : name}</div>
+        ${prog ? `<div class="th-prog">${prog}</div>` : ''}
+      </div>
+      <span class="th-go">متابعة</span>
+    </div>`;
 }
 
 export async function loadList(){
@@ -212,10 +275,10 @@ export async function loadList(){
         ممّا يصف.** وهو نظيرُ أختِه لا استثناءٌ منها.
 
      ⚠️ وبناءُ الشريط لم يعد يسبق الترويسة لسبب — وكان يسبقها لأنّ
-        «وجودَه يغيّر ما تقوله». وبقي موضعُه لأنّه يُستعمل في المتن أدناه.
+        «وجودَه يغيّر ما تقوله». 🆕 b176 · وانتقل إلى ما بعد `face`: بطاقةُ
+        «متابعة» تلبس وجهَ المادّة.
      ⚠️ والفارغُ يُخفى ولا يُفرَّغ: `head()` تُسقط `.sub` حين تغيب
         (`display:none`) فلا تحجز حشوَها — وتعليلُه عندها في ui.js. */
-  const strip = todayStrip();
   head("أهلاً " + S.prof.full_name, "");
 
   /* ثلاث مجموعات: صفّي · صفوف سابقة · مهارات
@@ -256,6 +319,11 @@ export async function loadList(){
       : `<div class="sh-wrap">${shapeOf(x)}<span
            class="sh-icon">${esc(x.icon || '')}</span></div>`;
   };
+
+  /* 🆕 b176 · آخرُ ما فُتح يُقرأ مرّةً — يقرؤه الشريطُ وبطاقةُ مادّته معاً، فلا تقول
+     الرئيسةُ «متابعة» فوق «البدء» للمادّة نفسِها (والتعليلُ عند `foot`). */
+  const back  = lastSubject();
+  const strip = todayStrip(back, face);
 
   /* 🆕 b173 · والوجهُ يُقرأ من المادّة نفسِها (`past`) لا من وسيطٍ يُمرَّر —
      فلا تُرسم نسخةٌ سابقةٌ بوجه الصفّ لأنّ نداءً نسي وسيطَه. */
@@ -302,12 +370,18 @@ export async function loadList(){
           فتُدعى إلى البدء مادةٌ بُدئت.
        📌 والصورةُ لا تحكم هنا — كانت الرقاقةُ لذوات الصور وحدها (`is3D`)،
           فتلبس المادةُ بلا صورة سلوكاً آخر لا وجهاً آخر فحسب. */
+    /* 🆕 b176 · وآخرُ مادّةٍ فُتحت لا تُدعى إلى «البدء»: بطاقةُ «متابعة» فوقها تدعو
+       إليها — فعلان لشيءٍ واحد في شاشةٍ واحدة (بلاغُ المالك). **ولم يُتَمّ فيها درسٌ
+       بعد**، فالعدّادُ لا يقولها؛ والرقاقةُ تبقى وتتبدّل كلمتُها وحدها، ولا لونَ لها:
+       البطاقةُ الرئيسةُ فوقها تُبرزها، وإبرازٌ ثانٍ ينفق التباينَ مرّتين.
+       ⚠️ والوجهُ شرطٌ: متابعةُ مراجعة الأوّل لا تجعل رياضياتِ الصفّ «متابعة». */
+    const here = back && !isPast && !back.past && String(back.id) === String(x.id);
     const openable = !isPast && !empty;
     const go   = t => `<div class="subj-act-pill">${t}<span class="subj-arrow" aria-hidden="true">←</span></div>`;
     const foot =
         openable && x.needs_placement        ? go('تحديد المستوى')
       : openable && x.lessons_total && !x.lessons_done
-                                             ? go(`${N(x.lessons_total,'درس واحد','درسان','دروس','درساً')} · البدء`)
+            ? go(`${N(x.lessons_total,'درس واحد','درسان','دروس','درساً')} · ${here ? 'متابعة' : 'البدء'}`)
       : `<div class="subj-m">${meta}</div>
          ${(x.needs_placement || empty || isPast) ? '' :
            `<div class="pbar"><div class="pfill" style="width:${pct}%"></div></div>`}`;
@@ -378,9 +452,21 @@ export async function loadList(){
   });
 
   /* ⚠️ زرُّ «متابعة» يُعيد قراءة المادة لا يلتقطها من الإغلاق: بين
-     الرسم والنقر قد تُعاد الشبكةُ، فمرجعٌ قديم يفتح دروساً قديمة. */
+     الرسم والنقر قد تُعاد الشبكةُ، فمرجعٌ قديم يفتح دروساً قديمة.
+     🆕 b176 · **ويفتح الدرسَ التالي نفسَه** إن حُفظ — بـ`openLessonAt` وحارسِها كالرابط
+        والبحث: مقفلٌ ⇒ سببُه وقائمةُ مادّته · غائبٌ ⇒ القائمة. وبلا تالٍ ⇒ القائمة كما كان.
+     ⚠️ والبطاقةُ `div` بدور زرّ ⇒ لها لوحةُ المفاتيح كبطاقة المادّة (أعلاه). */
   const on = (id, fn) => { const el = document.getElementById(id); if(el) el.onclick = fn; };
-  on('go-resume', () => { const x = lastSubject(); if(x) loadLessons(x); else loadList(); });
+  const resume = () => {
+    const x = lastSubject();
+    if(!x) return loadList();
+    const n = lastNext();
+    return n ? openLessonAt(x.id, n.id, x.past) : loadLessons(x);
+  };
+  on('go-resume', resume);
+  const heroEl = document.getElementById('go-resume');
+  if(heroEl) heroEl.onkeydown = e => {
+    if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); resume(); } };
   on('go-cards',  loadFlashcards);
   on('go-fb',     loadFeedback);
 
@@ -519,7 +605,7 @@ export async function openLessonAt(subjectId, lessonId, past){
 
   /* الترتيبُ لازم: openLesson تقرأ S.subj و S.lessons ولا تجلبهما */
   S.subj = subj; S.lessons = (data || []).filter(inView(subj));
-  rememberSubject(subj);
+  rememberSubject(subj, nextOf(subj));            // 🆕 b176 · والتالي معها — التعليلُ عند rememberSubject
 
   /* 🔒 ولا يُلتَفّ على القفل: البحث يكشف ما يراه الطالب، والرؤيةُ
      ليست الإتاحة. درسٌ مقفل يُقال سببُه وتُعرض قائمتُه.
@@ -685,6 +771,7 @@ export async function loadLessons(subj){
   if(error){ app.innerHTML = `<div class="err"><b>تعذّر التحميل</b>${esc(error.message)}</div>`; return; }
   /* 🆕 b173 · دروسُ الوجه وحده — التعليلُ عند `pastOf` في رأس الملفّ */
   S.lessons = (data || []).filter(inView(subj));
+  rememberSubject(subj, nextOf(subj));            // 🆕 b176 · والتالي معها — التعليلُ عند rememberSubject
 
   /* ══ شريط تصفية الفروع · b122 ═════════════════════════
      🔑 ثابتُ ⑤ — الشريط يُبنى ممّا ظهر في دروس الطالب لا من
@@ -818,8 +905,9 @@ export async function loadLessons(subj){
           والتالي من الكلّ قد يقع خارج التصفية فيُميَّز ولا يُرى.
        🔑 **وأوّلُ فجوةٍ لا ما بعد آخرِ مُنجَز:** الترتيبُ ترتيبُ المنهج (`list_lessons`)،
           فدرسٌ تُرك قبل مُنجَزٍ هو موضعُ المتابعة — والسلسلةُ يُتبَع أوّلُها.
-       📌 **ولا «تالي» في الوجه السابق:** مراجعةٌ لا مسار (`isDone` · b173). */
-    const nx = subj.past ? null : ls.find(l => !l.done && !l.locked);
+       📌 **ولا «تالي» في الوجه السابق:** مراجعةٌ لا مسار (`isDone` · b173).
+       🆕 b176 · والحكمُ في `nextOf` — تقرؤه الرئيسةُ أيضاً. */
+    const nx = nextOf(subj, ls);
 
     list.innerHTML =
       !S.lessons.length ? '<div class="status">لا توجد دروس في هذه المادة بعد</div>'
