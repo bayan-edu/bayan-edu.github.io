@@ -16,17 +16,28 @@
    بوضع العلاجَين متجاورَين.
 
    وثلاثةُ ثوابت من `sql/138` و`141` — تتبعها الواجهة ولا تجتهد:
-     ① طبقتان: عنوانٌ عريض وبنودٌ تحته. لا ثالثة.
+     ① طبقتان: عنوانٌ عريضٌ وبنودٌ تحته. لا ثالثة.
      ② الفرعُ للعنوان وحدَه، وورقةٌ لا حاوية. والبندُ يرثه.
      ③ الهدفُ يسكن **المادة** لا المقرَّر، فيعبر الصفوف — والكود هويّةٌ
         لا تتغيّر، وتغييرُه يقطع أثرَ طالبٍ ممتدّاً.
+
+   🆕 b180 · **والتصفيةُ بالصفّ والدرس** (`sql/178`): ولأنّ الهدف يعبر
+      الصفوف (③)، كان من يراجع صفَّه يقرأ فهرسَ الصفّين معاً — في English
+      يستهدف الأوّلُ ٦٩ بنداً من ١٢٦ والثاني ٩٨.
+      🔑 **والأعدادُ تتبع النطاق لا الفهرس:** بندٌ يستهدفه الأوّلُ ولا يقيسه
+      إلا سؤالٌ في الثاني يُعدّ في الأوّل «لا سؤالَ يقيسه» — فطالبُ الأوّل
+      لا ينطق عنه التشخيصُ أبداً، والعددُ الكلّيُّ «٥ أسئلة» يُطمئن كاذباً.
+      وفي الدرس الواحد يُقرأ العيبُ ① هكذا: أيُّ أهدافه لا يقيسه اختبارُه.
+      📌 والنطاقُ **الدروسُ التي تستهدف البند** (`lesson_objectives`)، لا
+      الأسئلةُ التي تقيسه — فالدرسُ هو الذي يقول «هذا هدفي».
 
    ⚠️ ولا حذفَ هنا، وليس نقصاً: `delete_objective` غير مبنيّة، وحذفُ هدفٍ
       تستهدفه دروسٌ أو تقيسه أسئلةٌ يُيتّم تشخيصاً قائماً. وما يُستغنى عنه
       يُترك بلا درسٍ يستهدفه، فيظهر هنا «لا يستهدفه درس».
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
-import { app, head, toast, esc, AR, errBox, nav, setWide, N } from './ui.js';
+import { S } from './state.js';
+import { app, head, toast, esc, escA, AR, errBox, nav, setWide, N, NW, joinList } from './ui.js';
 import { openCourse } from './editor.js';
 
 let ctx  = null;    // { course, subject }
@@ -34,7 +45,16 @@ let T    = null;    // الشجرة المحمَّلة
 let edit = null;    // { kind:'head'|'item', row } — null: لا تحرير
 let add  = 'item';  // نوع المضاف الجديد
 
+/* 🆕 b180 · التصفيةُ والبحثُ حالةٌ تبقى إذا أُعيد البناء — بعد الحفظ وبعد
+   «تحرير البند» — فلا يرجع المؤلّفُ إلى الفهرس كلِّه كلّما نقر.
+   وتبقى للمادة نفسِها إذا عاد إليها من شاشة المقرّر: من صفّى بدرسٍ ثمّ
+   خرج يصل علاجاً عاد إلى درسه. ومادةٌ أخرى ⇒ تبدأ من الكلّ. */
+let flt  = { g: '', l: '' };   // g: مفتاحُ الصفّ · l: معرّفُ الدرس — '' للكلّ
+let qs   = '';                 // نصُّ البحث
+let fltOf = null;              // المادةُ التي تخصّها flt وqs
+
 export async function openObjectives(course, subject){
+  if(fltOf !== subject.id){ flt = { g: '', l: '' }; qs = ''; fltOf = subject.id; }
   ctx = { course, subject };
   edit = null; add = 'item';
   nav('editor'); setWide(true);
@@ -51,33 +71,86 @@ async function reload(){
   render();
 }
 
+/* ── النطاق: الصفوفُ والدروسُ من `178` ───────────────────── */
+
+/* «صف» أم «مستوى» — كما يسمّيها اختيارُ المقرّرات في `editor.js`. */
+const rung = () => {
+  const sc = (S.tree?.scales || []).find(x => String(x.id) === String(T.scale));
+  return sc?.kind === 'proficiency' ? 'مستوى' : 'صف';
+};
+
+const lessonOf = id => (T.lessons || []).find(l => String(l.id) === String(id));
+const courseOf = id => (T.courses || []).find(c => String(c.id) === String(id));
+
+/* مفتاحُ الصفّ مستواه: مقرّران في صفٍّ واحد (مساران) صفٌّ واحد،
+   ومقرّرٌ بلا مستوى مفتاحُه 'x'. */
+const gKey = c => c ? (c.level_id == null ? 'x' : String(c.level_id)) : '';
+const gOf  = lessonId => gKey(courseOf(lessonOf(lessonId)?.course_id));
+
+function grades(){
+  const out = [];
+  for(const c of T.courses || []){
+    const k = gKey(c);
+    if(!out.some(g => g.k === k)) out.push({ k, name: c.level || `بلا ${rung()}` });
+  }
+  return out;
+}
+
+/* الدروسُ التي تُحسب فيها الأعداد — null: بلا تصفية، فالأعدادُ أعدادُ الفهرس */
+function scope(){
+  if(flt.l) return new Set([String(flt.l)]);
+  if(flt.g) return new Set((T.lessons || [])
+    .filter(l => gKey(courseOf(l.course_id)) === flt.g).map(l => String(l.id)));
+  return null;
+}
+
+/* ⚠️ وبلا تصفيةٍ يبقى العددان القديمان بحرفهما (`lessons` · `questions`) —
+   فالشاشةُ بلا اختيارٍ هي ما كانت. والفرقُ بينهما وبين المجموع في النطاق
+   روابطُ دروسٍ مؤرشفة، **وصفرٌ منها اليوم** (قِيس عند `178`). */
+const lesN = (o, F) => F ? (o.lesson_ids || []).filter(id => F.has(String(id))).length
+                         : o.lessons;
+const qN   = (o, F) => F ? Object.entries(o.q_by_lesson || {})
+                             .reduce((s, [l, n]) => s + (F.has(l) ? n : 0), 0)
+                         : o.questions;
+const inScope = (o, F) => !F || lesN(o, F) > 0;
+
+/* 🆕 b180 · العددُ بأرقامه دائماً، والمعدودُ من `NW()`: «٤ دروس» لا «٤ درس»
+   (عطلُ العدد والمعدود · مهارة الهوية اللغوية §١١)، والتصفيةُ تجعل الأعدادَ
+   الصغيرة هي الغالبة. ولا `N()` هنا: تُسقط الرقمَ في الواحد والاثنين، فعدّادٌ
+   يُمسح بالعين يصير «درس، ٠ سؤال» — تُقرأ «درس» وسماً لا عدداً. */
+const cnt = (n, ...forms) => `${AR(n)} ${NW(n, ...forms)}`;
+
 /* ── العدّ: ما يُراجَع به الفهرس ───────────────────────────── */
-function tally(){
+function tally(F){
   const hs = T.headings || [];
-  const items = hs.flatMap(h => h.items || []);
+  const items = hs.flatMap(h => (h.items || []).filter(o => inScope(o, F)));
   return {
-    heads:   hs.length,
+    heads:   F ? hs.filter(h => (h.items || []).some(o => inScope(o, F))).length : hs.length,
     items:   items.length,
-    noQ:     items.filter(o => !o.questions).length,
+    noQ:     items.filter(o => !qN(o, F)).length,
     noFix:   items.filter(o => !o.remedy_item_id).length,
-    noLes:   items.filter(o => !o.lessons).length,
+    noLes:   items.filter(o => !lesN(o, F)).length,
     thin:    hs.filter(h => (h.items || []).length < 2).length,
     noStr:   hs.filter(h => !h.strand_id).length
   };
 }
 
-function itemCard(o){
+function itemCard(o, F){
+  const nl = lesN(o, F), nq = qN(o, F);
   const flags = [];
-  if(!o.questions) flags.push('لا سؤالَ يقيسه');
-  if(!o.lessons)   flags.push('لا يستهدفه درس');
+  if(!nq) flags.push('لا سؤالَ يقيسه');
+  if(!nl) flags.push('لا يستهدفه درس');
+  /* 🆕 b180 · وفي الدرس الواحد يسقط عددُ الدروس — واحدٌ دائماً. */
+  const nums = flt.l ? cnt(nq,'سؤال','سؤالان','أسئلة','سؤالاً')
+    : joinList([cnt(nl,'درس','درسان','دروس','درساً'), cnt(nq,'سؤال','سؤالان','أسئلة','سؤالاً')]);
   return `<details class="ob-i" data-q="${esc((o.code + ' ' + o.name).toLowerCase())}">
     <summary>
       <span class="ob-code">${esc(o.code)}</span>
       <span class="ob-nm" dir="auto">${esc(o.name)}</span>
-      <span class="ob-n">${AR(o.lessons)} درس · ${AR(o.questions)} سؤال</span>
+      <span class="ob-n">${nums}</span>
       ${o.remedy_item_id ? '<span class="ob-ok">علاجٌ موصول</span>'
                          : '<span class="ob-wn">بلا علاجٍ موصول</span>'}
-      ${flags.length ? `<span class="ob-wn">${flags.join(' · ')}</span>` : ''}
+      ${flags.length ? `<span class="ob-wn">${joinList(flags)}</span>` : ''}
     </summary>
     <div class="ob-b">
       <div class="ob-f"><span class="k">دليلُ القياس</span>
@@ -107,15 +180,21 @@ function focusForm(){
   if(nm) nm.focus({ preventScroll: true });
 }
 
-function headBlock(h){
-  const n = (h.items || []).length;
+function headBlock(h, F){
+  const all = h.items || [];
+  const its = all.filter(o => inScope(o, F));
+  const n = all.length;
+  /* 🆕 b180 · وفي النطاق «٢ / ٥ بنود»: العيبُ ④ (عنوانٌ تحته بندٌ واحد) صفةُ
+     الفهرس لا النطاق، فالعددُ الكلّيُّ يبقى بجوار الظاهر ولا يُستبدل به. */
   return `<div class="ob-g" data-q="${esc((h.code + ' ' + h.name).toLowerCase())}">
     <div class="ob-h">
       <div style="flex:1;min-width:0">
         <div class="ed-t" dir="auto">${esc(h.name)}</div>
         <div class="ed-m">
           <span class="chip">${esc(h.code)}</span>
-          <span class="chip${n < 2 ? ' g' : ''}">${N(n,'بند','بندان','بنود','بنداً')}</span>
+          <span class="chip${n < 2 ? ' g' : ''}">${F
+            ? `${AR(its.length)} / ${cnt(n,'بند','بندان','بنود','بنداً')}`
+            : N(n,'بند','بندان','بنود','بنداً')}</span>
           ${h.strand_code ? `<span class="chip">🌿 ${esc(h.strand_name)}</span>`
                           : '<span class="chip g">بلا فرع</span>'}
         </div>
@@ -123,24 +202,72 @@ function headBlock(h){
       <button class="btn ghost" data-eh="${h.id}">تحرير</button>
       <button class="btn ghost" data-ni="${h.id}">＋ بند</button>
     </div>
-    ${n ? (h.items || []).map(itemCard).join('')
+    ${its.length ? its.map(o => itemCard(o, F)).join('')
         : '<div class="ed-empty">لا بنودَ تحته — وعنوانٌ بلا بندٍ لا يُقاس</div>'}
   </div>`;
 }
 
+/* 🆕 b180 · عنوانُ الدرس في `<option>` معزولٌ بـFSI…PDI. فالقائمةُ `rtl`،
+   وعنوانٌ إنجليزيٌّ ينتهي بمحايدٍ («…Is It?») تُرحَّل علامتُه إلى صدره —
+   العطلُ الذي سدّه `dir="auto"` في قائمة الدروس (b172). و`dir` على `<option>`
+   لا تحكم القائمةَ المنسدلة في كلّ متصفّح، والعازلُ محرفٌ يحمله النصُّ نفسُه. */
+const iso = s => '⁨' + String(s ?? '') + '⁩';
+
+function filterBar(F){
+  const ls = T.lessons || [];
+  if(!ls.length) return '';
+  const gs = grades(), r = rung();
+  const inG = flt.g ? ls.filter(l => gKey(courseOf(l.course_id)) === flt.g) : ls;
+
+  /* التجميعُ بالوحدة — والدروسُ مرتّبةٌ في القاعدة بترتيب شاشة المقرّر (178)،
+     فالمجموعةُ دروسٌ متتالية. ودروسٌ من أكثرَ من مقرّرٍ ⇒ صفُّها في رأسها. */
+  const many = new Set(inG.map(l => l.course_id)).size > 1;
+  const groups = [];
+  for(const l of inG){
+    const key = l.course_id + '|' + (l.unit || '');
+    let g = groups[groups.length - 1];
+    if(!g || g.key !== key){
+      const c = courseOf(l.course_id);
+      const unit = l.unit || 'دروس بلا وحدة';
+      groups.push(g = { key, ls: [], label: many
+        ? joinList([joinList([c?.level || `بلا ${r}`, c?.path].filter(Boolean)), unit]) : unit });
+    }
+    g.ls.push(l);
+  }
+
+  /* 🎓 والدرسُ الذي لا يستهدف هدفاً يُعلَّم في القائمة نفسِها — كـ«⚠︎ بلا علاج»
+     في منتقي هدف السؤال (`editor_quiz.js`): يُرى قبل أن يُختار فيُفتح فارغاً. */
+  const used = new Set((T.headings || []).flatMap(h =>
+    (h.items || []).flatMap(o => (o.lesson_ids || []).map(String))));
+
+  /* كلُّ تسميةٍ وقائمتُها في وعاءٍ واحد (`ob-fp`): على الشاشة الضيّقة ينكسر
+     الوعاءُ كلُّه إلى السطر التالي — وبلاه بقيت «الدرس» آخرَ السطر الأوّل
+     ونزلت قائمتُها وحدَها (قِيس على ٣٧٥px). */
+  return `<div class="ed-bar ob-flt">
+    ${gs.length > 1 ? `<span class="ob-fp">
+      <label class="fl" style="margin:0" for="fg">ال${r}</label>
+      <select id="fg">
+        <option value="">${r === 'صف' ? 'كلّ الصفوف' : 'كلّ المستويات'}</option>
+        ${gs.map(g => `<option value="${escA(g.k)}"${g.k === flt.g ? ' selected' : ''}>${
+          esc(g.name)}</option>`).join('')}
+      </select></span>` : ''}
+    <span class="ob-fp wide">
+      <label class="fl" style="margin:0" for="fl">الدرس</label>
+      <select id="fl">
+        <option value="">كلّ الدروس</option>
+        ${groups.map(g => `<optgroup label="${escA(iso(g.label))}">${g.ls.map(l =>
+          `<option value="${l.id}"${String(l.id) === String(flt.l) ? ' selected' : ''}>${
+            esc(iso(l.title))}${used.has(String(l.id)) ? '' : ' ⚠︎ بلا أهداف'}</option>`).join('')}
+        </optgroup>`).join('')}
+      </select></span>
+    ${F ? `<span class="small">${flt.l ? 'الأعداد أدناه لهذا الدرس وحده'
+                                       : `الأعداد أدناه لهذا ال${r} وحده`}</span>` : ''}
+  </div>`;
+}
+
 function render(){
-  const t = tally();
   const hs = T.headings || [];
   const leaves = (T.strands || []).filter(s => s.leaf);
-
-  /* التجميعُ بالفرع: المراجعةُ تمشي على محاور المادة لا على ترتيب الأكواد */
-  const byStrand = [];
-  for(const h of hs){
-    const k = h.strand_code || '—';
-    let g = byStrand.find(x => x.k === k);
-    if(!g){ byStrand.push(g = { k, name: h.strand_name || 'بلا فرع', hs: [] }); }
-    g.hs.push(h);
-  }
 
   app.innerHTML = `
     <div class="crumb" id="bk">→ دروس المقرَّر</div>
@@ -148,15 +275,55 @@ function render(){
     <div class="ed-hint">🎯 الهدف يقول <b>في ماذا</b> يعمل الطالب، وكود التشخيص يقول
       <b>كيف</b> أخطأ. وبينهما السلسلة: <b>سؤال ← هدفُه ← علاجُه ← الطالب</b>.</div>
 
+    <div id="obl"></div>
+
+    ${formCard(leaves, hs)}`;
+
+  document.getElementById("bk").onclick = () => openCourse(ctx.course);
+  wire(leaves, hs);
+  list();
+}
+
+/* 🆕 b180 · القائمةُ وحدها: شريطُ التصفية والبطاقاتُ والبنود. وتغييرُ
+   التصفية يعيد بناءها هي — **والنموذجُ أسفلَ الصفحة لا يُمَسّ**: فيه ما
+   كتبه المؤلّفُ ولم يحفظه، وإعادةُ بنائه تمحوه بلا شكوى. */
+function list(){
+  /* اختيارٌ سقط من القاعدة بعد الحفظ (درسٌ أُرشف) ⇒ يُرفع ولا يبقى خفيّاً:
+     قائمةٌ تقول «كلّ الدروس» وتصفيةٌ تعمل تحتها كذبٌ صامت. */
+  if(flt.l && !lessonOf(flt.l)) flt.l = '';
+  if(flt.g && !grades().some(g => g.k === flt.g)) flt.g = '';
+
+  const F = scope();
+  const t = tally(F);
+  const hs = T.headings || [];
+  const shown = hs.filter(h => !F || (h.items || []).some(o => inScope(o, F)));
+  const r = rung();
+
+  /* التجميعُ بالفرع: المراجعةُ تمشي على محاور المادة لا على ترتيب الأكواد */
+  const byStrand = [];
+  for(const h of shown){
+    const k = h.strand_code || '—';
+    let g = byStrand.find(x => x.k === k);
+    if(!g){ byStrand.push(g = { k, name: h.strand_name || 'بلا فرع', hs: [] }); }
+    g.hs.push(h);
+  }
+
+  document.getElementById("obl").innerHTML = `
+    ${filterBar(F)}
+
     <div class="ob-tiles">
-      <div class="ob-t"><div class="n">${AR(t.heads)}</div><div class="l">عنواناً عريضاً</div></div>
-      <div class="ob-t"><div class="n">${AR(t.items)}</div><div class="l">بنداً</div></div>
+      <div class="ob-t"><div class="n">${AR(t.heads)}</div>
+        <div class="l">${NW(t.heads,'عنوان عريض','عنوانان عريضان','عناوين عريضة','عنواناً عريضاً')}</div></div>
+      <div class="ob-t"><div class="n">${AR(t.items)}</div>
+        <div class="l">${NW(t.items,'بند','بندان','بنود','بنداً')}</div></div>
       <div class="ob-t${t.noQ ? ' flag' : ''}"><div class="n">${AR(t.noQ)}</div>
         <div class="l">بلا سؤالٍ يقيسه</div></div>
       <div class="ob-t${t.noFix ? ' flag' : ''}"><div class="n">${AR(t.noFix)}</div>
         <div class="l">بلا علاجٍ موصول</div></div>
-      <div class="ob-t${t.noLes ? ' flag' : ''}"><div class="n">${AR(t.noLes)}</div>
-        <div class="l">لا يستهدفه درس</div></div>
+      ${/* وفي النطاق تسقط: بنودُه هي التي تستهدفها دروسُه، فعدُّها صفرٌ دائماً
+            — وبطاقةٌ لا تقول إلا صفراً ضجيج. */''}
+      ${F ? '' : `<div class="ob-t${t.noLes ? ' flag' : ''}"><div class="n">${AR(t.noLes)}</div>
+        <div class="l">لا يستهدفه درس</div></div>`}
     </div>
 
     ${t.noFix ? `<div class="ed-hint" style="opacity:.85">
@@ -168,12 +335,12 @@ function render(){
       ${N(T.orphans.length,'بندٌ','بندان','بنود','بنداً')} بلا عنوانٍ عريض:
       ${T.orphans.map(o => esc(o.code)).join('، ')} — يُحرَّر فيُنسَب إلى عنوان.</div>` : ''}
 
-    ${hs.length ? `<div class="ob-find">
+    ${shown.length ? `<div class="ob-find">
       <input type="search" id="q" placeholder="ابحث في الأكواد والأسماء…">
       <span class="small" id="qn"></span>
     </div>` : ''}
 
-    ${hs.length ? byStrand.map(g => `
+    ${shown.length ? byStrand.map(g => `
       <section class="ob-s">
       ${/* 🆕 b172 · وترويسةُ الفرع كترويسة الوحدة في `editor.js`: الحَكَمُ
             أوّلُ حرفٍ من الاسم، والكودُ بعده شارةٌ لا تَحكم. وثمانيةُ فروعٍ
@@ -181,13 +348,14 @@ function render(){
       <div class="grp" dir="auto">${esc(g.name)} ${g.k !== '—'
         ? `<span class="chip">${esc(g.k)}</span>` : ''}
         <span class="chip">${N(g.hs.length,'عنوان','عنوانان','عناوين','عنواناً')}</span></div>
-      ${g.hs.map(headBlock).join('')}</section>`).join('')
-      : `<div class="ed-empty">لا أهدافَ بعد — تُستورد من فهرس المادة أو تُضاف هنا</div>`}
+      ${g.hs.map(h => headBlock(h, F)).join('')}</section>`).join('')
+      : hs.length
+      ? `<div class="ed-empty">${flt.l ? 'لا أهداف لهذا الدرس بعد'
+                                       : `لا أهداف لدروس هذا ال${r} بعد`}،
+          وتُوزَّع على الدروس من «استيراد فهرس الأهداف».</div>`
+      : `<div class="ed-empty">لا أهدافَ بعد — تُستورد من فهرس المادة أو تُضاف هنا</div>`}`;
 
-    ${formCard(leaves, hs)}`;
-
-  document.getElementById("bk").onclick = () => openCourse(ctx.course);
-  wire(leaves, hs);
+  wireList(hs);
 }
 
 function formCard(leaves, hs){
@@ -265,6 +433,10 @@ function wire(leaves, hs){
   if($("ca")) $("ca").onclick = () => { edit = null; render(); };
   if($("kItem")) $("kItem").onclick = () => { add = 'item'; render(); focusForm(); };
   if($("kHead")) $("kHead").onclick = () => { add = 'head'; render(); focusForm(); };
+}
+
+function wireList(hs){
+  const $ = id => document.getElementById(id);
 
   app.querySelectorAll("[data-eh]").forEach(el => el.onclick = () => {
     const h = hs.find(x => String(x.id) === el.dataset.eh);
@@ -283,28 +455,46 @@ function wire(leaves, hs){
     focusForm();
   });
 
+  /* 🆕 b180 · وتغييرُ الصفّ يُسقط الدرس: من وسّع إلى الصفوف كلّها أو انتقل
+     إلى صفٍّ آخر لا يريد درساً من الأوّل يحكم ما يراه. واختيارُ درسٍ يضبط
+     صفَّه — فالقائمتان تقولان الشيءَ نفسَه، وقائمةُ الدروس تضيق إلى صفّه.
+     والتركيزُ يعود إلى القائمة نفسِها بعد البناء: من يتنقّل بلوحة المفاتيح
+     لا يُرمى إلى أوّل الصفحة. */
+  const relist = id => { list(); document.getElementById(id)?.focus(); };
+  const fg = $("fg"), fl = $("fl");
+  if(fg) fg.onchange = () => { flt.g = fg.value; flt.l = ''; relist("fg"); };
+  if(fl) fl.onchange = () => {
+    flt.l = fl.value;
+    if(flt.l && fg) flt.g = gOf(flt.l);
+    relist("fl");
+  };
+
   /* البحثُ يُخفي ولا يُعيد البناء: الطيُّ المفتوحُ يبقى مفتوحاً، والنموذجُ
      أسفلَ الصفحة لا يُمَسّ. ومطابقةُ العنوان تُظهر بنودَه كلَّها — فالعنوانُ
-     يُراجَع بما تحته لا وحدَه. */
+     يُراجَع بما تحته لا وحدَه. 🆕 b180 · ويعمل داخل التصفية، ونصُّه يبقى. */
   const q = $("q");
-  if(q) q.oninput = () => {
-    const s = q.value.trim().toLowerCase();
-    let shown = 0;
-    app.querySelectorAll(".ob-g").forEach(g => {
-      const hit = !s || (g.dataset.q || '').includes(s);
-      let any = hit;
-      g.querySelectorAll(".ob-i").forEach(i => {
-        const ok = hit || (i.dataset.q || '').includes(s);
-        i.hidden = !ok;
-        if(ok && !hit) any = true;
-        if(ok) shown++;
-      });
-      g.hidden = !any;
+  if(q){ q.value = qs; q.oninput = () => { qs = q.value; findIn(); }; }
+  findIn();
+}
+
+function findIn(){
+  const s = qs.trim().toLowerCase();
+  let shown = 0;
+  app.querySelectorAll(".ob-g").forEach(g => {
+    const hit = !s || (g.dataset.q || '').includes(s);
+    let any = hit;
+    g.querySelectorAll(".ob-i").forEach(i => {
+      const ok = hit || (i.dataset.q || '').includes(s);
+      i.hidden = !ok;
+      if(ok && !hit) any = true;
+      if(ok) shown++;
     });
-    app.querySelectorAll(".ob-s").forEach(sec =>
-      sec.hidden = ![...sec.querySelectorAll(".ob-g")].some(g => !g.hidden));
-    $("qn").textContent = s ? `${AR(shown)} بنداً` : '';
-  };
+    g.hidden = !any;
+  });
+  app.querySelectorAll(".ob-s").forEach(sec =>
+    sec.hidden = ![...sec.querySelectorAll(".ob-g")].some(g => !g.hidden));
+  const qn = document.getElementById("qn");
+  if(qn) qn.textContent = s ? cnt(shown,'بند','بندان','بنود','بنداً') : '';
 }
 
 async function save(){

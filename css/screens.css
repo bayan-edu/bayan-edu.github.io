@@ -1329,6 +1329,21 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
 .ob-find input{flex:1 1 220px}
 .ob-g[hidden],.ob-i[hidden],.ob-s[hidden]{display:none!important}
 
+/* 🆕 b180 · شريطُ التصفية بالصفّ والدرس — `ed-bar` نفسُه الذي يختار المنهجَ
+   والصفَّ في شاشة المقرّرات، فلا شكلَ ثانياً لاختيارٍ واحد. والتسميةُ مع
+   قائمتها وعاءٌ واحد (`ob-fp`) ينكسر معاً، وقائمةُ الدرس تأخذ ما بقي (عناوينُ
+   الدروس طويلة)، وسطرُ النطاق تحتهما سطراً وحدَه.
+   ⚠️ و`min-width:0` على الوعاء لا على القائمة وحدها: القائمةُ لا تنكمش دون
+      أطول خياراتها، والوعاءُ بلاها يرث ذلك العرضَ فيفيض الشريطُ عن الشاشة
+      (قِيس على ٣٧٥px: فيضٌ أفقيّ ١٨٤px بعنوان درسٍ واحد). */
+.ob-fp{display:flex;align-items:center;gap:10px;min-width:0}
+.ob-fp.wide{flex:1 1 300px}
+.ob-fp.wide select{flex:1;min-width:0}
+.ob-flt .small{flex-basis:100%;margin-top:0}
+@media(max-width:900px){
+  .ob-fp{flex:1 1 100%}
+}
+
 /* العنوانُ العريض: صفٌّ كصفّ الفرع — ولا يحمل صنف `ed-row` قصداً،
    فذاك مربوطٌ في شاشة المقرّر بفتح تحرير الدرس. */
 .ob-h{display:flex;gap:10px;align-items:center;flex-wrap:wrap;
