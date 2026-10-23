@@ -1,6 +1,6 @@
 /* ══════════════════════════════════════════════════════════
    بيان — teacher.js
-   لوحة المعلم: التصحيح المقالي · القراءات الجهرية · رسائل الطلاب · اختيار الموادّ
+   لوحة المعلم: التصحيح المقالي · القراءات الجهرية (ومعها التحليلُ الآليّ) · رسائل الطلاب · اختيار الموادّ
 
    ⚠️ عزل بيانات المعلمين مضمون في RLS عبر teaches()،
       لا في هذه الواجهة. لا تعتمد على تصفية الواجهة أماناً.
@@ -9,6 +9,7 @@ import * as api from './api.js';
 import { S } from './state.js';
 import { app, head, toast, esc, fmt, AR, bubble, errBox, nav, BUILD,
          refreshCounts, scrollTop, scrollBottom, N } from './ui.js';
+import { paragraphs, issueRows, noteDraft, mergeNote } from './reading_ai.js';
 
 /* ═══════════ ① التصحيح ═══════════ */
 
@@ -87,7 +88,8 @@ export async function openReading(id){
   }
 
   head("القراءة الجهرية", r.student);
-  const paras = String(r.body || '').split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
+  /* 🔴 b174 · كان التقسيمُ خاماً فظهر سطرُ `[image: …]` حرفيّاً فوق النصّ — `paragraphs` تنزعه */
+  const paras = paragraphs(r.body);
   app.innerHTML = `
     <div class="crumb" id="bk">→ قائمة التصحيح</div>
     <div class="card">
@@ -99,6 +101,7 @@ export async function openReading(id){
       <label class="fl" style="margin-top:16px">النص الذي قرأه</label>
       <div class="essaybox" dir="auto" style="max-height:340px;overflow:auto">${
         paras.map(p => `<p style="margin:0 0 .8em">${esc(p)}</p>`).join('')}</div>
+      <div id="rai"></div>
       <label class="fl" style="margin-top:16px">ملاحظتك للطالب</label>
       <textarea id="fb" maxlength="1000" placeholder="ما أحسنه في القراءة، وما يحتاج تدريباً…">${esc(r.note || '')}</textarea>
       ${r.noted_at ? `<div class="hint">آخر حفظ: ${new Date(r.noted_at).toLocaleString('ar-EG')}</div>` : ''}
@@ -116,6 +119,104 @@ export async function openReading(id){
     loadTeacher();
   };
   scrollTop();
+  mountAnalysis(id);
+}
+
+/* ═══════════ ①ج التحليلُ الآليّ — مسودةٌ لا يراها الطالب (b174 · sql/177) ═══════════
+   Whisper يكتب ما سمعه، والمقارنةُ بنصّ الدرس بشيفرة (`reading-analyze`)، والمعلّمُ هنا
+   يرى النتيجة بجوار الصوت **مسودةً لملاحظته** — يُدرجها فيُقِرّ أو يُعدّل، والطالبُ لا يرى
+   إلّا ما أرسله المعلّم. فتُقاس الدقّةُ على أصوات الطلّاب قبل أن يقرأ أحدُهم حكماً آليّاً.
+   🔑 **يُطلب حين يفتح المعلّمُ القراءة** لا حين يرفعها الطالب: لا يُحلَّل صوتٌ لن يسمعه أحد.
+   🔑 **والمفتاحُ للمادّة** (`subjects.reading_ai`) مطفأٌ حتى تُسمّي الخصوصيةُ Cloudflare وتُحسم
+      موافقةُ وليّ الأمر — ومطفأً لا لوحةَ ولا طلب. وما حُلّل قبلُ يُعرض (المفتاحُ يحكم الطلبَ لا العرض).
+   📐 **واللوحةُ إضافةٌ لا شرط:** خطؤها صمت، والملاحظةُ تُكتب وتُرسَل بدونها كما كانت.
+   ⏱️ والنتيجةُ تُقرأ كلَّ ٣ ثوانٍ حتى ٩٠ ثانية — ويقف الانتظارُ إن غادر المعلّمُ الشاشة. */
+const KIND = { sub: 'إبدال', del: 'حذف', ins: 'زيادة' };
+const POLL_MS = 3000, POLL_MAX = 30;
+
+function mountAnalysis(id){
+  const box = document.getElementById('rai');
+  if(!box) return;
+  let tries = 0, asked = false;
+  const here = () => document.body.contains(box);
+
+  const ask = async () => {
+    asked = true;
+    const { data: q, error } = await api.requestReadingAnalysis(id);
+    if(!here()) return;
+    if(error || !q || (q.status !== 'pending' && q.status !== 'ready')){ box.innerHTML = ''; return; }
+    tries = 0; step();
+  };
+
+  const step = async () => {
+    if(!here()) return;
+    const { data: a, error } = await api.readingAnalysis(id);
+    if(!here()) return;
+    const st = error ? null : a?.status;
+    if(st === 'ready'){ paintAnalysis(box, a); return; }
+    if(st === 'none' && !asked){ ask(); return; }
+    if(st === 'pending' || st === 'none'){
+      if(++tries > POLL_MAX){
+        box.innerHTML = raiNote('لم يكتمل التحليل بعد، ويظهر حين تُفتح القراءة مرة أخرى.');
+        return;
+      }
+      box.innerHTML = raiNote('جار التحليل الآلي…');
+      setTimeout(step, POLL_MS);
+      return;
+    }
+    if(st === 'failed' && a.retry){
+      box.innerHTML = raiNote('تعذّر التحليل الآلي.', '<button class="btn ghost" type="button" id="rai-retry">إعادة المحاولة</button>');
+      box.querySelector('#rai-retry').onclick = e => { e.currentTarget.disabled = true; asked = false; ask(); };
+      return;
+    }
+    box.innerHTML = '';             // off · gone · failed بلا إعادة · لا صلاحية
+  };
+  step();
+}
+
+const raiNote = (msg, extra = '') => `<section class="rai" aria-label="التحليل الآلي">
+    <div class="rai-h"><b>التحليل الآلي</b></div>
+    <div class="rai-hint" style="margin-top:6px">${msg}</div>${extra ? `<div class="rai-foot">${extra}</div>` : ''}
+  </section>`;
+
+/* الأرقامُ هنديّةٌ والفاصلةُ العشريّةُ عربيّة (٩٤٫٢٪) */
+const pct = v => AR(String(v)).replace('.', '٫') + '٪';
+
+function paintAnalysis(box, a){
+  const rows = issueRows(a.issues);
+  const sum = [
+    a.accuracy != null ? 'الدقة ' + pct(a.accuracy) : '',
+    a.wpm != null ? N(a.wpm, 'كلمة', 'كلمتان', 'كلمات', 'كلمة') + ' في الدقيقة' : '',
+    a.long_pauses == null ? '' : a.long_pauses
+      ? N(a.long_pauses, 'وقفة طويلة', 'وقفتان طويلتان', 'وقفات طويلة', 'وقفة طويلة') : 'بلا وقفات طويلة'
+  ].filter(Boolean);
+  const at = r => r.next ? ` قبل <bdi>${esc(r.next)}</bdi>` : '';
+  const li = r => `<li><span class="rai-k">${KIND[r.kind]}</span><span>${
+      r.kind === 'sub' ? `<bdi>${esc(r.heard)}</bdi> بدل <bdi>${esc(r.expected)}</bdi>`
+    : r.kind === 'del' ? `<bdi>${esc(r.expected)}</bdi>${at(r)}`
+    :                    `<bdi>${esc(r.heard)}</bdi>${at(r)}`}</span></li>`;
+
+  box.innerHTML = `<section class="rai" aria-label="التحليل الآلي">
+      <div class="rai-h"><b>التحليل الآلي</b><span class="rai-tag">مسودة لا يراها الطالب</span></div>
+      ${sum.length ? `<div class="rai-sum">${sum.map(x => `<span>${x}</span>`).join('')}</div>` : ''}
+      ${rows.length
+        ? `<ul class="rai-list">${rows.map(li).join('')}</ul>${a.more ? `<div class="rai-hint">ومواضع أخرى عددها ${AR(a.more)}</div>` : ''}`
+        : '<div class="rai-hint">لم تسقط كلمة ولم تتبدل.</div>'}
+      <div class="rai-foot">
+        <button class="btn ghost" type="button" id="rai-use">إدراج في الملاحظة</button>
+        <span class="rai-hint">يلتقط الكلمات لا الأصوات، والحكم الأخير لأذنك.${a.lang === 'ar' ? ' والإعراب لا يقيسه.' : ''}</span>
+      </div>
+    </section>`;
+
+  box.querySelector('#rai-use').onclick = e => {
+    const fb = document.getElementById('fb');
+    if(!fb) return;
+    fb.value = mergeNote(fb.value, noteDraft(a));
+    fb.focus();
+    fb.setSelectionRange?.(fb.value.length, fb.value.length);
+    e.currentTarget.disabled = true;            // نقرةٌ ثانيةٌ تُكرّر المسودةَ في الملاحظة
+    toast('أُدرجت المسودة في الملاحظة');
+  };
 }
 
 export async function openGrade(id){

@@ -855,6 +855,28 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
 .essaybox{background:var(--fill-soft);border:1px solid var(--line);border-radius:11px;
  padding:15px;font-size:var(--fs-read);line-height:1.95;white-space:pre-wrap;margin-bottom:14px}
 
+/* ═══ التحليلُ الآليّ للقراءة الجهرية — مسودةٌ للمعلّم (b174 · sql/177) ═══
+   عائلةُ التشخيص (`--dx`): التحليلُ تشخيصٌ يُراجَع — لا حكمٌ بالصواب (`--ok`) ولا تحذير (`--warn`).
+   والنوعُ (إبدال · حذف · زيادة) كلمةٌ مكتوبة لا لونٌ وحده. */
+.rai{background:var(--dx-soft);border:1px solid var(--dx-line);border-radius:var(--r);
+ padding:14px 15px;margin:16px 0 4px}
+.rai-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-family:'Almarai';font-size:var(--fs-ui)}
+.rai-h b{font-weight:800;color:var(--dx)}
+.rai-tag{font-size:var(--fs-tag);color:var(--text-muted);background:var(--surface);
+ border:1px solid var(--dx-line);border-radius:999px;padding:1px 9px}
+.rai-sum{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.rai-sum span{font-size:var(--fs-meta);background:var(--surface);border:1px solid var(--line);
+ border-radius:8px;padding:3px 9px}
+.rai-list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.rai-list li{display:flex;align-items:baseline;gap:8px;font-size:var(--fs-ui);line-height:1.7}
+.rai-list bdi{font-weight:700}
+.rai-k{flex:none;min-width:3.6em;text-align:center;font-family:'Almarai';font-weight:800;
+ font-size:var(--fs-tag);color:var(--dx);background:var(--dx-fill);border-radius:999px;padding:1px 8px}
+.rai-foot{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px}
+.rai-hint{font-size:var(--fs-meta);color:var(--text-muted);line-height:1.8}
+/* «إدراج في الملاحظة» يُعطَّل بعد نقرته — فـ`.ghost` لا حالَ تعطيلٍ له في base.css */
+.rai .ghost:disabled{opacity:.45;cursor:default}
+
 /* ═══ شاشة انتظار المعلم ولوحة المدير ═══ */
 .pend-hero{text-align:center;padding:34px 22px;border-radius:var(--r);
   background:var(--hero-warn);

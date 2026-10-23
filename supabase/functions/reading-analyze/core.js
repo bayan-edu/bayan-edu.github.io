@@ -70,18 +70,25 @@ export function words(text, lang){
    مسافةُ تحريرٍ على مستوى الكلمة (Levenshtein) ثمّ تتبُّعٌ عكسيّ.
    ⇒ لكلّ كلمةٍ في النصّ: صحيحة · مُبدَلة · محذوفة، وما زاده الطالب: زيادة.
    ⇒ وما قبل النصّ وما بعده (`before_text` · `after_text`) يُحفظ ولا يُعدّ.
+   ⇒ وللحذف والزيادة `next`: الكلمةُ التي تليهما في النصّ — فـ«is» و«a» تتكرّران في كلّ نصّ،
+      والمعلّمُ يحتاج أن يعرف **أين** سقطت أو زيدت (b174).
    🔑 والإعرابُ يُقارَن حيث كُتبت حركةُ الآخر في **الطرفين** — نصٌّ غيرُ مشكول
       لا يُحكم منه على إعراب، وهذا يُقال صراحةً (`ending_checked`). */
+/* 🔑 كلفةُ الإبدال (٣) أكبرُ من كلفة الحذف أو الزيادة (٢) وأقلُّ من مجموعهما (٤):
+      فكلمةٌ واحدةٌ مكانَ أخرى إبدالٌ (learn بدل learning)، أمّا كلمةٌ سقطت وأخرى زيدت
+      بعدها فحذفٌ وزيادة — لا إبدالان متتاليان يُخفيان أنّ الطالب قرأ «three» في موضعها.
+      وكانت الكلفُ متساويةً (١) فاختارت المحاذاةُ الإبدالَين عند التساوي (قِيس ٢٣ أكتوبر). */
+const INDEL = 2, SUB = 3;
 export function align(refText, hypText, lang){
   const R = words(refText, lang), H = words(hypText, lang);
   const n = R.length, m = H.length;
   const D = Array.from({ length: n + 1 }, () => new Uint16Array(m + 1));
-  for(let i = 0; i <= n; i++) D[i][0] = i;
-  for(let j = 0; j <= m; j++) D[0][j] = j;
+  for(let i = 0; i <= n; i++) D[i][0] = i * INDEL;
+  for(let j = 0; j <= m; j++) D[0][j] = j * INDEL;
+  const cost = (i, j) => R[i - 1].b === H[j - 1].b ? 0 : SUB;
   for(let i = 1; i <= n; i++){
     for(let j = 1; j <= m; j++){
-      const same = R[i - 1].b === H[j - 1].b ? 0 : 1;
-      D[i][j] = Math.min(D[i - 1][j] + 1, D[i][j - 1] + 1, D[i - 1][j - 1] + same);
+      D[i][j] = Math.min(D[i - 1][j] + INDEL, D[i][j - 1] + INDEL, D[i - 1][j - 1] + cost(i, j));
     }
   }
   const ops = [];
@@ -89,16 +96,16 @@ export function align(refText, hypText, lang){
   while(i > 0 || j > 0){
     /* 🔑 بعد آخر كلمةٍ في النصّ: الزيادةُ أولى عند التساوي — فما يخترعه Whisper في صمت
        الختام يبقى «بعد النصّ» ولا يبتلع آخرَ كلمةٍ قالها الطالب (قِيس: «goods» ⇐ «Thanks») */
-    if(i === n && j > 0 && D[i][j] === D[i][j - 1] + 1){
-      ops.push({ op: 'ins', hyp: H[j - 1].raw, at: i }); j--; continue;
+    if(i === n && j > 0 && D[i][j] === D[i][j - 1] + INDEL){
+      ops.push({ op: 'ins', hyp: H[j - 1].raw, at: i, next: null }); j--; continue;
     }
-    if(i > 0 && j > 0 && D[i][j] === D[i - 1][j - 1] + (R[i - 1].b === H[j - 1].b ? 0 : 1)){
+    if(i > 0 && j > 0 && D[i][j] === D[i - 1][j - 1] + cost(i, j)){
       ops.push({ op: R[i - 1].b === H[j - 1].b ? 'ok' : 'sub', ref: R[i - 1].raw, hyp: H[j - 1].raw, at: i - 1 });
       i--; j--;
-    } else if(i > 0 && D[i][j] === D[i - 1][j] + 1){
-      ops.push({ op: 'del', ref: R[i - 1].raw, at: i - 1 }); i--;
+    } else if(i > 0 && D[i][j] === D[i - 1][j] + INDEL){
+      ops.push({ op: 'del', ref: R[i - 1].raw, at: i - 1, next: i < n ? R[i].raw : null }); i--;
     } else {
-      ops.push({ op: 'ins', hyp: H[j - 1].raw, at: i }); j--;
+      ops.push({ op: 'ins', hyp: H[j - 1].raw, at: i, next: i < n ? R[i].raw : null }); j--;
     }
   }
   ops.reverse();

@@ -59,4 +59,7 @@ ok('asrInfo: الطرفان يسقطان والمدّةُ من أوّل كلمة
 const f2 = C.asrInfo({ text: 'a b c', segments: [{ start: 0, end: 6 }] });
 ok('asrInfo: بلا توقيتٍ للكلمات ⇒ مدّةُ آخر مقطع والوقفاتُ null', f2.duration_s === 6 && f2.wpm === 30 && f2.long_pauses === null, JSON.stringify(f2));
 ok('asrInfo: ردٌّ فارغ لا ينكسر', C.asrInfo({}).wpm === null && C.asrInfo(null).words === 0);
+ok('next: موضعُ الحذف والزيادة بالكلمة التي تليهما', (r => r.issues.some(o => o.op === 'del' && o.ref === 'two' && o.next === 'three')
+   && r.issues.some(o => o.op === 'ins' && o.hyp === 'big' && o.next === 'four'))(C.align('one two three four', 'one three big four', 'en')));
+ok('next: ذيلُ ما بعد النصّ بلا next', C.align('one two', 'one two Thanks', 'en').after_text.length === 1);
 console.log(`${n-bad}/${n}`); process.exit(bad?1:0);

@@ -304,6 +304,12 @@ export const reviewReading   = (id, note) => db.rpc('review_reading', { p_id: id
    يقرّر من يُعطى الرابط — فطلبُ غير المعلّم يُردّ من المخزن نفسه. */
 export const recordingUrl = path => db.storage.from('recordings').createSignedUrl(path, 3600);
 
+/* 🆕 b174 · التحليلُ الآليّ في شاشة المعلّم (sql/177) — مسودةٌ لملاحظته، لا يراها الطالب.
+   الحارسُ `teaches_subject` كالقراءة نفسِها، والطلبُ لا يمضي إلّا ومفتاحُ المادّة مشتعل
+   (`subjects.reading_ai`) — مرّةً لكلّ قراءة، والنتيجةُ تُقرأ بعده حين تكتمل. */
+export const readingAnalysis        = id => db.rpc('teacher_reading_analysis', { p_recording: id });
+export const requestReadingAnalysis = id => db.rpc('request_reading_analysis', { p_recording: id });
+
 
 /* ═══════════ ⑦ الرسائل ═══════════ */
 /* 🔴 أسماء المفاتيح الأجنبية أدناه هشّة: تغييرها في SQL يكسر الرسائل
