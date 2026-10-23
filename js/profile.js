@@ -79,8 +79,8 @@ export async function loadProfile(){
       و`.av-pen` في `base.css` يخدمان الموضعين، فلا يفترق قلمان. */
 function idHead(p){
   const sub = isTeacher()
-    ? [G(p.gram_gender,'معلّم','معلّمة',''), p.school].filter(Boolean).join(' · ')
-    : [G(p.gram_gender,'طالب','طالبة',''), p.klass].filter(Boolean).join(' · ');
+    ? [G(p.gram_gender,'معلّم','معلّمة',''), p.school].filter(Boolean).join('، ')   // 🆕 b179 · «،» — joinList في ui.js
+    : [G(p.gram_gender,'طالب','طالبة',''), p.klass].filter(Boolean).join('، ');
   return `
     <div class="pf-id">
       <button class="av-edit pf-mark" id="pfAv" aria-label="تغيير صورتي">

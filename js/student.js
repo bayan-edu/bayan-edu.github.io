@@ -210,22 +210,38 @@ function todayStrip(back, face){
 
 /* 🆕 b176 · «متابعة» بطاقةٌ رئيسة لا ثالثةُ ثلاث — والتعليلُ عند `.today-hero` في screens.css.
    🔑 **والعنوانُ أخصُّ ما يُعرف:** الدرسُ التالي إن حُفظ (`lastNext`)، وإلّا المادّة —
-      ونزلت المادّةُ حينها إلى سطر السياق فوقه: «الدرس التالي · العلوم المتكاملة».
+      ونزلت المادّةُ حينها إلى سطر السياق فوقه: «الدرس التالي، العلوم المتكاملة».
       و«الدرس التالي» اسمٌ قائم في المنصّة (quiz.js: «والدرس التالي في متناولك»).
    🔑 والوجهُ وجهُ المادّة في الشبكة، وحالتُها صنفُها (`subjectState`) — فقاعدتُه
       البيضاويّةُ وشريطُه بلونها هناك: **الهويةُ لا تتبدّل بالموضع** (b160).
    ⚠️ و`div` بدور زرّ لا `button`: الوجهُ `div` (face)، ولا يسكن الزرَّ إلا نصٌّ مُصاغ.
       وهو نمطُ `.subj` بعينه — role و tabindex ولوحةُ المفاتيح في loadList.
    📌 والاسمُ في `<bdi>` (b173): `dir="auto"` يتخطّى ما فيها، فـ«English» لا تقلب سطرَ
-      السياق `ltr`. والوجهُ السابقُ يُسمّى كما كان: «صفوف سابقة» — لئلّا تُظنّ مراجعةُ
-      الأوّل رياضياتِ الصفّ الحاضر. */
+      السياق `ltr`.
+   🆕 b178 · **والعنوانُ `<bdi>` في سطرٍ يرث اتجاهَ البطاقة — لا `dir="auto"`.** كان
+      `dir="auto"` يُقيم سطرَ «English» (أو عنوانَ درسٍ إنجليزيّاً) `ltr` فينحاز يساراً إلى
+      الزرّ، وسطرا السياق والعدّاد فوقه وتحته يميناً — كتلةٌ من ثلاثة أسطر بمحاذاتين
+      (لقطةُ المالك من الموقع الحيّ). ⇒ السطرُ يميناً مع أخويه، و`<bdi>` يحفظ للنصّ
+      الإنجليزيّ ترتيبَه وعلامةَ استفهامه في آخره.
+      ⚠️ **وليس نقضاً لقائمة الدروس:** هناك العنوانُ سطرُ بطاقته الوحيد، فيتبع لسانَه
+         (b172 · b175). وهنا وسطَ كتلة، فتحكمها محاذاتُها.
+   🆕 b178 · **والوجهُ السابقُ «مراجعة · صفوف سابقة» و«N دروس»** — كان «صفوف سابقة» و«N
+      للمراجعة». والعددُ بلا معدودٍ فقد سياقَه هنا: في بطاقة المادّة يقع تحت «موادّ صفوف
+      سابقة»، وهنا يجاور «استرجاع · ٤٠ بطاقة استحقّت» فقُرئ «عشرةُ أشياءَ تنتظرك» (سؤالُ
+      المالك). وهي دروسٌ منشورة من صفٍّ مضى، خارج حساب التقدّم (`lessons_review` ·
+      `list_subjects`). ⇒ الفعلُ في سطر السياق («مراجعة» — المصدرُ اسمُ الفعل · معجمُ
+      الفروق: إعادةُ قراءةٍ لا بطاقةٌ استحقّت)، والمعدودُ في العدّاد. وبطاقةُ المادّة تبقى
+      «N للمراجعة»: عرضُها ١٥٠px وسياقُها عنوانُ مجموعتها. وتبقى «صفوف سابقة» لئلّا تُظنّ
+      مراجعةُ الأوّل رياضياتِ الصفّ الحاضر (b173).
+   🆕 b179 · **والفاصلُ «،» لا «·»:** «مراجعة، صفوف سابقة» · «الدرس التالي، العلوم المتكاملة»
+      — قرارُ المالك، والتعليلُ عند `joinList` في ui.js. */
 function resumeCard(back, face){
   const n     = lastNext();
   const name  = `<bdi>${esc(back.name)}</bdi>`;
-  const eye   = n ? `الدرس التالي · ${name}` : (back.past ? 'صفوف سابقة' : '');
+  const eye   = n ? `الدرس التالي، ${name}` : (back.past ? 'مراجعة، صفوف سابقة' : '');
   const done  = back.lessons_done || 0, total = back.lessons_total || 0;
   const prog  = back.past
-      ? `<span>${AR(back.lessons_review || 0)} للمراجعة</span>`
+      ? `<span>${N(back.lessons_review || 0,'درس واحد','درسان','دروس','درساً')}</span>`
       : total ? `<div class="pbar"><div class="pfill" style="width:${Math.round(done / total * 100)}%"></div></div>
                  <span>${AR(done)} / ${AR(total)} ${NW(total,'درس','درسان','دروس','درساً')}</span>` : '';
   return `
@@ -233,7 +249,7 @@ function resumeCard(back, face){
       ${face(back)}
       <div class="th-tx">
         ${eye ? `<div class="th-eye">${eye}</div>` : ''}
-        <div class="th-t" dir="auto">${n ? esc(n.title) : name}</div>
+        <div class="th-t"><bdi>${esc(n ? n.title : back.name)}</bdi></div>
         ${prog ? `<div class="th-prog">${prog}</div>` : ''}
       </div>
       <span class="th-go">متابعة</span>
@@ -381,7 +397,7 @@ export async function loadList(){
     const foot =
         openable && x.needs_placement        ? go('تحديد المستوى')
       : openable && x.lessons_total && !x.lessons_done
-            ? go(`${N(x.lessons_total,'درس واحد','درسان','دروس','درساً')} · ${here ? 'متابعة' : 'البدء'}`)
+            ? go(`${N(x.lessons_total,'درس واحد','درسان','دروس','درساً')}، ${here ? 'متابعة' : 'البدء'}`)
       : `<div class="subj-m">${meta}</div>
          ${(x.needs_placement || empty || isPast) ? '' :
            `<div class="pbar"><div class="pfill" style="width:${pct}%"></div></div>`}`;
@@ -419,7 +435,9 @@ export async function loadList(){
     ${paths.length ? pathAsk(paths) : ''}
     ${grade.length?`<div class="grp">موادّ صفّي</div>
       ${live.map(x => card(x)).join("")}
-      ${done.length?`<div class="fold-lbl">أتممتها · ${AR(done.length)}</div>${done.map(mini).join("")}`:''}`:''}
+      ${/* 🆕 b179 · «أتممتها: ٣» لا «أتممتها · ٣» — النقطةُ قبل رقمٍ هنديّ تُقرأ صفراً («٠ ٣»).
+            والنقطتان لا الفاصلة: عنوانٌ وعددُه علاقةُ «وسمٍ: قيمة»، كـ«مستواك: …» و«بلا إجابة: …». */''}
+      ${done.length?`<div class="fold-lbl">أتممتها: ${AR(done.length)}</div>${done.map(mini).join("")}`:''}`:''}
 
     ${past.length?`<div class="grp fold" id="pastHdr">موادّ صفوف سابقة
         <span class="chip">${AR(past.length)}</span><span class="caret">▾</span></div>
@@ -677,7 +695,7 @@ export async function loadMentors(subj, switching){
         ${state.teacher_id===m.id
           ? `<span class="badge on">${G(m.g,'معلمك الحالي','معلمتك الحالية','اختيارك الحالي')}</span>`
           : ''}</div>
-      <div class="m-m">${esc(m.school||'—')}${m.years?` · ${
+      <div class="m-m">${esc(m.school||'—')}${m.years?`، ${
         N(m.years,'سنة خبرة','سنتا خبرة','سنوات خبرة','سنة خبرة')}`:''}</div>
       ${m.bio?`<div class="m-b">${esc(m.bio)}</div>`:''}
       ${/* 🆕 124 · ومحايدُ السعة **بلا فعل**: الرقمان يقولان ما يقوله
@@ -845,15 +863,15 @@ export async function loadLessons(subj){
       <div class="kico">
         ${(l.items||[]).filter(i=>i.kind!=='quiz').map(i=>`<button type="button"
           class="kic" data-it="${i.id}"
-          data-tip="${escA(i.title)}" aria-label="${escA((KINDS[i.kind]||i.kind)+' · '+i.title)}"
+          data-tip="${escA(i.title)}" aria-label="${escA((KINDS[i.kind]||i.kind)+'، '+i.title)}"
           >${ICONS[i.kind]||'•'}</button>`).join("")}
         ${Number(l.cards||0) ? `<button type="button" class="kic" data-deck="1"
           data-tip="${escA(N(l.cards,'بطاقة','بطاقتان','بطاقات','بطاقة')+' للاسترجاع')}"
-          aria-label="${escA('بطاقات استرجاع · '+N(l.cards,'بطاقة','بطاقتان','بطاقات','بطاقة'))}"
+          aria-label="${escA('بطاقات استرجاع، '+N(l.cards,'بطاقة','بطاقتان','بطاقات','بطاقة'))}"
           >${DECK_IMG}</button>` : ''}
         ${(l.items||[]).filter(i=>i.kind==='quiz').map(i=>`<i class="kico-sep"></i>
           <button type="button" class="kic q" data-it="${i.id}"
-          data-tip="${escA(i.title)}" aria-label="${escA('اختبار تشخيصي · '+i.title)}"
+          data-tip="${escA(i.title)}" aria-label="${escA('اختبار تشخيصي، '+i.title)}"
           >${ICONS[i.kind]||'•'}</button>`).join("")}
       </div>
       ${l.locked?`<div class="lockmsg">${esc(l.reason||'')}</div>`:''}
@@ -867,7 +885,7 @@ export async function loadLessons(subj){
               مفعولٍ عمداً: الوجهةُ لم تُختَر بعد فلا صيغةَ لها. */''}
         ${subj.mentor_name
             ? G(subj.mentor_g, 'معلمك: أ. ', 'معلمتك: أ. ', 'مع أ. ')
-              + esc(subj.mentor_name) + ' · انتقال'
+              + esc(subj.mentor_name) + '، انتقال'
             : 'الانضمام إلى معلم'}
       </button>
     </div>
@@ -1014,13 +1032,13 @@ function canEmbed(i){
       يُحكَم به فعلاً (طبقة الأدوار في base.css).
    ومصادرُ المنصّة لا author لها أصلاً، فتمرّ بلا سطر. */
 const credit = i => !i.author ? ''
-  : ` · أ. ${esc(i.author)}`
+  : `، أ. ${esc(i.author)}`
   /* 🆕 124 · والصيغةُ تُقرأ من المادة الحاضرة لا من المصدر: `list_items`
      لا تحمل صيغةَ المؤلّف، و`S.subj.mentor_g` هي نفسُها — إذ الشارةُ
      لا تُرفع إلا لمن يتابع الطالبَ في هذه المادة بعينها. */
-  + (i.from_my_mentor ? G(S.subj?.mentor_g, ' · معلّمك', ' · معلّمتك', ' · مَن يتابعك') : '')
-  + (i.reviewed       ? ' · اعتمدته بيان' : '')
-  + (i.draft          ? ' · مسودّة'       : '');
+  + (i.from_my_mentor ? G(S.subj?.mentor_g, '، معلّمك', '، معلّمتك', '، مَن يتابعك') : '')
+  + (i.reviewed       ? '، اعتمدته بيان' : '')
+  + (i.draft          ? '، مسودّة'       : '');
 
 /* صفٌّ واحد للرسميّ وللإضافة — ونسختان تتفارقان دائماً. */
 const itmRow = i => `
@@ -1028,10 +1046,13 @@ const itmRow = i => `
         <div class="itm-ic">${ICONS[i.kind]||'•'}</div>
         <div style="flex:1">
           <div class="itm-t" dir="auto">${esc(i.title)}</div>
-          <div class="itm-m">${KINDS[i.kind]||i.kind}
-            ${i.duration?` · ${N(i.duration,'دقيقة','دقيقتان','دقائق','دقيقة')}`:''}
-            ${i.is_graded?' · يُحتسب في النتيجة':''}
-            ${i.required&&!i.is_graded?' · إلزامي':''}${credit(i)}</div>
+          ${/* 🆕 b179 · والفاصلُ «،» (التعليلُ عند `joinList` في ui.js) — والأجزاءُ مصفوفةٌ
+                تُجمع لا أسطرٌ تتجاور: الفاصلةُ تلتصق بما قبلها، ومسافةُ السطر بين قطعتين
+                كانت تقع قبلها («شرح مرئي ، ٨ دقائق»). والنقطةُ كانت تحتملها فلم تُرَ. */''}
+          <div class="itm-m">${[KINDS[i.kind]||i.kind,
+            i.duration ? N(i.duration,'دقيقة','دقيقتان','دقائق','دقيقة') : '',
+            i.is_graded ? 'يُحتسب في النتيجة' : '',
+            i.required && !i.is_graded ? 'إلزامي' : ''].filter(Boolean).join('، ')}${credit(i)}</div>
         </div>
         <div class="itm-s" data-s="${i.id}">${i.status==='completed'?'✔'
           :((canEmbed(i)||isSim(i))?'▶':((i.kind==='quiz'||i.kind==='text')?'←':'↗'))}</div>
@@ -1223,7 +1244,7 @@ async function textBook(i, l, back){
       N(paragraphs, 'فقرة', 'فقرتان', 'فقرات', 'فقرة'),
       N(words, 'كلمة', 'كلمتان', 'كلمات', 'كلمة'),
       'نحو ' + N(minutes, 'دقيقة', 'دقيقتين', 'دقائق', 'دقيقة')
-    ].join(' · '),
+    ].join('، '),                                  // 🆕 b179 · «،» — joinList في ui.js
     endHtml: () => `
       <div class="bk-end-orn" aria-hidden="true"><i></i><i></i><i></i></div>
       <div class="bk-end-t">نهاية النص</div>
@@ -1503,7 +1524,7 @@ export async function loadFeedback(){
     ${list.length?list.map(f=>`
       <div class="rev ${f.read_by_student?'':'new'}">
         <div class="rev-q">${esc(f.quizzes?.title||'')} ${f.read_by_student?'':'<span class="badge lock">جديد</span>'}</div>
-        <div class="line">${new Date(f.submitted_at).toLocaleDateString('ar-EG')} · اختيار ${AR(f.score)}/${AR(f.total)} (${AR(f.pct)}٪)${f.essay_score!=null?` · مقالي: ${AR(f.essay_score)}`:''}</div>
+        <div class="line">${new Date(f.submitted_at).toLocaleDateString('ar-EG')}، اختيار ${AR(f.score)}/${AR(f.total)} (${AR(f.pct)}٪)${f.essay_score!=null?`، مقالي: ${AR(f.essay_score)}`:''}</div>
         <div class="model">${esc(f.teacher_comment).replace(/\n/g,"<br>")}</div>
       </div>`).join(""):'<div class="status">لا توجد ملاحظات بعد</div>'}`;
 
@@ -1609,7 +1630,7 @@ function loadLessonDeck(l){
     <div class="deck-ic">${DECK_IMG}</div>
     <div class="deck-txt">
       <div class="deck-t">بطاقات ${esc(l.title)}</div>
-      <div class="deck-m">${N(n,'بطاقة','بطاقتان','بطاقات','بطاقة')} · تعود إليك بالتباعد</div>
+      <div class="deck-m">${N(n,'بطاقة','بطاقتان','بطاقات','بطاقة')}، تعود إليك بالتباعد</div>
     </div>
     <div class="deck-go">←</div>`;
 

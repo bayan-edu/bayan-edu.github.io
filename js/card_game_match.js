@@ -46,7 +46,9 @@ const L = {
     need:   'تحتاج أربع بطاقات لها أمثلة',
     broke:  'انكسرت الدروع الثلاثة',
     confused: 'التبس عليك',
-    board:  n => `لوحة الأسبوع · ${N(n,'لاعب','لاعبان','لاعبون','لاعباً')}`,
+    board:  n => `لوحة الأسبوع، ${N(n,'لاعب','لاعبان','لاعبون','لاعباً')}`,
+    /* 🆕 b179 · الفاصلُ بلسان اللعبة: «،» هنا — «·» تُقرأ صفراً بجوار أرقامنا (joinList · ui.js) */
+    sep:    '، ',
     first:  'كن أوّل من يسجّل',
     streak: n => `أطول سلسلة ${AR(n)}`,
     again:  'مرّة أخرى',
@@ -73,6 +75,7 @@ const L = {
     broke:  'All three shields broken',
     confused: 'You mixed these up',
     board:  n => `This week · ${n} players`,
+    sep:    ' · ',
     first:  'Be the first on the board',
     streak: n => `Longest streak ${n}`,
     again:  'Play again',
@@ -347,7 +350,7 @@ export function openMatchGame({ subject, cards, title, onExit }){
           <div class="mg-rank">${rank.i}</div>
           <div class="mg-rank-t">${esc(rank.t)}</div>
           <div class="mg-line">${won
-            ? `${t.scratch(G.mistakes)} · ${t.sec(t.num(secs))}`
+            ? `${t.scratch(G.mistakes)}${t.sep}${t.sec(t.num(secs))}`
             : esc(t.broke)}</div>
           ${next ? `<div class="mg-next">${esc(next)}</div>` : ''}
           ${G.best > 2 ? `<div class="mg-next">${esc(t.streak(G.best))}</div>` : ''}
@@ -381,7 +384,7 @@ export function openMatchGame({ subject, cards, title, onExit }){
       <div class="mg-lb${r.me ? ' me' : ''}">
         <span class="mg-rk">${r.rank <= 3 ? ['🥇','🥈','🥉'][r.rank-1] : t.num(r.rank)}</span>
         <span class="mg-nm">${esc(r.name || '—')}</span>
-        <span class="mg-sc">${t.scratch(r.mistakes)} · ${t.sec(t.num(r.seconds))}</span>
+        <span class="mg-sc">${t.scratch(r.mistakes)}${t.sep}${t.sec(t.num(r.seconds))}</span>
       </div>`;
 
     return `

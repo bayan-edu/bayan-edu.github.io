@@ -509,10 +509,12 @@ h2.sec{font-family:'Almarai';font-weight:800;font-size:var(--fs-h);margin:24px 0
 .crumb-row .crumb{margin:0}
 /* 🔑 و`.crumb-at` **ليست فتاتاً يُنقر بل «أين أنا»**: لا مؤشّرَ يدٍ فيها،
    وحبرُها أغمقُ من الفتات — فالموضعُ الحاضر أبينُ من الطريق الراجع.
-   والنقطةُ فاصلُ حقلين لا زينة: يسارَها الطريق ويمينَها الموضع. */
+   🆕 b179 · **والفاصلُ «،» آخرَ الطريق لا «·» أوّلَ الموضع** — قرارُ المالك: النقطةُ الوسطى
+      تُقرأ صفراً هنديّاً (التعليلُ عند `joinList` في ui.js). والفاصلةُ تلتصق بما قبلها،
+      فهي على الفتات لا على الموضع — وكانت النقطةُ تسبق الموضعَ بعشرة بكسلات، والفاصلةُ
+      هناك تتقدّم كلمةً ولا تتبع أخرى. و`:has` شرطُها: فتاتٌ وحده لا يتدلّى منه فاصل. */
 .crumb-at{font-size:var(--fs-meta);color:var(--text);opacity:.78}
-.crumb-row .crumb-at::before{content:'·';margin-inline-end:10px;
-  color:var(--text-muted);opacity:.55}
+.crumb-row .crumb:has(+ .crumb-at)::after{content:'،'}
 
 /* ── الوسوم والرقائق ── */
 .badge{display:inline-block;font-family:'Almarai';font-weight:800;font-size:var(--fs-tag);

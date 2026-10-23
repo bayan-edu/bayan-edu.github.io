@@ -55,7 +55,7 @@ import { app, bar, head, toast, esc, fmt, AR, mmss, media, pgMedia, srcOf,
         /* `N` محجوزةٌ هنا لخريطة أرقام الأسئلة (السطر ٦٦) — فتُستورد
            دالّةُ العدد والمعدود باسمٍ آخر، ولا يُعاد تسميةُ المحلّية:
            هي في أربعة عشر موضعاً وتلك في موضعٍ واحد. */
-        N as عدد, pushView } from './ui.js';
+        N as عدد, pushView, joinList } from './ui.js';
 import { loadList, loadLessons } from './student.js';
 /* `kindLabel` لا `KIND_LABEL`: اسمُ النمط صار يتبع لسانَ الورقة
    (render_q.js · b142)، والخريطةُ الخام لم يبقَ لها قارئٌ هنا. */
@@ -286,11 +286,13 @@ const PT_AR = {
   blanks:  list => `بلا إجابة: ${list} —
     الجواب إن كان لك ترجيح، وتُترك فارغة إن لم يكن.
     التخمين يقع في مشتّت فيُسجَّل لك تشخيص لا يخصّك.`,
-  title:   s => `اختبار تحديد المستوى · ${s}`,
+  title:   s => `اختبار تحديد المستوى، ${s}`,
   level:   l => `مستواك: ${l}`,
   go:      'بدء التعلّم ←',
   splitAria: 'عرض عمود النصّ — يُسحب، أو يُحرَّك بالأسهم',
-  num:     AR
+  num:     AR,
+  /* 🆕 b179 · الفاصلُ بلسان الورقة: «،» هنا — «·» تُقرأ صفراً بجوار «سؤال ٣» (joinList · ui.js) */
+  sep:     '، '
 };
 
 /* 🔑 ولا `tipF` هنا — **ونقصٌ مقصودٌ لا سهو**: الأمرُ الإنجليزيُّ لا
@@ -320,7 +322,8 @@ const PT_EN = {
   level:   l => `Your level: ${l}`,
   go:      'Start learning →',
   splitAria: 'Passage column width — drag, or use the arrow keys',
-  num:     String
+  num:     String,
+  sep:     ' · '          // أرقامُها غربيّة — فلا صفرَ يُلتبس
 };
 
 /* `PL` غائبةٌ في الاختبار العاديّ ⇒ العربية دائماً، فلا يتبدّل فيه شيء. */
@@ -565,7 +568,7 @@ function renderPage(){
 
         return `${sec}
       <div class="card qcard" id="q${q.id}" data-q="${q.id}">
-        <div class="qnum" dir="auto">${T.q(N.get(q.id))} · ${kindLabel(q.kind, EN)}</div>
+        <div class="qnum" dir="auto">${T.q(N.get(q.id))}${T.sep}${kindLabel(q.kind, EN)}</div>
         ${media(q)}
         ${qAudio?`<audio controls preload="metadata" src="${esc(qAudio)}"
                    style="width:100%;margin-bottom:12px"></audio>`:''}
@@ -693,7 +696,7 @@ function renderPage(){
   });
 
   const warnHtml = b => `<div class="q-hint">${
-    T.blanks(b.map(q => T.qShort(N.get(q.id))).join(' · '))}</div>`;
+    T.blanks(b.map(q => T.qShort(N.get(q.id))).join(T.sep))}</div>`;
 
   /* والتنبيهُ لا يتجمّد بعد ظهوره: كلُّ إجابةٍ تُعيد حسابه، فيضيق
      بما بقي فارغاً ويزول هو ونصُّ الزرّ معاً إذا لم يبقَ شيء.
@@ -823,8 +826,8 @@ function renderResult(){
     const o = opt(j.o); if(!o) return '';
     const hit  = (j.key === j.picked);
     const cls  = hit ? (j.key ? 'hit' : 'dim') : 'err';
-    const mark = j.key ? (j.picked ? '✔ صحيحة · اخترتها' : '✗ صحيحة · أغفلتها')
-                       : (j.picked ? '✗ خاطئة · اخترتها' : '✔ خاطئة · تجنّبتها');
+    const mark = j.key ? (j.picked ? '✔ صحيحة، اخترتها' : '✗ صحيحة، أغفلتها')
+                       : (j.picked ? '✗ خاطئة، اخترتها' : '✔ خاطئة، تجنّبتها');
     const txt  = j.note || (j.dx_name ? j.dx_name + (j.remedy?' — '+j.remedy:'') : '');
     const show = !hit && txt && !seen.has(txt);                // 🆕
     if(show) seen.add(txt);                                    // 🆕
@@ -897,9 +900,9 @@ function renderResult(){
           }).join("")}</div>`
       : x.kind==='gap'
       ? `<div class="line" dir="auto">إجابتك: <b dir="auto">${
-             esc((x.given||[]).filter(v=>v.trim()).join('  ·  ')) || '— لم تُجب —'}</b></div>
+             esc(joinList((x.given||[]).filter(v=>v.trim()), '  ·  ')) || '— لم تُجب —'}</b></div>
          ${x.is_correct?'':`<div class="line" dir="auto">المقبول: <b dir="auto">${
-             fmt((x.accept||[]).map(s=>s.join(' / ')).join('  ·  ')) || '—'}</b></div>`}`
+             fmt(joinList((x.accept||[]).map(s=>s.join(' / ')), '  ·  ')) || '—'}</b></div>`}`
       : `<div class="line" dir="auto">إجابتك: <b>${c?fmt(c._l+') '+c.body):'— لم تُجب —'}</b></div>
          ${x.is_correct?'':`<div class="line" dir="auto">الصحيحة: <b>${
              k?fmt(k._l+') '+k.body):'—'}</b></div>`}`;
@@ -961,10 +964,10 @@ function renderResult(){
     ${r.auto?'<div class="err"><b>سُلّم تلقائياً</b>انتهى الوقت قبل إنهائك للاختبار.</div>':''}
     <div class="score-hero">
       <div class="score-num">${AR(r.score)} / ${AR(r.total)}</div>
-      <div class="score-of">الأسئلة المصحَّحة آلياً · زمن الحل ${mmss(r.secs)}</div>
+      <div class="score-of">الأسئلة المصحَّحة آلياً، زمن الحل ${mmss(r.secs)}</div>
       <div class="verdict">${verdict(r.pct)}</div>
       ${r.lesson_done?'<div class="unlocked">أتممت هذا الدرس</div>':''}
-      ${(r.unlocked||[]).length?`<div class="unlocked">فُتح لك الآن: ${esc(r.unlocked.join(' · '))}</div>`:''}
+      ${(r.unlocked||[]).length?`<div class="unlocked">فُتح لك الآن: ${esc(r.unlocked.join('، '))}</div>`:''}
     </div>
     <div class="nav"><button class="btn primary" id="again">إعادة الاختبار</button></div>
     <h2 class="sec">المراجعة التشخيصية</h2>${objective}${recur}

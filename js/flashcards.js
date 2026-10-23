@@ -117,7 +117,7 @@ function openSubjectCards(subject){
     const b = document.getElementById('play');
     if(!b) return;
     b.hidden = false;
-    b.textContent = `كلمة × معنى · ${AR(pool.length)}`;
+    b.textContent = `كلمة × معنى، ${AR(pool.length)}`;    // 🆕 b179 · «،» — joinList في ui.js
     b.onclick = () => openMatchGame({
       subject, cards: pool,
       onExit: () => openSubjectCards(subject) });
@@ -147,7 +147,7 @@ export function openSession(subject, opts = {}){
     .filter(f => typeof api[f] !== 'function');
   if(missing.length){
     app.innerHTML = `<div class="err"><b>ناقص في api.js</b>
-      لم تُضَف: ${missing.join(' · ')}</div>`;
+      لم تُضَف: ${missing.join('، ')}</div>`;
     return;
   }
 
@@ -446,7 +446,7 @@ export function openSession(subject, opts = {}){
             <button class="btn primary" id="back" style="width:100%">عودة</button>
             ${playable.length >= 4 ? `
               <button class="btn" id="play" style="width:100%;margin-top:8px"
-                >كلمة × معنى · ${N(playable.length,'بطاقة','بطاقتان','بطاقات','بطاقة')}</button>` : ''}
+                >كلمة × معنى، ${N(playable.length,'بطاقة','بطاقتان','بطاقات','بطاقة')}</button>` : ''}
           </div>
         </div>`;
 
@@ -591,7 +591,7 @@ function openBrowseDeck(subject, deck){
 
       const { data, error } = await api.subscribeCards(ids);
       if(error) return toast(error.message, false);
-      toast(`أُضيفت ${AR(data.added)}` + (data.already ? ` · وكانت ${AR(data.already)} عندك` : ''));
+      toast(`أُضيفت ${AR(data.added)}` + (data.already ? `، وكانت ${AR(data.already)} عندك` : ''));
       openSubjectCards(subject);
     };
     scrollTop();

@@ -102,7 +102,7 @@ export function renderGate(msg){
         <label class="fl" style="margin-top:14px">صفّك</label>
         <select id="gr" disabled><option value="">— يُختار المنهج أولاً —</option></select>
       </div>
-      <p class="small" id="grnote">يحدّدان المواد التي تظهر لك · يمكنك تغييرهما لاحقاً</p>
+      <p class="small" id="grnote">يحدّدان المواد التي تظهر لك، ويمكنك تغييرهما لاحقاً</p>
       <label class="fl" style="margin-top:16px">مدرستك <span style="opacity:.6">(اختياري)</span></label>
       <input type="text" id="kl" value="${esc(draft.kl||'')}" placeholder="مثال: مدرسة النيل الثانوية">`:''}
     </div>
@@ -288,7 +288,8 @@ async function fillGrades(){
       return;
     }
     wrap.style.display = '';
-    note.textContent = 'يحدّدان المواد التي تظهر لك · يمكنك تغييرهما لاحقاً';
+    /* 🆕 b179 · «،» وواوٌ تصل الجملتين — لا «·» تُقرأ صفراً (joinList · ui.js). ونصُّها في الوسم أعلاه نفسُه */
+    note.textContent = 'يحدّدان المواد التي تظهر لك، ويمكنك تغييرهما لاحقاً';
     if(!sc) return;
     lv.sort((a,b)=>a.rank-b.rank).forEach(l=>{
       const o = document.createElement('option');

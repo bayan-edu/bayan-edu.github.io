@@ -13,7 +13,7 @@ import { renderMark, whenReady as avatarReady } from './avatar.js';
    والدمجُ مرّ بلا تعارضٍ **لأنّ الجانبين كتبا السطرَ نفسَه حرفاً** — وهو
    أخبثُ ما في التصادم: لا يشتكي. ⇒ هذه ترفعه، **فالختمُ يجيب «أيُّ شيفرةٍ
    يشغّلها المتصفّح»، وجوابان لسؤالٍ واحدٍ لا جواب.** */
-export const BUILD = "b177";
+export const BUILD = "b179";
 
 /* ── مراسي الصفحة ── */
 export const app = document.getElementById("app");
@@ -70,6 +70,15 @@ export function dirOf(t){
   const m = String(t || '').replace(TEX_RX, ' ').match(STRONG);
   return m ? (AR_RX.test(m[0]) ? 'rtl' : 'ltr') : 'rtl';
 }
+
+/* 🆕 b179 · فاصلُ القوائم: «،» في العربيّ لا «·» — قرارُ المالك (٢٣ أكتوبر). النقطةُ
+   الوسطى تُقرأ صفراً هنديّاً (٠) بجوار أرقامنا، والشرطةُ «-» طرحاً قبل الرقم ومدىً بينه.
+   والقائمةُ التي أوّلُ محرفٍ قويّ فيها لاتينيّ (إجاباتُ ورقةٍ إنجليزيّة · عنوانٌ إنجليزيّ)
+   تبقى «·»: أرقامُها غربيّة، والفاصلةُ العربيّة بين كلماتٍ إنجليزيّة غريبةٌ عليها.
+   🔑 والحكمُ `dirOf` نفسُه — فالقائمةُ الرقميّةُ المحضة بلا محرفٍ قويّ ⇒ rtl ⇒ «،»،
+      وهي أحوجُ القوائم إليها. و`en` فاصلُها اللاتينيّ كما كتبه موضعُه (بعضُها بمسافتين). */
+export const joinList = (parts, en = ' · ') =>
+  parts.join(dirOf(parts.join(' ')) === 'ltr' ? en : '، ');
 
 /* ظهرُ البطاقة الإنجليزيّة سطران: الترجمةُ العربيّةُ ثمّ المعنى
    الإنجليزيّ. والعقدُ في القاعدة حقلٌ واحد `الترجمة · التعريف` —
@@ -353,7 +362,8 @@ export function head(t, s, hero, tag){
      🔑 **ويرث تحفُّظَ الترويسة لأنّه يُبنى من نصّها نفسه:** ما أخفته
         (اسمُ المحطّة في التسكين · b142) لا يظهر في التبويب ولا في السجلّ.
      ⚠️ وشاشةٌ بلا عنوان (البوّابة · هيكلٌ ينتظر) تعود إلى SITE_TITLE. */
-  document.title = t ? [t, list[0]].filter(Boolean).join(" · ") + " — بيان"
+  /* 🆕 b179 · والفاصلُ «،» (والتعليلُ عند `joinList`) — ودرسٌ إنجليزيّ في مادّته يبقى «·» */
+  document.title = t ? joinList([t, list[0]].filter(Boolean)) + " — بيان"
                      : SITE_TITLE;
 }
 
@@ -1040,7 +1050,7 @@ function paintCounts(){
     bdg.textContent = AR(n);
     bdg.hidden = !n;
     document.getElementById('bellBtn')
-      ?.setAttribute('aria-label', n ? `الإشعارات · ${AR(n)} جديدة` : 'الإشعارات · لا جديد');
+      ?.setAttribute('aria-label', n ? `الإشعارات، ${AR(n)} جديدة` : 'الإشعارات، لا جديد');
   }
   document.querySelectorAll('#drawer [data-n]').forEach(el => {
     const n = c[el.dataset.n] || 0;
@@ -1336,7 +1346,7 @@ function renderAcct(p){
      تعريفُه، **فلا يُخاطَب بصيغةٍ لم يخترها**. والسطرُ يُخفى إن خلا
      الاثنان معاً، وإلا حجز حشوَه فارغاً. */
   const sub = [roleWord(roleOf(), prof.gram_gender),
-               prof.klass || prof.school].filter(Boolean).join(' · ');
+               prof.klass || prof.school].filter(Boolean).join('، ');   // 🆕 b179 · «،» — joinList
   p.innerHTML = `
     <div class="who acct-head">
       ${/* 🔓 b107 · «تغيير صورتي» لم يعد بنداً — صار **قلماً على الصورة
@@ -1536,7 +1546,7 @@ function paintSearch(hits, q, error){
           <span class="sr-b">
             <span class="sr-t" dir="auto">${esc(h.title || '')}</span>
             ${(h.subject || h.snippet) ? `<span class="sr-s" dir="auto">${
-              esc([h.subject, h.snippet].filter(Boolean).join(' · '))}</span>` : ''}
+              esc(joinList([h.subject, h.snippet].filter(Boolean)))}</span>` : ''}
             ${h.dx ? `<span class="sr-dx" dir="auto">${esc(h.dx)}</span>` : ''}
           </span>
         </button>`).join('');

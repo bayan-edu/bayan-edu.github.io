@@ -20,7 +20,7 @@
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
 import { app, bar, head, toast, esc, fmt, AR, media, pgMedia, srcOf,
-         scrollTop, backText, N } from './ui.js';
+         scrollTop, backText, N, joinList } from './ui.js';
 import { questionText, questionBody, KIND_LABEL } from './render_q.js';
 import { wireMatching } from './match_dnd.js';
 
@@ -77,7 +77,9 @@ function intro(){
       </div>
       <div class="line" style="margin-top:10px">
         ولا حدّ للمحاولات: يُعاد السؤال حتى يُفهَم.
-        ${P.expires ? `· والرابط صالح حتى ${esc(new Date(P.expires)
+        ${/* 🆕 b179 · بلا فاصل: الجملةُ قبلها تنتهي بنقطة، و«·» بعدها كانت فاصلاً ثانياً
+              يُقرأ صفراً (joinList · ui.js). فالتاليةُ جملةٌ تبدأ بواوها. */''}
+        ${P.expires ? `والرابط صالح حتى ${esc(new Date(P.expires)
             .toLocaleDateString('ar-EG', { year:'numeric', month:'long', day:'numeric' }))}` : ''}
       </div>
       <label class="fl" style="margin-top:16px">اسمك <span style="opacity:.6">(اختياري)</span></label>
@@ -288,7 +290,7 @@ function showCorrect(r){
 
   // gap: مصفوفةُ خاناتٍ، ولكلّ خانةٍ بدائلُها
   if(Array.isArray(c))
-    return c.map(v => Array.isArray(v) ? v.join(' / ') : String(v)).join('  ·  ');
+    return joinList(c.map(v => Array.isArray(v) ? v.join(' / ') : String(v)), '  ·  ');
 
   // matching · cloze: { مفتاحُ البند → نصُّ الصواب }
   if(typeof c === 'object'){
@@ -296,13 +298,14 @@ function showCorrect(r){
     const at   = k => opts.findIndex(o => String(o.k) === String(k));
     const name = k => { const i = at(k);
       return i >= 0 ? String(opts[i].body) : (isFinite(+k) ? AR(+k) : String(k)); };
-    return Object.keys(c)
+    const pairs = Object.keys(c)
       .sort((x, y) => {
         const ax = at(x), ay = at(y);
         if(ax >= 0 || ay >= 0) return (ax < 0 ? 1e9 : ax) - (ay < 0 ? 1e9 : ay);
         return (+x || 0) - (+y || 0);
       })
-      .map(k => `${name(k)} ← ${c[k]}`).join('  ·  ');
+      .map(k => `${name(k)} ← ${c[k]}`);
+    return joinList(pairs, '  ·  ');          // 🆕 b179 · «،» أو «·» بلسان القائمة — التعليلُ في ui.js
   }
 
   // mcq: معرّفُ خيار
