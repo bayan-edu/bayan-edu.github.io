@@ -7,6 +7,15 @@
       الصيغتين **بياناتٌ في جدول** (`K`): نداءٌ وعنوانٌ ونموذجٌ وقارئُ
       خطّة. أمّا التدفّق — اللصقُ والجافّةُ والفرقُ والاعتماد — فواحد.
 
+   🆕 b177 · **وبوّابةٌ رابعة: فهرسُ الأهداف** (المرحلة ② · `import_objectives`
+      · 138 · 142). كان يُعتمد بملفّ SQL يُلصق في محرّر القاعدة — والخريطةُ
+      قبله لها شاشة. فصار سطراً في الجدول كما أوصى هذا الرأس.
+      🔑 **ومعه صارت الأذونُ بياناتٍ لا شيفرة** (`perms`): كان للخريطة إذنٌ
+      واحدٌ مكتوبٌ في التدفّق (`retitle`)، وللفهرس إذنان — **ويأتيان من
+      القاعدة أخطاءً تردّ الدفعة لا تحذيراتٍ تسمح بها.** فالإذنُ يقول من أين
+      يُقرأ (`from`) وبأيّ عبارة (`match`)، والتدفّقُ يرسمه ويُعيد الجافّة.
+      وسلوكُ الخريطة لم يتغيّر حرفاً: إذنُها من التحذيرات وبعبارتها نفسِها.
+
    🔴 **ولو نُسخ الملفّ لصارا اثنين يفترقان.** وتلك سابقةُ هذا الملفّ
       نفسِه: صندوقُ الاستيراد القديم حمل نسخةً من الحراسة فسقط منها
       ثلاثةُ حقولٍ صامتةً. **ونسختان من مسطرةٍ واحدة تفترقان** — في
@@ -81,6 +90,23 @@ const SAMPLE_MAP = JSON.stringify({
     summary: "ما يقدر عليه الطالب بعد الدرس — جملةٌ واحدة.",
     note: "ما يحتاجه المؤلّف بعدك — ولا يراه الطالب."
   }]
+}, null, 2);
+
+/* 🎯 b177 · قالبُ الفهرس — والدرسُ بمفتاحه، والبندُ بعنوانه، ولكلّ بندٍ
+   دليلُ قياسه وعلاجُه (والقاعدةُ تردّ البندَ بلا أحدهما). */
+const SAMPLE_INDEX = JSON.stringify({
+  subject: "English",
+  level: "الصف الثاني الثانوي",
+  source: "الكتاب أو الوثيقة التي بُني عليها الفهرس",
+  headings: [{ code: "READ.STRAT", name: "Reading comprehension strategies", strand: "READ" }],
+  objectives: [{
+    code: "R.TFNG",
+    parent: "READ.STRAT",
+    name: "Decides whether a statement is true, false or not given in a text and justifies the decision",
+    evidence: "سؤالٌ يقيسه — ماذا يعرض وماذا يطلب.",
+    remedy: "علاجٌ محدَّد إن أخطأ فيه الطالب — لا «راجع الدرس»."
+  }],
+  lessons: [{ key: "U1.LIFESTYLES", objectives: ["R.MAIN", "R.TFNG"] }]
 }, null, 2);
 
 /* ── عرضُ الخطّة كما تردُّها الدالّة — بلا إعادة حساب ──
@@ -187,7 +213,97 @@ function planMap(pl){
       </div>` : grp('خارج الخريطة', [])}`;
 }
 
-/* ═══════════ جدولُ الصيغتين — وهو كلُّ الفرق بينهما ═══════════
+/* 🎯 b177 · خطّةُ الفهرس — ستُّ مجموعاتٍ تردُّها `import_objectives` بمفاتيحَ عربية.
+   🔑 **والأسماءُ المتغيّرة تُعرض قبل الجديد وبلون تنبيه:** الهدفُ يسكن المادةَ
+   لا المقرَّر، فاسمٌ يتغيّر هنا يتغيّر في كلّ صفوفها — وذاك أثقلُ ما في الدفعة.
+   🔴 **والمقارنةُ حرفيّة لا مُطبَّعة:** القاعدةُ تُطبّع لتقرّر الرفض، لكنّها عند
+   الاعتماد تكتب الاسمَ الوارد كما هو. فكلُّ فرقٍ — ولو همزةً — سيُكتب، فيُرى.
+   والذي أُعيد إرساله بلا فرقٍ يُعدّ ولا يُسرد: إعادةُ الملفّ نفسِه تُرسل
+   كلَّ البنود القائمة، وسردُها يدفن الجديد تحتها. */
+function planIndex(pl){
+  const dist = pl?.['توزيعٌ سيُكتب'];
+  if(!dist) return '';                 // دفعةٌ مرفوضة ⇒ لا خطّة
+  const hn = pl['عناوينُ ستُنشأ'] || [], hu = pl['عناوينُ ستُحدَّث'] || [];
+  const on = pl['بنودٌ ستُنشأ']   || [], ou = pl['بنودٌ ستُحدَّث']   || [];
+  const out = pl['خارج الفهرس'] || [];
+  const was = r => r['الاسم السابق'];
+  const ren = [...hu, ...ou].filter(r => was(r) != null && String(was(r)).trim() !== String(r.name || '').trim());
+  const same = hu.length + ou.length - ren.length;
+  const links = dist.reduce((s, r) => s + (+r['عددها'] || 0), 0);
+  const repl = dist.filter(r => +r['قائمةٌ قبله'] > 0);
+
+  const chip = (t, v, warn) => `<span class="chip${v ? (warn ? ' warn' : ' g') : ''}">${
+    esc(t)} <b>${AR(v)}</b></span>`;
+  const row = inner => `<div class="line" style="display:flex;gap:10px;align-items:baseline;
+         flex-wrap:wrap;padding:4px 0">${inner}</div>`;
+  const code = c => `<code dir="ltr" style="font-size:.76rem">${esc(c || '')}</code>`;
+  const grp = (t, n) => `<div class="grp" style="margin-top:12px">${t}
+      <span class="chip${n ? ' g' : ''}">${AR(n)}</span></div>`;
+  const none = '<div class="line" style="padding:4px 0">—</div>';
+
+  /* البنودُ الجديدة تحت عناوينها — فيُقرأ البندُ في سياق محوره */
+  const names = {};
+  [...hn, ...hu].forEach(h => { names[h.code] = h.name; });
+  const byParent = [];
+  on.forEach(o => {
+    const k = o.parent || '';
+    let g = byParent.find(x => x.k === k);
+    if(!g){ g = { k, list: [] }; byParent.push(g); }
+    g.list.push(o);
+  });
+
+  return `
+    <div class="ed-m" style="margin:0 0 4px">
+      ${chip('عناوين جديدة', hn.length)}${chip('بنود جديدة', on.length)}
+      ${chip('دروس', dist.length)}${chip('روابط', links)}
+      ${ren.length ? chip('أسماء تتغيّر', ren.length, true) : ''}
+      ${repl.length ? chip('قوائم تُستبدل', repl.length, true) : ''}
+      ${chip('خارج الفهرس', out.length, true)}
+    </div>
+
+    ${ren.length ? `<div class="warnbox" style="margin-top:12px">
+        <div class="grp" style="margin:0">أسماءٌ ستتغيّر
+          <span class="chip warn">${AR(ren.length)}</span></div>
+        ${ren.map(r => row(`${code(r.code)}<span>${esc(r.name || '')}</span>
+          <span>كان: ${esc(String(was(r)))}</span>`)).join('')}
+        <div style="margin-top:7px">الهدفُ يسكن المادة لا المقرَّر —
+          فالاسمُ الجديد يظهر في كلّ صفوفها.</div>
+      </div>` : ''}
+
+    ${grp('عناوين ستُنشأ', hn.length)}
+    ${hn.map(h => row(`${code(h.code)}<span>${esc(h.name || '')}</span>
+      ${h.strand ? `<span class="chip">${esc(h.strand)}</span>` : ''}`)).join('') || none}
+
+    ${grp('بنود ستُنشأ', on.length)}
+    ${byParent.map(g => `
+      <div class="line" style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;
+           margin:14px 0 2px;font-weight:700;color:var(--text)">${
+        g.k ? `${code(g.k)}<span dir="auto">${esc(names[g.k] || '')}</span>` : 'بلا عنوان'}</div>
+      ${g.list.map(o => row(`${code(o.code)}<span dir="auto">${esc(o.name || '')}</span>`)).join('')}`
+    ).join('') || none}
+
+    ${same ? `<div class="line" style="margin-top:10px">وأُعيد إرسالُ ${N(same,
+      'كودٍ قائم', 'كودين قائمين', 'أكواد قائمة', 'كوداً قائماً')} بلا تغيير — فلا يُمسّ.</div>` : ''}
+
+    ${grp('توزيع البنود على الدروس', dist.length)}
+    ${dist.map(r => row(`${code(r.key)}<span>${esc(r.title || '')}</span>
+      <span class="chip g">${AR(+r['عددها'] || 0)}</span>
+      ${+r['قائمةٌ قبله'] > 0 ? `<span class="chip warn">تُستبدل قائمةٌ من ${AR(r['قائمةٌ قبله'])}</span>` : ''}
+      <span dir="ltr" style="font-size:.74rem">${esc((r['أهداف'] || []).join(' · '))}</span>`
+    )).join('') || none}
+
+    ${out.length ? `<div class="warnbox" style="margin-top:12px">
+        <div class="grp" style="margin:0">خارج الفهرس
+          <span class="chip">${AR(out.length)}</span></div>
+        ${out.map(r => row(`<span>${esc(r.title || '')}</span>
+          <span>#${AR(r.id)}</span>
+          <span class="chip">${+r['أهدافُه الآن'] ? N(+r['أهدافُه الآن'],
+            'هدفٌ واحد', 'هدفان', 'أهداف', 'هدفاً') : 'بلا أهداف'}</span>`)).join('')}
+        <div style="margin-top:7px">هذه الدروسُ لن تُمَسّ — أهدافُها تبقى كما هي.</div>
+      </div>` : grp('خارج الفهرس', 0)}`;
+}
+
+/* ═══════════ جدولُ البوّابات — وهو كلُّ الفرق بينها ═══════════
    🔑 ما اختلف بُيّن هنا، وما اتّفق بقي أسفلُ مرّةً واحدة. وزيادةُ
    بوّابةٍ ثالثةٍ يوماً سطرٌ في هذا الجدول، لا ملفٌّ ثالث. */
 const K = {
@@ -223,7 +339,9 @@ const K = {
     plan: planMap,
     /* 🔑 الخريطةُ تردُّ مجموعاتِها في جسم الرادّ لا تحت «الخطّة» */
     pickPlan: d => d,
-    retitle: true,
+    /* إذنُها تحذيرٌ يسمح لا خطأٌ يردّ — فيُرسم بعد جافّةٍ مرّت وحدها */
+    perms: [{ id: 'retitle', from: 'warn', match: 'العنوان',
+              label: 'اسمح بتغيير عناوين الدروس القائمة' }],
     count: pl => N((pl?.['سيُنشأ'] || []).length + (pl?.['سيُحدَّث'] || []).length,
                    'درس', 'درسين', 'دروس', 'درساً'),
     done: d => `حُفظت الخريطة — ${N((d['سيُنشأ'] || []).length,
@@ -231,6 +349,43 @@ const K = {
                ((d['سيُحدَّث'] || []).length
                  ? ` · و${AR(d['سيُحدَّث'].length)} حُدّث` : ''),
     okline: 'حُفظت الخريطة. أعِد الإرسالَ بعد أيّ تصحيح — المفتاحُ يمنع التكرار.'
+  },
+  /* 🎯 b177 · المرحلة ② — بعد الخريطة لا قبلها: التوزيعُ يُسمّي الدروسَ بمفاتيحها */
+  objectives: {
+    head: ['استيراد فهرس الأهداف', 'ملفّ واحد لمقرّر واحد'],
+    card: '⇪ استيراد فهرس أهداف المقرّر',
+    intro: `يُلصق ملفّ الفهرس كما سلّمه معلّم المادة: <b>عناوينُ</b> عريضة،
+      وتحتها <b>بنودٌ</b> لكلٍّ منها دليلُ قياسه وعلاجُه، ثمّ <b>توزيعُها</b>
+      على الدروس بمفاتيحها (<code dir="ltr">key</code>) — فتُستورد الخريطةُ قبله.<br>
+      <b>والهدفُ يسكن المادة لا المقرَّر:</b> كودٌ قائمٌ يُعاد استعمالُه باسمه
+      ولا يُكرَّر، فإعادةُ الملفّ تصحيحٌ لا تكرار.<br>
+      <b>ولا يحذف شيئاً:</b> درسٌ ليس في الملفّ يبقى بأهدافه.
+      وتغييرُ اسم هدفٍ قائم، أو استبدالُ أهداف درسٍ له أهداف،
+      <b>تُردّ بهما الدفعة</b> حتى تأذن صراحةً.`,
+    ph: '{ "headings": [ … ], "objectives": [ { "code": "R.X", "parent": "READ", "name": "…", "evidence": "…", "remedy": "…" } ], "lessons": [ { "key": "U1.X", "objectives": [ … ] } ] }',
+    sample: SAMPLE_INDEX,
+    call: (course, payload, dry, o) =>
+      api.importObjectives(course.id, payload, dry, !!o.rename, !!o.replace),
+    plan: planIndex,
+    pickPlan: d => d,
+    /* 🔴 إذناه يأتيان أخطاءً لا تحذيرات — فيُرسمان تحت الرفض. و«لاصقان»:
+       بعد الإذن يصير الخطأُ تحذيراً بعبارةٍ أخرى، فيبقى المربّعُ ظاهراً
+       ليُطفأ كما أُشعل. */
+    perms: [
+      { id: 'rename', from: 'err', match: 'p_allow_rename', sticky: true,
+        label: 'اسمح بتغيير أسماء الأهداف القائمة — في كلّ صفوف المادة' },
+      { id: 'replace', from: 'err', match: 'p_allow_replace', sticky: true,
+        label: 'اسمح باستبدال أهداف الدروس التي لها أهدافٌ قائمة' }
+    ],
+    count: pl => {
+      const n = (pl?.['بنودٌ ستُنشأ'] || []).length;
+      return (n ? N(n, 'بند جديد', 'بندين جديدين', 'بنود جديدة', 'بنداً جديداً') + ' · و' : '') +
+             'توزيع ' + N((pl?.['توزيعٌ سيُكتب'] || []).length, 'درسٍ واحد', 'درسين', 'دروس', 'درساً');
+    },
+    done: d => `حُفظ الفهرس — ${N((d['بنودٌ ستُنشأ'] || []).length,
+                 'بندٌ جديد', 'بندان جديدان', 'بنود جديدة', 'بنداً جديداً')} · ` +
+               `وتوزيعُ ${N((d['توزيعٌ سيُكتب'] || []).length, 'درس', 'درسين', 'دروس', 'درساً')}`,
+    okline: 'حُفظ الفهرس. أعِد الإرسالَ بعد أيّ تصحيح — الكودُ يمنع التكرار.'
   },
   cards: {
     head: ['استيراد بطاقات', 'دفعة واحدة إلى مجموعة المادة'],
@@ -256,6 +411,7 @@ const K = {
 export const openQuizImport  = course => openImport(course, 'quiz');
 export const openMapImport   = course => openImport(course, 'map');
 export const openCardsImport = course => openImport(course, 'cards');
+export const openIndexImport = course => openImport(course, 'objectives');
 
 async function openImport(course, kind){
   const C = K[kind];
@@ -264,7 +420,28 @@ async function openImport(course, kind){
 
   let parsed = null;                 // الحمولةُ بعد التحليل المحليّ
   let plan   = null;                 // خطّةُ الجافّة كما ردّتها القاعدة
-  let retitle = false;               // إذنُ تغيير عناوين الدروس القائمة
+  let perm   = {};                   // الأذونُ المشتعلة — بأسمائها في `C.perms`
+
+  /* 🔑 المربّعُ يُرسم حين تطلبه القاعدة (عبارتُه في المصدر الذي يُقرأ منه)
+     أو حين يكون مشتعلاً وهو لاصق — ولا يُرسم لبوّابةٍ لا أذونَ لها.
+     🔴 و`width:auto` على المربّع: `input{width:100%}` العامّةُ في base.css
+     كانت تمطّه في سطر الخريطة منذ وُلد، فيقف وسطَ البطاقة ونصُّه منكسرٌ
+     في طرفها — كشفته لقطةُ b177 لا قارئ. */
+  const permBox = (src, list) => (C.perms || [])
+    .filter(p => (p.from === src && list.some(x => String(x).includes(p.match)))
+              || (p.sticky && perm[p.id]))
+    .map(p => `
+      <label class="line" style="display:flex;gap:8px;align-items:center;
+             margin-top:12px;cursor:pointer">
+        <input type="checkbox" data-perm="${p.id}" style="width:auto;flex:none;margin:0"${
+          perm[p.id] ? ' checked' : ''}>
+        <span>${esc(p.label)}</span>
+      </label>`).join('');
+  /* 🔑 والإذنُ يُعيد الجافّةَ لا يُمرَّر وحده: الخطّةُ المعروضةُ حُسبت
+     بالأذون كما كانت، فلو اعتُمدت بغيرها لخالف الأثرُ ما قُرئ. */
+  const bindPerms = () => document.querySelectorAll('#out [data-perm]').forEach(cb => {
+    cb.onchange = () => { perm = { ...perm, [cb.dataset.perm]: cb.checked }; run('', true); };
+  });
 
   const draw = () => {
     app.innerHTML = `
@@ -342,7 +519,7 @@ async function openImport(course, kind){
       dry ? 'جار الفحص…' : 'جار الاعتماد…'}</div>`;
 
     /* نصٌّ مُرسَلٌ ⇒ يُحلَّل. وفراغٌ مع حمولةٍ محلولةٍ ⇒ إعادةُ الجافّة
-       على الحمولة نفسِها (تغيّرَ إذنُ العنوان لا النصّ). */
+       على الحمولة نفسِها (تغيّرَ إذنٌ لا النصّ). */
     if(dry && (txt || !parsed)){
       try { parsed = JSON.parse(txt); }
       catch(e){
@@ -352,7 +529,7 @@ async function openImport(course, kind){
       }
     }
 
-    const { data, error } = await C.call(course, parsed, dry, { retitle });
+    const { data, error } = await C.call(course, parsed, dry, perm);
     if(error){ out.innerHTML = errBox(error, 'الاستيراد'); return; }
 
     plan = C.pickPlan ? C.pickPlan(data) : (data?.['الخطّة'] || null);
@@ -383,7 +560,15 @@ async function openImport(course, kind){
           ${data?.['توقّف عند'] ? `<div class="line" style="margin-top:8px">
             توقّف عند: ${esc(data['توقّف عند'])} — ولم يبق من الدفعة شيء</div>` : ''}
         </div>
-        ${plan ? `<div class="eq-ready" style="margin-top:10px">${C.plan(plan)}</div>` : ''}`;
+        ${plan && C.plan(plan) ? `<div class="eq-ready" style="margin-top:10px">${C.plan(plan)}</div>` : ''}`;
+      /* 🎯 b177 · إذنٌ تطلبه القاعدةُ رفضاً ⇒ يُرسم تحت الرفض نفسِه */
+      const pb = permBox('err', errs);
+      if(pb){
+        out.insertAdjacentHTML('beforeend', `${pb}
+          <div class="line" style="margin-top:6px">الإذنُ يُعيد التجربة الجافّة —
+            ولا يُكتب شيءٌ قبل «اعتماد».</div>`);
+        bindPerms();
+      }
       return;
     }
 
@@ -412,23 +597,15 @@ async function openImport(course, kind){
         ${warns.map(x => `<div>⚠️ ${esc(x)}</div>`).join('')}
         <div style="margin-top:7px;opacity:.85">تحذير يُرى ولا يمنع — والاعتماد ممكن.</div>
         </div>` : ''}
-      ${C.retitle && warns.some(x => String(x).includes('العنوان')) ? `
-        <label class="line" style="display:flex;gap:8px;align-items:center;
-               margin-top:12px;cursor:pointer">
-          <input type="checkbox" id="rt"${retitle ? ' checked' : ''}>
-          <span>اسمح بتغيير عناوين الدروس القائمة</span>
-        </label>` : ''}
+      ${permBox('warn', warns)}
       <div class="nav" style="margin-top:12px">
         <button class="btn primary" id="go">اعتماد ${C.count(plan)}</button>
         <button class="btn ghost" id="again">ملفّ آخر</button>
       </div>`;
-    /* 🔑 والإذنُ يُعيد الجافّةَ لا يُمرَّر وحده: الخطّةُ المعروضةُ حُسبت
-       بإذنٍ مطفأ، فلو اعتُمدت بإذنٍ مشتعلٍ لخالف الأثرُ ما قُرئ. */
-    const rt = document.getElementById("rt");
-    if(rt) rt.onchange = () => { retitle = rt.checked; run('', true); };
+    bindPerms();
     document.getElementById("go").onclick    = () => run('', false);
     document.getElementById("again").onclick = () => {
-      parsed = null; plan = null; retitle = false; draw(); };
+      parsed = null; plan = null; perm = {}; draw(); };
   }
 
   draw();

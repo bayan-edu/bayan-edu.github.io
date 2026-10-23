@@ -451,6 +451,19 @@ export const importLessonMap = (course, payload, dry = true, allowRetitle = fals
   db.rpc('import_lesson_map', { p_course: course, p_payload: payload,
     p_dry_run: dry, p_allow_retitle: allowRetitle });
 
+/* 🎯 b177 · عقدُ استيراد فهرس الأهداف (138 · 142) — المرحلةُ ② بعد الخريطة.
+   وفرقُه عن أخيه فرقان يغيّران الشاشة:
+   · **الهدفُ يسكن المادةَ لا المقرَّر** ⇒ كودٌ قائمٌ باسمٍ مخالف يمسّ كلَّ
+     صفوف المادة، فلا يُعاد تسميتُه إلا بـ`p_allow_rename`.
+   · **والتوزيعُ استبدالٌ كامل** (`set_lesson_objectives` تحذف ثمّ تكتب) ⇒
+     درسٌ له أهدافٌ تخالف الواردة لا تُستبدل إلا بـ`p_allow_replace`.
+   🔴 والإذنان مطفآن افتراضاً، **وغيابُهما يردُّ الدفعةَ لا يُحذّر** — بخلاف
+   إذن العنوان في الخريطة. */
+export const importObjectives = (course, payload, dry = true,
+                                 allowRename = false, allowReplace = false) =>
+  db.rpc('import_objectives', { p_course: course, p_payload: payload,
+    p_dry_run: dry, p_allow_rename: allowRename, p_allow_replace: allowReplace });
+
 export const saveQuestion = o => db.rpc('save_question', {
   p_id:          o.id      ?? null,
   p_quiz:        o.quiz,
