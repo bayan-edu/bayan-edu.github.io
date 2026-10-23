@@ -13,7 +13,7 @@ import { renderMark, whenReady as avatarReady } from './avatar.js';
    والدمجُ مرّ بلا تعارضٍ **لأنّ الجانبين كتبا السطرَ نفسَه حرفاً** — وهو
    أخبثُ ما في التصادم: لا يشتكي. ⇒ هذه ترفعه، **فالختمُ يجيب «أيُّ شيفرةٍ
    يشغّلها المتصفّح»، وجوابان لسؤالٍ واحدٍ لا جواب.** */
-export const BUILD = "b179";
+export const BUILD = "b181";
 
 /* ── مراسي الصفحة ── */
 export const app = document.getElementById("app");
@@ -1244,10 +1244,24 @@ function ensureDrawer(){
   scrim.onclick = closeDrawer;
   const d = document.createElement('aside');
   d.id = 'drawer'; d.className = 'drawer';
-  d.setAttribute('role', 'dialog');
-  d.setAttribute('aria-modal', 'true');
   d.setAttribute('aria-label', 'التنقّل');   // اسمان لقائمتين — لا «القائمة» لكليهما
-  document.body.append(scrim, d);
+  /* 🆕 b181 · ولا `role="dialog"` هنا بل عند الفتح (`openDrawer`): الدرجُ صار شريطاً
+     ملتصقاً على الشاشة الواسعة، والملتصقُ ليس حواراً — ولو أعلن نفسَه حواراً دائماً
+     لكذب على قارئ الشاشة كما كذبت لوحةٌ بـ`role="menu"` (عند `renderAcct`).
+     📌 **وبعد الشريط لا آخرَ الصفحة:** الملتصقُ وجهاتٌ قبل المحتوى، فيبلغه التنقّلُ
+        بلوحة المفاتيح أوّلاً — وهو في `body` كما كان (القرار ③)، أخاً لـ`#bar` لا ابناً. */
+  document.body.append(scrim);
+  bar.after(d);
+  /* 🆕 b181 · و☰ يُنبئ بما يُرى بعد أن تُرسم الشاشة: شاشةُ العمل تُعرف بمحتواها،
+     والمحتوى يصل بعد nav() (بعد الجلب) — فحالةُ الزرّ تُعاد كلّما تبدّل #app أو
+     الشريط. مراقبٌ واحدٌ هنا لا في nav(): تلك تُنادى في كلّ شاشة فتتراكم. */
+  new MutationObserver(syncMenuBtn).observe(app, { childList: true });
+  new MutationObserver(syncMenuBtn).observe(bar, { childList: true });
+  /* 🆕 b181 · والملتصقُ يبدأ تحت الشريط العلويّ — بارتفاعه المقيس لا برقمٍ يُكتب.
+     ومراقبُ حجمٍ لا قياسٌ في nav(): ارتفاعُ الشريط يتبع العرض (٥٥px ضيّقاً و٥٧ واسعاً)،
+     فقياسُ الشاشة الأولى كذب حين اتّسعت النافذةُ بلا تنقّل — فدخل الملتصقُ تحته ٢px (قِيس). */
+  new ResizeObserver(() => document.documentElement.style
+    .setProperty('--topbar-h', bar.offsetHeight + 'px')).observe(bar);
 
   /* نقرةٌ خارج لوحةٍ متدلّية تطويها — وللدرج غطاؤه فلا يشترك معهما.
      ⚠️ وموضعُه هنا لا في nav(): تلك تُنادى في كلّ شاشة، فمستمعٌ فيها
@@ -1322,9 +1336,12 @@ function renderDrawer(active){
       ${brandMark()}
       <button class="iconbtn" id="drawerX" aria-label="إغلاق">${svg('close')}</button>
     </div>
-    <nav class="drawer-nav">
+    <nav class="drawer-nav" aria-label="الوجهات">
+      ${/* 🆕 b181 · و`aria-current` على الوجهة الحاضرة: الشريطُ الظاهرُ يجيب «أين أنا؟»
+            للعين بلونه — فيجيبه لقارئ الشاشة بكلمته. */''}
       ${destsOf().map(([k, label]) => `
-        <button class="menu-item ${k === active ? 'on' : ''}" data-r="${k}">
+        <button class="menu-item ${k === active ? 'on' : ''}" data-r="${k}"
+                ${k === active ? 'aria-current="page"' : ''}>
           ${svg(k)}<span>${label}</span>
           ${NCOUNT[k] ? `<span class="bdg soft" data-n="${NCOUNT[k]}" hidden></span>` : ''}
         </button>`).join('')}
@@ -1397,6 +1414,8 @@ function renderAcct(p){
 export function closeDrawer(){
   if(!document.body.classList.contains('drawer-open')) return;
   document.body.classList.remove('drawer-open');
+  const d = document.getElementById('drawer');
+  d?.removeAttribute('role'); d?.removeAttribute('aria-modal');   // 🆕 b181 · الحوارُ ما دام عائماً
   const b = document.getElementById('menuBtn');
   b?.setAttribute('aria-expanded', 'false');
   b?.focus();
@@ -1405,11 +1424,45 @@ export function closeDrawer(){
 function openDrawer(){
   ensureDrawer();
   closePops();                     // لوحةٌ متدلّيةٌ تحت الغطاء تُنقر ولا تُرى
+  const d = document.getElementById('drawer');
+  d.setAttribute('role', 'dialog'); d.setAttribute('aria-modal', 'true');   // 🆕 b181 · والتعليلُ عند ensureDrawer
   document.body.classList.add('drawer-open');
   document.getElementById('menuBtn')?.setAttribute('aria-expanded', 'true');
   /* بعد الرسم لا قبله، وإلا ذهب التركيز إلى عنصرٍ لم يظهر بعد */
   requestAnimationFrame(() =>
     document.querySelector('#drawer .menu-item')?.focus());
+}
+
+/* ══════════════════════════════════════════════════════════════
+   🆕 b181 · الشريطُ الجانبيّ — والحكمُ كلُّه في base.css («الدرجُ شريطٌ جانبيّ»)
+
+   🔑 **والشرطُ يسكن CSS وحدها، وهذه تقرؤه ولا تعيد كتابته.** متى التصق الدرج
+      (شاشةٌ واسعة · لا بوّابة · لا شاشةَ عمل) حكمٌ يُشتقّ من المحتوى بـ`:has()` —
+      فلو كُتب ثانيةً هنا لافترقت النسختان يومَ تُضاف شاشةُ عمل. ⇒ `--nav-docked`.
+   🔑 **و☰ زرٌّ واحد بفعلين:** على الملتصق يطويه ويبسطه ويُحفظ الاختيار؛ وحيث لا
+      التصاق (الضيّقة · الاختبار · الكتاب · المحرّر) يفتح الدرجَ فوق المحتوى كما كان.
+   📌 **والحالةُ الأولى في رأس index.html** (`data-nav` قبل أوّل رسم — كالسِمة):
+      مفتوحٌ من ١٢٨٠px ومطويٌّ دونها، ولا تُحفظ حتى يختار صاحبُها. فالمحفوظُ اختيارٌ
+      لا افتراضٌ تجمّد على شاشةٍ أولى. */
+const navDocked = () =>
+  getComputedStyle(document.body).getPropertyValue('--nav-docked').trim() === '1';
+
+/* `aria-expanded` يتبع ما يُرى: البسطَ على الملتصق، والفتحَ على العائم */
+function syncMenuBtn(){
+  const b = document.getElementById('menuBtn');
+  if(!b) return;
+  b.setAttribute('aria-expanded', String(navDocked()
+    ? document.documentElement.dataset.nav !== 'rail'
+    : document.body.classList.contains('drawer-open')));
+}
+
+function onMenu(){
+  if(!navDocked()) return openDrawer();
+  const next = document.documentElement.dataset.nav === 'rail' ? 'open' : 'rail';
+  document.documentElement.dataset.nav = next;
+  /* ⚠️ وlocalStorage يرمي في التصفّح الخاصّ — فالطيُّ يقع ولو لم يُحفظ (كالسِمة) */
+  try{ localStorage.setItem('bayan.nav', next); }catch(e){}
+  syncMenuBtn();
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -1644,9 +1697,10 @@ export function nav(active, path){
   syncMarks();      // مرّةً في عمر الصفحة — الحارسُ داخلها (125)
 
   bar.querySelector('#searchBtn').onclick = openSearch;
-  bar.querySelector('#menuBtn').onclick = openDrawer;
+  bar.querySelector('#menuBtn').onclick = onMenu;       // 🆕 b181 · يطوي الملتصقَ أو يفتح العائم
   bar.querySelector('#acctBtn').onclick = toggleAcct;   // غرفتان وبابان (b107)
   bar.querySelector('#bellBtn').onclick = toggleBell;
+  syncMenuBtn();
 }
 
 /* ── صندوق خطأ: يُظهر رسالة Supabase كاملة بدل ابتلاعها ──

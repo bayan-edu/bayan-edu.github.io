@@ -39,6 +39,11 @@
 <script>if(/.\/$/.test(location.pathname))history.replaceState(null,'',location.pathname.replace(/\/+$/,'')+location.search+location.hash);</script>
 <script>try{var t=localStorage.getItem("bayan.theme");if(t)document.documentElement.dataset.theme=t;}catch(e){}
 var m=document.querySelector('meta[name=theme-color]');if(m)m.content=m.dataset[t==="dark"?"dark":"light"];</script>
+<!-- 🆕 b181 · حالةُ الشريط الجانبيّ قبل أوّل رسم — كالسِمة فوقه، وللسبب نفسه: لو قُرئت
+     في الوحدات (المؤجَّلة) لرُسمت الصفحةُ بعرضٍ ثمّ قفزت إلى آخر. اختيارُ صاحبها إن
+     حُفظ، وإلّا مفتوحٌ من ١٢٨٠px ومطويٌّ دونها (التعليلُ في base.css عند «الدرجُ شريطٌ جانبيّ»). -->
+<script>(function(){var n="";try{n=localStorage.getItem("bayan.nav")||"";}catch(e){}
+document.documentElement.dataset.nav=n||(innerWidth>=1280?"open":"rail");})();</script>
   
 <!-- أيقونة الموقع — أربعُ صيغٍ لأربعة قرّاء، والعلامةُ واحدة:
      ico لمن لا يطلب SVG ولمن يطلب /favicon.ico بلا سؤال وبمقاسات مفتوحة ·

@@ -749,6 +749,66 @@ body.gate .drawer,body.gate .scrim{display:none}
   border-color:var(--danger-line)}
 
 /* ══════════════════════════════════════════════════════════════
+   🆕 b181 · الدرجُ شريطٌ جانبيّ على الشاشة الواسعة — قرارُ المالك
+   (نقاشُ الرئيسة · ٢٣ أكتوبر · ونموذجُه منشورٌ له)
+
+   🔑 **عنصرٌ واحدٌ بثلاث هيئات لا قائمتان:** عائمٌ فوق المحتوى (الضيّقةُ وشاشاتُ
+      العمل — كما كان) · مفتوحٌ ملتصق (٢٣٦px) · مطويٌّ أيقوناتٍ بأسمائها (٧٦px).
+      فالوجهاتُ وأعدادُها من `DEST` و`NCOUNT` وحدهما — ونسختان تتفارقان.
+   🔑 **ونقضٌ محدودٌ لقرار b65 ①** («الوجهاتُ تُخفى والإشاراتُ لا تُخفى»): كان ثمنُ
+      الإخفاء على الحاسوب أنّ «الأداء» بلا إشارةٍ خارج الدرج، وأنّ «أين أنا؟» لا
+      يُجاب إلا بفتحه — وفي الشاشة الواسعة فراغٌ على الجانبين لا يزاحمه شيء.
+      والقرارُ باقٍ حيث بُني: الضيّقةُ والجوّال درجٌ عائمٌ كما كان.
+   ⚠️ **والشرطُ هنا وحده** — شاشةٌ واسعة · لا بوّابة · لا درجَ عائماً مفتوحاً · ولا
+      شاشةَ عمل. وشاشاتُ العمل تُعرف بمحتواها (`:has()`) كما تُشتقّ العروضُ في رأس
+      هذا الملفّ، فشاشةُ عملٍ جديدة لا تُنسى بنداءٍ يُغفَل:
+        الاختبار `#bar .timerbar` — ومنه المقسومُ (١٢٤٠px) وتحديدُ المستوى · الكتاب `.bk`
+        (١١٦٠px) · «كلمة × معنى» `.mg-wrap` · المحرّر `.wrap.wide` (١١٨٠px — عملُ مكتب،
+        وطيُّه قسراً كان يترك ☰ فيه بلا فعل).
+      وJS تقرأ الحكمَ من `--nav-docked` ولا تعيد كتابته (`navDocked` في ui.js).
+   📐 الصفحةُ تُزاح بعرض الشريط (`padding-inline-start`) فيتوسّط `.wrap` ما بقي بعروضه
+      كما هي، والشريطُ العلويّ يمتدّ فوق الشريط بهامشٍ سالب — والشعارُ فيه، فرأسُ
+      الدرج (شعارُه وزرُّ إغلاقه) يُخفى ملتصقاً.
+   📐 والحالةُ `data-nav` على الجذر تُكتب في رأس index.html قبل أوّل رسم (كالسِمة):
+      اختيارُ صاحبها إن حُفظ (`bayan.nav`)، وإلّا مفتوحٌ من ١٢٨٠px ومطويٌّ دونها.
+   ⚠️ والمحدِّدُ طويلٌ ومكرَّرٌ عمداً: لا متغيّرَ يحمل محدِّداً في CSS، والتداخلُ (`&`)
+      أحدثُ من `:has()` (كروم ١١٢ · سفاري ١٦٫٥) — فمتصفّحٌ يقرأ `:has()` ولا يقرأ `&`
+      كان سيُزيح الصفحةَ ويُسقط الشريط. والمكرَّرُ يسقط كلُّه معاً حيث لا `:has()`، فيبقى
+      الدرجُ العائمُ كما كان و`--nav-docked` فارغاً. فمن غيّر شرطاً غيّره في الثمانية. */
+/* `--nav-t` مدّةُ الطيّ — ومتغيّرٌ لا قيمة: قاعدةُ «لا حركة» أدناه تُصفّره مرّةً،
+   ولو كُتبت القيمةُ في المحدِّد الطويل لغلبها بوزنه فتحرّك ما طُلب سكونُه. */
+:root{--nav-w:236px;--nav-t:.22s}
+:root[data-nav="rail"]{--nav-w:76px}
+@media (prefers-reduced-motion:reduce){ :root{--nav-t:0s} }
+@media (min-width:1024px){
+  body:not(.gate):not(.drawer-open):not(:has(#bar .timerbar, .bk, .mg-wrap, .wrap.wide)){
+    --nav-docked:1;padding-inline-start:var(--nav-w);transition:padding-inline-start var(--nav-t) ease}
+  body:not(.gate):not(.drawer-open):not(:has(#bar .timerbar, .bk, .mg-wrap, .wrap.wide)) #bar{
+    margin-inline-start:calc(-1 * var(--nav-w))}
+  body:not(.gate):not(.drawer-open):not(:has(#bar .timerbar, .bk, .mg-wrap, .wrap.wide)) .drawer{
+    inset-block-start:var(--topbar-h, 57px);width:var(--nav-w);z-index:15;
+    transform:none;visibility:visible;box-shadow:none;transition:width var(--nav-t) ease}
+  body:not(.gate):not(.drawer-open):not(:has(#bar .timerbar, .bk, .mg-wrap, .wrap.wide)) .drawer-head{
+    display:none}
+  /* المطويّ: الاسمُ تحت أيقونته بـ١٢px (لا أصغر — أرضيةُ المنصّة)، والعددُ شارةٌ على زاويتها.
+     🔑 والاسمُ باقٍ لا يُكتفى بالأيقونة: «تذكّرها» و«ملاحظاتي» لا تُقرآن من رسمٍ وحده. */
+  :root[data-nav="rail"] body:not(.gate):not(.drawer-open):not(:has(#bar .timerbar, .bk, .mg-wrap, .wrap.wide)) .drawer-nav{
+    padding:10px 8px}
+  :root[data-nav="rail"] body:not(.gate):not(.drawer-open):not(:has(#bar .timerbar, .bk, .mg-wrap, .wrap.wide)) .menu-item{
+    flex-direction:column;gap:3px;padding:9px 2px 7px;font-size:var(--fs-tag);text-align:center;position:relative}
+  :root[data-nav="rail"] body:not(.gate):not(.drawer-open):not(:has(#bar .timerbar, .bk, .mg-wrap, .wrap.wide)) .menu-item > span:not(.bdg){
+    flex:none;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  /* ⚠️ والشارةُ على زاوية الأيقونة لا عليها — حكمُ `.bdg` أعلاه بعينه («فصار الرقمُ يمحو
+        الأيقونةَ التي يصفها»). قِيست أوّلاً عند `inset-inline-end:8px` فغطّت ربعَ الأيقونة
+        (٨×١٢px من ٢٠×٢٠) ⇒ تُسند إلى منتصف البند: الأيقونةُ ٢٠px في وسطه، فحافّةُ الشارة
+        على ٩px منه تمسّ حافّتَها بـ١px ولا تغطّيها، وتتّسع بعيداً عنها (أربعةُ أرقامٍ تبقى
+        داخل الشريط — قِيس). */
+  :root[data-nav="rail"] body:not(.gate):not(.drawer-open):not(:has(#bar .timerbar, .bk, .mg-wrap, .wrap.wide)) .menu-item .bdg{
+    position:absolute;top:2px;inset-inline-start:calc(50% + 9px);inset-inline-end:auto;
+    min-width:18px;height:18px;line-height:16px;padding:0 4px}
+}
+
+/* ══════════════════════════════════════════════════════════════
    البحث — لوحةٌ تعلو الصفحة لا حقلٌ في الشريط  (b67)
 
    🔴 ولمَ لوحةٌ لا حقل؟ الشريط في الجوّال يحمل أربعةً بالفعل
