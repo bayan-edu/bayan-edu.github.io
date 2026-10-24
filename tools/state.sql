@@ -24,9 +24,19 @@
 --       فالهدف يسكن المادةَ ويعبر الصفوف (`138`)، ومعلّمُ الصفّ الثاني
 --       **لا يستطيع إعادةَ استعمال كودٍ لا يراه** — فيكتبه من جديد باسمٍ
 --       آخر، فينقطع أثرُ الطالب الطوليّ. فالقائمةُ هنا شرطُ ذلك القانون.
+--    ⑥ 🆕 ٢٤ أكتوبر · `texts` لكلّ درس: نصوصُ القراءة الرسميّةُ القائمة بعناوينها
+--       ولغتها. فالنصُّ يُعرف **بعنوانه في درسه** (`import_texts` · 180)، ومؤلّفٌ
+--       لا يرى العنوانَ القائمَ يكتب غيرَه بحرف — **فيُنشأ نصٌّ ثانٍ بجوار الأوّل**.
+--       فالقائمةُ هنا شرطُ ذلك القانون، كـ`objectives_index` لأخيه (العقد · ⑭).
+--    ⑦ 🆕 ٢٤ أكتوبر · النطاق (`want`): الملفُّ يسكن مجلّدَ صفٍّ (`bayan-content/1st Sec/` …)،
+--       والمقرّراتُ المفعّلةُ معاً بلغت ١٫٥ ميجابايت — أهدافُ المادة تتكرّر في كلّ مقرّرٍ منها
+--       (٢٩٩ هدفاً للرياضيات في كلّ صفّ). ومشروعُ المادة لا يحتاج منه إلا كتلةً واحدة.
+--       ⇒ ضع في `want` أرقامَ مقرّرات المجلّد (كما في tools/projects.txt)، أو اتركها
+--       فارغةً للكلّ. **والنطاقُ يُكتب في الملفّ نفسِه** (`scope`) — فلا يُظنّ الغائبُ محذوفاً.
 -- ══════════════════════════════════════════════════════════════════════
 
-with l as (
+with want(ids) as (values ('{}'::bigint[])),          -- '{2,4,8}' لمقرّراتٍ بعينها
+l as (
   select le.course_id, jsonb_agg(jsonb_build_object(
            'id', le.id, 'order', le.position,
            'unit', coalesce((select un.title from units un where un.id = le.unit_id), le.unit),
@@ -36,7 +46,12 @@ with l as (
            'objectives', (select count(*) from lesson_objectives lo where lo.lesson_id = le.id),
            'questions', (select count(*) from questions q where q.quiz_id in
                           (select i.quiz_id from items i
-                            where i.lesson_id = le.id and i.quiz_id is not null))
+                            where i.lesson_id = le.id and i.quiz_id is not null)),
+           'texts', coalesce((select jsonb_agg(jsonb_build_object(
+                                'title', i.title, 'lang', i.lang) order by i.position, i.id)
+                               from items i
+                              where i.lesson_id = le.id and i.kind = 'text'
+                                and i.created_by is null), '[]'::jsonb)
          ) order by le.position, le.id) j
     from lessons le where le.archived_at is null group by le.course_id),
 u as (
@@ -62,6 +77,8 @@ select jsonb_pretty(jsonb_build_object(
   'note', 'يُولَّد من قاعدة بيان بـtools/state.sql — لا يُحرَّر بيد. أعِد توليده بعد كل استيراد.',
   'generated_at', to_char(now() at time zone 'Asia/Riyadh', 'YYYY-MM-DD"T"HH24:MI:SS+03:00'),
   'db_migration', (select max(sql_log_sort(n))::text from sql_log),
+  'scope', (select case when cardinality(ids) = 0 then to_jsonb('كلُّ المقرّرات المفعّلة'::text)
+                        else to_jsonb(ids) end from want),
   'courses', coalesce(jsonb_agg(jsonb_build_object(
       'course_id', c.id, 'subject', sb.name, 'subject_code', sb.code,
       'level', lv.name, 'title', c.title,
@@ -78,4 +95,5 @@ left join l on l.course_id = c.id
 left join u on u.course_id = c.id
 left join s on s.subject_id = c.subject_id
 left join o on o.subject_id = c.subject_id
-where c.active;
+where c.active
+  and (select cardinality(ids) = 0 or c.id = any(ids) from want);
