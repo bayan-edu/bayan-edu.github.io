@@ -116,7 +116,7 @@ const CFG = {
   MAX_BYTES    : 2 * 1024 * 1024,
 
   EVERY_HOURS  : 1,
-  EVERY_MINUTES: 30,               // طواف كل ٣٠ دقيقة ليواكب وتيرة مهمة معلّم الإنجليزية
+  EVERY_MINUTES: 15,               // طواف كل ١٥ دقيقة ليواكب وتيرة مهمة معلّم الإنجليزية
   BUDGET_MS    : 4.5 * 60 * 1000,  // ستُّ دقائقَ حدُّ التشغيل، وهذا دونه
 };
 
@@ -160,6 +160,7 @@ const MIME = {
        المعتمدة في مسار cards (مثل 4-eg_eng و 12-sci1).                 */
 
 const MAP = {
+  // ─── الصف الأول الثانوي ───
   'اللغة العربية'    : { course:  2, subject: 2 },
   '2-eg_ara'         : { course:  2, subject: 2 },
   'English'          : { course:  4, subject: 3 },
@@ -172,6 +173,14 @@ const MAP = {
   '11-eg_phil'       : { course: 11, subject: 6 },
   'العلوم المتكاملة' : { course: 12, subject: 1 },
   '12-sci1'          : { course: 12, subject: 1 },
+
+  // ─── الصف الثاني الثانوي ───
+  '3-eg_eng'         : { course:  3, subject: 3 },
+  '1-eg_ara'         : { course:  1, subject: 2 },
+  '7-eg_math'        : { course:  7, subject: 4 },
+  '9-eg_hist'        : { course:  9, subject: 5 },
+  '14-eg_phys'       : { course: 14, subject: 32 },
+  '16-eg_chem'       : { course: 16, subject: 33 },
 };
 
 

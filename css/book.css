@@ -45,7 +45,8 @@ body:has(.bk){padding-bottom:0}
    يساراً في مستندٍ عربيّ **انزاحت الشاشةُ كلُّها ٤٩٠px في منتصف التقليب.**
    ⇒ `overflow:clip` لا يصنع حاويةَ تمرير، وهامشُه يُبقي الزاويةَ المرفوعة مرئيّة. */
 /* 📐 والقصُّ أفقيٌّ وحده — قِيس: هامشُ القصّ (٢٤px) يدخل مساحةَ التمرير، فزاد عرضُ
-   الجوّال ٦px أثناء التقليب. والعموديُّ يبقى مرئيّاً لترتفع الزاويةُ فوق الكتاب. */
+   الجوّال ٦px أثناء التقليب. والعموديُّ يبقى مرئيّاً لترتفع الزاويةُ فوق الكتاب —
+   وما يفيض تحته يُقصّ في حيّز الطيّ (`.bk-fold` · b185). */
 .bk-stage{display:flex;justify-content:center;padding:6px 0 0;overflow-x:hidden;overflow-x:clip;
   overflow-y:visible}
 .bk:not(.spread) .bk-stage{padding-bottom:18px;margin-bottom:-18px}
