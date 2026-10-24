@@ -442,6 +442,11 @@ export const importQuiz = (course, payload, dry = true) =>
 export const importCards = (course, payload, dry = true) =>
   db.rpc('import_cards', { p_course: course, p_payload: payload, p_dry_run: dry });
 
+/* 📖 b191 · عقدُ «نصوص القراءة» (180) — الدرسُ بمفتاحه والنصُّ بعنوانه في درسه:
+   القائمُ يُحدَّث والجديدُ قبل اختبار الدرس، ولا يُحذف شيء. والحارسُ `can_curate`. */
+export const importTexts = (course, payload, dry = true) =>
+  db.rpc('import_texts', { p_course: course, p_payload: payload, p_dry_run: dry });
+
 /* 🗺️ عقدُ استيراد خريطة الدروس (131) — وفرقُه عن أخويه فرقان:
    · **يُنشئ ويُحدّث ولا يحذف.** درسٌ في القاعدة ليس في الخريطة يُعرض
      في «خارج الخريطة» ويبقى كما هو — والحذفُ لا يقع من هنا أبداً.

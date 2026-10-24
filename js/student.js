@@ -1294,64 +1294,18 @@ async function textBook(i, l, back){
   const title = data.title || i.title;
   const quiz  = (l?.items || []).find(x => x.kind === 'quiz' && x.quiz_id);
   const g     = S.prof?.gram_gender;
-  /* عنوانُ الدرس يسقط من الغلاف إن احتوى عنوانَ النصّ («Reading: X» و«X»)
-     وتحلّ الوحدةُ محلَّه — السياقُ نفسُه بلا تكرار. */
-  const lessonLine = l?.title && !l.title.includes(title) ? l.title : (l?.unit || '');
-
-  /* المفردةُ عبارةٌ حتى ثلاث كلمات؛ وما زاد فبطاقةُ استراتيجيةٍ تُشرح ولا
-     تُبحث في النصّ («main idea vs. supporting detail»). */
-  const glossary = (cardsRes?.data || []).filter(c =>
-    String(c.front || '').replace(/\s*\([^)]*\)\s*$/, '').trim().split(/\s+/).length <= 3);
-  const word = wordPanel(g);
   /* القراءةُ الجهريّة تظهر حيث تطلبها القاعدة **ويقدر عليها المتصفّح** — فلا
      زرٌّ يَعِد بما لا يكون (متصفّحٌ قديم أو صفحةٌ بلا HTTPS). */
   const raOn = !!raRes?.data?.enabled && canRecord();
 
+  /* 🆕 b189 · المظهرُ والختامُ من `bookLook` و`bookEnd` أدناه — ومعاينةُ المحرّر تقرأ منهما،
+     وما هنا سلوكُ الطالب وحده: الموضعُ والتسجيلُ والاختبارُ والإتمام. */
   const ctl = await createBook(host, {
+    ...bookLook({ cards: cardsRes?.data, g, subject: S.subj?.name, lesson: l, title }),
     slot: raOn,
     title, subtitle: data.description, body: data.body, lang: data.lang || i.lang,
-    kicker: [S.subj?.name, lessonLine],
-    format: fmt, num: AR,
     storeKey: 'bayan.book.' + i.id,
-    glossary,
-    /* 🆕 b165 · الصورُ داخل النصّ تمرّ بالحارس الواحد للوسائط: مفتاحُ مخزننا أو مضيفٌ
-       مأذون، وما سواه يسقط صامتاً — الإنذارُ للمعلّم في محرّره لا للطالب في قراءته. */
-    media: srcOf,
-    /* 🆕 b170 · والفيديو بحارسه: يوتيوب أو Drive، ويُبنى رابطُ التشغيل من معرّف المقطع وحده. */
-    video: videoOf,
-    onNotice: m => toast(m),
-    /* النطقُ الآليّ للإنجليزية وحدها — وهو حكمُ الملفّ `101` في media.js:
-       القراءةُ الآليّة للعربية تُسقط الإعرابَ وتُخطئ الحركات. */
-    tapAny: dir => dir === 'ltr',
-    wordHtml: word.html,
-    onWord: word.bind,
-    /* 🆕 b155 · استمع وتابع — بأحسن صوتٍ على جهاز الطالب، **والإنجليزيةُ وحدها**
-       (قرارُ المالك: العربيةُ مؤجَّلة، وحكمُ `101` قائم). والسرعةُ الأساسُ ٠٫٩
-       كنطق الكلمة: المستمعُ متعلّمٌ لا ناطق. */
-    voice: {
-      available: dir => dir === 'ltr' && typeof window !== 'undefined' && !!window.speechSynthesis,
-      speak: (text, o) => narrate(text, { lang: 'en', rate: 0.9 * o.rate, onend: o.onend, onerror: o.onerror }),
-      stop: hush,
-      name: () => voiceName('en')
-    },
-    onVoiceFail: () => toast("تعذّر النطق على هذا الجهاز"),
-    coverMeta: ({ paragraphs, words, minutes }) => [
-      N(paragraphs, 'فقرة', 'فقرتان', 'فقرات', 'فقرة'),
-      N(words, 'كلمة', 'كلمتان', 'كلمات', 'كلمة'),
-      'نحو ' + N(minutes, 'دقيقة', 'دقيقتين', 'دقائق', 'دقيقة')
-    ].join('، '),                                  // 🆕 b179 · «،» — joinList في ui.js
-    endHtml: () => `
-      <div class="bk-end-orn" aria-hidden="true"><i></i><i></i><i></i></div>
-      <div class="bk-end-t">نهاية النص</div>
-      <div class="bk-ask"><b>${quiz ? 'قبل الاختبار' : 'استرجاع'}</b><span>${G(g,
-        'أغلق الكتاب، وقل فكرة النص في جملة واحدة، ثم افتحه وقارن.',
-        'أغلقي الكتاب، وقولي فكرة النص في جملة واحدة، ثم افتحيه وقارني.',
-        'تُقال فكرة النص في جملة واحدة والكتاب مغلق، ثم يُفتح للمقارنة.')}</span></div>
-      <div class="bk-end-btns">
-        ${quiz ? `<button type="button" class="btn primary" data-act="quiz">الاختبار</button>` : ''}
-        <button type="button" class="btn ghost" data-act="again">قراءة من البداية</button>
-        ${quiz ? '' : `<button type="button" class="btn ghost" data-act="back">العودة إلى الدرس</button>`}
-      </div>`,
+    endHtml: () => bookEnd(g, !!quiz),
     onAction: (act, book) => {
       if(act === 'quiz' && quiz) return openItem(quiz);
       if(act === 'again') return book.restart();
@@ -1379,6 +1333,67 @@ async function textBook(i, l, back){
     });
   }
 }
+
+/* ── مظهرُ الكتاب (b189) ──
+   ما يراه الطالب من النصّ — **مصدرٌ واحدٌ لشاشتين:** قراءتُه أعلاه، ومعاينةُ المعلّم في محرّر
+   المصدر (`editor_items.js`). ومعاينةٌ تبني مظهرَها بنفسها تفترق عن الحقيقة يوماً بصمت،
+   فتُري المعلّمَ كتاباً غيرَ الذي يقرؤه طالبُه.
+   `preview` ⇒ نافذةُ الكلمة بلا «إضافة إلى تذكّرها»: المعلّمُ يرى ولا يشترك. */
+export function bookLook({ cards, g, subject, lesson: l, title, preview = false }){
+  /* عنوانُ الدرس يسقط من الغلاف إن احتوى عنوانَ النصّ («Reading: X» و«X»)
+     وتحلّ الوحدةُ محلَّه — السياقُ نفسُه بلا تكرار. */
+  const lessonLine = l?.title && !l.title.includes(title) ? l.title : (l?.unit || '');
+  /* المفردةُ عبارةٌ حتى ثلاث كلمات؛ وما زاد فبطاقةُ استراتيجيةٍ تُشرح ولا
+     تُبحث في النصّ («main idea vs. supporting detail»). */
+  const glossary = (cards || []).filter(c =>
+    String(c.front || '').replace(/\s*\([^)]*\)\s*$/, '').trim().split(/\s+/).length <= 3);
+  const word = wordPanel(g, preview);
+  return {
+    kicker: [subject, lessonLine],
+    format: fmt, num: AR,
+    glossary,
+    /* 🆕 b165 · الصورُ داخل النصّ تمرّ بالحارس الواحد للوسائط: مفتاحُ مخزننا أو مضيفٌ
+       مأذون، وما سواه يسقط صامتاً — الإنذارُ للمعلّم في محرّره لا للطالب في قراءته. */
+    media: srcOf,
+    /* 🆕 b170 · والفيديو بحارسه: يوتيوب أو Drive، ويُبنى رابطُ التشغيل من معرّف المقطع وحده. */
+    video: videoOf,
+    onNotice: m => toast(m),
+    /* النطقُ الآليّ للإنجليزية وحدها — وهو حكمُ الملفّ `101` في media.js:
+       القراءةُ الآليّة للعربية تُسقط الإعرابَ وتُخطئ الحركات. */
+    tapAny: dir => dir === 'ltr',
+    wordHtml: word.html,
+    onWord: word.bind,
+    /* 🆕 b155 · استمع وتابع — بأحسن صوتٍ على جهاز الطالب، **والإنجليزيةُ وحدها**
+       (قرارُ المالك: العربيةُ مؤجَّلة، وحكمُ `101` قائم). والسرعةُ الأساسُ ٠٫٩
+       كنطق الكلمة: المستمعُ متعلّمٌ لا ناطق. */
+    voice: {
+      available: dir => dir === 'ltr' && typeof window !== 'undefined' && !!window.speechSynthesis,
+      speak: (text, o) => narrate(text, { lang: 'en', rate: 0.9 * o.rate, onend: o.onend, onerror: o.onerror }),
+      stop: hush,
+      name: () => voiceName('en')
+    },
+    onVoiceFail: () => toast("تعذّر النطق على هذا الجهاز"),
+    coverMeta: ({ paragraphs, words, minutes }) => [
+      N(paragraphs, 'فقرة', 'فقرتان', 'فقرات', 'فقرة'),
+      N(words, 'كلمة', 'كلمتان', 'كلمات', 'كلمة'),
+      'نحو ' + N(minutes, 'دقيقة', 'دقيقتين', 'دقائق', 'دقيقة')
+    ].join('، ')                                   // 🆕 b179 · «،» — joinList في ui.js
+  };
+}
+
+/* وصفحةُ الختام — مشتركةٌ كذلك، والأفعالُ ([data-act]) يُجيبها صاحبُ الشاشة. */
+export const bookEnd = (g, quiz) => `
+      <div class="bk-end-orn" aria-hidden="true"><i></i><i></i><i></i></div>
+      <div class="bk-end-t">نهاية النص</div>
+      <div class="bk-ask"><b>${quiz ? 'قبل الاختبار' : 'استرجاع'}</b><span>${G(g,
+        'أغلق الكتاب، وقل فكرة النص في جملة واحدة، ثم افتحه وقارن.',
+        'أغلقي الكتاب، وقولي فكرة النص في جملة واحدة، ثم افتحيه وقارني.',
+        'تُقال فكرة النص في جملة واحدة والكتاب مغلق، ثم يُفتح للمقارنة.')}</span></div>
+      <div class="bk-end-btns">
+        ${quiz ? `<button type="button" class="btn primary" data-act="quiz">الاختبار</button>` : ''}
+        <button type="button" class="btn ghost" data-act="again">قراءة من البداية</button>
+        ${quiz ? '' : `<button type="button" class="btn ghost" data-act="back">العودة إلى الدرس</button>`}
+      </div>`;
 
 /* ── نصوصُ القراءة الجهريّة (b164) ──
    🔑 **لغةُ اللوحة لغةُ النصّ:** نصٌّ إنجليزيٌّ يُقرأ جهراً تحت «Reading aloud»،
@@ -1454,7 +1469,7 @@ const READ_EN = {
       وهو نفسُه الذي تضمّ به «بطاقاتُ الدرس» بطاقاتِها. */
 const GUESS_FIRST = true;
 
-function wordPanel(g){
+function wordPanel(g, preview = false){
   const revealed = new Set();
   const pseudo = (card, w) => card || { front: w, lang: 'en' };
   const head = front => {
@@ -1469,9 +1484,9 @@ function wordPanel(g){
       <div class="bk-tr" dir="auto">${fmt(tr)}</div>
       ${def ? `<div class="bk-def" dir="auto">${fmt(def)}</div>` : ''}
       ${meta ? `<div class="bk-meta" dir="auto">${esc(meta)}</div>` : ''}
-      <div class="bk-pfoot">${card.mine
+      ${preview ? '' : `<div class="bk-pfoot">${card.mine
         ? '<span class="bk-in">في «تذكّرها» ✔</span>'
-        : '<button type="button" class="bk-pbtn" data-pk="add">إضافة إلى «تذكّرها»</button>'}</div>
+        : '<button type="button" class="bk-pbtn" data-pk="add">إضافة إلى «تذكّرها»</button>'}</div>`}
     </div>`;
   };
 

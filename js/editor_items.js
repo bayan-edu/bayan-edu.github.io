@@ -10,10 +10,11 @@
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
 import { S } from './state.js';
-import { app, head, toast, esc, AR, errBox, nav, setWide, scrollTop, srcOf, SAFE_HOSTS,
+import { app, head, toast, esc, AR, N, errBox, nav, setWide, scrollTop, srcOf, SAFE_HOSTS,
          videoOf, VIDEO_HOSTS } from './ui.js';
 import { attachUpload, insertLine } from './upload.js';
-import { openCourse } from './editor.js';
+import { openCourse, courseTags } from './editor.js';
+import { bookLook, bookEnd } from './student.js';
 import { openQuiz, openQuizPreview } from './editor_quiz.js';
 
 let ctx = null;   // { course, lesson }
@@ -183,6 +184,7 @@ function form(item, official, ro){
             ${k.code === 'simulation'
               ? '<b>المحاكاة:</b> ملفّ مستقلّ في مستودع الموقع نفسه — الصق مساره النسبي (مثلاً <code>sims/الاسم.html</code>) أو رابطه الكامل. يُضمَّن داخل الدرس، لا يُفتح في تبويب. زرّ الرفع أعلاه للصوت وحده — تجاهله هنا.'
               : '<b>غيره:</b> رابط يُفتح في تبويب جديد. تأكّد أنه متاح للطلاب.'}</div>` : ''}
+          ${k.needs === 'body' && !ro ? textRules(isNew && matchMedia('(min-width: 901px)').matches) : ''}
         </div>
 
         <div class="card" style="flex:1">
@@ -256,6 +258,8 @@ function form(item, official, ro){
       insert: (key, f) => `[${kw(f, 'image', 'صورة')}: ${key} | ]`
     });
     if(!ro) attachVideo('bo');
+    attachPreview('bo');                    // والمعاينةُ تُري ولا تُغيّر — فلمن يقرأ فقط أيضاً
+    if(!ro) attachTidy('bo');
     app.querySelectorAll("[data-k]").forEach(el => el.onclick = () => {
       if(!isNew) return;                    // النمط لا يتغيّر بعد الإنشاء
       k = kind(el.dataset.k); draw();
@@ -265,6 +269,37 @@ function form(item, official, ro){
   };
   draw();
 }
+
+/* 🆕 b188 · قواعدُ كتابة النصّ — بجوار المربّع لا في دليلٍ يُفتح مرّةً في السنة: الحجّةُ
+   تُكتب حيث يقع السؤال. مفتوحةٌ في النصّ الجديد ومطويّةٌ في القائم — **وفي الضيّق مطويّةٌ
+   دائماً:** العمودُ يصعد فوق المربّع تحت ٩٠٠px (screens.css)، فبطاقةٌ مفتوحة تدفعه شاشةً كاملة.
+   🔴 **وهي صدى `parse()` في book.js — تغيّر أحدهما ⇒ يُغيَّر الآخر.** كلُّ سطرٍ هنا حكمٌ
+      من أحكامه: الفقرةُ ما فصله سطرٌ فارغ والسطرُ المفرد كسرٌ مقصود (الشعر والحوار) ·
+      السطرُ الواحد القصير (ثماني كلمات فأقلّ) بلا علامة وقف يُقرأ عنواناً · الحروفُ A–H
+      و«(١)» تحلّ محلّ الترقيم الآليّ · والعلامةُ لا تعبر السطر (`KEEP`). وكلُّها قِيست على
+      المحرّك الحقيقيّ يوم كُتبت.
+   🎯 **والتمييزُ قليلٌ ولكلّ علامةٍ معنى:** اللونُ من بطاقات الدرس وحدها (عائلةُ `accent`
+      تقول «اضغط»، فلا يُلوَّن ما لا يُنقر) · والغامقُ للمصطلح · والخطُّ لكلمةٍ يُسأل عنها.
+      **ولا يُغمَّق ما هو إجابة:** يصير السؤالُ بحثاً عن كلمةٍ لا فهماً، ويُسجَّل للطالب
+      تشخيصٌ لا يخصّه أو يُخفى خللُه — وهو ما بُنيت المنصّةُ لتمنعه. */
+const textRules = open => `<details class="ed-hint ed-rules"${open ? ' open' : ''}>
+    <summary>قواعد كتابة النص</summary>
+    <p>يظهر النص للطالب كتاباً منسَّقاً تلقائياً، فيكفي نص عادي بهذه القواعد:</p>
+    <ul>
+      <li><b>الفقرة</b> فكرة واحدة، وبين كل فقرتين سطر فارغ. والسطر المفرد يبقى سطراً، وهو للشعر والحوار.</li>
+      <li><b>المنسوخ من PDF</b> تُدمج أسطره قبل الحفظ، وإلا ظهر للطالب مكسوراً.</li>
+      <li><b>العنوان الفرعي</b> سطر قصير بلا علامة وقف، أو بين <code>**</code> و<code>**</code>. فالفقرة القصيرة تُختم بعلامة وقف. وعنوان النص على الغلاف فلا يُكرَّر.</li>
+      <li><b>الترقيم</b> آلي في الهامش، ويحلّ محلّه حرف (A · B · C) أو رقم «(١)» في أول كل فقرة.</li>
+    </ul>
+    <p class="ed-rules-h">التمييز قليل، ولكل علامة معنى</p>
+    <ul>
+      <li><code>**غامق**</code> للمصطلح الذي يعرّفه النص، من واحد إلى ثلاثة.</li>
+      <li><code>__خط تحتها__</code> للكلمة التي يسأل عنها سؤال.</li>
+      <li><b>اللون</b> لا يُكتب: مفردات بطاقات الدرس تتلوّن وحدها، وتُفتح بنقرة.</li>
+      <li><b>ولا يُغمَّق ما هو إجابة:</b> يصير السؤال بحثاً عن كلمة لا فهماً، ويفسد التشخيص.</li>
+    </ul>
+    <p>والعلامة تُفتح وتُغلق في السطر نفسه. ويُشكَّل في العربية ما يُلبِس وحده.</p>
+  </details>`;
 
 /* كلمةُ سطر الوسيط بلغة النصّ (`image`/`video` للإنجليزي): سطرٌ عربيٌّ وسط نصٍّ
    لاتينيّ يقلب اتجاهَ الأسطر في مربّع المعلّم. */
@@ -322,6 +357,184 @@ function attachVideo(id){
     if(e.key === "Enter"){ e.preventDefault(); go(); }
     else if(e.key === "Escape"){ row.hidden = true; say(""); inp.focus(); }
   };
+}
+
+/* آخرُ صفٍّ من أدوات المربّع (`.mf`) — ليُلحَق الجديدُ بعدها بترتيب إضافته */
+const lastTool = inp => {
+  let n = inp;
+  while(n.nextElementSibling?.classList.contains("mf")) n = n.nextElementSibling;
+  return n;
+};
+
+/* 🆕 b189 · معاينةُ النصّ كما يراه الطالب — الكتابُ الحقيقيّ بمظهر الطالب نفسِه (`bookLook`
+   و`bookEnd` في student.js)، من المربّع كما هو الآن قبل الحفظ: فيرى المعلّمُ التقسيمَ
+   والترقيمَ والكلماتِ الملوّنة ويصلح قبل أن يراها طالب.
+   📐 **شاشةٌ كاملة لا نافذةٌ صغيرة:** الكتابُ يقيس الشاشةَ ليملأها (`layout` في book.js)،
+      ونافذةٌ صغيرة تُريه أصغرَ ممّا يراه الطالب. **ويحسب موضعَه بـ`scrollY`** ⇒ تُرفع الصفحةُ
+      إلى أوّلها وتُقفل تحت المعاينة، وتعود عند الإغلاق حيث كانت.
+   🔑 والجنسُ محايد (`g = null`): المعلّمُ يرى الخانةَ الرابعة من `G()`، والطالبُ يرى صيغتَه.
+   ⚠️ وما يخصّ الطالبَ لا يُعاين: موضعُ القراءة والإتمامُ والقراءةُ الجهريّة وفتحُ الاختبار. */
+function attachPreview(id){
+  const inp = document.getElementById(id);
+  if(!inp || inp.dataset.pv) return;
+  inp.dataset.pv = "1";
+  const row = document.createElement("div");
+  row.className = "mf";
+  row.innerHTML = `<button type="button" class="mf-up">معاينة كما يراها الطالب</button>`;
+  lastTool(inp).insertAdjacentElement("afterend", row);
+  const btn = row.querySelector("button");
+  btn.onclick = () => openPreview(inp, btn);
+}
+
+async function openPreview(inp, btn){
+  const v = id => (document.getElementById(id)?.value || '').trim();
+  const body = inp.value.trim();
+  if(!body){ toast("لا نص للمعاينة بعد"); return; }
+  return previewText({
+    course: ctx.course, lesson: ctx.lesson, btn, body,
+    title: v("ti") || ctx.lesson.title, subtitle: v("de"), lang: v("ln") || 'ar',
+    quiz: (D.items || []).some(x => x.kind === 'quiz' && x.quiz_id),
+    from: 'من المربّع قبل الحفظ، ولا تحفظ شيئاً'
+  });
+}
+
+/* 🆕 b191 · والكتابُ نفسُه يخدم شاشةَ الاستيراد (معاينةُ كلّ نصٍّ في خطّة «نصوص القراءة») —
+   فصُدِّر ولم يُنسخ: معاينتان تبني كلٌّ منهما كتابَها بيدها تفترقان يوماً بصمت (حجّةُ `bookLook`).
+   والفرقُ بين الموضعين في المُدخَلات وحدها: من أين النصّ (`from`) وأيُّ درس.
+   ⚠️ والدرسُ قد يغيب (`lesson = null`): فالمعاينةُ بلا كلماتٍ ملوّنة، ولا تتعطّل. */
+export async function previewText({ course, lesson, title, subtitle = '', body, lang = 'ar',
+                                    quiz = false, btn, from }){
+  btn.disabled = true;
+  const [{ createBook }, cardsRes, tags] = await Promise.all([
+    import('./book.js'),
+    /* مُنشئُ Supabase يملك `then` وحدها (علّةُ b156) ⇒ `.then(نجاح، فشل)` لا `.catch` */
+    lesson?.id ? api.lessonCards(lesson.id).then(r => r, e => ({ error: e })) : { data: [] },
+    courseTags(course).catch(() => [])
+  ]);
+  btn.disabled = false;
+  if(!lesson?.id) toast("لم يتحدّد الدرس، فالمعاينة بلا كلمات ملوّنة");
+  else if(cardsRes.error) toast("تعذّر جلب بطاقات الدرس، فالمعاينة بلا كلمات ملوّنة");
+
+  const y = scrollY;
+  scrollTo(0, 0);
+  document.documentElement.classList.add("pv-lock");
+  const box = document.createElement("div");
+  box.className = "bkpv";
+  box.setAttribute("role", "dialog");
+  box.setAttribute("aria-modal", "true");
+  box.setAttribute("aria-label", "معاينة النص كما يراه الطالب");
+  box.innerHTML = `<div class="bkpv-in">
+      <div class="bkpv-head">
+        <b>معاينة كما يراها الطالب</b>
+        <span>${esc(from)}</span>
+        <button type="button" class="bkpv-x" aria-label="إغلاق المعاينة">×</button>
+      </div>
+      <div class="bkpv-book"><div class="status">جار التحميل…</div></div>
+    </div>`;
+  document.body.append(box);
+
+  let ctl = null;
+  /* Escape في طور الالتقاط: نافذةُ الكلمة والصورةُ المكبَّرة يُغلقهما الكتابُ أوّلاً، ولا تُغلَق
+     المعاينةُ معهما بالضغطة نفسِها */
+  const onEsc = e => {
+    if(e.key !== 'Escape' || box.querySelector('.bk-pop, .bk-zoom')) return;
+    e.preventDefault(); close();
+  };
+  const close = () => {
+    ctl?.destroy();
+    box.remove();
+    document.removeEventListener("keydown", onEsc, true);
+    document.documentElement.classList.remove("pv-lock");
+    scrollTo(0, y);
+    btn.focus();
+  };
+  box.querySelector(".bkpv-x").onclick = close;
+  document.addEventListener("keydown", onEsc, true);
+  box.querySelector(".bkpv-x").focus();
+
+  try {
+    ctl = await createBook(box.querySelector(".bkpv-book"), {
+      ...bookLook({ cards: cardsRes.data, g: null, subject: tags[0], lesson, title, preview: true }),
+      title, subtitle, body, lang,
+      endHtml: () => bookEnd(null, quiz),
+      onAction: (act, book) => {
+        if(act === 'again') return book.restart();
+        if(act === 'back') return close();
+        if(act === 'quiz') toast("وهنا يُفتح للطالب اختبار الدرس");
+      }
+    });
+    if(!box.isConnected) ctl.destroy();    // أُغلقت المعاينةُ قبل أن يكتمل الكتاب
+  } catch(e){
+    console.error(e);
+    const h = box.querySelector(".bkpv-book");
+    if(h) h.innerHTML = errBox(e, 'المعاينة');
+  }
+}
+
+/* 🆕 b189 · منظّفُ اللصق — **يقترح ولا يفرض** (الحكمُ وعلّتُه عند `tidyPaste` في book.js).
+   يُلصق النصُّ كما هو أوّلاً، ثمّ يُقاس **ما لُصق وحده** لا المربّعُ كلُّه: فلا يمسّ ما كتبه
+   المعلّمُ قبله. والدمجُ بـ`insertText` فيبقى «تراجع» المتصفّح (Ctrl+Z) ومعه زرٌّ صريح.
+   🎨 والاقتراحُ من عائلة `warn` — «انتبه»: نصٌّ سيظهر للطالب مكسوراً. وبعد الدمج محايد:
+      خبرٌ لا تنبيه. */
+function attachTidy(id){
+  const inp = document.getElementById(id);
+  if(!inp || inp.dataset.tidy) return;
+  inp.dataset.tidy = "1";
+  const bar = document.createElement("div");
+  bar.className = "tp";
+  bar.hidden = true;
+  bar.setAttribute("role", "status");
+  lastTool(inp).insertAdjacentElement("afterend", bar);
+  const mod = import('./book.js');                   // يُحمَّل قبل أوّل لصق
+
+  const hide = () => { bar.hidden = true; bar.innerHTML = ""; };
+  const put = (a, b, text) => {
+    inp.focus();
+    inp.setSelectionRange(a, b);
+    if(!document.execCommand?.("insertText", false, text)){
+      inp.setRangeText(text, a, b, "end");
+      inp.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+  };
+
+  inp.addEventListener("paste", e => {
+    const t = (e.clipboardData?.getData("text/plain") || "").replace(/\r\n?/g, "\n");
+    hide();
+    if(!t.includes("\n")) return;
+    const s = inp.selectionStart;
+    setTimeout(async () => {
+      const r = (await mod).tidyPaste(t);
+      if(r && inp.value.slice(s, s + t.length) === t) offer(r, s, t);
+    });
+  });
+
+  function offer(r, s, t){
+    const wrap = r.mode === 'wrap';
+    bar.className = "tp";
+    bar.hidden = false;
+    bar.innerHTML = `<span>${wrap
+        ? 'يبدو النص منسوخاً من PDF: أسطره مكسورة داخل الفقرات، فيظهر للطالب مكسوراً.'
+        : 'الفقرات مفصولة بسطر واحد، فيقرؤها الكتاب فقرة واحدة طويلة.'}</span>
+      <button type="button" class="mf-up" data-t="go">${wrap ? 'دمج الأسطر' : 'فصل الفقرات'}</button>
+      <button type="button" class="mf-up" data-t="no">إبقاء النص كما هو</button>`;
+    bar.querySelector('[data-t="no"]').onclick = hide;
+    bar.querySelector('[data-t="go"]').onclick = () => {
+      if(inp.value.slice(s, s + t.length) !== t){
+        bar.querySelector("span").textContent = "تغيّر النص بعد اللصق، فبقي كما هو.";
+        return;
+      }
+      put(s, s + t.length, r.text);
+      bar.className = "tp done";
+      bar.innerHTML = `<span>${wrap ? 'دُمجت الأسطر في ' : 'فُصل النص إلى '}${
+          N(r.paras, 'فقرة', 'فقرتين', 'فقرات', 'فقرة')}${
+          r.dropped ? '، وحُذف ما بدا رقم صفحة' : ''}. والمعاينة تُري النتيجة قبل الحفظ.</span>
+        <button type="button" class="mf-up" data-t="undo">تراجع</button>`;
+      bar.querySelector('[data-t="undo"]').onclick = () => {
+        if(inp.value.slice(s, s + r.text.length) === r.text) put(s, s + r.text.length, t);
+        hide();
+      };
+    };
+  }
 }
 
 async function save(item, official, k){

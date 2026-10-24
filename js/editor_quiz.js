@@ -60,6 +60,7 @@ let pvOnly = false; // دخلنا للمعاينة وحدها — فلا باب�
 let OB   = null;   // أهدافُ هذا الاختبار — تُحمَّل معه مرّةً (139)
 let LK   = null;   // روابطُ البطاقات — { map, error } تُحمَّل مع الاختبار (158)
 let CD   = null;   // قائمةُ بطاقات الدرس المفتوحة الآن — { qid, rows, lesson, err }
+let BKT  = null;   // نصوصُ الكتاب في درس هذا الاختبار — { lesson, texts } للإدراج منها (b190)
 
 
 /* ═══════════ الدخول ═══════════ */
@@ -110,7 +111,7 @@ export async function openQuiz(course, lesson){
   LK = (!lk?.error && Array.isArray(lk?.data))
      ? { map: Object.fromEntries(lk.data.map(r => [String(r.question_id), r])) }
      : { map: {}, error: lk?.error?.message || 'تعذّر قراءة روابط البطاقات' };
-  CD = null;
+  CD = null; BKT = null;
 
   render('top');
 }
@@ -3006,8 +3007,12 @@ function passageForm(p, draft){
         <button class="eq-tool ${pk==='image'?'on':''}" data-pk="image">🖼️ صورة</button>
         <button class="eq-tool ${pk==='audio'?'on':''}" data-pk="audio">🎧 صوت</button>
         <button class="eq-tool ${pk==='video'?'on':''}" data-pk="video">🎬 فيديو</button>
+        <span class="eq-sep" id="pfBookSep" hidden></span>
+        <button class="eq-tool" id="pfBook" hidden aria-expanded="false">📖 إدراج من نصّ الكتاب</button>
+        <span class="eq-bk-err" id="pfBookErr" hidden>تعذّر قراءة نصّ الكتاب</span>
         <span class="eq-hint">${SAFE_HOSTS}</span>
       </div>
+      <div class="eq-bk" id="pfPick" hidden></div>
       <textarea id="pfBody" style="min-height:240px"
         placeholder="الفقرة كاملة…">${esc(d.body || '')}</textarea>
 
@@ -3030,7 +3035,8 @@ function passageForm(p, draft){
 
   main.querySelectorAll("[data-pw]").forEach(el =>
     el.onclick = () => wrapSel("pfBody", el.dataset.pw));
-   
+  wireBookInsert(main, isNew);
+
     /* pfMedia حقلٌ واحد يقبل صوتاً وصورةً وفيديو، والزرّ يرفع الصوت وحده —
      ولذلك يقول نصّه ذلك. وهو مخفيّ (hidden) حتى يُختار نوع الوسيط،
      فالزرّ يظهر معه. */
@@ -3066,6 +3072,97 @@ function passageForm(p, draft){
     if(isNew){ await applyPassage(data.id); toast("أُضيف النصّ ورُبط"); return; }
     toast("حُفظ النصّ"); reload();
   };
+}
+
+/* 🆕 b190 · «إدراجٌ من نصّ الكتاب» — المقتطفُ يولد من نصّ الدرس حرفاً بدل أن يُنسخ باليد، ثمّ هو نصٌّ
+   مستقلٌّ يُعدَّل كما يشاء مؤلّفُه: **لا مقارنةَ بعده ولا مزامنة** (حكمُ المالك · ٢٤ أكتوبر — نصوصُ الكتاب
+   كاملةٌ ونصوصُ الاختبار مقتطفةٌ غالباً، فالتطابقُ لا يُطلب).
+   🔑 والفقراتُ كما يقسمها الكتاب (`textBlocks` في book.js) وبترقيم هامشه — فـ«الفقرة ٣» هنا هي «الفقرة ٣»
+      التي قرأها الطالب. والإدراجُ بـ`insertText` فيبقى Ctrl+Z.
+   📐 ونصوصُ الدرس تُقرأ عند أوّل فتحٍ للمحرّر لا مع الاختبار — لا يدفع ثمنَها من لا يحرّر نصّاً — وتبقى للجلسة.
+      و`lesson_items` حارسُها `can_author`، وهو من يحرّر هنا. والمحطّةُ بلا درس ⇒ لا زرّ.
+   🔴 **والتعذّرُ يُقال** كما في الأهداف والروابط أعلاه: زرٌّ يغيب صامتاً يُسوّي «لا نصَّ في الدرس» و«لم يُقرأ». */
+async function bookTexts(){
+  const lid = ctx.course?.station === true ? null : ctx.lesson?.id;
+  if(!lid) return { texts: [] };
+  if(BKT?.lesson === lid) return BKT;
+  const r = await api.lessonItems(lid).then(x => x, e => ({ error: e }));
+  if(r?.error || !r?.data?.ok) return { texts: [], error: true };
+  BKT = { lesson: lid,
+          texts: (r.data.items || []).filter(x => x.kind === 'text' && String(x.body || '').trim()) };
+  return BKT;
+}
+
+function wireBookInsert(main, isNew){
+  const btn = main.querySelector('#pfBook'), pick = main.querySelector('#pfPick');
+  if(!btn) return;
+  bookTexts().then(b => {
+    if(!btn.isConnected) return;                       // أُغلق المحرّرُ قبل الوصول
+    if(b.error){ main.querySelector('#pfBookErr').hidden = false; return; }
+    if(!b.texts.length) return;
+    btn.hidden = false;
+    main.querySelector('#pfBookSep').hidden = false;
+    btn.onclick = () => {
+      if(!pick.hidden){ pick.hidden = true; btn.setAttribute('aria-expanded', 'false'); return; }
+      openPick(b.texts, 0);
+    };
+  });
+
+  async function openPick(texts, at){
+    const { textBlocks, textDir } = await import('./book.js');
+    const item = texts[at];
+    const blocks = textBlocks(item.body, item.title);
+    pick.hidden = false;
+    btn.setAttribute('aria-expanded', 'true');
+    pick.innerHTML = `
+      <div class="eq-bk-h">${texts.length > 1
+          ? `<select id="pkText" aria-label="نصّ الكتاب">${texts.map((t, i) =>
+              `<option value="${i}" ${i === at ? 'selected' : ''}>${esc(t.title)}</option>`).join('')}</select>`
+          : `<b dir="auto">${esc(item.title)}</b>`}
+        <span>تُدرج الفقرات المختارة كما هي حيث المؤشّر.</span></div>
+      <div class="eq-bk-list">${blocks.map((x, i) => `
+        <label class="eq-bk-i${x.type === 'h' ? ' h' : ''}">
+          <input type="checkbox" data-bi="${i}">
+          <span class="eq-bk-n">${x.type === 'h' ? 'عنوان' : x.n ? AR(x.n) : '•'}</span>
+          <span class="eq-bk-t" dir="auto">${esc(x.raw.replace(/\*\*|__/g, ''))}</span>
+        </label>`).join('')}</div>
+      <div class="eq-bk-f">
+        <button type="button" class="btn primary" id="pkGo">إدراج المختار</button>
+        <button type="button" class="btn ghost" id="pkNo">إلغاء</button>
+      </div>`;
+    pick.querySelector('#pkText')?.addEventListener('change', e => openPick(texts, +e.target.value));
+    pick.querySelector('#pkNo').onclick = () => { pick.hidden = true; btn.setAttribute('aria-expanded', 'false'); };
+    pick.querySelector('#pkGo').onclick = () => {
+      const sel = [...pick.querySelectorAll('[data-bi]:checked')].map(c => blocks[+c.dataset.bi].raw);
+      if(!sel.length){ toast("لم تُختر فقرة بعد"); return; }
+      insertParas(main.querySelector('#pfBody'), sel.join('\n\n'));
+      /* والجديدُ يأخذ لغةَ نصّه من حروفه، وعنوانَه إن خلا — والقائمُ لا يُمسّ منه إلا المتن */
+      if(isNew){
+        main.querySelector('#pfLang').value = textDir(item.body) === 'ltr' ? 'en' : 'ar';
+        const t = main.querySelector('#pfTitle');
+        if(!t.value.trim()) t.value = item.title || '';
+      }
+      pick.hidden = true;
+      btn.setAttribute('aria-expanded', 'false');
+      toast("أُدرجت " + N(sel.length, 'فقرة', 'فقرتان', 'فقرات', 'فقرة'));
+    };
+  }
+}
+
+/* فقراتٌ حيث المؤشّر، يفصلها عمّا قبلها وما بعدها سطرٌ فارغ — فاصلُ الفقرة في النصّ المشترك وفي الكتاب */
+function insertParas(ta, text){
+  const a = ta.selectionStart ?? ta.value.length, b = ta.selectionEnd ?? a;
+  const before = ta.value.slice(0, a), after = ta.value.slice(b);
+  const gap = (s, atEnd) => !s.trim() ? ''
+    : (atEnd ? s.endsWith('\n\n') : s.startsWith('\n\n')) ? ''
+    : (atEnd ? s.endsWith('\n') : s.startsWith('\n')) ? '\n' : '\n\n';
+  const t = gap(before, true) + text + gap(after, false);
+  ta.focus();
+  ta.setSelectionRange(a, b);
+  if(!document.execCommand?.("insertText", false, t)){
+    ta.setRangeText(t, a, b, "end");
+    ta.dispatchEvent(new Event("input", { bubbles: true }));
+  }
 }
 
 async function delPassage(id){

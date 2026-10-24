@@ -43,8 +43,9 @@
    ═══════════════════════════════════════════════════════════════════ */
 
 import * as api from './api.js';
-import { app, head, toast, esc, AR, errBox, nav, setWide, scrollTop, N } from './ui.js';
+import { app, head, toast, esc, escA, AR, errBox, nav, setWide, scrollTop, N } from './ui.js';
 import { openCourse } from './editor.js';
+import { previewText } from './editor_items.js';
 
 const MAX = 2 * 1024 * 1024;          // حدُّ الملفّ — كما في صندوق الاختبار
 
@@ -107,6 +108,20 @@ const SAMPLE_INDEX = JSON.stringify({
     remedy: "علاجٌ محدَّد إن أخطأ فيه الطالب — لا «راجع الدرس»."
   }],
   lessons: [{ key: "U1.LIFESTYLES", objectives: ["R.MAIN", "R.TFNG"] }]
+}, null, 2);
+
+/* 📖 b191 · قالبُ النصوص (180) — الدرسُ بمفتاحه والنصُّ بعنوانه في درسه. واللغةُ والوصفُ
+   والفرعُ والمدّةُ اختياريّة: اللغةُ تُحسب من الحروف إن غابت، وما غاب في التحديث يبقى قائماً. */
+const SAMPLE_TEXTS = JSON.stringify({
+  texts: [{
+    lesson: "U1.LIFESTYLES",
+    title: "Reading: Healthy Lifestyles",
+    lang: "en",
+    description: "A short text about daily habits",
+    strand: "Reading",
+    minutes: 10,
+    body: "First paragraph…\n\nSecond paragraph…\n\n[image: r2:english/u1/healthy.webp | Caption]"
+  }]
 }, null, 2);
 
 /* ── عرضُ الخطّة كما تردُّها الدالّة — بلا إعادة حساب ──
@@ -303,6 +318,77 @@ function planIndex(pl){
       </div>` : grp('خارج الفهرس', 0)}`;
 }
 
+/* 📖 b191 · خطّةُ النصوص — ثلاثُ مجموعاتٍ تردّها `import_texts` (180) بمفاتيحَ عربيّة.
+   🔑 **والصفرُ يُعرض ولا يُخفى** (حكمُ planCards): «سيُنشأ ٠» عند إعادة الملفّ تقول «تصحيحٌ لا تكرار».
+   🔑 **وما لم يتغيّر يُطوى ولا يُحذف** (حكمُ planIndex): إعادةُ ملفّ المقرَّر بعد تصحيح نصٍّ واحد
+      تُرسل النصوصَ كلَّها، وسردُها يدفن المتغيّرَ تحتها. فإن لم يتغيّر شيءٌ فُتح.
+   👁 **ولكلّ نصٍّ زرُّ معاينة** (القرار ⑤ في 180) — والنصُّ يظهر للطالب بعد الاعتماد بلا نشرٍ آخر
+      (`save_item` رسميٌّ للصفّ)، فالمعاينةُ قبله هي الفرصةُ الوحيدة. والزرُّ يحمل ما يُعرف به النصّ
+      في الملفّ (مفتاحُ درسه وعنوانُه) لا موضعَه في الخطّة — فلا يُعاين نصٌّ غيرُه. */
+function planTexts(pl){
+  if(!pl?.['سيُنشأ']) return '';                 // دفعةٌ مرفوضة ⇒ لا خطّة
+  const mk = pl['سيُنشأ'] || [], up = pl['سيُحدَّث'] || [], same = pl['بلا تغيير'] || [];
+  const chip = (t, v) => `<span class="chip${v ? ' g' : ''}">${esc(t)} <b>${AR(v)}</b></span>`;
+  const row = r => `
+    <div class="line" style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;padding:6px 0">
+      <code dir="ltr" style="font-size:.76rem">${esc(r['الدرس'] || '')}</code>
+      <b dir="auto" style="color:var(--text)">${esc(r['النصّ'] || '')}</b>
+      <span dir="auto">${esc(r['عنوانُ الدرس'] || '')}</span>
+      <span class="chip">${r['اللغة'] === 'en' ? 'English' : 'العربية'}</span>
+      <span class="chip">${N(r['فقرات'] || 0, 'فقرة', 'فقرتان', 'فقرات', 'فقرة')}</span>
+      <span class="chip">${N(r['كلمات'] || 0, 'كلمة', 'كلمتان', 'كلمات', 'كلمة')}</span>
+      ${r['الموضع'] && r['الموضع'] !== 'موضعُه القائم' ? `<span class="chip">${esc(r['الموضع'])}</span>` : ''}
+      <button type="button" class="mf-up" data-pv data-k="${escA(r['الدرس'] || '')}"
+        data-t="${escA(r['النصّ'] || '')}" data-l="${escA(r['عنوانُ الدرس'] || '')}"
+        data-lang="${escA(r['اللغة'] || '')}" data-pos="${escA(r['الموضع'] || '')}">معاينة</button>
+    </div>`;
+  const grp = (t, list) => `
+    <div class="grp" style="margin-top:12px">${t}
+      <span class="chip${list.length ? ' g' : ''}">${AR(list.length)}</span></div>
+    ${list.map(row).join('') || '<div class="line" style="padding:4px 0">—</div>'}`;
+  return `
+    <div class="ed-m" style="margin:0 0 4px">
+      ${chip('سيُنشأ', mk.length)}${chip('سيُحدَّث', up.length)}${chip('بلا تغيير', same.length)}
+    </div>
+    ${grp('سيُنشأ', mk)}
+    ${grp('سيُحدَّث', up)}
+    ${same.length ? `<details style="margin-top:12px"${mk.length + up.length ? '' : ' open'}>
+        <summary class="line" style="cursor:pointer">${N(same.length, 'نصّ', 'نصّان', 'نصوص',
+          'نصّاً')} بلا تغيير — متنها ولغتها كما في القاعدة، فلا تُكتب</summary>
+        ${same.map(row).join('')}
+      </details>` : ''}`;
+}
+
+/* 📖 b191 · زرُّ المعاينة في خطّة النصوص — يُفوَّض من `#out` (الخطّةُ تُعاد كتابتُها مع كلّ جافّة).
+   🔑 **والمتنُ من الملفّ لا من الخطّة:** القاعدةُ تردّ أرقامَه لا نصَّه. فيُطبَّع كما تطبّعه
+      (`\r\n` ⇐ `\n` · تقليمُ الطرفين) ليُرى ما سيُكتب لا ما لُصق. وهذا عرضٌ لا حراسة.
+   🔑 **والدرسُ بعنوانه:** `author_lessons` لا تردّ مفتاحَ المؤلّف، والخطّةُ تردّ عنوانَ الدرس.
+      وقِيس: لا عنوانان متطابقان في مقرَّرٍ واحد (٥١١ درساً · ٢٤ أكتوبر) — ولا قيدَ يضمنه،
+      فإن تعدّد التطابقُ عُوين بلا كلماتٍ ملوّنة ولم يُخمَّن.
+   ⚠️ وفي التحديث بلا `description` في الملفّ يبقى الوصفُ القائم — والمعاينةُ لا تعرفه فتُريه فارغاً. */
+async function previewFromPlan(e, course, parsed){
+  const b = e.target.closest('[data-pv]');
+  if(!b || !parsed) return;
+  const cut = s => String(s ?? '').replace(/^[ \t\r\n]+|[ \t\r\n]+$/g, '');
+  const { k, t, l, lang, pos } = b.dataset;
+  const src = (parsed.texts || []).find(x =>
+    cut(x?.lesson) === k && cut(x?.title).toLowerCase() === t.toLowerCase());
+  if(!src){ toast('لم يوجد هذا النص في الملف'); return; }
+  b.disabled = true;
+  const { data } = await api.authorLessons(course.id).then(r => r, () => ({}));
+  b.disabled = false;
+  const hit = (data || []).filter(x => x.title === l);
+  const lesson = hit.length === 1 ? hit[0] : null;
+  previewText({
+    course, lesson, btn: b, title: t, lang: lang || 'ar',
+    subtitle: cut(src.description),
+    body: String(src.body ?? '').replace(/\r\n?/g, '\n').replace(/^[ \t\n]+|[ \t\n]+$/g, ''),
+    quiz: lesson ? (lesson.items || []).some(x => x.kind === 'quiz' && x.quiz_id)
+                 : pos === 'قبل اختبار الدرس',
+    from: 'من الملف قبل الاعتماد، ولا تحفظ شيئاً'
+  });
+}
+
 /* ═══════════ جدولُ البوّابات — وهو كلُّ الفرق بينها ═══════════
    🔑 ما اختلف بُيّن هنا، وما اتّفق بقي أسفلُ مرّةً واحدة. وزيادةُ
    بوّابةٍ ثالثةٍ يوماً سطرٌ في هذا الجدول، لا ملفٌّ ثالث. */
@@ -405,6 +491,31 @@ const K = {
     done: d => `اعتُمدت ${N(d['أُنشئت'] || 0, 'بطاقة', 'بطاقتان', 'بطاقات', 'بطاقة')}` +
                (d['حُدِّثت'] ? ` · وحُدّثت ${AR(d['حُدِّثت'])}` : ''),
     okline: 'اعتُمدت — والوسم أُضيف ولم يُزل شيء'
+  },
+  /* 📖 b191 · البوّابةُ الخامسة (180). و`onOut` جديد: نقرةٌ في منطقة النتيجة تُفوَّض إليه —
+     زرُّ المعاينة في الخطّة يعيش ما عاشت، وتُعاد كتابتُها مع كلّ جافّة. */
+  texts: {
+    head: ['استيراد نصوص القراءة', 'ملفّ واحد لمقرّر واحد'],
+    card: '⇪ استيراد نصوص القراءة إلى دروس المقرّر',
+    intro: `يُلصق ملفّ النصوص كما سلّمه معلّم المادة. والدرس يُعرف <b>بمفتاح مؤلّفه</b>
+      (<code dir="ltr">lesson</code>) لا برقمه.<br>
+      والنصّ يُعرف <b>بعنوانه في درسه</b>: العنوان القائم يُحدَّث متنه، والجديد يُنشأ
+      <b>قبل اختبار الدرس</b>.<br>
+      <b>ولا يحذف شيئاً:</b> نصّ في الدرس ليس في الملفّ يبقى كما هو.<br>
+      والنصّ يظهر للطالب بعد الاعتماد مباشرة — <b>فلكلّ نصّ في الخطّة معاينة</b>
+      تُريه كما يراه الطالب.`,
+    ph: '{ "texts": [ { "lesson": "U1.X", "title": "…", "body": "…" } ] }',
+    sample: SAMPLE_TEXTS,
+    call: (course, payload, dry) => api.importTexts(course.id, payload, dry),
+    plan: planTexts,
+    onOut: previewFromPlan,
+    count: pl => N((pl?.['سيُنشأ'] || []).length + (pl?.['سيُحدَّث'] || []).length,
+                   'نصّ', 'نصّين', 'نصوص', 'نصّاً'),
+    done: d => 'حُفظت النصوص — ' + ([
+                 d['أُنشئ'] ? N(d['أُنشئ'], 'نصّ جديد', 'نصّان جديدان', 'نصوص جديدة', 'نصّاً جديداً') : '',
+                 d['حُدِّث'] ? N(d['حُدِّث'], 'نصّ محدَّث', 'نصّان محدَّثان', 'نصوص محدَّثة', 'نصّاً محدَّثاً') : ''
+               ].filter(Boolean).join(' · ') || 'بلا تغيير'),
+    okline: 'حُفظت النصوص، ولم يُحذف شيء. أعِد الإرسال بعد أيّ تصحيح — العنوان يمنع التكرار.'
   }
 };
 
@@ -412,6 +523,7 @@ export const openQuizImport  = course => openImport(course, 'quiz');
 export const openMapImport   = course => openImport(course, 'map');
 export const openCardsImport = course => openImport(course, 'cards');
 export const openIndexImport = course => openImport(course, 'objectives');
+export const openTextsImport = course => openImport(course, 'texts');
 
 async function openImport(course, kind){
   const C = K[kind];
@@ -509,6 +621,9 @@ async function openImport(course, kind){
     };
 
     document.getElementById("dry").onclick = () => run(ta.value || '', true);
+    /* 📖 b191 · `#out` يبقى والخطّةُ تُكتب فيه مرّةً بعد مرّة ⇒ مستمعٌ واحدٌ هنا يخدم كلَّ رسم.
+       و`parsed` تُقرأ ساعةَ النقر لا ساعةَ الربط. */
+    if(C.onOut) document.getElementById("out").onclick = e => C.onOut(e, course, parsed);
   };
 
   /* ── الجافّة والاعتماد: نداءٌ واحد بفارقٍ واحد ──

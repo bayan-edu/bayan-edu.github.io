@@ -120,7 +120,8 @@ function parse(body, title){
 
   chunks.forEach((c, i) => {
     const fig = c.match(FIG);
-    if(fig){ blocks.push({ type: 'f', kind: figKind(fig[1]), src: fig[2].trim(), cap: (fig[3] || '').trim() }); return; }
+    /* `raw` الكتلةُ كما كتبها المؤلّف — لـ`textBlocks` وحدها، والكتابُ لا يقرؤه */
+    if(fig){ blocks.push({ type: 'f', kind: figKind(fig[1]), src: fig[2].trim(), cap: (fig[3] || '').trim(), raw: c }); return; }
     const oneLine = !c.includes('\n');
     const wrapped = oneLine && /^\*\*[^*]+\*\*$/.test(c);
     const bare = c.replace(/^\*\*|\*\*$/g, '').trim();
@@ -128,10 +129,10 @@ function parse(body, title){
                   && i < chunks.length - 1;
     if(wrapped || short){
       if(i === 0 && norm(bare) === norm(title)) return;
-      blocks.push({ type: 'h', text: bare });
+      blocks.push({ type: 'h', text: bare, raw: c });
       return;
     }
-    blocks.push({ type: 'p', text: c });
+    blocks.push({ type: 'p', text: c, raw: c });
   });
 
   /* الترقيم ثلاثةُ أحوال:
@@ -170,6 +171,94 @@ function parse(body, title){
 export const mediaLines = body => String(body || '').split(/\r?\n/)
   .map(l => l.trim().match(FIG)).filter(Boolean)
   .map(m => ({ kind: figKind(m[1]), src: m[2].trim() }));
+
+/* 🆕 b190 · فقراتُ النصّ كما يقسمها الكتاب — لـ«إدراجٌ من نصّ الكتاب» في محرّر النصّ المشترك
+   (`editor_quiz.js`): المقتطفُ يولد من أصله حرفاً، ثمّ هو نصٌّ مستقلٌّ يُعدَّل كما يشاء مؤلّفُه
+   (حكمُ المالك · لا مقارنةَ بعده ولا مزامنة).
+   🔑 **والتقسيمُ تقسيمُ `parse` نفسِه:** الترقيمُ ترقيمُ الهامش الذي يراه الطالب، والعنوانُ المكرَّر في
+      أوّل النصّ يسقط كما يسقط في الكتاب — فلا تقسيمان لنصٍّ واحد. و`raw` الكتلةُ كما كُتبت،
+      بتنسيقها ورقمِ مؤلّفها «(١)» إن كتبه، فتُدرج حرفاً.
+   ⚠️ **وسطرُ الصورة والفيديو لا يُعاد:** النصُّ المشترك يُعرض بـ`fmt` ولا يعرف السطرَ فيظهر للطالب
+      خاماً، وللاختبار حقلُ وسيطٍ خاصٌّ به. */
+export const textBlocks = (body, title) => parse(body, String(title || '').trim()).blocks
+  .filter(b => b.type !== 'f')
+  .map(b => ({ type: b.type, n: b.n ?? null, raw: b.raw }));
+/* والاتجاهُ من النصّ لا من وسمه — حكمُ رأس هذا الملفّ: `lang` في القاعدة يخطئ (قِيس: b152) */
+export const textDir = body => sniffDir(body);
+
+/* 🆕 b189 · منظّفُ اللصق — للمحرّر. المنسوخُ من PDF يحمل نهايةَ سطرٍ في آخر كلّ سطرٍ مرئيّ،
+   والمنسوخُ من Word يفصل فقراتِه بسطرٍ واحد — و`parse` يقرأ السطرَ المفرد كسراً مقصوداً
+   (الشعر والحوار) والسطرَ الفارغ فاصلَ فقرة. فالأوّلُ يظهر للطالب مكسوراً، وتلتصق كلمةُ آخر
+   السطر بما بعدها فلا تتلوّن إن كانت مفردة؛ والثاني فقرةٌ واحدةٌ طويلةٌ برقمٍ واحد. (قِيس: b188)
+   ⇒ **يُقترح الدمجُ أو الفصل ولا يُفرض:** الشعرُ أسطرٌ متقاربةٌ بلا علامة وقف، ولا يفرّقه عن
+      PDF يقيناً إلا من كتبه.
+   📐 والحكمُ بالقياس لا بالمصدر — لا يُعرف من أين لُصق:
+      • `wrap` — أسطرٌ متقاربةُ الطول (نصفُها فأكثر يبلغ ٨٠٪ من الطول الغالب) وجملٌ تعبر السطر:
+        يُدمج ما في الفقرة، **والسطرُ القصير آخرُ فقرته** — وكذا العنوانُ القصير فيبقى وحده كما
+        يقرؤه `parse`. والكلمةُ المقسومةُ بشَرطة (trav-eled) تُوصل، ورقمٌ وحده في سطر (رقمُ صفحة) يسقط.
+      • `paras` — أسطرٌ طويلةٌ مختومةٌ بعلامة وقف يفصلها سطرٌ واحد: يُفصل بينها بسطرٍ فارغ.
+      • وما سواهما (شعرٌ · حوار · قائمة · نصٌّ سليم) ⇒ null: لا يُقترح شيء.
+   وسطرُ الصورة والفيديو (`FIG`) يبقى سطراً وحده، ولا يدخل القياس.
+   🔑 **والشعرُ الإنجليزيّ يُعرف بأوّل حرفه — قِيس:** أسطرُه متقاربةٌ بلا علامة وقف فبدت PDF، لكنّ
+      كلَّ سطرٍ فيه يبدأ بحرفٍ كبير، والنثرُ المكسور يبدأ سطرُه المكمِّل بصغيرٍ غالباً. والعربيةُ بلا
+      حروفٍ كبيرة، فشعرُها قد يُقترح دمجُه — والاقتراحُ يُردّ بنقرة.
+   ⚠️ **وخطأٌ معروفٌ يبقى — قِيس:** فقرةٌ يبلغ سطرُها الأخير عرضَ العمود تُدمج بالتي تليها، ولا يُفرَّق
+      نصّاً بين نهاية فقرةٍ ونهاية جملةٍ في وسطها. **إلا أن تصل المسافةُ البادئة** (يحفظها بعضُ النسخ):
+      فالسطرُ المزاحُ أوّلُ فقرة. والمعاينةُ ترى الباقي قبل الحفظ. */
+const PAGE_NO = /^[0-9٠-٩]{1,3}$/;
+const INDENT  = /^(\t|　|[  ]{2,})/;
+export function tidyPaste(raw){
+  const rawLines = String(raw || '').replace(/\r\n?/g, '\n').split('\n');
+  const lines = rawLines.map(l => l.trim());
+  const before = lines.join('\n').trim();
+  const prose = lines.filter(l => l && !FIG.test(l) && !PAGE_NO.test(l));
+  if(prose.length < 3) return null;
+  const lens = prose.map(l => l.length).sort((a, b) => a - b);
+  const L = lens[Math.floor(lens.length * 0.7)];              // الطولُ الغالب: الأسطرُ الكاملة أكثرُ النصّ
+  const ends = l => isSentEnd(l.split(/\s+/).pop());
+  /* الانتقال: سطرٌ يليه سطرٌ غيرُ فارغٍ مباشرةً — وهو موضعُ السؤال كلِّه */
+  const cont = [];
+  for(let i = 0; i < lines.length - 1; i++){
+    const a = lines[i], b = lines[i + 1];
+    if(a && b && !FIG.test(a) && !FIG.test(b) && !PAGE_NO.test(a)) cont.push([a, b]);
+  }
+  if(!cont.length) return null;
+  const full = cont.filter(([a]) => a.length >= 0.8 * L).length;
+  const openT = cont.filter(([a]) => !ends(a));
+  const latin = (prose.join(' ').match(LAT_CH) || []).length > (prose.join(' ').match(AR_CH) || []).length;
+  const lowerNext = openT.filter(([, b]) => /^[a-z]/.test(b)).length;
+  const prosey = !latin || lowerNext >= openT.length / 2;
+  /* المسافةُ البادئة دليلٌ إن كانت لبعض الأسطر لا لأكثرها */
+  const ind = rawLines.map(l => l.trim() && INDENT.test(l));
+  const useInd = ind.filter(Boolean).length > 0 && ind.filter(Boolean).length < prose.length * 0.4;
+
+  if(full >= cont.length / 2 && openT.length >= 2 && L >= 25 && L <= 140 && prosey){
+    const out = [];
+    let cur = '', joins = 0, dropped = 0;
+    const flush = () => { if(cur){ out.push(cur); cur = ''; } };
+    for(let i = 0; i < lines.length; i++){
+      const t = lines[i];
+      if(!t){ flush(); continue; }
+      if(PAGE_NO.test(t)){ dropped++; continue; }
+      if(FIG.test(t)){ flush(); out.push(t); continue; }
+      if(useInd && ind[i]) flush();
+      if(!cur) cur = t;
+      else if(/[A-Za-z]-$/.test(cur) && /^[a-z]/.test(t)){ cur = cur.slice(0, -1) + t; joins++; }
+      else { cur += ' ' + t; joins++; }
+      if(t.length < 0.8 * L) flush();
+    }
+    flush();
+    const text = out.join('\n\n');
+    return text === before ? null : { mode: 'wrap', text, joins, paras: out.length, dropped };
+  }
+
+  const longEnds = cont.filter(([a]) => a.length >= 60 && ends(a)).length;
+  if(longEnds >= 2 && longEnds >= cont.length * 0.7){
+    const out = lines.filter(Boolean);
+    return { mode: 'paras', text: out.join('\n\n'), joins: 0, paras: out.length, dropped: 0 };
+  }
+  return null;
+}
 
 /* 🆕 b170 · والفيديو لا يُنتظر: إطارُه ١٦:٩ معلومٌ سلفاً، وصورتُه تصل في مكانها.
    ومصدرُه يمرّ بحارسه (`opt.video` = videoOf) فيعود { embed, poster } أو يسقط. */

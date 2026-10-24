@@ -17,7 +17,8 @@ import { openItems } from './editor_items.js';
 import { openCards } from './editor_cards.js';
 import { openStrands, strandsOf, strandSelect, clearStrands } from './editor_strands.js';
 import { openObjectives } from './editor_objectives.js';
-import { openQuizImport, openCardsImport, openMapImport, openIndexImport } from './editor_import.js';
+import { openQuizImport, openCardsImport, openMapImport, openIndexImport,
+         openTextsImport } from './editor_import.js';
 
 /* شجرة التأليف تُحمَّل مرة وتُخزَّن — لا تتغيّر أثناء الجلسة */
 async function tree(){
@@ -634,6 +635,7 @@ export async function openCourse(course){
             ${toolBtn('imc', 'cards', 'بطاقات')}
             ${toolBtn('imm', 'mindmap', 'خريطة الدروس')}
             ${toolBtn('imo', 'target', 'فهرس الأهداف')}
+            ${toolBtn('imt', 'text', 'نصوص القراءة')}
           </div>
         </details>
       </div>` :`<div class="warnbox">يمكنك إضافة مصادر إلى الدروس القائمة.</div>`}
@@ -664,6 +666,8 @@ export async function openCourse(course){
   if(imo) imo.onclick = () => openIndexImport(course);
   const imc = document.getElementById("imc");
   if(imc) imc.onclick = () => openCardsImport(course);
+  const imt = document.getElementById("imt");               // 📖 b191 · بوّابةُ النصوص (180)
+  if(imt) imt.onclick = () => openTextsImport(course);
   if(course.curate) app.querySelectorAll(".ed-row").forEach(el =>
     el.onclick = () => editLesson(course, lessons.find(x => String(x.id) === el.dataset.l)));
   app.querySelectorAll("[data-q]").forEach(el => el.onclick = e => {
