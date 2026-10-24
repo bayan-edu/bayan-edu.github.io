@@ -23,7 +23,7 @@
 import * as api from './api.js';
 import { app, head, toast, esc, AR, errBox, nav, setWide, scrollTop, dirOf, backText, backMeta, shrinkFont, examples, pickExample, sayable, sayGroup, bindSay, cardImg, N } from './ui.js';
 
-import { openCourse } from './editor.js';
+import { openCourse, courseTags, toolBtn } from './editor.js';
 import { practiceLinkBox } from './practice_links.js';
 import { attachUpload } from './upload.js';
 
@@ -110,7 +110,12 @@ function visible(){
 export async function openCards(course, lessonId){
   ctx = { course, lessons: [] };
   nav('editor'); setWide(true);
-  head("البطاقات", course.title || '');
+  /* 🆕 b187 · البروازُ (المادّة · الصفّ) بدل سطرٍ تحت العنوان — كشاشة دروس المقرَّر
+     (`b186`)، وطلبُ المالك: «بنفس الأسلوب». وهما مفتاحُ المجموعة بعينه (رأسُ الملفّ)،
+     ويُحسبان مرّةً هنا فيرثهما كلُّ ما يُفتح من المجموعة: الشاشاتُ الفرعيّة لا تنادي
+     `head()`، فالرأسُ يبقى رأسَ المجموعة وهي مفتوحة. */
+  ctx.tags = await courseTags(course);
+  head("البطاقات", "", false, ctx.tags);
   app.innerHTML = `<div class="status">جار التحميل…</div>`;
 
   const [decks, lessons, strands] = await Promise.all([
@@ -142,7 +147,7 @@ export async function openCards(course, lessonId){
 
 function renderNoDeck(){
   app.innerHTML = `
-    <div class="crumb" id="bk">→ دروس المقرَّر</div>
+    <div class="crumb" id="bk">→ عودة لدروس المقرَّر</div>
     <div class="ed-sec">
       <div class="grp">بطاقات المادة</div>
       <div class="ed-empty">لا مجموعة بعد. وهي حاويةٌ واحدةٌ لبطاقات المادة
@@ -161,7 +166,7 @@ function renderNoDeck(){
 
 function deckForm(d){
   app.innerHTML = `
-    <div class="crumb" id="bk">→ بطاقات المادة</div>
+    <div class="crumb" id="bk">→ عودة للبطاقات</div>
     <div class="ed-form">
       <div class="ed-side">
         <div class="ed-hint">💡 <b>المجموعة حاوية</b> واحدةٌ للمادة
@@ -207,7 +212,7 @@ async function openDeck(d, lessonId){
      `String(id) === F.lesson` — فرقمٌ هنا يُسقط المصفاة صامتاً. */
   F = { q: '', lesson: lessonId ? String(lessonId) : '',
         strand: '', flag: '', sort: 'pos' };
-  head("البطاقات", d.title);
+  head("البطاقات", "", false, ctx.tags);
   app.innerHTML = `<div class="status">جار التحميل…</div>`;
   const { data, error } = await api.deckCards(d.id);
   if(error){ app.innerHTML = errBox(error, 'بطاقات المجموعة'); return; }
@@ -373,23 +378,37 @@ function renderCards(){
   const rows = visible();
 
   app.innerHTML = `
-    <div class="crumb" id="bk">→ دروس المقرَّر</div>
+    <div class="crumb" id="bk">→ عودة لدروس المقرَّر</div>
 
-    <div class="nav" style="margin-bottom:16px">
-      <button class="btn primary" id="paste">📋 لصق قائمة</button>
-      <button class="btn" id="one">＋ بطاقة واحدة</button>
-      ${C.length ? '<button class="btn" id="pv">👁 معاينة بعين الطالب</button>' : ''}
-      ${/* 🆕 b89 · ولا يظهر لرزمةٍ فارغة: create_practice_session تردّها
-            («لا بطاقة في هذه الرزمة»)، وزرٌّ لا يُنتج إلا رسالةَ رفضٍ
-            يُعلّم أنّ الأزرار تكذب. */''}
-      ${C.length ? '<button class="btn" id="plink">🔗 رابط تدرّب</button>' : ''}
+    ${/* 🆕 b187 · شريطُ الأدوات بأسلوب دروس المقرَّر (`.ed-tools` · `b186`) — كانت خمسةَ
+          أزرارٍ متساويةِ العرض. ⇒ الإنشاءُ (لصقُ قائمة · بطاقةٌ واحدة) | الوسمُ | وفي
+          طرف الشريط ما يُري الطالبَ البطاقات (المعاينة · رابطُ التدرّب): الأوّلان
+          يصنعان، والأوسطُ يصنّف، والآخران يُخرجان — وهو ترتيبُ العمل نفسُه.
+       📌 والوسمُ وضعٌ يُفتح ويُغلق: `aria-pressed` تقول حالَه لقارئ الشاشة، وصبغةُ
+          `accent` تقولها للعين («اخترتَ») — لا زرٌّ ممتلئٌ ثانٍ ينافس «لصق قائمة».
+       📌 و«أضف بطاقاتٍ إلى درس» صارت «إضافة بطاقات إلى درس»: أمرٌ مذكّرٌ في زرّ،
+          والزرُّ مصدر (الهويّة اللغويّة §٦). */''}
+    <div class="ed-tools">
+      <div class="ed-tg">
+        ${toolBtn('paste', 'paste', 'لصق قائمة', ' pri')}
+        ${toolBtn('one', 'plus', 'بطاقة واحدة')}
+      </div>
       ${/* 🔴 b131 · ورُفع «⚙️ اسم المجموعة». المجموعةُ بعد `157` حاويةٌ
             واحدةٌ لكلّ (مادة · صفّ)، واسمُها مشتقٌّ من اسم المادة —
             فزرُّ إعادة التسمية **يدعو المؤلّف أن يكسر اسماً مشتقّاً**،
             ويعد بتصنيفٍ لا تفعله الحاويةُ أصلاً. والتصنيفُ على
             البطاقة: الدرسُ والفرع. ⇒ زرٌّ غامضُ الغرضِ ضرره أكبر. */''}
-      ${C.length ? `<button class="btn${TAG ? ' primary' : ''}" id="tag">🏷 ${
-        TAG ? 'إنهاء الوسم' : 'أضف بطاقاتٍ إلى درس'}</button>` : ''}
+      ${/* 🆕 b89 · ولا يظهر لرزمةٍ فارغة: create_practice_session تردّها
+            («لا بطاقة في هذه الرزمة»)، وزرٌّ لا يُنتج إلا رسالةَ رفضٍ
+            يُعلّم أنّ الأزرار تكذب. — والحكمُ نفسُه على المعاينة والوسم. */''}
+      ${C.length ? `<div class="ed-tg">
+        ${toolBtn('tag', 'tag', TAG ? 'إنهاء الوسم' : 'إضافة بطاقات إلى درس', '',
+                  `aria-pressed="${TAG}"`)}
+      </div>
+      <div class="ed-tg ed-tend">
+        ${toolBtn('pv', 'eye', 'معاينة بعين الطالب')}
+        ${toolBtn('plink', 'link', 'رابط تدرّب')}
+      </div>` : ''}
     </div>
 
     ${TAG ? tagBar() : ''}
@@ -605,7 +624,7 @@ function linkPicker(){
   const st = opt(ctx.strands, byStrand, 'name',  'strand_cards');
 
   app.innerHTML = `
-    <div class="crumb" id="bk">→ ${esc(cur.title)}</div>
+    <div class="crumb" id="bk">→ عودة للبطاقات</div>
     <div class="ed-sec">
       <div class="grp">على أيّ شيءٍ يتدرّب الطالب؟</div>
 
@@ -648,7 +667,7 @@ function parse(text){
 
 function pasteBox(){
   app.innerHTML = `
-    <div class="crumb" id="bk">→ ${esc(cur.title)}</div>
+    <div class="crumb" id="bk">→ عودة للبطاقات</div>
     <div class="ed-form">
       <div class="ed-side">
         <div class="ed-hint">📋 <b>سطر لكلّ بطاقة.</b> الوجه ثمّ المعنى،
@@ -788,7 +807,7 @@ const picked = id => [...document.querySelectorAll(`#${id} input:checked`)]
 
 function cardForm(c){
   app.innerHTML = `
-    <div class="crumb" id="bk">→ ${esc(cur.title)}</div>
+    <div class="crumb" id="bk">→ عودة للبطاقات</div>
     <div class="ed-form">
       <div class="ed-side">
         <div class="ed-hint">🔑 <b>الوجه هو ما يُسأل عنه.</b> ويُختار بما
@@ -936,7 +955,7 @@ function preview(){
   calm = calm === null ? sysReduce : calm === '1';
 
   app.innerHTML = `
-    <div class="crumb" id="bk">→ ${esc(cur.title)}</div>
+    <div class="crumb" id="bk">→ عودة للبطاقات</div>
     <div class="warnbox" style="margin-bottom:14px">👁 معاينة — لا يُحفظ
       منها تقدير، ولا تدخل جدولة أحد. النصّ الذي تكتبه في حقل
       الاسترجاع لا يُخزَّن هنا أيضاً.</div>

@@ -1105,6 +1105,13 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
 .ed-tb.pri,.ed-tb.pri:hover{background:var(--accent);color:var(--on-accent)}
 .ed-tb.pri .ic,.ed-tb.pri:hover .ic{color:var(--on-accent)}
 .ed-tb.pri:hover{filter:brightness(1.08)}
+/* 🆕 b187 · زرٌّ يُبدِّل وضعاً (الوسمُ في البطاقات): المفتوحُ صبغةُ `accent` — «اخترتَ» —
+   لا زرٌّ ممتلئٌ ثانٍ ينافس الأساسيّ. وبعد قاعدة المرور عمداً: المفتوحُ يبقى مفتوحاً تحتها. */
+.ed-tb[aria-pressed="true"]{background:var(--accent-fill);color:var(--accent)}
+.ed-tb[aria-pressed="true"] .ic{color:var(--accent)}
+/* ومجموعةٌ تُدفع إلى طرف الشريط كقائمة الاستيراد — بلا فاصلٍ في صدرها: الفراغُ قبلها يفصل */
+.ed-tend{margin-inline-start:auto}
+.ed-tg.ed-tend::before{display:none}
 
 /* الاستيراد `<details>` لا لوحةٌ تُبنى: الفتحُ والإغلاقُ وإعلانُ الحال لقارئ الشاشة
    من المتصفّح نفسِه، والنقرُ خارجها وEsc في editor.js.
@@ -1124,8 +1131,12 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
    وحدها في سطر و«استيراد» وحدها في آخر (قِيس على ٣٧٥: أربعةُ أسطر)، والشبكةُ ثلاثةٌ
    متساوية. و`display:contents` تُذيب المجموعات فتصير أزرارُها خاناتٍ — والفاصلُ يسقط
    معها، فلا يصير خانةً فارغة. والقائمةُ في الخانة اليسرى فتنفتح إلى الداخل كما هي. */
+/* 🆕 b187 · و`minmax(0,1fr)` لا `1fr`، والاسمُ يلتفّ: «إضافة بطاقات إلى درس» في
+   البطاقات أعرضُ من نصف شاشةٍ بـ٣٧٥ — و`1fr` لا تضيق دون أعرض محتوى عمودها، فطالت
+   الصفحةُ ٤٨px أفقيّاً (قِيس). وزرٌّ بسطرين خيرٌ من صفحةٍ تنزلق. */
 @media(max-width:700px){
-  .ed-tools{display:grid;grid-template-columns:1fr 1fr}
+  .ed-tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ed-tb{white-space:normal;text-align:start;min-width:0}
   .ed-tg{display:contents}
   .ed-tg + .ed-tg::before{display:none}
   .ed-tm{margin:0}

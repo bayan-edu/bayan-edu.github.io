@@ -461,6 +461,21 @@ document.addEventListener('keydown', e => {
   if(d){ d.open = false; d.querySelector('summary')?.focus(); }
 });
 
+/* 🆕 b187 · بروازُ المقرَّر وزرُّ شريطه — مصدرٌ واحدٌ لشاشتين: دروسِه هنا وبطاقاتِه
+   (`editor_cards.js`). ونسختان لبرواز واحد تفترقان يوماً بصمت.
+   📌 والبروازُ المادّةُ والصفّ وحدهما: هما مفتاحُ مجموعة البطاقات بعينه (مادّة ·
+      صفّ — رأسُ `editor_cards.js`)، ودروسُ المقرَّر تزيد عليهما المسارَ والعدد. */
+export async function courseTags(course){
+  const t = await tree();
+  return [(byId(t.subjects, course.subject_id) || {}).name || course.title,
+          byId(t.levels, course.level_id)?.name];
+}
+
+/* و`attrs` لما يزيد على الزرّ — حالُ زرٍّ يُبدِّل وضعاً (`aria-pressed`) مثلاً. */
+export const toolBtn = (id, ic, label, cls = '', attrs = '') =>
+  `<button type="button" class="ed-tb${cls}" id="${id}"${attrs ? ' ' + attrs : ''}>${
+    icon(ic)}<span>${label}</span></button>`;
+
 export async function openCourse(course){
   nav('editor'); setWide(true);
   const t = await tree();
@@ -480,10 +495,10 @@ export async function openCourse(course){
         به)، والبروازُ بترتيب الطالب: المادّةُ ثمّ الصفّ — الأعمُّ قبل الأخصّ — ثمّ
         المسارُ إن كان، والعددُ آخراً. **والصفُّ جديدٌ هنا:** لم تكن الشاشةُ تقوله،
         فمقرَّرا الإنجليزيّة لصفّين كانا يحملان «English» عنواناً واحداً.
-     ⚠️ و`head()` تُسقط الفارغ — فمقرَّرٌ بلا صفٍّ ولا مسارٍ يحمل بروازين. */
-  const lvl = byId(t.levels, course.level_id);
-  const n   = Number(course.students) || 0;
-  head("دروس المقرَّر", "", false, [s.name || course.title, lvl?.name, p?.name,
+     ⚠️ و`head()` تُسقط الفارغ — فمقرَّرٌ بلا صفٍّ ولا مسارٍ يحمل بروازين.
+     🆕 b187 · والمادّةُ والصفّ من `courseTags` — وبها يبدأ بروازُ البطاقات أيضاً. */
+  const n = Number(course.students) || 0;
+  head("دروس المقرَّر", "", false, [...await courseTags(course), p?.name,
        n === 1 ? 'طالب واحد' : N(n, 'طالب', 'طالبان', 'طلاب', 'طالباً')]);
   app.innerHTML = `<div class="status">جار تحميل الدروس…</div>`;
 
@@ -599,29 +614,26 @@ export async function openCourse(course){
         أسفلُ لم يُمسّ، وزرُّ الاستيراد داخل القائمة يُنقَر كما كان خارجها.
      📌 و«＋ وحدة» صارت «وحدة جديدة» توأمَ «درس جديد»: زرّان بأيقونةٍ واحدة يفرّقهما
         الاسم. و«تستطيع» صارت «يمكنك» — مضارعٌ مخاطَبٌ يفرض المذكّر (الهويّة اللغويّة §٤). */
-  const tool = (id, ic, label, cls = '') =>
-    `<button type="button" class="ed-tb${cls}" id="${id}">${icon(ic)}<span>${label}</span></button>`;
-
   app.innerHTML = `
     ${/* 🆕 b186 · «عودة للمقرّرات» — طلبُ المالك: اسمُ الوجهة وحده لا يقول إنّه رجوع. */''}
     <div class="crumb" id="bk">→ عودة للمقرّرات</div>
     ${errBox(error, 'دروس المقرَّر')}
     ${course.curate ? `<div class="ed-tools">
         <div class="ed-tg">
-          ${tool('new', 'plus', 'درس جديد', ' pri')}
-          ${tool('nu', 'plus', 'وحدة جديدة')}
+          ${toolBtn('new', 'plus', 'درس جديد', ' pri')}
+          ${toolBtn('nu', 'plus', 'وحدة جديدة')}
         </div>
         <div class="ed-tg">
-          ${tool('cards', 'cards', 'البطاقات')}
-          ${s.id ? tool('nst', 'strands', 'فروع المادة') + tool('nob', 'target', 'أهداف المادة') : ''}
+          ${toolBtn('cards', 'cards', 'البطاقات')}
+          ${s.id ? toolBtn('nst', 'strands', 'فروع المادة') + toolBtn('nob', 'target', 'أهداف المادة') : ''}
         </div>
         <details class="ed-tm">
           <summary class="ed-tb">${icon('import')}<span>استيراد</span>${icon('chev')}</summary>
           <div class="ed-tpop">
-            ${tool('imq', 'quiz', 'اختبار')}
-            ${tool('imc', 'cards', 'بطاقات')}
-            ${tool('imm', 'mindmap', 'خريطة الدروس')}
-            ${tool('imo', 'target', 'فهرس الأهداف')}
+            ${toolBtn('imq', 'quiz', 'اختبار')}
+            ${toolBtn('imc', 'cards', 'بطاقات')}
+            ${toolBtn('imm', 'mindmap', 'خريطة الدروس')}
+            ${toolBtn('imo', 'target', 'فهرس الأهداف')}
           </div>
         </details>
       </div>` :`<div class="warnbox">يمكنك إضافة مصادر إلى الدروس القائمة.</div>`}
