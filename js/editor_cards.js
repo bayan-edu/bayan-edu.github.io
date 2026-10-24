@@ -133,7 +133,7 @@ export async function openCards(course, lessonId){
      📌 **ووظائفُها الثلاث بقيت، كلٌّ حيث يُرى سببُه:** الإنشاءُ حالةُ
         فراغٍ أدناه · والحذفُ وهي فارغةٌ في شاشة البطاقات · وعدُّ
         مجموعات الطلاب سطرٌ في ذيلها. */
-  const off = D.find(d => !d.mine);
+  const off = D.find(d => !d.mine && (course.level_id ? d.level_id === course.level_id : true)) || D.find(d => !d.mine);
   off ? openDeck(off, lessonId) : renderNoDeck();
 }
 
