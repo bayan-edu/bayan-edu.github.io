@@ -428,8 +428,13 @@ h1{font-family:'Almarai';font-weight:800;font-size:clamp(1.3rem,4.4vw,1.72rem);l
    📌 ونصفُ القطر ١١px — قطرُ الحقول والأزرار الثانوية، لا ٨ الرقاقة. */
 /* 🆕 b139 · وصارت حاويةً: شاشةُ الدروس تحمل المادة والمستوى معاً.
    و`flex-wrap` فيها كما في صفّها الأمّ — برواز ان طويلان على شاشةٍ
-   ضيّقة ينكسران سطراً، ولا يُعصران. */
-.head-tags{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:0 0 auto}
+   ضيّقة ينكسران سطراً، ولا يُعصران.
+   🔴 b186 · **وكان الانكسارُ لا يقع:** `flex:0 0 auto` ثبّتت عرضَ الحاوية على
+      أطول سطرٍ لبراويزها مجتمعة، فلا يضيق فيلتفّ ما داخله. وبروازا الطالب قصيران
+      فلم يُرَ، وجاءت شاشةُ دروس المقرَّر بأربعة (المادّة · الصفّ · المسار · العدد)
+      **فطالت الصفحةُ في الجوّال ١٠٨px أفقيّاً** (قِيس على ٣٧٥). ⇒ `0 1 auto`: تنزل
+      سطراً كما كانت، ثمّ تضيق إلى عرضه فتنكسر براويزُها — وأدناها أعرضُ بروازٍ فيها. */
+.head-tags{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:0 1 auto}
 .head-tags[hidden]{display:none}
 .head-tag{flex:0 0 auto;align-self:center;
   background:var(--surface);border:1px solid var(--line);

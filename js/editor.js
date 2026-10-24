@@ -11,7 +11,7 @@
 import * as api from './api.js';
 import { S } from './state.js';
 import { app, head, toast, esc, escA, AR, errBox, nav, setWide, scrollTop, N,
-         ICONS, KINDS } from './ui.js';
+         ICONS, KINDS, icon } from './ui.js';
 import { openQuiz } from './editor_quiz.js';
 import { openItems } from './editor_items.js';
 import { openCards } from './editor_cards.js';
@@ -446,6 +446,21 @@ const DECK_IMG = `<img src="/img/kind/deck.webp" class="ic-3d" alt=""
 
 /* ═══════════ ② دروس المقرَّر ═══════════ */
 
+/* 🆕 b186 · قائمةُ الاستيراد في شريط الأدوات (`.ed-tm`) تُطوى بنقرةٍ خارجها وبـEsc —
+   كلوحتَي الجرس والحساب في ui.js وبحكمهما: **مستمعان على المستند مرّةً في عمر
+   الوحدة** لا في كلّ رسم، وإلّا تراكما مع كلّ فتحٍ للمقرَّر.
+   📌 وEsc يُعيد التركيزَ إلى زرّها، والنقرُ خارجها لا يُعيده (التعليلُ عند `shutPop`). */
+document.addEventListener('click', e => {
+  document.querySelectorAll('.ed-tm[open]').forEach(d => {
+    if(!d.contains(e.target)) d.open = false;
+  });
+});
+document.addEventListener('keydown', e => {
+  if(e.key !== 'Escape') return;
+  const d = document.querySelector('.ed-tm[open]');
+  if(d){ d.open = false; d.querySelector('summary')?.focus(); }
+});
+
 export async function openCourse(course){
   nav('editor'); setWide(true);
   const t = await tree();
@@ -456,9 +471,20 @@ export async function openCourse(course){
      بـ`innerHTML` (مصرَّحٌ به عندها: «الأسماءُ تأتي من القاعدة»)، فالتهريبُ
      هنا **يُظهر `&amp;` حرفاً** في اسم مادّةٍ فيها «&».
      ⚠️ وهذا بابُها الوحيد (قِيس على `js/` كلِّه: نداءٌ واحد)، **وصفرُ مادّةٍ
-        اليوم فيها محرفُ تهريب** — فالعطلُ نائمٌ لا قائم، ويُسدّ قبل أن يستيقظ. */
-  head(s.name || course.title,
-       `${N(course.students,'طالب','طالبان','طلاب','طالباً')}${p ? ' · ' + p.name : ''}`);
+        اليوم فيها محرفُ تهريب** — فالعطلُ نائمٌ لا قائم، ويُسدّ قبل أن يستيقظ.
+     🆕 b186 · **والمادّةُ وعددُ الطلاب نزلا إلى البرواز** كشاشة دروس الطالب
+        (`loadLessons` · `b139`) — طلبُ المالك (٢٤ أكتوبر). كان اسمُ المادّة عنواناً
+        وتحته سطرٌ فيه «طالب» وحدها: صيغةُ الواحد بلا رقم (`N`) صحيحةٌ في جملة، **وفي
+        سطرٍ منفردٍ تُقرأ اسمَ دورٍ لا عدداً.** ⇒ «طالب واحد»، وما سواه بـ`N` كما كان.
+     📌 والعنوانُ «دروس المقرَّر» اسمُ الشاشة القائم (فتاتُ نموذج الدرس يعود إليها
+        به)، والبروازُ بترتيب الطالب: المادّةُ ثمّ الصفّ — الأعمُّ قبل الأخصّ — ثمّ
+        المسارُ إن كان، والعددُ آخراً. **والصفُّ جديدٌ هنا:** لم تكن الشاشةُ تقوله،
+        فمقرَّرا الإنجليزيّة لصفّين كانا يحملان «English» عنواناً واحداً.
+     ⚠️ و`head()` تُسقط الفارغ — فمقرَّرٌ بلا صفٍّ ولا مسارٍ يحمل بروازين. */
+  const lvl = byId(t.levels, course.level_id);
+  const n   = Number(course.students) || 0;
+  head("دروس المقرَّر", "", false, [s.name || course.title, lvl?.name, p?.name,
+       n === 1 ? 'طالب واحد' : N(n, 'طالب', 'طالبان', 'طلاب', 'طالباً')]);
   app.innerHTML = `<div class="status">جار تحميل الدروس…</div>`;
 
   const { data, error } = await api.authorLessons(course.id);
@@ -564,20 +590,41 @@ export async function openCourse(course){
       ${ls.length ? ls.map(row).join("") : '<div class="ed-empty">لا دروس بعد</div>'}`;
   };
 
+  /* 🆕 b186 · شريطُ الأدوات — طلبُ المالك (٢٤ أكتوبر): «فكرةٌ تصميميّةٌ عصريّة للوضوح».
+     كان تسعةَ أزرارٍ متساويةِ العرض (`button.btn` · `flex:1`) يلتفّ نصُّها أسطراً،
+     وأربعةٌ منها تبدأ بـ«⇪ استيراد». ⇒ ثلاثُ مجموعاتٍ في سطحٍ واحد: الإنشاءُ ·
+     المادّةُ · والاستيرادُ قائمةً واحدة في الطرف (`<details>`) — فالظاهرُ ستّةُ أزرار،
+     كلٌّ بعرض كلمته. والتعليلُ البصريّ عند `.ed-tools` في screens.css.
+     🔑 **والمعرّفاتُ هي هي** (`new` · `nu` · `cards` · `nst` · `nob` · `im*`): ربطُها
+        أسفلُ لم يُمسّ، وزرُّ الاستيراد داخل القائمة يُنقَر كما كان خارجها.
+     📌 و«＋ وحدة» صارت «وحدة جديدة» توأمَ «درس جديد»: زرّان بأيقونةٍ واحدة يفرّقهما
+        الاسم. و«تستطيع» صارت «يمكنك» — مضارعٌ مخاطَبٌ يفرض المذكّر (الهويّة اللغويّة §٤). */
+  const tool = (id, ic, label, cls = '') =>
+    `<button type="button" class="ed-tb${cls}" id="${id}">${icon(ic)}<span>${label}</span></button>`;
+
   app.innerHTML = `
-    <div class="crumb" id="bk">→ المقرّرات</div>
+    ${/* 🆕 b186 · «عودة للمقرّرات» — طلبُ المالك: اسمُ الوجهة وحده لا يقول إنّه رجوع. */''}
+    <div class="crumb" id="bk">→ عودة للمقرّرات</div>
     ${errBox(error, 'دروس المقرَّر')}
-    ${course.curate ? `<div class="nav" style="margin-bottom:16px">
-        <button class="btn primary" id="new">＋ درس جديد</button>
-        <button class="btn" id="cards">💡 البطاقات</button>
-        <button class="btn ghost"   id="nu">＋ وحدة</button>
-        ${s.id ? `<button class="btn ghost" id="nst">🌿 فروع المادة</button>
-                  <button class="btn ghost" id="nob">🎯 أهداف المادة</button>` : ''}
-        <button class="btn ghost" id="imq">⇪ استيراد اختبار</button>
-        <button class="btn ghost" id="imc">⇪ استيراد بطاقات</button>
-        <button class="btn ghost" id="imm">⇪ استيراد خريطة</button>
-        <button class="btn ghost" id="imo">⇪ استيراد فهرس الأهداف</button>
-      </div>` :`<div class="warnbox">تستطيع إضافة مصادر إلى الدروس القائمة.</div>`}
+    ${course.curate ? `<div class="ed-tools">
+        <div class="ed-tg">
+          ${tool('new', 'plus', 'درس جديد', ' pri')}
+          ${tool('nu', 'plus', 'وحدة جديدة')}
+        </div>
+        <div class="ed-tg">
+          ${tool('cards', 'cards', 'البطاقات')}
+          ${s.id ? tool('nst', 'strands', 'فروع المادة') + tool('nob', 'target', 'أهداف المادة') : ''}
+        </div>
+        <details class="ed-tm">
+          <summary class="ed-tb">${icon('import')}<span>استيراد</span>${icon('chev')}</summary>
+          <div class="ed-tpop">
+            ${tool('imq', 'quiz', 'اختبار')}
+            ${tool('imc', 'cards', 'بطاقات')}
+            ${tool('imm', 'mindmap', 'خريطة الدروس')}
+            ${tool('imo', 'target', 'فهرس الأهداف')}
+          </div>
+        </details>
+      </div>` :`<div class="warnbox">يمكنك إضافة مصادر إلى الدروس القائمة.</div>`}
 
     ${units.map(u => block(u.title, u.id)).join("")}
     ${group(null).length || !units.length ? block('دروس بلا وحدة', null) : ''}

@@ -1076,6 +1076,62 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
 .qz-go.off{color:var(--text-muted);opacity:.55;cursor:not-allowed}
 .ed-empty{color:var(--text-muted);font-size:var(--fs-meta);padding:10px 4px 14px}
 
+/* 🆕 b186 · شريطُ أدوات المقرَّر — والتعليلُ النصّيّ عند `openCourse` في editor.js.
+   🔑 **ولا لونَ جديد ولا ظلَّ جديد:** السطحُ وصفةُ `.card` بعينها (`--surface` +
+      `--line` + `--shadow`) كبروازِ السياق فوقه (`.head-tag`). والأزرارُ **محايدة**
+      لأنّها لا تقول حكماً، و`accent` للتفاعل وحده — الزرُّ الأساسيّ ومرورُ الفأرة
+      والقائمةُ المفتوحة — وهي جملتُه بعينها: «اضغط هنا».
+   📌 والأيقونةُ `--text-muted` والاسمُ `--text`: الكلمةُ تُقرأ والرسمُ يُلمَح. وفي
+      المرور يتلوّنان معاً، فالزرُّ كلُّه يقول «هنا».
+   📌 والفاصلُ رسمٌ في صدر المجموعة (`::before`) لا عنصرٌ بينها: مقرَّرٌ بلا مادّة
+      (`s.id`) تبقى مجموعتُه الثانية زرّاً واحداً، ولا يتيتّم فاصلٌ بلا جار.
+   ⚠️ و`min-height:40px` لا ارتفاعٌ ثابت: هدفُ لمسٍ في الجوّال، ويتّسع لخطٍّ أكبر. */
+.ed-tools{display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+  background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);
+  border-radius:16px;padding:7px;margin-bottom:22px}
+.ed-tg{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.ed-tg + .ed-tg::before{content:"";align-self:stretch;width:1px;margin:6px 4px;background:var(--line)}
+.ed-tb{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 14px;
+  border:0;border-radius:11px;background:none;color:var(--text);cursor:pointer;
+  font-family:'Almarai';font-weight:700;font-size:var(--fs-ui);line-height:1.3;
+  white-space:nowrap;transition:background .18s,color .18s}
+.ed-tb .ic{width:18px;height:18px;flex:0 0 auto;color:var(--text-muted);
+  transition:color .18s,transform .2s}
+.ed-tb:hover,.ed-tm[open] > .ed-tb{background:var(--accent-soft);color:var(--accent)}
+.ed-tb:hover .ic,.ed-tm[open] > .ed-tb .ic{color:var(--accent)}
+.ed-tb:active{transform:translateY(1px)}
+.ed-tb:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* الأساسيُّ وصفةُ `.primary` نفسُها: لونُه لونُه في المرور — يضيء ولا يتبدّل */
+.ed-tb.pri,.ed-tb.pri:hover{background:var(--accent);color:var(--on-accent)}
+.ed-tb.pri .ic,.ed-tb.pri:hover .ic{color:var(--on-accent)}
+.ed-tb.pri:hover{filter:brightness(1.08)}
+
+/* الاستيراد `<details>` لا لوحةٌ تُبنى: الفتحُ والإغلاقُ وإعلانُ الحال لقارئ الشاشة
+   من المتصفّح نفسِه، والنقرُ خارجها وEsc في editor.js.
+   🔑 و`margin-inline-start:auto` تدفعه إلى طرف سطره (يسارِ RTL) **أينما وقع**: وإن
+      التفّ الشريطُ في الجوّال بقي آخرَ سطره، فالقائمةُ المعلّقة بطرفه (`inset-inline-end`)
+      تنفتح إلى الداخل دائماً ولا تفيض عن الشاشة. */
+.ed-tm{position:relative;margin-inline-start:auto}
+.ed-tm > summary{list-style:none}
+.ed-tm > summary::-webkit-details-marker{display:none}
+.ed-tm > summary .ic:last-child{width:15px;height:15px}
+.ed-tm[open] > summary .ic:last-child{transform:rotate(180deg)}
+.ed-tpop{position:absolute;top:calc(100% + 8px);inset-inline-end:0;z-index:30;min-width:220px;
+  display:flex;flex-direction:column;gap:2px;padding:6px;
+  background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+.ed-tpop .ed-tb{width:100%}
+/* وفي الشاشة الضيّقة شبكةٌ من عمودين لا التفافٌ حرّ: الحرُّ يترك «أهداف المادة»
+   وحدها في سطر و«استيراد» وحدها في آخر (قِيس على ٣٧٥: أربعةُ أسطر)، والشبكةُ ثلاثةٌ
+   متساوية. و`display:contents` تُذيب المجموعات فتصير أزرارُها خاناتٍ — والفاصلُ يسقط
+   معها، فلا يصير خانةً فارغة. والقائمةُ في الخانة اليسرى فتنفتح إلى الداخل كما هي. */
+@media(max-width:700px){
+  .ed-tools{display:grid;grid-template-columns:1fr 1fr}
+  .ed-tg{display:contents}
+  .ed-tg + .ed-tg::before{display:none}
+  .ed-tm{margin:0}
+  .ed-tm > summary{width:100%}
+}
+
 /* 🆕 b134 · شريطُ الفرز والمِصفاة في شاشة البطاقات.
    🔑 **ولا لونَ جديد فيه ولا عائلةَ معنى:** الشريطُ **محايد**
       (`--fill-soft` + `--line`) لأنّه لا يقول جملةَ حكم — وكلُّ
