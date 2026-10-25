@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════
-   بيان — book.css · الكتاب المقلَّب  (b152 · b153 · b154 · b155)
+   بيان — book.css · الكتاب المقلَّب  (b152 · b153 · b154 · b155 · b193)
    يُحمَّل مع js/book.js عند فتح أوّل كتاب — لا مع المنصّة.
 
    🎨 الورقُ محايد: لا عائلةَ معنى في الكتاب كلِّه (طبقة الأدوار في
@@ -96,6 +96,21 @@ body:has(.bk){padding-bottom:0}
   font-family:'Almarai';font-weight:800;font-size:.62em;line-height:1.9;
   color:var(--bk-ink-soft);border:1px solid var(--bk-edge);border-radius:999px;
   background:var(--bk-paper)}
+/* ── البيت (b193) ──
+   صفٌّ بشطرين يملأ كلٌّ منهما نصفَه (`text-align-last:justify`) فتتحاذى الصدورُ والأعجاز كما
+   في الدواوين — والشطرُ الأعرضُ من نصفه يأخذ حاجتَه من أخيه (`min-width:max-content`) ولا
+   ينكسر. والمقاسُ `--bk-vs` والعرضُ الأقصى `--bk-vw` يحسبهما المحرّك بقياس الأبيات (fitVerses)،
+   و`.vstack` حين لا يسع السطرُ البيتَ بخطٍّ مقروء: الصدرُ أوّلَ السطر والعجزُ آخرَ الذي يليه.
+   ⚠️ وتحت ٨٥٪ يتبع الخطُّ المكبَّرُ القارئَ: البيتُ ينزل شطرين ولا يصغر. */
+.bk-v{margin-bottom:.3em}
+.bk-vl{display:flex;column-gap:calc(var(--bk-vs,1) * 1.25em);max-width:var(--bk-vw,none);margin-inline:auto}
+.bk-hs{flex:1 1 0;min-width:max-content;font-size:calc(var(--bk-vs,1) * 1em);
+  text-align:justify;text-align-last:justify}
+.bk.vstack .bk-vl{display:block}
+/* والبيتُ سطران ⇒ بين البيتين فسحةُ الفقرة، وإلّا اتّصل عجزُ بيتٍ بصدر ما يليه */
+.bk.vstack .bk-v:not(:last-child){margin-bottom:.62em}
+.bk.vstack .bk-hs{display:block;min-width:0;text-align:start;text-align-last:auto}
+.bk.vstack .bk-hs + .bk-hs{text-align:end}
 .bk-h{font-family:'Almarai';font-weight:800;font-size:1.02em;line-height:1.5;
   margin:.15em 0 .55em;color:var(--bk-ink);text-align:start}
 .bk-body b{font-weight:700}

@@ -1373,11 +1373,14 @@ export function bookLook({ cards, g, subject, lesson: l, title, preview = false 
       name: () => voiceName('en')
     },
     onVoiceFail: () => toast("تعذّر النطق على هذا الجهاز"),
-    coverMeta: ({ paragraphs, words, minutes }) => [
-      N(paragraphs, 'فقرة', 'فقرتان', 'فقرات', 'فقرة'),
+    /* 🆕 b193 · كلٌّ باسمه: القصيدةُ «١٠ أبيات» لا «١٠ فقرات»، والآيتان «آيتان» — وما كان صفراً يغيب */
+    coverMeta: ({ paragraphs, verses = 0, ayat = 0, words, minutes }) => [
+      paragraphs ? N(paragraphs, 'فقرة', 'فقرتان', 'فقرات', 'فقرة') : '',
+      verses ? N(verses, 'بيت', 'بيتان', 'أبيات', 'بيتاً') : '',
+      ayat ? N(ayat, 'آية', 'آيتان', 'آيات', 'آية') : '',
       N(words, 'كلمة', 'كلمتان', 'كلمات', 'كلمة'),
       'نحو ' + N(minutes, 'دقيقة', 'دقيقتين', 'دقائق', 'دقيقة')
-    ].join('، ')                                   // 🆕 b179 · «،» — joinList في ui.js
+    ].filter(Boolean).join('، ')                   // 🆕 b179 · «،» — joinList في ui.js
   };
 }
 

@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════
-   بيان — book.js · الكتاب المقلَّب  (b152 · b153 · b154 · b155 · b165 · b170)
+   بيان — book.js · الكتاب المقلَّب  (b152 · b153 · b154 · b155 · b165 · b170 · b193)
 
    محرّكٌ قائمٌ بنفسه يعرض نصَّ القراءة كتاباً تُقلَّب صفحاته.
    لا يستورد شيئاً من المنصّة: التنسيقُ والأرقامُ والنصوصُ تُمرَّر
@@ -88,9 +88,13 @@ const tokenize = s => String(s)
   .split(/[ \t]+/).filter(Boolean)
   .map(t => t.split(GLUE).join(' '));
 
-/* نهايةُ جملة — بعد نزع علامات التنسيق وأقواس الإغلاق من ذيلها */
-const SENT_END = /[.!?؟؛…](["'”’»)\]]*)$/;
+/* نهايةُ جملة — بعد نزع علامات التنسيق وأقواس الإغلاق من ذيلها.
+   🆕 b193 · ونهايةُ الآية «۝١٥١» نهايةُ جملةٍ في القرآن: الصفحةُ تنتهي عندها إن وجدتها قريبة. */
+const SENT_END = /(?:[.!?؟؛…]|۝[0-9٠-٩۰-۹]+)(["'”’»)\]﴾]*)$/;
 const isSentEnd = tok => SENT_END.test(tok.replace(/(\*\*|__|_)+$/, ''));
+/* 🆕 b193 · علامةُ الآية «۝١٥١» وعلاماتُ الوقف «ۖ ۚ» تلزم الكلمةَ قبلها: لا يبدأ بها سطرٌ ولا صفحة.
+   (و«۞» خارجها: علامةُ ربع الحزب أوّلُ آيتها لا آخرُ ما قبلها.) */
+const BIND = /^[ۖ-۝۟-ۭ]/;
 
 const words = s => (String(s).match(/\S+/g) || []).length;
 const norm  = s => String(s || '').replace(/[\u064B-\u0652\u0670*_]/g, '')
@@ -112,6 +116,42 @@ const LETTERED = /^\s*(\*\*)?[A-H][.)]?(\*\*)?\s+\S/;
 const FIG = /^\[\s*(صورة|image|فيديو|video)\s*[:：]\s*([^|\]\n]+?)\s*(?:\|\s*([^\]\n]*?))?\s*\]$/i;
 const figKind = w => /^(فيديو|video)$/i.test(w) ? 'vid' : 'img';
 
+/* 🆕 b193 · الشعرُ والقرآن — طلبُ المالك (٢٥ أكتوبر · بلقطتين): «كلّ بيتٍ في سطر» · «لا داعي
+   لرقم الفقرة طالما النصّ قرآنيّ، ولا تفصل الآيات كفقرات طالما متتالية». ويُعرفان من علاماتهما
+   في النصّ لا من وسمٍ يُكتب — كالاتجاه (رأسُ هذا الملفّ):
+
+   📜 البيتُ سطرٌ بين شطريه «۞» واحدةٌ بين مسافتين — وهو ما كتبه مؤلّفونا في القصائد كلِّها وفي
+      شواهد القصّة. وفي كلّ شطرٍ اثنتا عشرة كلمةً فأقلّ.
+      ⚠️ ولا فاصلَ غيرُها — كلٌّ يقع في النثر فيصير سطرُه بيتاً: «*» («Note: * marks…» · «٥ * ٣»)،
+         و«…» و«...» بين مسافتين، والجدولةُ (جدولُ مفرداتٍ ملصوقٌ من Word: «كلمة⇥معناها»).
+         و«۞» لا تقع في نثر، وفي المصحف علامةُ ربع الحزب أوّلَ آية — والآيةُ تُعرف قبل البيت.
+      والنقطةُ في آخر العجز تسقط: البيتُ لا يُختم بنقطة — وأثبتها المؤلّفون لئلّا يُقرأ البيتُ
+      القصيرُ عنواناً، والبيتُ صار يُعرف قبل العنوان.
+   📖 والآيةُ كتلةٌ أوّلُها «﴿» وآخرُها «﴾» (وبعده إحالةٌ قصيرةٌ بين قوسين إن كُتبت) — لا آيةٌ
+      مقتبسةٌ في فقرة نثر، فتلك تبقى فقرةً برقمها. */
+const HEMI = /[  ]+۞[  ]+/;
+const HEMI_MAX = 12;
+function verseOf(line){
+  const t = line.trim(), m = t.match(OWN_NUM);
+  const parts = (m ? t.slice(m[0].length) : t).split(HEMI);
+  if(parts.length !== 2) return null;
+  const s = parts[0].trim(), a = parts[1].trim().replace(/(^|[^.])\.$/, '$1').trim();
+  if(!s || !a || words(s) > HEMI_MAX || words(a) > HEMI_MAX) return null;
+  return { own: m ? m[1] : null, s, a, raw: t };
+}
+
+const QURAN = /^﴿[\s\S]*﴾[ \t]*(?:[(\[][^()[\]\n]{1,40}[)\]])?$/;
+const AYAH  = /۝\s*([0-9٠-٩۰-۹]+)/g;
+const ayahNo = s => +String(s).replace(/[٠-٩]/g, d => d.charCodeAt(0) - 0x660)
+                              .replace(/[۰-۹]/g, d => d.charCodeAt(0) - 0x6F0);
+function quranOf(c){
+  /* رقمُ المؤلّف «(١)» يسقط معها: رقمُ الآية في «۝» هو المرجع (حكمُ المالك) */
+  const m = c.match(OWN_NUM), t = m ? c.slice(m[0].length).trim() : c;
+  if(!QURAN.test(t)) return null;
+  const nos = [...t.matchAll(AYAH)].map(x => ayahNo(x[1]));
+  return { text: t, first: nos[0], last: nos[nos.length - 1], ayat: nos.length, closed: /﴾$/.test(t) };
+}
+
 function parse(body, title){
   const raw = String(body || '').replace(/\r\n?/g, '\n').trim()
     .split('\n').map(l => FIG.test(l.trim()) ? '\n' + l.trim() + '\n' : l).join('\n');
@@ -122,6 +162,27 @@ function parse(body, title){
     const fig = c.match(FIG);
     /* `raw` الكتلةُ كما كتبها المؤلّف — لـ`textBlocks` وحدها، والكتابُ لا يقرؤه */
     if(fig){ blocks.push({ type: 'f', kind: figKind(fig[1]), src: fig[2].trim(), cap: (fig[3] || '').trim(), raw: c }); return; }
+
+    /* 🆕 b193 · الآيةُ والبيتُ قبل العنوان: «﴿قُلْ هُوَ اللَّهُ أَحَدٌ ۝١﴾» وبيتٌ من مجزوءٍ قصيران بلا
+       علامة وقف، فكانا يُقرآن عنوانين.
+       📖 والآيةُ التي تلي آخرَ آيةٍ قبلها (۝١٥٢ بعد ۝١٥١) تلتحق بفقرتها ويسقط «﴾ ﴿» بينهما — فالمقتبَسُ
+          المتّصلُ بين قوسين كما يُكتب. وصورةٌ بينهما لا تفصلهما: تبقى في موضعها من الكتل فتقع بعد
+          الفقرة، وعنوانٌ بينهما يفصلهما. ورقمٌ لا يتّصل (أو غائبٌ) ⇒ فقرةٌ جديدة: الاتصالُ لا يُخمَّن. */
+    const q = quranOf(c);
+    if(q){
+      let prev = null;
+      for(let j = blocks.length - 1; j >= 0 && !prev; j--) if(blocks[j].type !== 'f') prev = blocks[j];
+      if(prev?.q && prev.closed && q.first === prev.last + 1){
+        prev.text = prev.text.replace(/\s*﴾$/, '') + ' ' + q.text.replace(/^﴿\s*/, '');
+        prev.raw += ' ' + c;
+        Object.assign(prev, { last: q.last, ayat: prev.ayat + q.ayat, closed: q.closed });
+      } else blocks.push({ type: 'p', q: true, ...q, raw: c });
+      return;
+    }
+
+    const rows = c.split('\n').map(verseOf);
+    if(rows.every(Boolean)){ blocks.push({ type: 'v', rows, raw: c }); return; }
+
     const oneLine = !c.includes('\n');
     const wrapped = oneLine && /^\*\*[^*]+\*\*$/.test(c);
     const bare = c.replace(/^\*\*|\*\*$/g, '').trim();
@@ -135,29 +196,64 @@ function parse(body, title){
     blocks.push({ type: 'p', text: c, raw: c });
   });
 
+  /* 🆕 b193 · القصيدةُ الخالصة (لا فقرةَ نثرٍ فيها): كلُّ بيتٍ كتلةٌ برقمه — الأسئلةُ تقول «في البيت
+     الثالث» — كتبه المؤلّفُ فقرةً أو سطراً (والعقدُ يجعل السطرَ المفرد للشعر). وفي نصٍّ نثريٍّ يبقى
+     الشاهدُ كتلةً واحدةً برقم فقرته: رقمُ الفقرة لا يُسرق لبيتٍ يستشهد به كاتبُها. إلّا أن يرقّم
+     المؤلّفُ أبياتَه «(١)» — فالرقمُ رقمُه. */
+  const prose = blocks.some(b => b.type === 'p' && !b.q);
+  const all = blocks.flatMap(b => b.type === 'v' && b.rows.length > 1
+    && (!prose || b.rows.some(r => r.own != null))
+    ? b.rows.map(r => ({ type: 'v', rows: [r], raw: r.raw })) : [b]);
+
   /* الترقيم ثلاثةُ أحوال:
      ① المؤلّفُ رقّم كلَّ فقرة «(١)» ⇒ رقمُه ينتقل إلى الهامش كما كتبه
      ② الفقراتُ موسومةٌ بحروف (A · B · C) ⇒ لا ترقيم: الحرفُ هو المرجع
         في أسئلة «أيُّ فقرةٍ تذكر…»، ورقمٌ بجواره يُربك
-     ③ ما عدا ذلك ⇒ ترقيمٌ آليّ في الهامش */
-  const ps = blocks.filter(b => b.type === 'p');
-  const own = ps.length > 0 && ps.every(p => OWN_NUM.test(p.text));
-  const lettered = !own && ps.length > 1
-    && ps.filter(p => LETTERED.test(p.text)).length >= Math.ceil(ps.length * 0.6);
+     ③ ما عدا ذلك ⇒ ترقيمٌ آليّ في الهامش
+     🆕 b193 · والبيتُ يُرقَّم كالفقرة، والآيةُ لا تُرقَّم أبداً — ولا تُعدّ: الفقرةُ بعدها رقمُها التالي. */
+  const ps = all.filter(b => b.type === 'v' || (b.type === 'p' && !b.q));
+  ps.forEach(p => { p.own = p.type === 'v' ? p.rows[0].own : p.text.match(OWN_NUM)?.[1] ?? null; });
+  const paras = ps.filter(p => p.type === 'p');
+  const own = ps.length > 0 && ps.every(p => p.own != null);
+  const lettered = !own && paras.length > 1
+    && paras.filter(p => LETTERED.test(p.text)).length >= Math.ceil(paras.length * 0.6);
 
   let k = 0;
   ps.forEach(p => {
     if(own){
-      const m = p.text.match(OWN_NUM);
-      p.n = m[1]; p.text = p.text.slice(m[0].length);
+      p.n = p.own;
+      if(p.type === 'p') p.text = p.text.replace(OWN_NUM, '');
     } else if(!lettered){
       p.n = String(++k);
     }
-    p.tokens = tokenize(p.text);
   });
 
-  const total = ps.reduce((s, p) => s + p.tokens.length, 0);
-  return { blocks, paragraphs: ps.length, words: total, numbered: own || !lettered };
+  /* والبيتُ كلماتُ شطريه متتالية، وكلُّ صفٍّ يعرف حدودَه فيها: at (الصدر) · mid (العجز) · end */
+  all.forEach(b => {
+    if(b.type === 'p') b.tokens = tokenize(b.text);
+    if(b.type !== 'v') return;
+    b.tokens = [];
+    b.rows.forEach(r => {
+      const s = tokenize(r.s), a = tokenize(r.a);
+      Object.assign(r, { at: b.tokens.length, mid: b.tokens.length + s.length });
+      b.tokens.push(...s, ...a);
+      r.end = b.tokens.length;
+    });
+  });
+
+  /* والكلمةُ ما فيه حرفٌ أو رقم: «۝١٥١» و«ۖ» و«—» علاماتٌ لا كلمات — وكانت تُعدّ (٩١ كلمةً في
+     آيتين من الأنعام، وكلماتُهما ٧٧) */
+  const isWord = t => !BIND.test(t) && /[\p{L}\p{N}]/u.test(t);
+  const read = all.filter(b => b.type === 'p' || b.type === 'v');
+  return {
+    blocks: all,
+    /* والغلافُ يعدّ كلّاً باسمه: الفقرة · البيت · الآية (`coverMeta`) */
+    paragraphs: all.filter(b => b.type === 'p' && !b.ayat).length,
+    verses: all.reduce((s, b) => s + (b.type === 'v' ? b.rows.length : 0), 0),
+    ayat: all.reduce((s, b) => s + (b.ayat || 0), 0),
+    words: read.reduce((s, b) => s + b.tokens.filter(isWord).length, 0),
+    numbered: ps.some(p => p.n)
+  };
 }
 
 /* 🆕 b165 · الصورُ قبل التقسيم — المصدرُ يمرّ بحارس المنصّة (`opt.media`) ويُعرف
@@ -179,10 +275,12 @@ export const mediaLines = body => String(body || '').split(/\r?\n/)
       أوّل النصّ يسقط كما يسقط في الكتاب — فلا تقسيمان لنصٍّ واحد. و`raw` الكتلةُ كما كُتبت،
       بتنسيقها ورقمِ مؤلّفها «(١)» إن كتبه، فتُدرج حرفاً.
    ⚠️ **وسطرُ الصورة والفيديو لا يُعاد:** النصُّ المشترك يُعرض بـ`fmt` ولا يعرف السطرَ فيظهر للطالب
-      خاماً، وللاختبار حقلُ وسيطٍ خاصٌّ به. */
+      خاماً، وللاختبار حقلُ وسيطٍ خاصٌّ به.
+   🆕 b193 · والبيتُ فقرةٌ عند المحرّر (`p`) برقمه وسطرِه كما كُتب «صدر ۞ عجز»، والآياتُ المتّصلةُ
+      فقرةٌ واحدةٌ بلا رقم — كما يراها الطالب. */
 export const textBlocks = (body, title) => parse(body, String(title || '').trim()).blocks
   .filter(b => b.type !== 'f')
-  .map(b => ({ type: b.type, n: b.n ?? null, raw: b.raw }));
+  .map(b => ({ type: b.type === 'h' ? 'h' : 'p', n: b.n ?? null, raw: b.raw }));
 /* والاتجاهُ من النصّ لا من وسمه — حكمُ رأس هذا الملفّ: `lang` في القاعدة يخطئ (قِيس: b152) */
 export const textDir = body => sniffDir(body);
 
@@ -416,7 +514,7 @@ const plainText = t => String(t).replace(/\*\*|__|_/g, '').replace(/\\[()[\]]/g,
    opt.kicker      [المادة، الدرس] — سطرُ السياق على الغلاف
    opt.format      fmt المنصّة (**غامق** __مسطّر__) — وإلا تهريبٌ خام
    opt.num         أرقامُ الواجهة (AR) — وأرقامُ الورقة تتبع لسانَها
-   opt.coverMeta   ({paragraphs, words, minutes}) ⇒ نصّ
+   opt.coverMeta   ({paragraphs, verses, ayat, words, minutes}) ⇒ نصّ — 🆕 b193 الأبياتُ والآياتُ لا تُعدّ فقرات
    opt.endHtml     () ⇒ HTML صفحة الختام · أفعالُها [data-act]
    opt.onAction    (act, book) — نقرةٌ على [data-act]
    opt.onEnd       ({seconds, words}) — بلغ الختامَ بسرعةِ قارئٍ لا ماسح
@@ -475,6 +573,7 @@ const WPM_FAST = 450;        /* أسرعُ من هذا مسحٌ لا قراءة 
 const MIN_WORDS = 6;         /* أقلُّ من سطرٍ في ذيل الصفحة ⇒ الفقرةُ كلُّها تنتقل */
 const WIDOW     = 4;         /* ولا تبدأ صفحةٌ بأقلَّ من هذا من ذيل فقرة */
 const SENT_BACK = 18;        /* أبعدُ ما يُرجَع إليه بحثاً عن نهاية جملة */
+const V_MIN     = 0.85;      /* 🆕 b193 · أصغرُ خطٍّ للأبيات نسبةً إلى خطّ النصّ — ودونه ينزل العجز (fitVerses) */
 
 const store = {
   get(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } },
@@ -500,6 +599,14 @@ export async function createBook(host, opt = {}){
   const glossary = (opt.glossary || []).filter(g => g && g.front);
   const gIndex   = buildGlossary(glossary, dir === 'rtl');
   model.blocks.forEach(b => { if(b.type === 'p') b.hits = markHits(b.tokens, gIndex, dir === 'rtl'); });
+  /* 🆕 b193 · والبيتُ شطراً شطراً: لكلّ شطرٍ صندوقُه في الصفحة، فلا تعبر عبارةٌ ملوّنةٌ بينهما.
+     ⚠️ `Array.from` لا المصفوفةُ نفسُها: `flatMap` يُسقط الخاناتِ الفارغة فتنزاح الكلمات عن ألوانها. */
+  model.blocks.forEach(b => {
+    if(b.type !== 'v') return;
+    const parts = b.rows.flatMap(r => [[r.at, r.mid], [r.mid, r.end]]);
+    const hs = parts.map(([x, y]) => markHits(b.tokens.slice(x, y), gIndex, dir === 'rtl'));
+    b.hits = hs.some(Boolean) ? hs.flatMap((h, j) => Array.from(h || { length: parts[j][1] - parts[j][0] })) : null;
+  });
   const tapAny = typeof opt.tapAny === 'function' ? !!opt.tapAny(dir) : !!opt.tapAny;
 
   /* 🆕 b155 · الجُمَل — تُبنى إن وُجد صوتٌ لهذا اللسان وحده (الجسرُ يقرّر). والعنوانُ
@@ -510,6 +617,14 @@ export async function createBook(host, opt = {}){
     if(title) sents.push({ cover: true, text: plainText(title) });
     model.blocks.forEach(blk => {
       if(blk.type === 'h'){ blk.sid = sents.length; sents.push({ text: plainText(blk.text) }); return; }
+      if(blk.type === 'v'){                        // 🆕 b193 · البيتُ جملةٌ واحدة بشطريه
+        blk.sids = new Array(blk.tokens.length);
+        blk.rows.forEach(r => {
+          blk.sids.fill(sents.length, r.at, r.end);
+          sents.push({ text: plainText(blk.tokens.slice(r.at, r.end).join(' ')) });
+        });
+        return;
+      }
       if(blk.type !== 'p') return;                 // الصورةُ تُرى ولا تُقرأ
       const T = blk.tokens;
       blk.sids = new Array(T.length);
@@ -603,13 +718,25 @@ export async function createBook(host, opt = {}){
     node.innerHTML = n + fragHtml(blk, a, b);
   }
 
+  /* 🆕 b193 · البيت: لكلّ سطرٍ صفٌّ بشطرين (`.bk-vl`)، والرقمُ في الهامش كرقم الفقرة. ويُقسَم
+     البيتُ المتعدّدُ الأسطر بين صفحتين بأسطره لا بكلماته: الشطرُ لا ينكسر. */
+  function setV(node, blk, r0, r1){
+    node.className = 'bk-p bk-v' + (r0 > 0 ? ' cont' : '');
+    const n = (r0 === 0 && blk.n) ? `<span class="bk-n">${paperNum(blk.n)}</span>` : '';
+    node.innerHTML = n + blk.rows.slice(r0, r1).map(r =>
+      `<span class="bk-vl"><span class="bk-hs">${fragHtml(blk, r.at, r.mid)}</span>`
+      + `<span class="bk-hs">${fragHtml(blk, r.mid, r.end)}</span></span>`).join('');
+  }
+
   /* قطعةُ فقرة بكلماتها الملوّنة. والعبارةُ التي تعبر حدَّ الصفحة تُغلَق
      في آخر الأولى وتُفتح في أوّل الثانية — فلا وسمٌ يبقى مفتوحاً.
      🔑 ويسقط تسطيرُ المؤلّف وغامقُه عن الكلمة الملوّنة: اللونُ يقول
-        «انقر» ويقول «هذه مهمّة» معاً، وعلامتان على كلمةٍ واحدة ضجيج. */
+        «انقر» ويقول «هذه مهمّة» معاً، وعلامتان على كلمةٍ واحدة ضجيج.
+     🆕 b193 · وعلامةُ الآية والوقف تُوصَل بكلمتها بمسافةٍ لا تنكسر (BIND) — لا يبدأ بها سطر. */
   function fragHtml(blk, a, b){
     const T = blk.tokens, S = blk.sids;
-    if(!blk.hits && !S) return fmt(T.slice(a, b).join(' '));
+    const join = arr => arr.map((t, j) => (j ? (BIND.test(T[a + j]) ? ' ' : ' ') : '') + t).join('');
+    if(!blk.hits && !S) return fmt(join(T.slice(a, b)));
     const out = [];
     let open = false;
     for(let i = a; i < b; i++){
@@ -628,7 +755,7 @@ export async function createBook(host, opt = {}){
       }
       out.push((sOpen ? S_OPEN(S[i]) : '') + t + (sClose ? S_CLOSE : ''));
     }
-    return fmt(out.join(' '))
+    return fmt(join(out))
       .replace(W_RX, (_, k) => `<span class="bk-w" data-w="${k}" role="button" tabindex="0">`)
       .split(W_CLOSE).join('</span>')
       .replace(S_RX, (_, k) => `<span class="bk-s" data-s="${k}">`)
@@ -681,6 +808,16 @@ export async function createBook(host, opt = {}){
         mBody.lastElementChild.remove(); emit();
       }
     };
+    /* والعنوانُ لا يبقى يتيماً في ذيل صفحةٍ ونصُّه في التالية — للفقرة والبيت */
+    const carry = () => {
+      const last = mBody.lastElementChild;
+      if(last?.matches('.bk-h')){
+        const h = cur.pop(); last.remove();
+        if(cur.length) flush(); else { mBody.innerHTML = ''; anchor = null; }
+        mBody.insertAdjacentHTML('beforeend', h);
+        cur.push(h); anchor = headAnchor;
+      } else flush();
+    };
 
     model.blocks.forEach((blk, bi) => {
       if(blk.type === 'f'){
@@ -702,6 +839,30 @@ export async function createBook(host, opt = {}){
           mBody.insertAdjacentHTML('beforeend', h);
         }
         cur.push(h); headAnchor = `${bi}:0`; anchor ??= headAnchor;
+        return;
+      }
+
+      /* 🆕 b193 · البيتُ بأسطره: ما يسعه ذيلُ الصفحة منها، والباقي في التالية بلا رقم */
+      if(blk.type === 'v'){
+        const R = blk.rows;
+        let r = 0;
+        while(r < R.length){
+          const node = document.createElement('p');
+          mBody.append(node);
+          setV(node, blk, r, R.length);
+          let take = R.length - r;
+          if(!fits()){
+            take = 0;
+            for(let j = r + 1; j < R.length; j++){ setV(node, blk, r, j); if(fits()) take = j - r; else break; }
+            if(!take && mBody.children.length > 1){ node.remove(); carry(); continue; }
+            take ||= 1;          // بيتٌ أطولُ من صفحةٍ فارغة — يُقبل ولا يُعلِّق الحلقة
+            setV(node, blk, r, r + take);
+          }
+          cur.push(node.outerHTML); anchor ??= `${bi}:${R[r].at}`;
+          count += R[r + take - 1].end - R[r].at;
+          r += take;
+          if(r < R.length) flush();
+        }
         return;
       }
 
@@ -728,14 +889,7 @@ export async function createBook(host, opt = {}){
         const others = mBody.children.length > 1;
         if(best < MIN_WORDS && others){
           node.remove();
-          /* والعنوانُ لا يبقى يتيماً في ذيل صفحةٍ ونصُّه في التالية */
-          const last = mBody.lastElementChild;
-          if(last?.matches('.bk-h')){
-            const h = cur.pop(); last.remove();
-            if(cur.length) flush(); else { mBody.innerHTML = ''; anchor = null; }
-            mBody.insertAdjacentHTML('beforeend', h);
-            cur.push(h); anchor = headAnchor;
-          } else flush();
+          carry();
           continue;
         }
         if(best < 1) best = 1;   // كلمةٌ أعرضُ من صفحةٍ فارغة — تُقبل ولا تُعلِّق الحلقة
@@ -750,6 +904,8 @@ export async function createBook(host, opt = {}){
         if(tail > 0 && tail < WIDOW && cut - start > WIDOW + MIN_WORDS){
           cut -= WIDOW - tail; brk = true;
         }
+        /* 🆕 b193 · ولا يبدأ وجهٌ بعلامة آيةٍ أو وقف: تنتقل معها كلمتُها */
+        while(cut - start > 1 && BIND.test(T[cut] || '')){ cut--; brk = true; }
 
         setP(node, blk, start, cut, brk);
         cur.push(node.outerHTML); anchor ??= `${bi}:${start}`;
@@ -803,7 +959,38 @@ export async function createBook(host, opt = {}){
     root.classList.toggle('spread', mode === 'spread');
     btn('smaller').disabled = fsStep === 0;
     btn('larger').disabled  = fsStep === FS_STEPS[dir].length - 1;
+    fitVerses();
     return `${mode}|${pw}|${ph}|${fsStep}`;
+  }
+
+  /* 🆕 b193 · البيتُ سطرٌ واحد — بالقياس لا بالعدّ (مذهبُ التقسيم): يُقاس كلُّ شطرٍ بخطّ الصفحة،
+     فإن ضاق السطرُ عن أعرض بيتٍ صغُر خطُّ الأبيات كلِّها معاً حتى يسعه (فتبقى بمقاسٍ واحد) —
+     إلى ٨٥٪ من خطّ النصّ لا أصغر. ودون ذلك (الجوّال · الخطُّ المكبَّر) ينزل العجزُ تحت الصدر
+     (`.vstack`): شطرٌ لا ينكسر خيرٌ من بيتٍ يُقرأ بعين المكبّرة.
+     📐 قِيس قبل الكتابة (صفحتان ٥٠٤px · خطٌّ ٢٠px · سطرٌ ٣٨٠px): أعرضُ بيتٍ في «العفو مأمول» ٣٨٤px
+        وفي «شبابٌ تسامى» ٤٠٥px ⇒ ٩٣٪ و٨٩٪. وصفُّ شطرين متساويين بعرض أعرض الشطور كان يطلب
+        ٧٢٪ لشطرٍ واحدٍ طويل — فالشطرُ الأعرضُ من نصفه يأخذ حاجتَه من أخيه (`min-width` في CSS).
+     📐 والصفُّ لا يزيد على شطرين بعرض أعرض الشطور (`--bk-vw`): قصيدةٌ قصيرةُ الشطور لا تتمطّط
+        كلماتُها على عرض الصفحة، بل تتوسّطها. */
+  function fitVerses(){
+    root.classList.remove('vstack');
+    root.style.removeProperty('--bk-vs');
+    root.style.removeProperty('--bk-vw');
+    const rows = model.blocks.flatMap(b => b.type === 'v' ? b.rows : []);
+    if(!rows.length) return;
+    mBody.innerHTML = '<p class="bk-p bk-v"><span class="bk-vl"><span class="bk-hs"></span></span></p>';
+    const p = mBody.firstChild, hs = p.querySelector('.bk-hs');
+    hs.style.cssText = 'flex:none;min-width:0;white-space:nowrap';
+    const w = s => { hs.innerHTML = fmt(s); return hs.getBoundingClientRect().width; };
+    let line = 0, half = 0;
+    rows.forEach(r => { const s = w(r.s), a = w(r.a); line = Math.max(line, s + a); half = Math.max(half, s, a); });
+    const gap = parseFloat(getComputedStyle(p.firstChild).columnGap) || 0;
+    const room = p.clientWidth - 2;               // بكسلان لكسور القياس
+    mBody.innerHTML = '';
+    const k = Math.min(1, room / (line + gap));
+    if(k < V_MIN){ root.classList.add('vstack'); return; }
+    root.style.setProperty('--bk-vs', k.toFixed(4));
+    root.style.setProperty('--bk-vw', Math.ceil((2 * half + gap) * k) + 'px');
   }
 
   /* يُعاد التقسيمُ ويبقى القارئ على سطره — يُحفظ مرسى صفحته الأولى
@@ -864,7 +1051,8 @@ export async function createBook(host, opt = {}){
   function coverHtml(){
     const minutes = Math.max(1, Math.round(model.words / (lang === 'ar' ? 150 : 120)));
     const meta = opt.coverMeta
-      ? opt.coverMeta({ paragraphs: model.paragraphs, words: model.words, minutes }) : '';
+      ? opt.coverMeta({ paragraphs: model.paragraphs, verses: model.verses, ayat: model.ayat,
+                        words: model.words, minutes }) : '';
     const kick = (opt.kicker || []).filter(Boolean)
       .map(k => `<span dir="auto">${esc(k)}</span>`).join('<i></i>');
     return `<div class="bk-cv">
