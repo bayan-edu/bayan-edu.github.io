@@ -80,8 +80,15 @@ export async function openEditor(scaleId, levelId){
   const lv   = (levelId ? byId(levels, levelId) : null) || (free ? null : levels[0] || null);
   const courses = mine.filter(c => lv ? c.level_id === lv.id : c.level_id === null);
 
-  /* نكرةٌ تُبنى منها المعرفة: ال+نطاق · بلا+نطاق */
+  /* نكرةٌ تُبنى منها المعرفة: ال+نطاق */
   const rung = sc.kind === 'proficiency' ? 'مستوى' : 'صف';
+
+  /* 🆕 b192 · المقرَّرُ بلا صفٍّ يراه طلابُ الصفوف كلِّها (`courses_of`: الفراغُ حاليٌّ لكلّ صفّ)
+     ⇒ الخيارُ يسمّي **أثرَه** لا فراغَه. كان «— بلا صف —» فيقرؤه المؤلّفُ نقصاً.
+     ⚠️ و«مشترك» لا «كل»: «كلّ الصفوف» في قائمة تصفيةٍ تُقرأ «بلا تصفية»، وهو لا يعرض
+        إلا المشترك — فمؤلّفٌ يختاره يومَ تُضاف موادُّ الصفوف يبحث عن رياضيات الثاني فلا يجدها.
+     قرارُ المالك (٢٥ أكتوبر) — نزل مع «القدرات العامة» (`182`)، أوّلِ مقرَّرٍ صفّيٍّ بلا صفّ. */
+  const shared = sc.kind === 'proficiency' ? 'مشترك بين المستويات' : 'مشترك بين الصفوف';
 
   const subj = id => byId(t.subjects, id) || {};
   const path = id => byId(t.paths, id);
@@ -116,7 +123,7 @@ export async function openEditor(scaleId, levelId){
            ${levels.length ? `
         <label class="fl" style="margin:0">ال${rung}</label>
         <select id="lv">
-          ${free ? `<option value="" ${lv?'':'selected'}>— بلا ${rung} —</option>` : ''}
+          ${free ? `<option value="" ${lv?'':'selected'}>— ${shared} —</option>` : ''}
           ${levels.map(x => `<option value="${x.id}"
             ${lv && x.id===lv.id?'selected':''}>${esc(x.name)}</option>`).join("")}
         </select>` : ''}
