@@ -4,20 +4,22 @@
 
    🔑 **الحدُّ الفاصل، وهو سببُ وجود هذه الوحدة:**
         المحرّر  ⇐ الدرس · الوحدة · البند · السؤال · الاختبار
-        الإدارة  ⇐ المقياس · المستوى · المسار · المادّة · المقرَّر · الكود
+        الإدارة  ⇐ المقياس · المستوى · المسار · المادّة · الشعبة · المقرَّر · الكود
       **فلا تلمس هذه الشاشةُ درساً ولا وحدةً ولا سؤالاً.** وفمان لقاعدةٍ
       واحدة ينحرف أحدُهما عن الآخر — وتلك علّةُ `147` بعينها.
 
-   🔑 **ونموذجٌ واحدٌ يخدم الستّة.** لكلّ كيانٍ **وصفُ حقول** لا دالّةُ
+   🔑 **ونموذجٌ واحدٌ يخدم السبعة.** لكلّ كيانٍ **وصفُ حقول** لا دالّةُ
       رسمٍ خاصّة، و`formHtml`/`readForm` تبنيان وتقرآن. ⇒ حقلٌ يُضاف
-      سطرٌ في الوصف، **ولا تُنسخ شاشةٌ سادسةً فتفترق عن أخواتها.**
+      سطرٌ في الوصف، **ولا تُنسخ شاشةٌ سابعةً فتفترق عن أخواتها.**
+      🆕 b194 · والشعبةُ (183) سابعتُها: تسكن مادّتَها كما يسكن المستوى منهجَه.
 
    ⛔ **ولا حذفَ في هذه الشاشة ولا زرَّ له.** حذفُ مادّةٍ يجرّ
       `courses → units → lessons → items → quizzes → questions → answers`
       بـ`cascade`: **محاولةُ طالبٍ تُمحى بنقرة.** والإخفاءُ بـ`active`
       حيث وُجد، والحذفُ يبقى فعلاً متعمَّداً في محرّر القاعدة.
 
-   🔒 والحراسةُ في القاعدة: `is_admin()` في كلّ دالّة (155).
+   🔒 والحراسةُ في القاعدة: `is_admin()` في كلّ دالّة (155) — إلا الشعبةَ:
+      `can_curate()` في `save_stream` (183)، فالمشرفُ على المادّة يملك شُعبَها.
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
 import { esc, AR, N, toast, errBox } from './ui.js';
@@ -25,7 +27,8 @@ import { esc, AR, N, toast, errBox } from './ui.js';
 /* ── حالةُ اللسان — تبقى بين الرسمات فلا يفقد الناظر موضعه ── */
 let sec  = 'scales';     // القسم المعروض
 let tree = null;         // آخرُ شجرةٍ قُرئت
-let open = null;         // { kind, id } — النموذجُ المفتوح
+let open = null;         // { kind, id, scale } — النموذجُ المفتوح، و`scale` أبُ الفرع:
+                         //  منهجُ المستوى والمسار، ومادّةُ الشعبة (b194)
 let host = null;         // العنصرُ الذي نرسم فيه
 
 const SECS = [['scales','المناهج'], ['subjects','المواد'],
@@ -42,9 +45,13 @@ const SECS = [['scales','المناهج'], ['subjects','المواد'],
 const S_ = ' <span class="ad-s">·</span> ';
 
 /* ══════════ ① وصفُ الحقول — مصدرُ الحقيقة للنموذج والقراءة ══════════
-   [مفتاح · عنوان · نوع · لازم؟ · خيارات]
+   [مفتاح · عنوان · نوع · لازم؟ · خيارات · وسمُ الفراغ]
    والأنواع: text · num · bool · select · area
-   🔑 والعناوينُ أسماء لا أوامر (§٦ من هوية اللغة): «الكود» لا «اكتب الكود». */
+   🔑 والعناوينُ أسماء لا أوامر (§٦ من هوية اللغة): «الكود» لا «اكتب الكود».
+   🆕 b194 · **ووسمُ الفراغ للقائمة الاختياريّة يسمّي أثرَه** حيث كان للفراغ معنى: شعبةُ
+      المقرَّر الفارغةُ «لكلّ الشعب» لا «—» (183) — وهي حجّةُ «مشترك بين الصفوف» في المحرّر (b192).
+      وبلا وسمٍ تبقى «—» كما كانت.
+   🆕 b194 · و`fresh` عنوانُ النموذج الجديد حيث لا يصحّ «… جديد»: كان «مادّة جديد». */
 
 const KIND  = [['academic','دراسيّ'], ['proficiency','إتقان']];
 const PLACE = [['profile','من الملفّ'], ['test','باختبار'], ['open','مفتوح']];
@@ -67,20 +74,29 @@ const FORMS = {
     ['fromRank','يبدأ من الرتبة','num'], ['sort','الترتيب','num'],
     ['active','مفتوح','bool']]},
 
-  subject: { name:'مادّة', fields:[
+  subject: { name:'مادّة', fresh:'مادّة جديدة', fields:[
     ['code','الكود','text',1], ['name','الاسم','text',1],
     ['scale','المنهج','select',0,'scales'],
     ['family','العائلة','text',0,'families'],
     ['placement','التسكين','select',1,PLACE],
     ['progression','التدرّج','select',1,PROG],
+    /* 🆕 b194 · الكلمةُ التي يرى بها الطالبُ شُعبَ المادّة (ق٢ · 183) — حقلٌ حرٌّ باقتراحٍ
+       كالعائلة. وتُكتب قبل أوّل شعبة، ولا تُمحى ما بقيت للمادّة شعبة: القاعدةُ تردّهما */
+    ['streamLabel','الكلمة المعروضة للشعب','text',0,'streamLabels'],
     ['sort','الترتيب','num'], ['active','مفتوحة','bool'],
     ['description','الوصف','area']]},
+
+  /* 🆕 b194 · شعبةُ المادّة (183) — والكودُ للقاعدة والاسمُ للطالب، وسطرُ العون تحت الخيار */
+  stream: { name:'شعبة', fresh:'شعبة جديدة', fields:[
+    ['code','الكود','text',1], ['name','الاسم','text',1],
+    ['hint','سطر العون','text'], ['sort','الترتيب','num']]},
 
   course: { name:'مقرَّر', fields:[
     ['title','العنوان','text',1],
     ['subject','المادّة','select',1,'subjects'],
     ['level','المستوى','select',0,'levels'],
     ['path','المسار','select',0,'paths'],
+    ['stream','الشعبة','select',0,'streams','لكلّ الشعب'],     // 🆕 b194 · 183
     ['electiveGroup','مجموعة الاختيار','num'],
     ['position','الترتيب','num'], ['active','مفتوح','bool']]},
 
@@ -102,6 +118,12 @@ function options(src){
       (s.paths||[]).map(p => [p.id, s.name + ' · ' + p.name]));
   if(src === 'families')   return (tree.families?.subject || []).map(f => [f, f]);
   if(src === 'dxFamilies') return (tree.families?.dx || []).map(f => [f, f]);
+  /* 🆕 b194 · شعبُ كلّ مادّةٍ باسم مادّتها كالمستويات بمنهجها — والقاعدةُ تردّ شعبةً من غير
+     مادّة المقرَّر («هذه الشعبة ليست من شعب المادّة»). والكلمةُ المعروضة: ق٢ وما كُتب قبلُ */
+  if(src === 'streams')    return tree.subjects.flatMap(s =>
+      (s.streams||[]).map(st => [st.id, s.name + ' · ' + st.name]));
+  if(src === 'streamLabels') return [...new Set(['التخصص', 'نوع الاختبار',
+      ...tree.subjects.map(s => s.stream_label).filter(Boolean)])].map(v => [v, v]);
   return [];
 }
 
@@ -110,7 +132,7 @@ function options(src){
 function formHtml(kind, row, extra){
   const f = FORMS[kind];
   const val = k => row && row[k] != null ? row[k] : '';
-  const one = ([k, label, type, need, src]) => {
+  const one = ([k, label, type, need, src, none]) => {
     const id = `cf-${k}`;
     if(type === 'bool')
       return `<label class="ad-cb"><input type="checkbox" id="${id}"
@@ -122,7 +144,7 @@ function formHtml(kind, row, extra){
       const opts = Array.isArray(src) ? src : options(src);
       return `<label class="fl">${label}${need ? '' : ' <span class="ad-opt-n">— اختياريّ</span>'}</label>
         <select id="${id}">
-          ${need ? '' : '<option value="">—</option>'}
+          ${need ? '' : `<option value="">${none ? `— ${esc(none)} —` : '—'}</option>`}
           ${opts.map(([v, t]) => `<option value="${esc(v)}"
              ${String(val(k)) === String(v) ? 'selected' : ''}>${esc(t)}</option>`).join('')}
         </select>`;
@@ -138,7 +160,7 @@ function formHtml(kind, row, extra){
   };
 
   return `<div class="ad-form">
-    <div class="ad-pt">${row ? 'تعديل ' + f.name : f.name + ' جديد'}</div>
+    <div class="ad-pt">${row ? 'تعديل ' + f.name : (f.fresh || f.name + ' جديد')}</div>
     ${extra || ''}
     ${f.fields.map(one).join('')}
     <label class="fl" style="margin-top:12px">سبب التغيير — يُحفظ في السجلّ</label>
@@ -274,11 +296,34 @@ function subjectsHtml(){
         <div class="ad-lay">
           <span class="chip">${N(Number(x.courses),'مقرَّر','مقرَّران','مقرّرات','مقرَّراً')}</span>
           <span class="chip">${N(Number(x.teachers),'معلّم','معلّمان','معلّمون','معلّماً')}</span>
+          ${(x.streams || []).length
+            ? `<span class="chip">${N(x.streams.length,'شعبة','شعبتان','شعب','شعبة')}</span>` : ''}
         </div>
-        <div class="ad-acts"><button class="ad-b" data-edit="subject" data-i="${x.id}">تعديل</button></div>
+        <div class="ad-acts">
+          <button class="ad-b" data-edit="subject" data-i="${x.id}">تعديل</button>
+          <button class="ad-b" data-new="stream" data-i="${x.id}">شعبة جديدة</button>
+        </div>
         ${open?.kind === 'subject' && open.id === x.id ? formHtml('subject', {
-           ...x, scale: x.scale_id }) : ''}
+           ...x, scale: x.scale_id, streamLabel: x.stream_label }) : ''}
+        ${open?.kind === 'stream' && open.scale === x.id && open.id == null ? formHtml('stream', null) : ''}
+        ${streamsHtml(x)}
       </div>`).join('') : '<div class="status">لا مادّة بعد.</div>'}`;
+}
+
+/* 🆕 b194 · شعبُ المادّة تحتها كمستويات المنهج تحته (183) — والعدّانِ قبل التعديل: شعبةٌ
+   يختارها طلّابٌ يُقرأ اسمُها الجديد عندهم كلِّهم. والكلمةُ المعروضة في العنوان: هي ما يراه الطالبُ
+   فوق الأسماء («اختيار التخصص»). ولا حذف — والقاعدةُ تردّه ما بقي لها مقرَّرٌ أو طالب. */
+function streamsHtml(x){
+  const s = x.streams || [];
+  if(!s.length) return '';
+  return `<div class="ad-sub"><div class="ad-sh">الشعب${x.stream_label
+      ? ` <span class="ad-dim">— «${esc(x.stream_label)}» عند الطالب</span>` : ''}</div>
+    ${s.map(st => rowHtml('stream', st, x.id, [
+       esc(st.code),
+       st.hint ? esc(st.hint) : '',
+       N(Number(st.courses),'مقرَّر','مقرَّران','مقرّرات','مقرَّراً'),
+       N(Number(st.students),'طالب','طالبان','طلاب','طالباً')
+     ].filter(Boolean).join(S_))).join('')}</div>`;
 }
 
 /* ── المقرّرات — مجموعةً بموادّها، فالأربعون صفّاً متساوياً لا تُقرأ ── */
@@ -297,13 +342,14 @@ function coursesHtml(){
           <div class="ad-rm">${[
             esc(x.level || '— بلا مستوى'),
             x.path ? esc(x.path) : '',
+            x.stream ? esc(x.stream) : '',                               // 🆕 b194 · 183
             N(Number(x.units),'وحدة','وحدتان','وحدات','وحدة'),
             N(Number(x.lessons),'درس','درسان','دروس','درساً')
            ].filter(Boolean).join(S_)}</div>
           <button class="ad-b" data-edit="course" data-i="${x.id}">تعديل</button>
           ${open?.kind === 'course' && open.id === x.id ? formHtml('course', {
              ...x, subject: x.subject_id, level: x.level_id, path: x.path_id,
-             electiveGroup: x.elective_group }) : ''}
+             stream: x.stream_id, electiveGroup: x.elective_group }) : ''}
         </div>`).join('')}
       </div>`).join('') : '<div class="status">لا مقرَّر بعد.</div>'}`;
 }
@@ -358,6 +404,7 @@ function wire(body){
     if(open.kind === 'level')   return run(api.saveLevel,   { ...o, scale: open.scale }, 'حفظ المستوى');
     if(open.kind === 'path')    return run(api.savePath,    { ...o, scale: open.scale }, 'حفظ المسار');
     if(open.kind === 'subject') return run(api.saveSubject, o, 'حفظ المادّة');
+    if(open.kind === 'stream')  return run(api.saveStream,  { ...o, subject: open.scale }, 'حفظ الشعبة');   // 🆕 b194
     if(open.kind === 'course')  return run(api.saveCourse,  o, 'حفظ المقرَّر');
     /* والكودُ مفتاحُه نصُّه: `id` لا معنى له، والقاعدةُ تُدرج أو تُحدّث */
     if(open.kind === 'dx')      return run(api.saveDxCode,  o, 'حفظ الكود');

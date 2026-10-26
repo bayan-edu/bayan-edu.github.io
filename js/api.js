@@ -207,6 +207,11 @@ export const verifyEmailOtp = (email, token) =>
 export const listSubjects = ()  => db.rpc('list_subjects');
 export const listLessons  = sid => db.rpc('list_lessons', { p_subject: sid });
 
+/* 🆕 b194 · شُعبةُ الطالب في مادّة (183) — دالّةٌ لا `update` كالصفّ: تتحقّق أنّ الشُّعبةَ
+   من المادّة، وتكتب أو تُبدّل سطراً واحداً، وتُعيد {ok, name} أو {ok:false, error}. */
+export const setMyStream = (subjectId, streamId) =>
+  db.rpc('set_my_stream', { p_subject: subjectId, p_stream: streamId });
+
 export const markItemOpened    = id => db.rpc('track_item', { p_item: id, p_status: 'opened' });
 export const markItemCompleted = id => db.rpc('track_item', { p_item: id, p_status: 'completed' });
 
@@ -699,20 +704,33 @@ export const savePath = o => db.rpc('save_path', {
   p_from_rank: o.fromRank ?? null, p_sort: o.sort ?? 0,
   p_active: o.active ?? true, p_note: o.note ?? null });
 
+/* 🆕 b194 · و`p_stream_label` الكلمةُ التي تسمّي بها المادّةُ شُعبَها للطالب (183).
+   ⚠️ **وغيابُها محوٌ لا «بلا تغيير»** — كالمسار في `setMyGrade`: الدالّةُ تكتب الحالةَ
+      كاملة. والقاعدةُ تردّ محوَها ما بقيت للمادّة شُعبة («للمادّة شعب، فكلمتها المعروضة لازمة»). */
 export const saveSubject = o => db.rpc('save_subject', {
   p_id: o.id ?? null, p_code: o.code, p_name: o.name, p_scale: o.scale ?? null,
   p_family: o.family ?? null, p_placement: o.placement ?? 'profile',
   p_progression: o.progression ?? 'chain', p_active: o.active ?? true,
   p_icon: o.icon ?? null, p_tool: o.tool ?? null,
-  p_description: o.description ?? null, p_sort: o.sort ?? 0, p_note: o.note ?? null });
+  p_description: o.description ?? null, p_sort: o.sort ?? 0, p_note: o.note ?? null,
+  p_stream_label: o.streamLabel ?? null });
 
 /* ⚠️ و`p_elective_group` نصٌّ والعمودُ `smallint` — التحويلُ في الدالّة
-      بتحقُّقٍ صريح (155). فيُرسَل كما كُتب في الحقل، أو `null`. */
+      بتحقُّقٍ صريح (155). فيُرسَل كما كُتب في الحقل، أو `null`.
+   🆕 b194 · و`p_stream` شُعبةُ المقرَّر، والفارغُ «لكلّ الشُّعب» (183) — يُكتب في كلّ حفظٍ
+      كالمسار، فالنموذجُ يرسل ما في حقله. */
 export const saveCourse = o => db.rpc('save_course', {
   p_id: o.id ?? null, p_subject: o.subject, p_level: o.level ?? null,
   p_title: o.title, p_path: o.path ?? null,
   p_elective_group: o.electiveGroup ?? null,
-  p_position: o.position ?? 0, p_active: o.active ?? true, p_note: o.note ?? null });
+  p_position: o.position ?? 0, p_active: o.active ?? true, p_note: o.note ?? null,
+  p_stream: o.stream ?? null });
+
+/* 🆕 b194 · شُعبةُ المادّة — إضافةٌ وتعديل (183). والحارسُ `can_curate` في الدالّة لا
+   `is_admin`: المشرفُ على المادّة يملك شُعبَها. ولا حذفَ لها — كسائر هذا الباب. */
+export const saveStream = o => db.rpc('save_stream', {
+  p_id: o.id ?? null, p_subject: o.subject, p_code: o.code, p_name: o.name,
+  p_hint: o.hint ?? null, p_sort: o.sort ?? 0, p_note: o.note ?? null });
 
 export const saveDxCode = o => db.rpc('save_dx_code', {
   p_code: o.code, p_name: o.name, p_remedy: o.remedy ?? null,

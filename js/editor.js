@@ -104,6 +104,9 @@ export async function openEditor(scaleId, levelId){
         <div class="ed-t" dir="auto">${esc(s.name || c.title)}</div>
         <div class="ed-m">
           ${p ? `<span class="chip g" dir="auto">${esc(p.name)}</span>` : ''}
+          ${/* 🆕 b194 · شارةُ الشُّعبة (183) — والبطاقةُ تحمل اسمَ المادّة لا المقرَّر، فمقرَّرا القدرات
+                (علميّ · نظريّ) بطاقتان بالاسم نفسِه لا يفرّقهما غيرُها. وعلى نسق المسار: كلاهما «لمن». */''}
+          ${c.stream ? `<span class="chip g" dir="auto">${esc(c.stream)}</span>` : ''}
           ${c.elective_group ? '<span class="chip">اختيارية</span>' : ''}
           <span class="chip">👥 ${N(c.students,'طالب','طالبان','طلاب','طالباً')}</span>
           <span class="chip ${c.lessons ? 'g' : ''}">${N(c.lessons,'درس','درسان','دروس','درساً')}</span>

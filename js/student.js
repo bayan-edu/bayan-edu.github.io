@@ -163,6 +163,7 @@ const SUBJ_IMG = {
    الشبكة تُقرأ بلمحة. والصفُّ السابق لا تقدُّمَ فيه يُقاس: مادّتُه
    مراجعةٌ لا مسار، فحالتُه «فيها ما يُراجَع» أو «لا». */
 function subjectState(x, isPast){
+  if(x.needs_stream)                      return 'st-new';   // 🆕 b194 · كتحديد المستوى — والتعليلُ عند askStream
   if(!x.needs_placement && bulk(x) === 0) return 'st-empty';
   if(x.needs_placement)                   return 'st-new';
   if(isPast) return (x.lessons_review || 0) > 0 ? 'st-new' : 'st-empty';
@@ -191,7 +192,8 @@ function todayStrip(back, face){
   if((c.feedback || 0) > 0)
     acts.push(['go-fb',     'feedback', 'ta-dx',     'معالجة',  esc(N(c.feedback,'ملاحظة جديدة','ملاحظتان جديدتان','ملاحظات جديدة','ملاحظة جديدة'))]);
 
-  const hero = back && bulk(back) > 0 && !isDone(back) && !back.needs_placement
+  /* 🆕 b194 · ومادّةٌ تنتظر شُعبتَها لا تُستأنف كالتي تنتظر مستواها: «متابعة» تتخطّى البوّابة */
+  const hero = back && bulk(back) > 0 && !isDone(back) && !back.needs_placement && !back.needs_stream
              ? resumeCard(back, face) : '';
   if(!hero && !acts.length) return '';
 
@@ -438,13 +440,15 @@ export async function loadList(){
      فلا تُرسم نسخةٌ سابقةٌ بوجه الصفّ لأنّ نداءً نسي وسيطَه. */
   const card = x => {
     const isPast = !!x.past;
-    const empty = !x.needs_placement && bulk(x) === 0;
+    /* 🆕 b194 · والمادّةُ قبل شُعبتها ليست فارغة: مقرَّراتُها محجوبةٌ حتى يختار (183) */
+    const empty = !x.needs_placement && !x.needs_stream && bulk(x) === 0;
     const pct   = x.lessons_total ? Math.round(x.lessons_done / x.lessons_total * 100) : 0;
     /* نصٌّ قصير: البطاقة ١٥٠px، وجملةٌ كاملة تلتفّ ثلاثة أسطر فتتفاوت
        ارتفاعاتُ الشبكة. والجملةُ الطويلة باقيةٌ حيث يقع الفعل —
        في toast عند النقر، وفي شاشة المادة. */
     const meta  =
         empty             ? 'قيد الإعداد'
+      : x.needs_stream    ? streamAct(x)
       : x.needs_placement ? 'تحديد المستوى'
       : isPast            ? `${AR(x.lessons_review)} للمراجعة`
       : `${AR(x.lessons_done)} / ${AR(x.lessons_total)} ${
@@ -488,11 +492,12 @@ export async function loadList(){
     const openable = !isPast && !empty;
     const go   = t => `<div class="subj-act-pill">${t}<span class="subj-arrow" aria-hidden="true">←</span></div>`;
     const foot =
-        openable && x.needs_placement        ? go('تحديد المستوى')
+        openable && x.needs_stream           ? go(streamAct(x))
+      : openable && x.needs_placement        ? go('تحديد المستوى')
       : openable && x.lessons_total && !x.lessons_done
             ? go(`${N(x.lessons_total,'درس واحد','درسان','دروس','درساً')}، ${here ? 'متابعة' : 'البدء'}`)
       : `<div class="subj-m">${meta}</div>
-         ${(x.needs_placement || empty || isPast) ? '' :
+         ${(x.needs_placement || x.needs_stream || empty || isPast) ? '' :
            `<div class="pbar"><div class="pfill" style="width:${pct}%"></div></div>`}`;
 
     /* 🔑 الوصفُ في title لا على الوجه: سطران فيه يُطيلان البطاقة حتى
@@ -553,11 +558,7 @@ export async function loadList(){
       if(!base) return;
       /* 🆕 b173 · والوجهُ من البطاقة: المادّةُ الواحدة بطاقتان في مجموعتين */
       const x = el.dataset.past ? pastOf(base) : base;
-      if(!x.needs_placement && bulk(x) === 0){
-        toast("دروس هذه المادة قيد الإعداد — ستصلك عند جهوزها"); return; }
-      if(x.needs_placement) return startPlacement(x);
-      if(!x.mentor_chosen)  return loadMentors(x);
-      loadLessons(x);
+      enterSubject(x);     // 🆕 b194 · البوّاباتُ بترتيبها — والتعليلُ عندها
     };
     el.onclick   = go;
     el.onkeydown = e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); go(); } };
@@ -663,6 +664,95 @@ async function pathChoices(){
   return list;
 }
 
+/* ═══════════ ①ج الشُّعبة — سؤالٌ واحدٌ قبل المادّة (183 · b194) ═══════════
+   للمادّة شُعبٌ (علميّ · نظريّ — Academic · General Training) والطالبُ لم يختر بعد
+   ⇒ `needs_stream` من `list_subjects`، ومقرَّراتُ الشُّعب محجوبةٌ عنه حتى يختار (`courses_of`).
+   🔴 **ولهذا هي أولى البوّابات، قبل فحص الفراغ:** قبل الاختيار `lessons_total = 0`، فكان فحصُ
+      الفراغ يردّه «قيد الإعداد» قبل أن يُسأل (§٢ في `spec-content-layers.md`). ولـIELTS: يختار
+      نوعَه ثمّ يُقاس مستواه — الإعلانُ قبل القياس.
+   🔑 **والكلمةُ كلمةُ المادّة لا كلمةٌ عامّة** (`stream_label` · ق٢): «اختيار التخصص» · «اختيار
+      نوع الاختبار» — فلا اسمَ يزاحم «المسار» (طريقُ التسكين، ومسارُ البكالوريا في الملفّ) ولا «الصف».
+   🔑 **ولا سؤالَ مكتوبٌ فوق الخيارين:** «أيّ الاختبارين ستؤدّي؟» في التصميم مذكّرٌ صريح (مهارةُ الهوية
+      §٤)، ويفترض شُعبتين كلتاهما اختبار — وتلك بياناتُ مادّةٍ لا شيفرة (§٩-١). فالعنوانُ يسأل باسمه،
+      والخياران يجيبان، وسطرُ العون تحت كلٍّ من `streams.hint` (وفيه سطرُ ق١ مع صفوف الخطوة ٤).
+   📌 **وصندوقُ الخيار `.mentor` مستعار** — كاستعارة «موادّي» له (screens.css): الخياران بطاقتان
+      بالاسم وسطرِ العون، والاختيارُ الحاليّ `cur` بشارة «اختيارك الحالي» نفسِها. و`div` بدور زرّ
+      كبطاقة المادّة (`.subj`): role و tabindex ولوحةُ المفاتيح. */
+
+/* اسمُ الفعل — على بطاقة المادّة وفي عنوان شاشتها */
+function streamAct(x){ return x.stream_label ? 'اختيار ' + x.stream_label : 'اختيار'; }
+
+/* بوّاباتُ المادّة بترتيبها: الشُّعبة ⇐ المستوى ⇐ الفراغ ⇐ المعلّم ⇐ الدروس.
+   🔑 **ترتيبٌ واحدٌ في موضعٍ واحد:** كان متنَ نقرة البطاقة، وشاشةُ الشُّعبة تمضي بالطالب في
+      البوّابات الباقية بعد اختياره — وترتيبان لسؤالٍ واحد يتفارقان.
+   ⚠️ و`fromAsk`: مادّةٌ بلا دروسٍ بعد الاختيار تُقال بالإشعار ثمّ الرئيسة — فلا يبقى الطالبُ على
+      شاشة سؤالٍ أجاب عنه. */
+function enterSubject(x, fromAsk){
+  if(x.needs_stream) return askStream(x);
+  if(!x.needs_placement && bulk(x) === 0){
+    toast("دروس هذه المادة قيد الإعداد — ستصلك عند جهوزها");
+    return fromAsk ? loadList() : undefined;
+  }
+  if(x.needs_placement) return startPlacement(x);
+  if(!x.mentor_chosen)  return loadMentors(x);
+  loadLessons(x);
+}
+
+/* الشاشةُ نفسُها للاختيار الأوّل وللتغيير — والتغييرُ من رأس دروس المادّة («التخصص: علمي، تغيير»).
+   📌 والعنوانُ عنوانُ المادّة (/subjects/47): من حدّث الصفحةَ هنا عاد إلى البوّابة نفسِها
+      (`openLessonAt`)، لا إلى رئيسةٍ تُنسيه أين كان. */
+function askStream(subj){
+  S.subj = subj;
+  nav('subjects', `/subjects/${subj.id}`);
+  head(streamAct(subj), "");
+  const opts = subj.streams || [];
+  app.innerHTML = `
+    <div class="crumb-row">
+      <div class="crumb" id="bk">→ رجوع للمواد</div>
+      <span class="crumb-at">${esc(subj.name)}</span>
+    </div>
+    ${opts.map(st => {
+      const cur = st.id === subj.my_stream;
+      return `<div class="mentor${cur ? ' cur' : ''}" data-st="${st.id}" role="button" tabindex="0">
+        <div class="m-n" dir="auto"><bdi>${esc(st.name)}</bdi>${cur
+          ? ' <span class="badge on">اختيارك الحالي</span>' : ''}</div>
+        ${st.hint ? `<div class="m-m" dir="auto">${esc(st.hint)}</div>` : ''}
+      </div>`;
+    }).join('')}
+    <div class="line">يمكنك تغيير اختيارك لاحقاً، ولا يضيع ما أنجزته.</div>`;
+
+  document.getElementById('bk').onclick = loadList;
+
+  /* ⚠️ نقرةٌ واحدةٌ تحفظ، والثانيةُ قبل الردّ لا تُرسل نداءً آخر (`busy`) */
+  let busy = false;
+  const all = () => app.querySelectorAll('[data-st]');
+  all().forEach(el => {
+    const choose = async () => {
+      const sid = Number(el.dataset.st);
+      if(sid === subj.my_stream) return loadLessons(subj);     // الاختيارُ نفسُه ⇒ لا نداء
+      if(busy) return;
+      busy = true;
+      all().forEach(o => o.setAttribute('aria-disabled', 'true'));
+      const { data:r, error } = await api.setMyStream(subj.id, sid);
+      if(error || !r?.ok){
+        busy = false;
+        all().forEach(o => o.removeAttribute('aria-disabled'));
+        toast('تعذّر حفظ الاختيار — ' + (error?.message || r?.error || '')); return;
+      }
+      toast('حُفظ اختيارك: ' + (r.name || el.querySelector('bdi')?.textContent || ''));
+      /* الشُّعبةُ تغيّر مقرَّراتِ المادّة وأعدادَها ⇒ القائمةُ تُقرأ من جديد، ثمّ البوّاباتُ الباقية */
+      const { data, error: e2 } = await api.listSubjects();
+      if(e2) return loadList();
+      S.subjects = data || [];
+      const x = S.subjects.find(v => String(v.id) === String(subj.id));
+      return x ? enterSubject(x, true) : loadList();
+    };
+    el.onclick   = choose;
+    el.onkeydown = e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); choose(); } };
+  });
+  scrollTop();
+}
+
 /* ═══════════ ①ب وجهةُ نتيجة البحث ═══════════
    تُسجَّل في auth.js عند ui.registerSearch — فتبقى ui.js ورقةً لا تعرف
    الشاشات، وتبقى المعرفةُ بالتنقّل حيث تسكن الشاشات.
@@ -704,6 +794,8 @@ export async function openLessonAt(subjectId, lessonId, past){
   }
   const base = (S.subjects || []).find(v => String(v.id) === String(subjectId));
   if(!base) return loadList();
+  /* 🆕 b194 · والرابطُ والبحثُ كالبطاقة: الشُّعبةُ أوّلاً — ودرسُها محجوبٌ قبلها أصلاً (183) */
+  if(base.needs_stream) return askStream(base);
   if(lessonId == null) return loadLessons(pickView(base, past));
 
   const { data, error } = await api.listLessons(base.id);
@@ -917,6 +1009,12 @@ export async function loadLessons(subj){
 
   /* 🆕 b175 · `next` يمرّره `paint` — والتعليلُ عنده. و`aria-current="step"` يقول لقارئ
      الشاشة ما يقوله الوسمُ للعين: هذه خطوتُك في السلسلة. */
+  /* 🆕 b194 · شُعبتُك في رأس المادّة بجوار معلّمك وعلى نسقه: «التخصص: علمي، تغيير» —
+     والتغييرُ الشاشةُ نفسُها (`askStream`). و«،» لا «·» قبل الفعل كـ«معلّمك: أ. …، انتقال»
+     (قرارُ المالك · التعليلُ عند `joinList` في ui.js).
+     ⚠️ وبلا كلمةٍ للمادّة لا سطر: «: علمي» بلا اسمٍ قبلها تُقرأ عطلاً، والقاعدةُ تمنعه أصلاً (183). */
+  const strm = subj.stream_label && (subj.streams || []).find(st => st.id === subj.my_stream);
+
   const lcard = (l, next) => `
     <div class="lsn ${l.locked?'locked':''} ${l.done?'done':''} ${next?'next':''}" data-i="${l.id}"
          ${next?'aria-current="step"':''}>
@@ -983,6 +1081,8 @@ export async function loadLessons(subj){
               + esc(subj.mentor_name) + '، انتقال'
             : 'الانضمام إلى معلم'}
       </button>
+      ${strm ? `<button class="btn ghost" id="strm" style="font-size:.8rem;padding:9px">${
+        esc(subj.stream_label)}: <bdi>${esc(strm.name)}</bdi>، تغيير</button>` : ''}
     </div>
     ${/* خيارٌ واحد لا يُصفّي شيئاً ⇒ لا شريط. والفئتان هما فئتا
           شاشة الأداء نفسُهما — ونسختان تتفارقان دائماً. */''}
@@ -1094,6 +1194,8 @@ export async function loadLessons(subj){
 
   document.getElementById("bk").onclick  = loadList;
   document.getElementById("mnt").onclick = ()=>loadMentors(subj, true);
+  const sb = document.getElementById("strm");             // 🆕 b194
+  if(sb) sb.onclick = () => askStream(subj);
 
   const sel = document.getElementById("lsnStrand");
   if(sel) sel.onchange = e => {
