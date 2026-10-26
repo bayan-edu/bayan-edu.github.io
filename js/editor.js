@@ -30,6 +30,8 @@ async function tree(){
 }
 
 const byId  = (arr, id) => (arr || []).find(x => String(x.id) === String(id));
+/* 🆕 b195 · وحداتُ المقرَّر بمواضعها فيه — وحداتُه والمستعارةُ معاً (184) */
+const sortUnits = us => (us || []).slice().sort((a,b) => a.position - b.position);
 const isNarrow = () => window.innerWidth < 900;
 
 const narrowNote = () => isNarrow()
@@ -519,7 +521,7 @@ export async function openCourse(course){
 
   /* التجميع بالوحدة — والوحدات من الشجرة لا من الدروس،
      فتظهر الوحدة الفارغة أيضاً */
-  const units = (course.units || []).slice().sort((a,b) => a.position - b.position);
+  const units = sortUnits(course.units);
   const group = uid => lessons.filter(l =>
     String(l.unit_id ?? '') === String(uid ?? ''));
 
@@ -530,7 +532,23 @@ export async function openCourse(course){
      يُردّ خلفهما: زرٌّ يُفتح ثمّ يقول «لا صلاحية لك» يُعلِّم أنّ الشاشة
      تكذب. والتعطيل يُرى — فالفجوة تُرى والصمت لا يُرى — والمصادر وحدها
      حيّة، وعليها تنويهٌ يقول ما تفعل. */
-  const row = l => `<div class="ed-row${course.curate ? '' : ' ro'}" data-l="${l.id}">
+  /* 🆕 b195 · ودرسُ الوحدة المستعارة يُقرأ هنا ويُحرَّر في بيتها (184): أبوابُه مغلقةٌ تُرى
+     كأبواب «مصادر فقط»، وصفُّه بلا `data-l` فلا يُفتح — والمشغّلُ يردّ حفظَه من هنا لو فُتح. */
+  const HOME_ONLY = 'يُحرَّر في بيت الوحدة';
+  const acts = l => l.borrowed ? `
+      <button class="it-b wide" disabled title="${HOME_ONLY}">📦 المصادر (${AR(l.official_items)})</button>
+      <button class="eq-go" disabled title="${HOME_ONLY}">📝 الاختبار</button>
+      <div class="qz-go off" title="${HOME_ONLY}">تحرير ←</div>` : `
+      <button class="it-b wide" data-it="${l.id}"${course.curate ? ''
+        : ' title="اضغط هنا لإضافة مصدر جديد"'}>📦 المصادر (${AR(l.official_items)})</button>
+      ${course.curate ? `
+      <button class="eq-go ${l.has_quiz?'':'warn'}" data-q="${l.id}">
+        ${l.has_quiz ? '📝 الاختبار' : '⚠️ إضافة اختبار'}</button>
+      <div class="qz-go">تحرير ←</div>` : `
+      <button class="eq-go" disabled title="الاختبار لفريق الإشراف">📝 الاختبار</button>
+      <div class="qz-go off" title="تحرير الدرس لفريق الإشراف">تحرير ←</div>`}`;
+  const row = l => `<div class="ed-row${course.curate && !l.borrowed ? '' : ' ro'}"${
+      l.borrowed ? '' : ` data-l="${l.id}"`}>
       <div style="flex:1;min-width:0">
         ${/* 🆕 b172 · `dir="auto"` — وهي القاعدةُ نفسُها التي يحملها عنوانُ
               الدرس عند الطالب (`lsn-t` · `b123`)، **وسقطت من شاشة المؤلّف**.
@@ -594,25 +612,38 @@ export async function openCourse(course){
             >${DECK_IMG}</button>` : ''}
         </div>` : ''}
       </div>
-      <button class="it-b wide" data-it="${l.id}"${course.curate ? ''
-        : ' title="اضغط هنا لإضافة مصدر جديد"'}>📦 المصادر (${AR(l.official_items)})</button>
-      ${course.curate ? `
-      <button class="eq-go ${l.has_quiz?'':'warn'}" data-q="${l.id}">
-        ${l.has_quiz ? '📝 الاختبار' : '⚠️ إضافة اختبار'}</button>
-      <div class="qz-go">تحرير ←</div>` : `
-      <button class="eq-go" disabled title="الاختبار لفريق الإشراف">📝 الاختبار</button>
-      <div class="qz-go off" title="تحرير الدرس لفريق الإشراف">تحرير ←</div>`}
+      ${acts(l)}
     </div>`;
 
-  const block = (title, uid) => {
-    const ls = group(uid);
+  /* 🆕 b195 · والوحدةُ العابرة (184) تقول حالَها تحت عنوانها: في المستعير «مستعارة من» وبابُ
+     بيتها، ولفريق الإشراف موضعُها وإزالتُها؛ وفي بيتها «تظهر أيضاً في» — فمن يحرّرها يعرف
+     من يقرؤها قبل أن يغيّرها. */
+  const posOptions = u => {
+    const i = units.indexOf(u), prev = i > 0 ? units[i - 1] : null;
+    return `<option value="" ${prev ? '' : 'selected'}>في البداية</option>` + units
+      .filter(x => x !== u)
+      .map(x => `<option value="${x.id}" ${x === prev ? 'selected' : ''}>بعد: ${esc(x.title)}</option>`).join('');
+  };
+  const unitBar = u => u.borrowed ? `<div class="ed-m ed-ub">
+        <span class="chip g">مستعارة من: <bdi>${esc(u.home?.title || '')}</bdi></span>
+        <button type="button" class="btn ghost" data-uhome="${u.home?.course_id ?? ''}">فتح في بيتها</button>
+        ${course.curate ? `
+        <select data-upos="${u.id}" aria-label="موضع الوحدة">${posOptions(u)}</select>
+        <button type="button" class="btn ghost" data-unlink="${u.id}">إزالة من هذا المقرَّر</button>` : ''}
+      </div>`
+    : (u.shared || []).length ? `<div class="ed-m ed-ub"><span class="chip">تظهر أيضاً في: ${
+        u.shared.map(x => `<bdi>${esc(x.title)}</bdi>`).join('، ')}</span></div>` : '';
+
+  const block = u => {
+    const ls = group(u?.id ?? null);
     /* 🆕 b172 · وعنوانُ الوحدة كعنوان الدرس — `UNIT 1 · Living Well…`
           كان يُرسم من اليمين وعدّادُه عن يساره.
        🔑 والعدّادُ لا يُفسد الحكم: أرقامُه هنديّةٌ (`AR`)، **والرقمُ ليس
           حرفاً قويّاً** في خوارزمية `auto` — فالحَكَمُ أوّلُ حرفٍ من العنوان
           وحده. وقِيس: وحدةٌ عربيّةٌ بعدّادها لم تتبدّل.
        📊 و٤١ عنوانَ وحدةٍ من ٧٧ يبدأ بلاتينيّ (٢٢ أكتوبر). */
-    return `<div class="grp" dir="auto">${esc(title)} <span class="chip">${AR(ls.length)}</span></div>
+    return `<div class="grp" dir="auto">${esc(u ? u.title : 'دروس بلا وحدة')} <span class="chip">${AR(ls.length)}</span></div>
+      ${u ? unitBar(u) : ''}
       ${ls.length ? ls.map(row).join("") : '<div class="ed-empty">لا دروس بعد</div>'}`;
   };
 
@@ -633,6 +664,8 @@ export async function openCourse(course){
         <div class="ed-tg">
           ${toolBtn('new', 'plus', 'درس جديد', ' pri')}
           ${toolBtn('nu', 'plus', 'وحدة جديدة')}
+          ${/* 🆕 b195 · ثالثُ أبواب الهيكل: وحدةٌ من مقرَّرٍ آخر بسطرٍ لا بنسخة (184) */''}
+          ${toolBtn('nbu', 'link', 'استعارة وحدة')}
         </div>
         <div class="ed-tg">
           ${toolBtn('cards', 'cards', 'البطاقات')}
@@ -650,8 +683,8 @@ export async function openCourse(course){
         </details>
       </div>` :`<div class="warnbox">يمكنك إضافة مصادر إلى الدروس القائمة.</div>`}
 
-    ${units.map(u => block(u.title, u.id)).join("")}
-    ${group(null).length || !units.length ? block('دروس بلا وحدة', null) : ''}
+    ${units.map(u => block(u)).join("")}
+    ${group(null).length || !units.length ? block(null) : ''}
 
     ${!lessons.length && course.curate
       ? `<p class="hint">البداية بوحدة ثمّ درس — أو بدرس مباشرة.</p>` : ''}`;
@@ -678,7 +711,8 @@ export async function openCourse(course){
   if(imc) imc.onclick = () => openCardsImport(course);
   const imt = document.getElementById("imt");               // 📖 b191 · بوّابةُ النصوص (180)
   if(imt) imt.onclick = () => openTextsImport(course);
-  if(course.curate) app.querySelectorAll(".ed-row").forEach(el =>
+  /* 🆕 b195 · و`[data-l]` لا كلُّ صفّ: صفُّ الدرس المستعار بلا مفتاح، وبلا الشرط يفتح «درساً جديداً» */
+  if(course.curate) app.querySelectorAll(".ed-row[data-l]").forEach(el =>
     el.onclick = () => editLesson(course, lessons.find(x => String(x.id) === el.dataset.l)));
   app.querySelectorAll("[data-q]").forEach(el => el.onclick = e => {
     e.stopPropagation();                       // لا يفتح تحرير الدرس معه
@@ -702,9 +736,33 @@ export async function openCourse(course){
     const l = lessons.find(x => (x.items||[]).some(i => String(i.id) === el.dataset.edIt));
     const i = l && (l.items||[]).find(x => String(x.id) === el.dataset.edIt);
     if(!i) return;
+    /* 🆕 b195 · ومصدرُ الدرس المستعار يُفتح ليُقرأ، وما يُحرَّر منه (الاختبارُ وما بلا رابط) في بيته */
+    if(l.borrowed && (i.kind === 'quiz' || !i.url)) return toast(HOME_ONLY);
     if(i.kind === 'quiz') return openQuiz(course, l);
     if(i.url) return window.open(i.url, '_blank', 'noopener');
     openItems(course, l);
+  });
+
+  /* 🆕 b195 · الوحدةُ العابرة: استعارتُها، وبيتُها، وإزالتُها، وموضعُها */
+  const nbu = document.getElementById("nbu");
+  if(nbu) nbu.onclick = () => borrowUnit(course);
+  app.querySelectorAll("[data-uhome]").forEach(el => el.onclick = () => {
+    const h = byId(t.courses, el.dataset.uhome);
+    if(h) openCourse(h); else toast("بيت الوحدة غير متاح لك");
+  });
+  app.querySelectorAll("[data-unlink]").forEach(el => el.onclick = async () => {
+    const u = byId(units, el.dataset.unlink);
+    if(!u || !confirm(`أتُزال «${u.title}» من هذا المقرَّر؟ تبقى في بيتها كما هي.`)) return;
+    el.disabled = true;
+    const { data, error } = await api.unlinkUnit({ course: course.id, unit: u.id });
+    if(error || !data?.ok){ el.disabled = false; toast(error?.message || data?.error); return; }
+    toast("أُزيلت الاستعارة");
+    reopenCourse(course.id);
+  });
+  app.querySelectorAll("[data-upos]").forEach(el => el.onchange = async () => {
+    el.disabled = true;
+    if(await placeUnit(course, el.dataset.upos, el.value || null)) toast("نُقلت الوحدة");
+    reopenCourse(course.id);
   });
   scrollTop();
 }
@@ -715,14 +773,117 @@ export async function openCourse(course){
 async function newUnit(course){
   const title = prompt("عنوان الوحدة:");
   if(!title) return;
+  /* 🆕 b195 · بعد آخر وحدةٍ لا بعددها: المستعارةُ (184) في القائمة بمواضعها، والعددُ قد يساوي موضعاً قائماً */
   const { data, error } = await api.saveUnit({ course: course.id, title,
-                            position: (course.units || []).length + 1 });
+                            position: Math.max(0, ...(course.units || []).map(u => Number(u.position) || 0)) + 1 });
   if(error){ toast(error.message); return; }
   if(!data.ok){ toast(data.error); return; }
   toast("أُضيفت الوحدة");
   S.tree = null;                       // الشجرة تغيّرت
   const t = await tree();
   openCourse(byId(t.courses, course.id));
+}
+
+
+/* ═══════════ ③ب الوحدةُ العابرة ═══════════
+   🆕 b195 · تُؤلَّف الوحدةُ في بيتها مرّة، ويستعيرها مقرَّرٌ آخر بسطرٍ لا بنسخة (184).
+   والمرشَّحةُ ما يقبله الحارس: وحدةُ مقرَّرٍ آخر في المادّة نفسها والصفّ نفسه، من وحداته
+   هو لا ممّا استعاره. وما يردّه الحارسُ مقدَّماً يُرى معطَّلاً بسببه ولا يُخفى، والباقي
+   (درسٌ فيها يتطلّب درساً خارجها) يقوله الحارسُ برسالته عند النقر. */
+
+/* مرآةُ `norm_ar` في القاعدة حرفاً — بها يحكم الحارسُ على العنوان، فلا يُعطَّل هنا ما يقبله هناك */
+const normAr = s => String(s || '').trim()
+  .replace(/[أإآ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه')
+  .replace(/[ً-ْـ]/g, '').replace(/\s+/g, ' ');
+
+async function borrowUnit(course){
+  nav('editor'); setWide(true);
+  const t = await tree();
+  head("استعارة وحدة", "", false, await courseTags(course));
+  const mine  = sortUnits(course.units);
+  const here  = new Set(mine.map(u => String(u.id)));
+  const names = new Set(mine.map(u => normAr(u.title)));
+  const from  = (t.courses || [])
+    .filter(c => c.id !== course.id && c.subject_id === course.subject_id
+              && (c.level_id ?? null) === (course.level_id ?? null))
+    .map(c => ({ c, units: sortUnits(c.units).filter(u => !u.borrowed) }))
+    .filter(x => x.units.length);
+
+  const why = u => here.has(String(u.id)) ? 'مستعارة هنا'
+                 : names.has(normAr(u.title)) ? 'في المقرَّر وحدة بهذا العنوان' : '';
+  const unitRow = u => `<div class="ed-row ro">
+      <div style="flex:1;min-width:0">
+        <div class="ed-t" dir="auto">${esc(u.title)}</div>
+        ${(u.shared || []).length ? `<div class="ed-m"><span class="chip">تظهر أيضاً في: ${
+          u.shared.map(x => `<bdi>${esc(x.title)}</bdi>`).join('، ')}</span></div>` : ''}
+      </div>
+      ${why(u) ? `<span class="chip">${why(u)}</span>`
+               : `<button type="button" class="btn primary ed-bu" data-bu="${u.id}">استعارة</button>`}
+    </div>`;
+
+  app.innerHTML = `
+    <div class="crumb" id="bk">→ دروس المقرَّر</div>
+    ${from.length ? `
+    <div class="ed-bar">
+      <label class="fl" style="margin:0" for="bpos">موضعها هنا</label>
+      <select id="bpos">
+        <option value="">في الآخر</option>
+        <option value="0">في البداية</option>
+        ${mine.slice(0, -1).map(u => `<option value="${u.id}">بعد: ${esc(u.title)}</option>`).join('')}
+      </select>
+    </div>
+    ${from.map(x => `<div class="ed-sec">
+        <div class="ed-sec-h"><span class="ed-t" dir="auto">${esc(x.c.title)}</span>
+          ${x.c.stream ? `<span class="chip g" dir="auto">${esc(x.c.stream)}</span>` : ''}</div>
+        ${x.units.map(unitRow).join('')}
+      </div>`).join('')}` : `
+    <div class="card" style="text-align:center;padding:30px">
+      <div class="rev-q">لا وحدات تُستعار</div>
+      <div class="line">الاستعارة بين مقرَّرين في المادة نفسها والصف نفسه، ولا مقرَّر غير هذا.</div></div>`}`;
+
+  document.getElementById("bk").onclick = () => openCourse(course);
+  app.querySelectorAll("[data-bu]").forEach(b => b.onclick = async () => {
+    b.disabled = true;
+    const at = document.getElementById("bpos").value;
+    /* تُستعار في الآخر أوّلاً فيحكم الحارسُ قبل أن يُرقَّم شيء، ثمّ تُنقل إن طُلب غيرُ الآخر */
+    const { data, error } = await api.linkUnit({ course: course.id, unit: Number(b.dataset.bu) });
+    if(error || !data?.ok){ b.disabled = false; toast(error?.message || data?.error); return; }
+    if(at){
+      S.tree = null;
+      const c = byId((await tree()).courses, course.id);
+      if(c) await placeUnit(c, b.dataset.bu, at === '0' ? null : at);
+    }
+    toast("استُعيرت الوحدة");
+    reopenCourse(course.id);
+  });
+  scrollTop();
+}
+
+/* موضعُ الوحدة بين وحدات المقرَّر — ولا موضعَ بين عددين متتاليين، فيُعاد ترقيمُ وحداته
+   كلِّها ١…ن بترتيبها الجديد ويُكتب ما تغيّر وحده: وحدتُه بـ`save_unit`، والمستعارةُ
+   بـ`link_unit` (184 · تحدّث موضعَها ولا تكرّرها).
+   ⚠️ والترقيمُ شرطٌ لا تجميل: موضعان متساويان يخلطان دروسَ الوحدتين عند الطالب،
+      و`list_lessons` ترتّب بموضع الوحدة ثمّ بموضع الدرس. */
+async function placeUnit(course, uid, afterId){
+  const me  = byId(course.units, uid);
+  if(!me) return false;
+  const all = sortUnits(course.units).filter(u => u !== me);
+  all.splice(afterId == null ? 0 : all.findIndex(u => String(u.id) === String(afterId)) + 1, 0, me);
+  for(const [i, u] of all.entries()){
+    if(Number(u.position) === i + 1) continue;
+    const { data, error } = u.borrowed
+      ? await api.linkUnit({ course: course.id, unit: u.id, position: i + 1 })
+      : await api.saveUnit({ id: u.id, course: course.id, title: u.title, position: i + 1 });
+    if(error || !data?.ok){ toast(error?.message || data?.error); return false; }
+  }
+  return true;
+}
+
+/* الشجرةُ تغيّرت ⇒ تُعاد، ويُفتح المقرَّرُ منها لا من نسخته القديمة */
+async function reopenCourse(id){
+  S.tree = null;
+  const c = byId((await tree()).courses, id);
+  if(c) openCourse(c);
 }
 
 
@@ -736,7 +897,8 @@ export async function editLesson(course, lesson){
 
   const { data: all } = await api.authorLessons(course.id);
   const others = (all || []).filter(l => !lesson || l.id !== lesson.id);
-  const units  = (course.units || []).slice().sort((a,b) => a.position - b.position);
+  /* 🆕 b195 · والمستعارةُ ليست هنا: درسُها يُحرَّر في بيتها، ودرسٌ يُنقل إليها يردّه المشغّل (184) */
+  const units  = sortUnits(course.units).filter(u => !u.borrowed);
   const strands = await strandsOf(course.subject_id);
 
   app.innerHTML = `

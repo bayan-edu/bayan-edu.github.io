@@ -1076,6 +1076,13 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
 .qz-go.off{color:var(--text-muted);opacity:.55;cursor:not-allowed}
 .ed-empty{color:var(--text-muted);font-size:var(--fs-meta);padding:10px 4px 14px}
 
+/* 🆕 b195 · سطرُ الوحدة العابرة تحت عنوانها (184) — على نسق `.ed-m`، وزرُّه وقائمتُه بعرض
+   كلمتهما: `button.btn` تمتدّ (`flex:1`) و`select` بعرض سطرها في base.css. */
+.ed-ub{margin:-6px 0 12px;align-items:center}
+.ed-ub button.btn{flex:0 0 auto;padding:5px 12px;font-size:.85em}
+.ed-ub select{width:auto;flex:0 1 auto;max-width:260px;padding:6px 10px;font-size:.85em}
+.ed-row button.ed-bu{flex:0 0 auto;padding:7px 18px;font-size:.9em}
+
 /* 🆕 b186 · شريطُ أدوات المقرَّر — والتعليلُ النصّيّ عند `openCourse` في editor.js.
    🔑 **ولا لونَ جديد ولا ظلَّ جديد:** السطحُ وصفةُ `.card` بعينها (`--surface` +
       `--line` + `--shadow`) كبروازِ السياق فوقه (`.head-tag`). والأزرارُ **محايدة**

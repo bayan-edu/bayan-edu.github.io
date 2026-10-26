@@ -536,6 +536,13 @@ export const saveUnit = o => db.rpc('save_unit', {
   p_id: o.id ?? null, p_course: o.course,
   p_title: o.title, p_position: o.position ?? 0 });
 
+/* 🆕 b195 · الوحدةُ العابرة (184): يستعيرها مقرَّرٌ آخر بسطرٍ لا بنسخة، وتُحرَّر في بيتها وحده.
+   والاستعارةُ القائمة يُنقل موضعُها بالنداء نفسه — `link_unit` تحدّث السطرَ ولا تكرّره،
+   وبلا موضعٍ تضعها بعد آخر وحدة. */
+export const linkUnit = o => db.rpc('link_unit', {
+  p_course: o.course, p_unit: o.unit, p_position: o.position ?? null });
+export const unlinkUnit = o => db.rpc('unlink_unit', { p_course: o.course, p_unit: o.unit });
+
 /* cards — البطاقات: المجموعة تتبع (مادة · صفّ) لا مقرَّراً */
 export const subjectDecks = sid => db.rpc('subject_decks', { p_subject: sid });
 /* 🆕 165 · بطاقاتُ درسٍ بعينه — من `card_lessons` لا من مجموعةٍ بـ`lesson_id`
