@@ -442,6 +442,10 @@ export async function loadList(){
     const isPast = !!x.past;
     /* 🆕 b194 · والمادّةُ قبل شُعبتها ليست فارغة: مقرَّراتُها محجوبةٌ حتى يختار (183) */
     const empty = !x.needs_placement && !x.needs_stream && bulk(x) === 0;
+    /* 🆕 b197 · والفارغةُ ذاتُ الشُّعب بابٌ إلى شاشة الاختيار (حدُّ `183` ① — والتعليلُ عند `enterSubject`):
+       تبقى «قيد الإعداد» برماديّها، وتُعلَن زرّاً وتنهض كسائر الأبواب. ⇒ `soon` للمغلقة وحدها:
+       `.subj.soon` في screens.css هي «ليست زرّاً» بحرفها (`cursor:default` ولا نهوض)، فلا يلبسها باب. */
+    const soon  = empty && !(x.streams || []).length;
     const pct   = x.lessons_total ? Math.round(x.lessons_done / x.lessons_total * 100) : 0;
     /* نصٌّ قصير: البطاقة ١٥٠px، وجملةٌ كاملة تلتفّ ثلاثة أسطر فتتفاوت
        ارتفاعاتُ الشبكة. والجملةُ الطويلة باقيةٌ حيث يقع الفعل —
@@ -505,9 +509,10 @@ export async function loadList(){
        يُقرآن بلمحة. ولم يُحذف: يظهر بالمرور ويقرؤه قارئُ الشاشة،
        وموضعُه الطبيعيّ شاشةُ المادة نفسها.
        ⚠️ والفارغة بلا role ولا tabindex: ليست زرّاً فلا تُعلن زرّاً،
-          ولا تُلتقط بالتنقّل بلوحة المفاتيح إلى بابٍ لا يُفتح. */
-    return `<div class="subj ${subjectState(x, isPast)} ${empty ? 'soon' : ''}"
-                 data-i="${x.id}" ${isPast ? 'data-past="1"' : ''} ${empty ? '' : 'role="button" tabindex="0"'}
+          ولا تُلتقط بالتنقّل بلوحة المفاتيح إلى بابٍ لا يُفتح.
+          🆕 b197 · إلّا ذاتَ الشُّعب: لها بابٌ يُفتح (`soon` أعلاه). */
+    return `<div class="subj ${subjectState(x, isPast)} ${soon ? 'soon' : ''}"
+                 data-i="${x.id}" ${isPast ? 'data-past="1"' : ''} ${soon ? '' : 'role="button" tabindex="0"'}
                  ${x.description ? `title="${esc(x.description)}"` : ''}>
       ${face(x)}
       <div class="subj-t" dir="auto"><bdi>${esc(x.name)}</bdi></div>
@@ -686,12 +691,19 @@ function streamAct(x){ return x.stream_label ? 'اختيار ' + x.stream_label 
    🔑 **ترتيبٌ واحدٌ في موضعٍ واحد:** كان متنَ نقرة البطاقة، وشاشةُ الشُّعبة تمضي بالطالب في
       البوّابات الباقية بعد اختياره — وترتيبان لسؤالٍ واحد يتفارقان.
    ⚠️ و`fromAsk`: مادّةٌ بلا دروسٍ بعد الاختيار تُقال بالإشعار ثمّ الرئيسة — فلا يبقى الطالبُ على
-      شاشة سؤالٍ أجاب عنه. */
+      شاشة سؤالٍ أجاب عنه.
+   🆕 b197 · **والفراغُ في مادّةٍ ذاتِ شُعبٍ يمضي بعد الإشعار إلى شاشة الاختيار** (حدُّ `183` ① · بإذن المالك):
+      كانت بطاقتُها «قيد الإعداد» لا تُفتح ما دام مقرَّرُ شُعبته بلا دروس، وسطرُ التغيير في رأس دروسها —
+      فلا يبلغه، والشاشةُ وعدته «يمكنك تغيير اختيارك لاحقاً». وهي حالُ القدرات منذ `187`.
+      📌 والإشعارُ باقٍ قبلها: هو ما كانت النقرةُ تقوله، والشاشةُ لا تقول لماذا لم تُفتح الدروس.
+      ⚠️ و`fromAsk` أوّلاً: الآتي من الشاشة نفسِها لا يُردّ إليها — وإلّا دار بينهما. */
 function enterSubject(x, fromAsk){
   if(x.needs_stream) return askStream(x);
   if(!x.needs_placement && bulk(x) === 0){
     toast("دروس هذه المادة قيد الإعداد — ستصلك عند جهوزها");
-    return fromAsk ? loadList() : undefined;
+    return fromAsk                  ? loadList()
+         : (x.streams || []).length ? askStream(x, true)
+         : undefined;
   }
   if(x.needs_placement) return startPlacement(x);
   if(!x.mentor_chosen)  return loadMentors(x);
@@ -699,9 +711,10 @@ function enterSubject(x, fromAsk){
 }
 
 /* الشاشةُ نفسُها للاختيار الأوّل وللتغيير — والتغييرُ من رأس دروس المادّة («التخصص: علمي، تغيير»).
+   🆕 b197 · ومن البطاقة الفارغة (`fromList` · والتعليلُ عند `enterSubject`).
    📌 والعنوانُ عنوانُ المادّة (/subjects/47): من حدّث الصفحةَ هنا عاد إلى البوّابة نفسِها
       (`openLessonAt`)، لا إلى رئيسةٍ تُنسيه أين كان. */
-function askStream(subj){
+function askStream(subj, fromList){
   S.subj = subj;
   nav('subjects', `/subjects/${subj.id}`);
   head(streamAct(subj), "");
@@ -729,7 +742,11 @@ function askStream(subj){
   all().forEach(el => {
     const choose = async () => {
       const sid = Number(el.dataset.st);
-      if(sid === subj.my_stream) return loadLessons(subj);     // الاختيارُ نفسُه ⇒ لا نداء
+      /* الاختيارُ نفسُه ⇒ لا نداء، ويعود من حيث جاء.
+         🆕 b197 · والآتي من البطاقة الفارغة إلى الرئيسة: الدروسُ رأساً تفتح مقرَّراً بلا درس، وتتخطّى بوّابةَ المعلّم.
+         ⚠️ ولا `enterSubject` للمسلكين: سطرُ التغيير يُبلَغ أيضاً من رابطٍ أو بحثٍ أو «متابعة» بلا بوّابات —
+            فيُساق مَن أبقى اختيارَه إلى معلّمٍ أو اختبارٍ لم تطلبه منه دروسُه. */
+      if(sid === subj.my_stream) return fromList ? loadList() : loadLessons(subj);
       if(busy) return;
       busy = true;
       all().forEach(o => o.setAttribute('aria-disabled', 'true'));
