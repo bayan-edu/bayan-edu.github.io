@@ -543,6 +543,19 @@ export const linkUnit = o => db.rpc('link_unit', {
   p_course: o.course, p_unit: o.unit, p_position: o.position ?? null });
 export const unlinkUnit = o => db.rpc('unlink_unit', { p_course: o.course, p_unit: o.unit });
 
+/* 🆕 b196 · البنكُ والنموذج (185): البنكُ للمادّة لا لمقرَّر ويُحرَّر بمحرّر الاختبار نفسه،
+   والنموذجُ اختبارٌ في درسٍ سطورُه خاناتٌ من البنوك. والسطورُ دفعةً واحدة بترتيبها
+   [{bank, slot, section}] — والقاعدةُ تردّ ما يُفقد النموذجَ المنشورَ جاهزيّتَه كلَّه. */
+export const subjectBanks = sid => db.rpc('subject_banks', { p_subject: sid });
+export const bankSlots    = bid => db.rpc('bank_slots',    { p_bank: bid });
+export const createBank   = o => db.rpc('create_bank', { p_subject: o.subject, p_title: o.title });
+export const createForm   = o => db.rpc('create_form', {
+  p_subject: o.subject, p_title: o.title, p_minutes: o.minutes ?? 25 });
+export const saveFormSlots = (form, rows) =>
+  db.rpc('save_form_slots', { p_form: form, p_rows: rows });
+export const setPassageGroup = (ids, group) =>
+  db.rpc('set_passage_group', { p_ids: ids, p_group: group ?? null });
+
 /* cards — البطاقات: المجموعة تتبع (مادة · صفّ) لا مقرَّراً */
 export const subjectDecks = sid => db.rpc('subject_decks', { p_subject: sid });
 /* 🆕 165 · بطاقاتُ درسٍ بعينه — من `card_lessons` لا من مجموعةٍ بـ`lesson_id`

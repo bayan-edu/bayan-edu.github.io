@@ -17,6 +17,7 @@ import { openItems } from './editor_items.js';
 import { openCards } from './editor_cards.js';
 import { openStrands, strandsOf, strandSelect, clearStrands } from './editor_strands.js';
 import { openObjectives } from './editor_objectives.js';
+import { openBanks } from './editor_banks.js';
 import { openQuizImport, openCardsImport, openMapImport, openIndexImport,
          openTextsImport } from './editor_import.js';
 
@@ -669,7 +670,9 @@ export async function openCourse(course){
         </div>
         <div class="ed-tg">
           ${toolBtn('cards', 'cards', 'البطاقات')}
-          ${s.id ? toolBtn('nst', 'strands', 'فروع المادة') + toolBtn('nob', 'target', 'أهداف المادة') : ''}
+          ${/* 🆕 b196 · رابعُ أبواب المادّة: بنوكُها (185) — للمادّة لا للمقرَّر كفروعها وأهدافها */''}
+          ${s.id ? toolBtn('nst', 'strands', 'فروع المادة') + toolBtn('nob', 'target', 'أهداف المادة')
+                 + toolBtn('nbk', 'bank', 'بنوك المادة') : ''}
         </div>
         <details class="ed-tm">
           <summary class="ed-tb">${icon('import')}<span>استيراد</span>${icon('chev')}</summary>
@@ -701,6 +704,8 @@ export async function openCourse(course){
   if(ns) ns.onclick = () => openStrands(course, s);
   const nob = document.getElementById("nob");
   if(nob) nob.onclick = () => openObjectives(course, s);
+  const nbk = document.getElementById("nbk");
+  if(nbk) nbk.onclick = () => openBanks(course, s);
   const imq = document.getElementById("imq");
   if(imq) imq.onclick = () => openQuizImport(course);
   const imm = document.getElementById("imm");

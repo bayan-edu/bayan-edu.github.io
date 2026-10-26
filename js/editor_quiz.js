@@ -51,10 +51,11 @@ import { questionText, questionBody, KIND_LABEL, kindLabel, paperIsEnglish,
          gapCount } from './render_q.js';
 import { wireMatching } from './match_dnd.js';
 import { practiceLinkBox } from './practice_links.js';
+import { openBanks, openForm } from './editor_banks.js';
 
 let Z    = null;   // الاختبار المحمَّل
 let cur  = 0;      // فهرس السؤال المعروض
-let ctx  = null;   // { course, lesson }
+let ctx  = null;   // { course, lesson } — و`bank` (المادّة) حين يُحرَّر بنكٌ (b196)
 let dirty = false; // تغييرات غير محفوظة في السؤال الحالي
 let pvOnly = false; // دخلنا للمعاينة وحدها — فلا بابَ منها إلى التحرير
 let OB   = null;   // أهدافُ هذا الاختبار — تُحمَّل معه مرّةً (139)
@@ -83,12 +84,32 @@ export async function openQuiz(course, lesson){
 
   const qid = st ? course.id : lesson.quiz_id;
   if(!qid) return offerCreate();
+  return load(qid);
+}
 
+/* 🆕 b196 · وبابٌ ثالث: بنكُ المادّة (185) — اختبارٌ بلا درسٍ ولا محطّة، يُحرَّر بالمحرّر نفسِه
+   بلا تغيير (خانات · نصوص · تشخيص · أهداف · أقسام). والفرقُ في الشريط وحده: لا نشرَ ولا رابطَ
+   تدرّب — والقاعدةُ تردّهما (`publish_quiz` · `create_practice_session`) — والرجوعُ إلى البنوك. */
+export async function openBank(course, subject, bankId){
+  pvOnly = false;
+  ctx = { course, lesson: null, bank: subject };
+  nav('editor'); setWide(true);
+  head("بنك المادة");
+  app.innerHTML = `<div class="status">جار التحميل…</div>`;
+  return load(bankId);
+}
+
+/* التحميلُ واحدٌ للأبواب الثلاثة — والنموذجُ يتفرّع منه إلى شاشة تركيبه */
+async function load(qid){
   const { data, error } = await api.quizForEdit(qid);
   if(error){ app.innerHTML = errBox(error, 'تحميل الاختبار'); return; }
   if(!data.ok){ app.innerHTML = errBox({ message: data.error }, 'تحميل الاختبار'); return; }
 
   Z = data; cur = 0; dirty = false;
+
+  /* 🆕 b196 · والنموذجُ لا أسئلةَ له من عنده (185): محرّرُه شاشةُ تركيبٍ من خانات البنوك، لا شريطُ
+     أسئلة. فلا أهدافَ تُحمَّل له هنا ولا روابطُ بطاقات — تلك لأسئلةٍ يملكها. */
+  if(Z.role === 'form') return openForm(ctx.course, ctx.lesson, Z);
 
   /* الأهدافُ تُحمَّل مع الاختبار لا مع كلّ سؤال: `objectives_for_quiz` تحصر
      الخيارَ في أهداف دروس هذا الاختبار (139). وتعذّرُها لا يُعطّل التحرير —
@@ -128,8 +149,10 @@ export async function openQuiz(course, lesson){
         وتُرجع ما يُرجَع للطالب بعينه: بلا مفاتيح ولا تشخيص ولا كود.
       والمعاينة «كما يراها الطالب» تُقرأ من مصدر الطالب نفسِه، وإلا كانت
       محاكاةً تُصدَّق. ولا تُسجَّل محاولة: القراءة لا تكتب. */
-export async function openQuizPreview(course, lesson){
-  pvOnly = true;
+export async function openQuizPreview(course, lesson, from){
+  /* 🆕 b196 · والنموذجُ يُعاين من شاشة تركيبه ويُرجع إليها (`from = 'form'`): لا أسئلةَ له في
+     `quiz_for_edit`، فمعاينتُه سحبةٌ من `get_quiz` كما يراها طالب — وهو بابُ هذه الدالّة نفسُه. */
+  pvOnly = from === 'form' ? 'form' : true;
   ctx = { course, lesson };
   nav('editor'); setWide(true);
   head("معاينة الأسئلة", lesson?.title || '');
@@ -153,10 +176,35 @@ function offerCreate(){
       <div class="rev-q">هذا الدرس بلا اختبار</div>
       <div class="line" style="margin-bottom:18px">
         الدرس لا يكتمل عند الطالب إلا باختبار مُدرَج — وبدونه تتوقّف سلسلة الدروس بعده.</div>
-      <div class="nav"><button class="btn primary" id="mk">إنشاء اختبار الدرس</button></div>
+      <div class="nav" style="justify-content:center">
+        <button class="btn primary" id="mk">إنشاء اختبار الدرس</button>
+        ${/* 🆕 b196 · والبابُ الثاني نموذجٌ من بنوك المادّة (185) — للمحاكاة واختبار البداية */''}
+        <button class="btn ghost" id="mkf">إنشاء نموذج من البنوك</button>
+      </div>
+      <p class="small" style="margin-top:12px">النموذج يُركَّب من خانات بنوك المادة، ولا أسئلة له من عنده.</p>
     </div>`;
   document.getElementById("bk").onclick = () => openCourse(ctx.course);
   document.getElementById("mk").onclick = createQuiz;
+  document.getElementById("mkf").onclick = createForm;
+}
+
+/* 🆕 b196 · والنموذجُ يُنشأ في الدرس كأيّ اختبار (185 · §٤): بندٌ مُدرَجٌ مطلوبٌ بعنوان بند الاختبار
+   نفسِه — فمسارُ الطالب لا يتغيّر — ثمّ تُفتح شاشةُ تركيبه فارغة. والحارسُ `can_curate` في القاعدة. */
+async function createForm(){
+  const { course, lesson } = ctx;
+  app.innerHTML = `<div class="status">جار الإنشاء…</div>`;
+
+  const f = await api.createForm({ subject: course.subject_id, title: lesson.title });
+  if(f.error || !f.data.ok){ toast(f.error?.message || f.data.error); offerCreate(); return; }
+
+  const it = await api.saveItem({
+    lesson: lesson.id, kind: 'quiz', title: 'الاختبار التشخيصي',
+    quiz: f.data.id, official: true, isGraded: true, required: true, position: 99 });
+  if(it.error || !it.data.ok){ toast(it.error?.message || it.data.error); return; }
+
+  toast("أُنشئ النموذج");
+  ctx.lesson = { ...lesson, quiz_id: f.data.id, has_quiz: true };
+  openQuiz(course, ctx.lesson);
 }
 
 async function createQuiz(){
@@ -232,14 +280,21 @@ function go(i){
 
 function leave(){
   if(dirty && !confirm("تغييرات غير محفوظة — أتتركها؟")) return;
-  // محطّةُ أداةٍ تعود إلى فهرس الأدوات · واختبارُ درسٍ إلى مقرَّره
+  // محطّةُ أداةٍ تعود إلى فهرس الأدوات · وبنكُ المادّة إلى بنوكها · واختبارُ درسٍ إلى مقرَّره
   if(ctx.course?.station === true) return openTools();
+  if(ctx.bank) return openBanks(ctx.course, ctx.bank);
   openCourse(ctx.course);
 }
 
+/* 🆕 b196 · والفتحُ من جديدٍ بابُ من جاء: البنكُ إلى نفسه، والدرسُ والمحطّةُ كما كانا —
+   والنموذجُ يعود من `openQuiz` إلى شاشة تركيبه (`load`). */
+const reopen = () => ctx.bank ? openBank(ctx.course, ctx.bank, Z.id) : openQuiz(ctx.course, ctx.lesson);
+
 /* إعدادات الاختبار — تُحرَّر مرّةً في مكانٍ واحد.
-   وكانت كلُّها تُضبط عند الإنشاء ولا تُعدَّل بعده. */
-function quizSettings(){
+   وكانت كلُّها تُضبط عند الإنشاء ولا تُعدَّل بعده.
+   🆕 b196 · وتُنادى من شاشة تركيب النموذج أيضاً (editor_banks.js): `save_quiz` تكتب الحقولَ
+   كلَّها، فصندوقٌ ثانٍ بحقولٍ أقلّ يُعيد ما لم يعرضه إلى افتراضه بصمت. */
+export function quizSettings(){
   const A = Z.attempts || 0;
   const box = document.createElement('div');
   box.className = 'modal';
@@ -277,11 +332,13 @@ function quizSettings(){
         <option value="never" ${Z.reveal==='never'?'selected':''}>لا يُعرض شيء — لمحطّات القياس</option>
       </select>
 
+      ${/* 🆕 b196 · والنموذجُ بترتيب سطوره دائماً (185 ③) — فخيارُ الخلط فيه وعدٌ لا يقع */
+        Z.role === 'form' ? `<div class="eq-hint" style="margin-top:14px">والنموذج بترتيب سطوره دائماً — لا يُخلط.</div>` : `
       <label class="eq-ck" style="display:flex;gap:9px;margin-top:14px;align-items:flex-start">
         <input type="checkbox" id="qs_s" ${Z.shuffle?'checked':''}>
         <span>ترتيب متغيّر لكل طالب
           <div class="eq-hint" style="margin-top:3px">الأقسام والنصوص تبقى كتلاً بترتيبها،
-            والخلط داخلها. وأسئلة النصّ المشترك لا تُخلط.</div></span></label>
+            والخلط داخلها. وأسئلة النصّ المشترك لا تُخلط.</div></span></label>`}
 
       ${Z.tool ? `
         <div style="display:flex;gap:12px;margin-top:14px">
@@ -319,7 +376,7 @@ function quizSettings(){
       code: A ? null : $('qs_c').value.trim(),
       minutes: +$('qs_m').value || 25, passMark: +$('qs_p').value || 65,
       plays: +$('qs_pl').value || null, reveal: $('qs_r').value,
-      shuffle: $('qs_s').checked,
+      shuffle: $('qs_s') ? $('qs_s').checked : !!Z.shuffle,
       tool: $('qs_tl')?.value.trim() || null,
       station: +($('qs_st')?.value) || null,
       stationKind: $('qs_k')?.value || null,       
@@ -330,7 +387,7 @@ function quizSettings(){
       toast(error?.message || data.error); return;
     }
     box.remove(); toast("حُفظت الإعدادات");
-    openQuiz(ctx.course, ctx.lesson);
+    reopen();
   };
 }
 
@@ -2206,7 +2263,8 @@ async function reload(focusId){
 let pv = 0;
 
 /* الخروجُ من المعاينة: إلى التحرير لمن جاء منه، وإلى المصادر لمن لا تحرير له */
-const pvBack = () => pvOnly ? openItems(ctx.course, ctx.lesson) : render();
+const pvBack = () => pvOnly === 'form' ? openQuiz(ctx.course, ctx.lesson)
+                   : pvOnly ? openItems(ctx.course, ctx.lesson) : render();
 
 function preview(){
   const qs = Z.questions || [];
@@ -2214,14 +2272,15 @@ function preview(){
     /* 🔴 ومن دخل للمعاينة وحدها لا محرِّرَ تحته يرجع إليه — فلو اكتُفي
        بالتنبيه بقيت شاشة «جار التحميل» معلّقةً: صمتٌ يُصدَّق. */
     if(!pvOnly){ toast("لا أسئلة للمعاينة"); return; }
+    const fm = pvOnly === 'form';
     app.innerHTML = `
-      <div class="crumb" id="pvx">→ مصادر الدرس</div>
+      <div class="crumb" id="pvx">→ ${fm ? 'رجوع إلى التركيب' : 'مصادر الدرس'}</div>
       <div class="card" style="text-align:center;padding:32px">
         <div style="font-size:2.2rem;margin-bottom:12px">📝</div>
-        <div class="rev-q">هذا الاختبار بلا أسئلة بعد</div>
-        <div class="line">يضع الأسئلةَ فريقُ الإشراف.</div>
+        <div class="rev-q">${fm ? 'النموذج بلا سطور بعد' : 'هذا الاختبار بلا أسئلة بعد'}</div>
+        <div class="line">${fm ? 'تُضاف السطور من بنوك المادة.' : 'يضع الأسئلةَ فريقُ الإشراف.'}</div>
       </div>`;
-    document.getElementById("pvx").onclick = () => openItems(ctx.course, ctx.lesson);
+    document.getElementById("pvx").onclick = () => pvBack();
     scrollTop();
     return;
   }
@@ -2241,10 +2300,12 @@ function preview(){
   const pvEn = !!Z.tool && paperIsEnglish(Z);
 
   app.innerHTML = `
-    <div class="crumb" id="pvx">→ ${pvOnly ? 'مصادر الدرس' : 'رجوع إلى التحرير'}</div>
+    <div class="crumb" id="pvx">→ ${pvOnly === 'form' ? 'رجوع إلى التركيب'
+                                     : pvOnly ? 'مصادر الدرس' : 'رجوع إلى التحرير'}</div>
     <div class="warnbox">👁️ معاينة — هكذا يرى الطالب هذا السؤال.
-      لا تُسجَّل محاولة ولا تُعرض الإجابة الصحيحة.${pvOnly
-        ? ' <b>وتحرير الأسئلة لفريق الإشراف.</b>' : ''}</div>
+      لا تُسجَّل محاولة ولا تُعرض الإجابة الصحيحة.${pvOnly === 'form'
+        ? ' وهي صيغة واحدة من كلّ سطر، وقد يرى طالب آخر صيغة غيرها.'
+        : pvOnly ? ' <b>وتحرير الأسئلة لفريق الإشراف.</b>' : ''}</div>
 
     <div class="timerbar" style="position:static;border-radius:11px;margin-bottom:14px">
       <span class="clock">${mmssPv(Z.minutes*60)}</span>
@@ -3026,6 +3087,14 @@ function passageForm(p, draft){
         <option value="en" ${d.lang==='en'?'selected':''}>English</option>
       </select>
 
+      ${/* 🆕 b196 · مجموعةُ البدائل — في البنك وحده (185): نصوصٌ هي صيغٌ لنصٍّ واحد، والنموذجُ يختار
+            منها حارةً واحدة في كلّ محاولة (`get_quiz`). والاختبارُ العاديّ حارتُه للاختبار كلِّه كما كانت. */
+        Z.role === 'bank' ? `
+      <label class="fl" style="margin-top:16px">مجموعة البدائل <span style="opacity:.6">(اختياري)</span></label>
+      <input id="pfGroup" dir="auto" value="${esc(d.group || '')}" placeholder="مثال: نص-١">
+      <div class="eq-hint">النصوص البديلة لنصّ واحد تحمل الاسم نفسه، ويُختار منها نصّ واحد في كلّ محاولة.
+        والفارغ نصّ بلا بديل.</div>` : ''}
+
       <div class="nav" style="margin-top:16px">
         <button class="btn primary" id="pfSave">${isNew ? 'إضافة وربط' : 'حفظ'}</button>
         <button class="btn ghost" id="pfCancel">إلغاء</button>
@@ -3047,6 +3116,7 @@ function passageForm(p, draft){
                    body:  main.querySelector("#pfBody").value,
                    media: main.querySelector("#pfMedia").value,
                    lang:  main.querySelector("#pfLang").value,
+                   group: main.querySelector("#pfGroup")?.value,
                    kind:  pk === el.dataset.pk ? 'text' : el.dataset.pk };
     /* 🔑 المحفوظ يبقى محفوظاً والجديد يبقى جديداً.
        وتمريرُ كائنٍ حيث كان null كان يجعل isNew = !p تصير false،
@@ -3069,6 +3139,18 @@ function passageForm(p, draft){
       position: p?.position ?? ((Z.passages||[]).length + 1) });
     if(error){ toast(error.message); return; }
     if(!data.ok){ toast(data.error); return; }
+
+    /* 🆕 b196 · ومجموعةُ البدائل بابُها `set_passage_group` لا `save_passage` — فحفظُ النصّ لا يمسّها،
+       وتُكتب بعده إن خالفت المحفوظ. والمقارنةُ بما في القاعدة لا بما في الحقل: تبديلُ نوع الوسيط
+       يُعيد رسمَ الصندوق بما كُتب، فيستوي المكتوبُ والمحفوظ في العين وهما مختلفان. */
+    if(Z.role === 'bank'){
+      const pid = p?.id ?? data.id;
+      const was = (Z.passages || []).find(x => String(x.id) === String(pid))?.group || '';
+      if(v("pfGroup") !== was){
+        const g = await api.setPassageGroup([pid], v("pfGroup") || null);
+        if(g.error || !g.data?.ok) toast(g.error?.message || g.data?.error);
+      }
+    }
     if(isNew){ await applyPassage(data.id); toast("أُضيف النصّ ورُبط"); return; }
     toast("حُفظ النصّ"); reload();
   };
@@ -3189,9 +3271,14 @@ function toolbar(){
   const r   = Z.readiness || { ok:false, mcq:0, essay:0, issues:[] };
   /* محطّةُ أداةٍ بلا درس — فلا معنى فيها لـ«الدرس مسودّة» */
   const st  = ctx.course?.station === true;
+  /* 🆕 b196 · والبنكُ لا يُنشر أبداً (185): حالُه من يسحب منه لا النشر، ولا نشرَ ولا رابطَ تدرّب */
+  const bk  = !!ctx.bank;
+  const uses = (Z.used_by || []).length;
   const pub = !!Z.published;
   const live = pub && (st || !!ctx.lesson?.published);
-  const s = !pub  ? { c:'draft', t:'مسودّة — لا يظهر لأحد' }
+  const s = bk    ? { c:'draft', t: uses ? 'بنك · يسحب منه ' + N(uses,'نموذج','نموذجان','نماذج','نموذجاً')
+                                         : 'بنك — لا يُنشر' }
+          : !pub  ? { c:'draft', t:'مسودّة — لا يظهر لأحد' }
           : live  ? { c:'live',  t:'منشور ويصل الطلاب' }
                   : { c:'half',  t:'منشور — والدرس مسودّة' };
 
@@ -3199,12 +3286,12 @@ function toolbar(){
     <div class="eq-tb">
       <button class="eq-back" id="rdBack" title="رجوع">
         <span class="eq-back-a">→</span>
-        <span class="eq-back-t" dir="auto">${esc(ctx.lesson?.title || 'أدوات القياس')}</span>
+        <span class="eq-back-t" dir="auto">${esc(bk ? 'بنوك المادة' : ctx.lesson?.title || 'أدوات القياس')}</span>
       </button>
 
       <div class="eq-kinds">${kindChips()}</div>
 
-      <span class="eq-state ${s.c}">${s.t}</span>
+      <span class="eq-state ${s.c}"${bk ? ' title="البنك لا يراه الطالب إلا داخل نموذج"' : ''}>${s.t}</span>
 
       <div class="eq-acts">
         <button class="eq-tbb" id="rdSet"><span class="eq-i">⚙</span> الإعدادات</button>
@@ -3213,14 +3300,14 @@ function toolbar(){
               لا بطاقةُ سؤال. ولا يشترط نشراً: النشرُ يُدخل البوّابةَ
               والدرجة، وهذه جلسةٌ لا تُقيَّم — وحالُ الأصل يُقال في
               الصندوق قبل التوليد، فلا يُجمَّد مسودّةٌ على غفلة. */''}
-        <button class="eq-tbb" id="rdLink"
-                title="رابط يتدرّب به من لا حساب له"><span class="eq-i">🔗</span> رابط تدرّب</button>
+        ${bk ? '' : `<button class="eq-tbb" id="rdLink"
+                title="رابط يتدرّب به من لا حساب له"><span class="eq-i">🔗</span> رابط تدرّب</button>`}
         ${pub && !live ? `<button class="eq-tbb warn" id="rdLsn">نشر الدرس أيضاً</button>` : ''}
-        <button class="eq-tbb ${pub?'':'go'}" id="rdPub" ${r.ok?'':'disabled'}
+        ${bk ? '' : `<button class="eq-tbb ${pub?'':'go'}" id="rdPub" ${r.ok?'':'disabled'}
           title="${r.ok ? '' : pub
             ? 'الجاهزية ناقصة — والزرّ محجوب حتى تكتمل (انظر اللافتة أعلاه)'
             : 'لا يُنشر قبل أن تكتمل الجاهزية'}">${
-          pub ? 'إلغاء النشر' : 'نشر الاختبار'}</button>
+          pub ? 'إلغاء النشر' : 'نشر الاختبار'}</button>`}
       </div>
     </div>`;
 }
@@ -3277,8 +3364,10 @@ function wireToolbar(){
   tb.querySelector("#rdSet").onclick  = quizSettings;
   tb.querySelector("#rdPrev").onclick = preview;
 
-  /* 🆕 b89 · حالُ الأصل يُقال قبل التجميد لا بعده */
-  tb.querySelector("#rdLink").onclick = () => practiceLinkBox({
+  /* 🆕 b89 · حالُ الأصل يُقال قبل التجميد لا بعده.
+     🆕 b196 · والبنكُ بلا الزرّين — فالربطُ يسأل عنهما ولا يفترضهما */
+  const lk = tb.querySelector("#rdLink");
+  if(lk) lk.onclick = () => practiceLinkBox({
     kind: 'quiz', source: Z.id, title: Z.title,
     note: Z.published ? null
         : 'هذا الاختبار مسودّة — واللقطة تُجمَّد على حاله الآن.' });
@@ -3291,7 +3380,8 @@ function wireToolbar(){
   wireKinds(tb);
   watchKinds(tb);   /* 🆕 b96 · الرقائق تنكمش قبل أن تُبتر */
 
-  tb.querySelector("#rdPub").onclick = async () => {
+  const pb = tb.querySelector("#rdPub");
+  if(pb) pb.onclick = async () => {
     const { data, error } = await api.publishQuiz(Z.id, !Z.published);
     if(error){ toast(error.message); return; }
     if(!data.ok){ toast(data.error); return; }
