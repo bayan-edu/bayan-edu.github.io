@@ -122,7 +122,7 @@ export async function openEditor(scaleId, levelId){
 
   app.innerHTML = `
     ${narrowNote()}
-    <div class="ed-bar">
+    <div class="ed-bar ed-scope">
       <label class="fl" style="margin:0">المنهج</label>
       <select id="sc">${scales.map(x =>
         `<option value="${x.id}" ${x.id===sc.id?'selected':''}>${esc(x.name)}</option>`).join("")}</select>
@@ -548,9 +548,10 @@ export async function openCourse(course){
       <div class="qz-go">تحرير ←</div>` : `
       <button class="eq-go" disabled title="الاختبار لفريق الإشراف">📝 الاختبار</button>
       <div class="qz-go off" title="تحرير الدرس لفريق الإشراف">تحرير ←</div>`}`;
-  const row = l => `<div class="ed-row${course.curate && !l.borrowed ? '' : ' ro'}"${
+  /* 🆕 b200 · `ed-lsn` و`ed-main` صنفان لا نمطٌ مضمَّن — بهما يلتفّ الصفُّ في الجوّال (screens.css). */
+  const row = l => `<div class="ed-row ed-lsn${course.curate && !l.borrowed ? '' : ' ro'}"${
       l.borrowed ? '' : ` data-l="${l.id}"`}>
-      <div style="flex:1;min-width:0">
+      <div class="ed-main">
         ${/* 🆕 b172 · `dir="auto"` — وهي القاعدةُ نفسُها التي يحملها عنوانُ
               الدرس عند الطالب (`lsn-t` · `b123`)، **وسقطت من شاشة المؤلّف**.
            🔴 والصفحةُ `rtl`، فعنوانٌ إنجليزيٌّ فيها فقرةٌ عربيّةُ الاتجاه:
