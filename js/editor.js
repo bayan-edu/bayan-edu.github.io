@@ -35,9 +35,26 @@ const byId  = (arr, id) => (arr || []).find(x => String(x.id) === String(id));
 const sortUnits = us => (us || []).slice().sort((a,b) => a.position - b.position);
 const isNarrow = () => window.innerWidth < 900;
 
-const narrowNote = () => isNarrow()
-  ? `<div class="warnbox">المحرّر مصمَّم للحاسوب — الشاشة الضيّقة تعمل، لكن الترتيب
-       والمعاينة أوضح على شاشة أوسع.</div>` : '';
+/* 🆕 b201 · التنويهُ يظهر مرّةً في عمر الجهاز ويُغلَق — قرارُ المالك (٢٧ أكتوبر): «يظهر مرة ويغلق».
+   كان سدسَ الشاشة في كلّ زيارةٍ وكلِّ تبديلِ منهج، وخبرٌ عُرف مرّةً لا يزيد بالتكرار شيئاً.
+   🔑 ويُعَدّ «رُئي» لحظةَ رسمه لا لحظةَ إغلاقه: فالإغلاقُ يُخفيه من الشاشة القائمة، وما بعدها بلا تنويه
+      أُغلق أو لم يُغلق — وهو «مرّة» بحرفها.
+   ⚠️ و`localStorage` يرمي في التصفّح الخاصّ ⇒ يعود التنويهُ كما كان قبلُ في كلّ زيارة، والإغلاقُ يعمل. */
+const NARROW_SEEN = 'ed-narrow-seen';
+const narrowNote = () => {
+  if(!isNarrow()) return '';
+  try{
+    if(localStorage.getItem(NARROW_SEEN)) return '';
+    localStorage.setItem(NARROW_SEEN, '1');
+  }catch(e){}
+  return `<div class="warnbox ed-nn"><span>المحرّر مصمَّم للحاسوب — الشاشة الضيّقة تعمل، لكن الترتيب
+       والمعاينة أوضح على شاشة أوسع.</span>
+     <button type="button" class="iconbtn" data-nn-x aria-label="إغلاق التنبيه">${icon('close')}</button></div>`;
+};
+/* مستمعٌ واحدٌ على المستند في عمر الوحدة — كقائمة الاستيراد أسفل: التنويهُ يُرسم في ثلاث شاشات */
+document.addEventListener('click', e => {
+  e.target.closest?.('[data-nn-x]')?.closest('.ed-nn')?.remove();
+});
 
 
 /* ═══════════ ① المقرّرات ═══════════ */

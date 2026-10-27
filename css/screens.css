@@ -1074,6 +1074,12 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
       ⇒ شبكةٌ من عمودين: الاسمُ ثمّ قائمتُه، سطرٌ لكلٍّ منهما، وزرُّ أدوات القياس سطرٌ ثالث.
    📌 والحدُّ ٧٠٠ كشريط الأدوات (`.ed-tools`) — فالشاشةُ تتبدّل دفعةً واحدة لا على مرحلتين. */
 .ed-main{flex:1;min-width:0}
+/* 🆕 b201 · تنويهُ الشاشة الضيّقة يُغلَق (`narrowNote` · editor.js) — الزرُّ بحبر الصندوق لا بالخافت،
+   ويُشدّ إلى الزاوية بهامشٍ سالب فلا يأكل من سطر النصّ. */
+.ed-nn{display:flex;align-items:flex-start;gap:6px}
+.ed-nn > span{flex:1;min-width:0}
+.ed-nn .iconbtn{color:inherit;width:34px;height:34px;margin-block:-6px;margin-inline-end:-6px}
+.ed-nn .iconbtn:hover{background:var(--warn-fill)}
 @media(max-width:700px){
   .ed-lsn{flex-wrap:wrap;gap:10px 8px}
   .ed-lsn > .ed-main{flex:1 1 100%}
