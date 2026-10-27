@@ -533,6 +533,9 @@ export const saveItem = o => db.rpc('save_item', {
   p_lang: o.lang ?? 'ar', p_official: o.official ?? false,
   p_is_graded: o.isGraded ?? false, p_required: o.required ?? false,
   p_visibility: o.visibility ?? 'private' });
+/* 🆕 b199 · وسورُ الآيات في النصّ (188): دالّتُها بعد `save_item` لا وسيطٌ فيها، وحارسُها حارسُها.
+   refs: [{ surah, from, to }] بترتيب الكتل · و null أو [] تمسحها */
+export const saveItemQuran = (id, refs) => db.rpc('save_item_quran', { p_id: id, p_refs: refs });
 
 export const saveUnit = o => db.rpc('save_unit', {
   p_id: o.id ?? null, p_course: o.course,

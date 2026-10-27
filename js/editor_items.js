@@ -258,14 +258,16 @@ function form(item, official, ro){
       insert: (key, f) => `[${kw(f, 'image', 'صورة')}: ${key} | ]`
     });
     if(!ro) attachVideo('bo');
-    attachPreview('bo', item);              // والمعاينةُ تُري ولا تُغيّر — فلمن يقرأ فقط أيضاً
+    /* 🆕 b199 · سورُ الآيات تحت الأدوات كلّها — وعدٌ يُنتظر عند الحفظ والمعاينة (`attachAyat`) */
+    const ayat = !ro && k.needs === 'body' ? attachAyat('bo', item) : null;
+    attachPreview('bo', item, ayat);        // والمعاينةُ تُري ولا تُغيّر — فلمن يقرأ فقط أيضاً
     if(!ro) attachTidy('bo');
     app.querySelectorAll("[data-k]").forEach(el => el.onclick = () => {
       if(!isNew) return;                    // النمط لا يتغيّر بعد الإنشاء
       k = kind(el.dataset.k); draw();
     });
     const sv = document.getElementById("sv");
-    if(sv) sv.onclick = () => save(item, off, k);
+    if(sv) sv.onclick = () => save(item, off, k, ayat);
   };
   draw();
 }
@@ -374,7 +376,7 @@ const lastTool = inp => {
       إلى أوّلها وتُقفل تحت المعاينة، وتعود عند الإغلاق حيث كانت.
    🔑 والجنسُ محايد (`g = null`): المعلّمُ يرى الخانةَ الرابعة من `G()`، والطالبُ يرى صيغتَه.
    ⚠️ وما يخصّ الطالبَ لا يُعاين: موضعُ القراءة والإتمامُ والقراءةُ الجهريّة وفتحُ الاختبار. */
-function attachPreview(id, item){
+function attachPreview(id, item, ayat){
   const inp = document.getElementById(id);
   if(!inp || inp.dataset.pv) return;
   inp.dataset.pv = "1";
@@ -383,22 +385,38 @@ function attachPreview(id, item){
   row.innerHTML = `<button type="button" class="mf-up">معاينة كما يراها الطالب</button>`;
   lastTool(inp).insertAdjacentElement("afterend", row);
   const btn = row.querySelector("button");
-  btn.onclick = () => openPreview(inp, btn, item);
+  btn.onclick = () => openPreview(inp, btn, item, ayat);
 }
 
-async function openPreview(inp, btn, item){
+async function openPreview(inp, btn, item, ayat){
   const v = id => (document.getElementById(id)?.value || '').trim();
   const body = inp.value.trim();
   if(!body){ toast("لا نص للمعاينة بعد"); return; }
+  const ay = ayat && await ayat;
   return previewText({
     course: ctx.course, lesson: ctx.lesson, btn, body,
     title: v("ti") || ctx.lesson.title, subtitle: v("de"), lang: v("ln") || 'ar',
     quiz: (D.items || []).some(x => x.kind === 'quiz' && x.quiz_id),
-    /* 🆕 b198 · وسورُ الآيات المحفوظة (`lesson_items` تحملها · 188) — فيسمع المعلّمُ التلاوةَ قبل الطالب. والمربّعُ
-       قد تغيّر بعد الحفظ: كتلةٌ لا يطابق مداها ما حُفظ تصمت (bookVoice)، ولا تُتلى خطأً */
-    quranRefs: item?.quran_refs || null,
+    /* 🆕 b198 · وسورُ الآيات — فيسمع المعلّمُ التلاوةَ قبل الطالب.
+       🆕 b199 · المختارةُ الآن في المحدِّد لا المحفوظة (`result`): ما سيسمعه الطالبُ لو حُفظ النصُّ الآن، فاختيارٌ
+       ناقصٌ يُعاين صامتاً كما سيُحفظ. ولمن يقرأ فقط (لا محدِّد) المحفوظةُ، وكتلةٌ لا يطابق مداها ما حُفظ تصمت */
+    quranRefs: ay ? ay.result().refs : item?.quran_refs || null,
     from: 'من المربّع قبل الحفظ، ولا تحفظ شيئاً'
   });
+}
+
+/* 🆕 b199 · سورُ الآيات — محدِّدٌ لا محرِّر (`select_ayat.js`): يسأل عن سورة كلّ كتلة ﴿…﴾ ولا يمسّ النصّ.
+   يُحمَّل للنصّ وحده، ومعه book.js (وقد طلبه منظّفُ اللصق قبله)، ويوضع بعد الأدوات كلّها ومنظّفِ اللصق:
+   الوعدُ يُحلّ بعد أن رُسمت. **وإن تعذّر تحميلُه فالوعدُ null** — فلا يمسّ الحفظُ السورَ المحفوظة. */
+function attachAyat(id, item){
+  const inp = document.getElementById(id);
+  return import('./select_ayat.js').then(m => {
+    const ay = m.selectAyat(inp, { saved: item?.quran_refs || null,
+      names: [document.getElementById("ti"), document.getElementById("de")] });
+    const near = lastTool(inp), tp = near.nextElementSibling;
+    (tp?.classList.contains("tp") ? tp : near).insertAdjacentElement("afterend", ay.el);
+    return ay;
+  }, e => { console.error(e); return null; });
 }
 
 /* 🆕 b191 · والكتابُ نفسُه يخدم شاشةَ الاستيراد (معاينةُ كلّ نصٍّ في خطّة «نصوص القراءة») —
@@ -540,7 +558,7 @@ function attachTidy(id){
   }
 }
 
-async function save(item, official, k){
+async function save(item, official, k, ayat){
   const v = id => (document.getElementById(id)?.value || '').trim();
   const ti = v("ti");
   if(!ti){ toast("العنوان مطلوب"); return; }
@@ -591,6 +609,10 @@ async function save(item, official, k){
   if(error){ toast(error.message); return; }
   if(!data.ok){ toast(data.error); return; }
 
+  /* 🆕 b199 · وسورُ الآيات بعد النصّ — دالّتُها لا وسيطٌ في `save_item` (188 ②)، والنصُّ محفوظٌ مهما جرى هنا */
+  const ay = ayat && await ayat;
+  const said = ay ? await saveAyat(item?.id ?? data.id, ay.result(), item?.quran_refs) : null;
+
   /* وتدريبٌ بلا أسئلة لا معنى له — فشاشةُ الأسئلة تُفتح في الحال،
      ولا يُترك المعلّم يبحث عن بابها في قائمةٍ رجع إليها. */
   if(k.needs === 'quiz' && !item){
@@ -598,8 +620,25 @@ async function save(item, official, k){
     openQuiz(ctx.course, { ...ctx.lesson, quiz_id: quizId, has_quiz: true });
     return;
   }
-  toast(item ? "حُفظ المصدر" : "أُضيف المصدر");
+  toast(said || (item ? "حُفظ المصدر" : "أُضيف المصدر"));
   openItems(ctx.course, ctx.lesson);
+}
+
+/* 🆕 b199 · قواعدُ حفظ السور (خطّةُ الخطوة الثالثة · أقرّها المالك):
+     لكلّ كتلةٍ سورةٌ تسعها ⇒ تُحفظ · نصٌّ بلا آيات ⇒ تُمسح القديمة · ناقصةٌ ⇒ تُمسح القديمةُ ويُقال إنّ الآياتِ صامتة.
+   🔑 ومسحُ القديمة حين لا تتمّ الجديدة شرطٌ لا تنظيف: سورةٌ قديمةٌ تبقى فتصادف كتلةً جديدةً بأرقامها تُتلى من غير
+      سورتها. ولا نداءَ إن لم يتغيّر شيء — والقاعدةُ تحفظ [] null، فهما سواء.
+   ⇒ نصُّ الإشعار إن كان ما يُقال غيرَ «حُفظ»، وإلا null */
+const refsKey = rs => JSON.stringify((rs || []).map(r => [r.surah, r.from, r.to]));
+async function saveAyat(id, { refs, why }, old){
+  if(refsKey(refs) !== refsKey(old)){
+    const { data, error } = await api.saveItemQuran(id, refs);
+    const err = error ? error.message : data?.ok ? null : data?.error;
+    if(err) return "حُفظ النص، وتعذّر حفظ سور الآيات: " + err;
+  }
+  if(why === 'num')  return "حُفظ النص، وتبقى الآيات صامتة حتى تُصحَّح أرقامها";
+  if(why === 'pick') return "حُفظ النص، وتبقى الآيات صامتة حتى تُختار سورها";
+  return null;
 }
 
 async function remove(id){

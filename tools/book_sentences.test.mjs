@@ -5,12 +5,13 @@
    وهي الجُمَلُ التي يقرؤها «استماع» جملةً جملة، ويسأل الجسرُ عن صوت كلٍّ منها (`bookVoice` في media.js):
    الآيةُ تُتلى بكتلتها ورقمها، وما سواها مولَّدٌ أو صامت. والكتابُ يبنيها بالدالّة نفسِها (`buildSents`)،
    فما يُقاس هنا هو ما يقرؤه الكتاب. والتشغيلُ نفسُه قِيس في المتصفّح — انظر STATE عند b198.
+   🆕 b199 · ومعها `quranBlocks` — كتلُ محدِّد السور في المحرّر، وترتيبُها ترتيبُ `q.block` هنا (⑤).
    ══════════════════════════════════════════════════════════ */
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const { textSentences } = await import(pathToFileURL(join(ROOT, 'js/book.js')));
+const { textSentences, quranBlocks } = await import(pathToFileURL(join(ROOT, 'js/book.js')));
 
 let bad = 0, n = 0;
 const ok = (name, cond, extra = '') => { n++; if(!cond) bad++; console.log(cond ? '✅' : '❌', name, cond ? '' : extra); };
@@ -58,6 +59,31 @@ const show = v => JSON.stringify(v);
 {
   const s = textSentences('﴿وَلَا تَقْرَبُوا الزِّنَىٰ﴾', '').filter(x => x.kind === 'q');
   ok('آيةٌ بلا رقم ⇒ ayah null', s.length === 1 && s[0].q.ayah === null, show(s));
+}
+
+/* ⑤ 🆕 b199 · `quranBlocks`: كتلُ المحدِّد بترتيب `q.block` نفسِه — فسورةُ الكتلة الثانية في المحرّر هي سورةُ الكتلة
+   الثانية عند التلاوة. والكتلةُ بلا «۝» تُعدّ في الترتيب، وأوّلُها وآخرُها null */
+{
+  const body = [
+    '﴿وَالْعَصْرِ ۝١ إِنَّ الْإِنسَانَ لَفِي خُسْرٍ ۝٢﴾',
+    '[صورة: r2:img/x.webp | ]',
+    '﴿إِلَّا الَّذِينَ آمَنُوا ۝٣﴾',
+    'نثرٌ بين الكتل، وفيه آيةٌ مقتبسة: ﴿لَا إِكْرَاهَ فِي الدِّينِ﴾.',
+    '﴿وَلَا تَقْرَبُوا الزِّنَىٰ﴾',
+    '﴿قُلْ هُوَ اللَّهُ أَحَدٌ ۝١﴾'
+  ].join('\n\n');
+  const b = quranBlocks(body);
+  ok('ثلاثُ كتل: المتّصلةُ عبر الصورة واحدة · والمقتبسةُ في النثر ليست كتلة',
+     b.length === 3, show(b.map(x => [x.first, x.last])));
+  ok('الأولى ١–٣ (والصورةُ لا تفصل) · والثانيةُ بلا أرقام null · والثالثةُ ١–١',
+     show(b.map(x => [x.first, x.last])) === show([[1, 3], [null, null], [1, 1]]), show(b.map(x => [x.first, x.last])));
+  ok('والنصُّ نصُّ الكتلة كما يُعرض، يبدأ بـ«﴿»', b[0]?.text.startsWith('﴿وَالْعَصْرِ') && b[2]?.text.includes('أَحَدٌ'), show(b[0]?.text));
+  const q = textSentences(body, 'العنوان لا يمسّ الكتل').filter(x => x.kind === 'q');
+  ok('وترتيبُها ترتيبُ q.block في جمل الكتاب: لكلّ جملةٍ قرآنيّةٍ كتلتُها بمداها',
+     q.length > 0 && q.every(x => b[x.q.block] && b[x.q.block].first === (x.q.first ?? null) && b[x.q.block].last === (x.q.last ?? null)),
+     show(q.map(x => x.q)));
+  ok('والكتلةُ الثالثة block 2 — عُدّت قبلها الكتلةُ التي بلا أرقام', q.at(-1)?.q?.block === 2, show(q.at(-1)?.q));
+  ok('ونصٌّ بلا آيات ⇒ []', show(quranBlocks('فقرةٌ واحدة. وجملةٌ ثانية.')) === '[]' && show(quranBlocks('')) === '[]', '');
 }
 
 console.log(`\n${n - bad}/${n}${bad ? ' — فشل' : ''}`);

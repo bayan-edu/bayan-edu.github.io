@@ -553,6 +553,13 @@ export const textSentences = (body, title) => {
   return buildSents(parse(body, t), t);
 };
 
+/* 🆕 b199 · كتلُ الآيات بترتيبها — لمحدِّد السور في المحرّر (`select_ayat.js`): [{ first, last, text }].
+   🔑 **والترتيبُ ترتيبُ `q.block` في `buildSents`** — كلُّ كتلة ﴿…﴾ تُعدّ، مرقَّمةً كانت أو لا — وبه تُطابَق
+      `items.quran_refs` عند التلاوة: ترتيبان لنصٍّ واحد يُتلي آيةً بسورة جارتها.
+   والكتلةُ بلا «۝» أوّلُها وآخرُها null: لا ملفَّ لها فلا تُتلى. والعنوانُ لا يمسّ الكتل (يُسقط عنواناً مكرَّراً وحده). */
+export const quranBlocks = body => parse(body, '').blocks.filter(b => b.q)
+  .map(b => ({ first: b.first ?? null, last: b.last ?? null, text: b.text }));
+
 /* ══════════════════════════════════════════════════════════
    createBook(host, opt) ⇒ { next, prev, jump, destroy }
 
