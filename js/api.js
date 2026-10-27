@@ -223,7 +223,9 @@ export const markItemCompleted = id => db.rpc('track_item', { p_item: id, p_stat
       لـ`authenticated` بالعمود. قِيس بطالبٍ حيٍّ (`set_config` في
       `from`): ثمانيةَ عشرَ صفّاً تُقرأ، كلُّها من دروسٍ مفتوحةٍ له. */
 export const itemText = id =>
-  db.from('items').select('title, description, body, lang').eq('id', id).maybeSingle();
+  db.from('items').select('title, description, body, lang, quran_refs').eq('id', id).maybeSingle();
+/* 🆕 b198 · و`quran_refs` (188): سورةُ كلّ كتلةٍ قرآنيّة — بها تُتلى الآية. والعمودُ يُقرأ بمنح الجدول نفسِه
+   (قِيس: `has_column_privilege` لـ`authenticated`)، والسياسةُ تحرس الصفّ كما كانت. */
 
 /* 🆕 b164 · القراءة الجهرية (sql/174) — أيُطلب في هذا النصّ؟ ومعه قراءاتي السابقة.
    والشرطُ في القاعدة وحدها (`reading_aloud_subject`): يقرؤه `my_reading` ليظهر

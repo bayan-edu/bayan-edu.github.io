@@ -12,7 +12,7 @@ import { app, head, toast, esc, escA, AR, ICONS, KINDS, bubble, errBox, nav,
          skeleton, waiting, G, N, NW, fmt,
          sayable, sayGroup, bindSay, backMeta, backText, dirOf, srcOf, videoOf, siteUrl } from './ui.js';
 import { startQuiz } from './quiz.js';
-import { mediaUrl, isManaged, accents, speak, playAudio, narrate, voiceName, hush } from './media.js';
+import { mediaUrl, isManaged, accents, speak, playAudio, bookVoice } from './media.js';
 import { isSim, openSim } from './simulations.js';
 import { openLessonDeck, loadFlashcards } from './flashcards.js';
 import { canRecord, mountReading } from './recorder.js';
@@ -1420,7 +1420,7 @@ async function textBook(i, l, back){
   /* 🆕 b189 · المظهرُ والختامُ من `bookLook` و`bookEnd` أدناه — ومعاينةُ المحرّر تقرأ منهما،
      وما هنا سلوكُ الطالب وحده: الموضعُ والتسجيلُ والاختبارُ والإتمام. */
   const ctl = await createBook(host, {
-    ...bookLook({ cards: cardsRes?.data, g, subject: S.subj?.name, lesson: l, title }),
+    ...bookLook({ cards: cardsRes?.data, g, subject: S.subj?.name, lesson: l, title, quranRefs: data.quran_refs }),
     slot: raOn,
     title, subtitle: data.description, body: data.body, lang: data.lang || i.lang,
     storeKey: 'bayan.book.' + i.id,
@@ -1458,7 +1458,7 @@ async function textBook(i, l, back){
    المصدر (`editor_items.js`). ومعاينةٌ تبني مظهرَها بنفسها تفترق عن الحقيقة يوماً بصمت،
    فتُري المعلّمَ كتاباً غيرَ الذي يقرؤه طالبُه.
    `preview` ⇒ نافذةُ الكلمة بلا «إضافة إلى تذكّرها»: المعلّمُ يرى ولا يشترك. */
-export function bookLook({ cards, g, subject, lesson: l, title, preview = false }){
+export function bookLook({ cards, g, subject, lesson: l, title, quranRefs = null, preview = false }){
   /* عنوانُ الدرس يسقط من الغلاف إن احتوى عنوانَ النصّ («Reading: X» و«X»)
      وتحلّ الوحدةُ محلَّه — السياقُ نفسُه بلا تكرار. */
   const lessonLine = l?.title && !l.title.includes(title) ? l.title : (l?.unit || '');
@@ -1482,15 +1482,11 @@ export function bookLook({ cards, g, subject, lesson: l, title, preview = false 
     tapAny: dir => dir === 'ltr',
     wordHtml: word.html,
     onWord: word.bind,
-    /* 🆕 b155 · استمع وتابع — بأحسن صوتٍ على جهاز الطالب، **والإنجليزيةُ وحدها**
-       (قرارُ المالك: العربيةُ مؤجَّلة، وحكمُ `101` قائم). والسرعةُ الأساسُ ٠٫٩
-       كنطق الكلمة: المستمعُ متعلّمٌ لا ناطق. */
-    voice: {
-      available: dir => dir === 'ltr' && typeof window !== 'undefined' && !!window.speechSynthesis,
-      speak: (text, o) => narrate(text, { lang: 'en', rate: 0.9 * o.rate, onend: o.onend, onerror: o.onerror }),
-      stop: hush,
-      name: () => voiceName('en')
-    },
+    /* 🆕 b155 · استمع وتابع — الإنجليزيّةُ بأحسن صوتٍ على جهاز الطالب.
+       🆕 b198 · **والعربيّةُ من ملفّات:** الآيةُ بتلاوة الحصري إن حُفظت سورتُها (`quranRefs` · 188)، وما سواها صامتٌ
+       حتى يُعتمد صوتُه المولَّد (⑥-ج في STATE) — وحكمُ `101` قائمٌ على لسان المتصفّح. والجسرُ كلُّه في media.js
+       (`bookVoice`): منطقُ «أيّ صوتٍ يُسمع» واحدٌ هناك. */
+    voice: bookVoice({ quranRefs }),
     onVoiceFail: () => toast("تعذّر النطق على هذا الجهاز"),
     /* 🆕 b193 · كلٌّ باسمه: القصيدةُ «١٠ أبيات» لا «١٠ فقرات»، والآيتان «آيتان» — وما كان صفراً يغيب */
     coverMeta: ({ paragraphs, verses = 0, ayat = 0, words, minutes }) => [

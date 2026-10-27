@@ -258,7 +258,7 @@ function form(item, official, ro){
       insert: (key, f) => `[${kw(f, 'image', 'صورة')}: ${key} | ]`
     });
     if(!ro) attachVideo('bo');
-    attachPreview('bo');                    // والمعاينةُ تُري ولا تُغيّر — فلمن يقرأ فقط أيضاً
+    attachPreview('bo', item);              // والمعاينةُ تُري ولا تُغيّر — فلمن يقرأ فقط أيضاً
     if(!ro) attachTidy('bo');
     app.querySelectorAll("[data-k]").forEach(el => el.onclick = () => {
       if(!isNew) return;                    // النمط لا يتغيّر بعد الإنشاء
@@ -374,7 +374,7 @@ const lastTool = inp => {
       إلى أوّلها وتُقفل تحت المعاينة، وتعود عند الإغلاق حيث كانت.
    🔑 والجنسُ محايد (`g = null`): المعلّمُ يرى الخانةَ الرابعة من `G()`، والطالبُ يرى صيغتَه.
    ⚠️ وما يخصّ الطالبَ لا يُعاين: موضعُ القراءة والإتمامُ والقراءةُ الجهريّة وفتحُ الاختبار. */
-function attachPreview(id){
+function attachPreview(id, item){
   const inp = document.getElementById(id);
   if(!inp || inp.dataset.pv) return;
   inp.dataset.pv = "1";
@@ -383,10 +383,10 @@ function attachPreview(id){
   row.innerHTML = `<button type="button" class="mf-up">معاينة كما يراها الطالب</button>`;
   lastTool(inp).insertAdjacentElement("afterend", row);
   const btn = row.querySelector("button");
-  btn.onclick = () => openPreview(inp, btn);
+  btn.onclick = () => openPreview(inp, btn, item);
 }
 
-async function openPreview(inp, btn){
+async function openPreview(inp, btn, item){
   const v = id => (document.getElementById(id)?.value || '').trim();
   const body = inp.value.trim();
   if(!body){ toast("لا نص للمعاينة بعد"); return; }
@@ -394,6 +394,9 @@ async function openPreview(inp, btn){
     course: ctx.course, lesson: ctx.lesson, btn, body,
     title: v("ti") || ctx.lesson.title, subtitle: v("de"), lang: v("ln") || 'ar',
     quiz: (D.items || []).some(x => x.kind === 'quiz' && x.quiz_id),
+    /* 🆕 b198 · وسورُ الآيات المحفوظة (`lesson_items` تحملها · 188) — فيسمع المعلّمُ التلاوةَ قبل الطالب. والمربّعُ
+       قد تغيّر بعد الحفظ: كتلةٌ لا يطابق مداها ما حُفظ تصمت (bookVoice)، ولا تُتلى خطأً */
+    quranRefs: item?.quran_refs || null,
     from: 'من المربّع قبل الحفظ، ولا تحفظ شيئاً'
   });
 }
@@ -403,7 +406,7 @@ async function openPreview(inp, btn){
    والفرقُ بين الموضعين في المُدخَلات وحدها: من أين النصّ (`from`) وأيُّ درس.
    ⚠️ والدرسُ قد يغيب (`lesson = null`): فالمعاينةُ بلا كلماتٍ ملوّنة، ولا تتعطّل. */
 export async function previewText({ course, lesson, title, subtitle = '', body, lang = 'ar',
-                                    quiz = false, btn, from }){
+                                    quiz = false, quranRefs = null, btn, from }){
   btn.disabled = true;
   const [{ createBook }, cardsRes, tags] = await Promise.all([
     import('./book.js'),
@@ -454,7 +457,7 @@ export async function previewText({ course, lesson, title, subtitle = '', body, 
 
   try {
     ctl = await createBook(box.querySelector(".bkpv-book"), {
-      ...bookLook({ cards: cardsRes.data, g: null, subject: tags[0], lesson, title, preview: true }),
+      ...bookLook({ cards: cardsRes.data, g: null, subject: tags[0], lesson, title, quranRefs, preview: true }),
       title, subtitle, body, lang,
       endHtml: () => bookEnd(null, quiz),
       onAction: (act, book) => {

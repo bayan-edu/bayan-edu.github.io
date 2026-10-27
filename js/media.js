@@ -342,6 +342,130 @@ export function hush(){
   try{ window.speechSynthesis?.cancel(); }catch(err){}
 }
 
+
+/* ═══════════ ④-ب الكتابُ المسموع من ملفّات (b198) ═══════════
+
+   العربيّةُ لا تُقرأ بلسان المتصفّح (حكمُ `101` أعلاه)، فصوتُها ملفّات: **تلاوةُ الحصري للآية** اليوم (`quran/husary/`
+   في R2 · ٦٢٣٩ ملفّاً طابقت بصماتِ مصدرها · 188)، والصوتُ المولَّدُ المعتمد غداً (⑥-ج في STATE). والكتابُ يسأل عن
+   كلّ جملة: ألها صوت؟ ويُشغّله — وهذا الجسرُ يجيب، فلا يعرف الكتابُ مخزناً ولا قارئاً.
+   ─────────────────────────────────────────────────────────── */
+
+/* مفتاحُ آيةٍ في التلاوة — «SSSAAA.mp3» كما سمّاه مصدرُها (006151 = الأنعام ١٥١). مفتاحٌ لا رابط: mediaUrl تبنيه */
+const husary = f => `r2:quran/husary/${f}`;
+export const ayahKey = (surah, ayah) =>
+  husary(`${String(surah).padStart(3, '0')}${String(ayah).padStart(3, '0')}.mp3`);
+/* والاستعاذةُ والبسملةُ ملفّان في المجلّد نفسِه بأسمائهما في المصدر (قُرئا من قائمة بصماته ونُسخا معه · 188) */
+const AUDHU = husary('audhubillah.mp3'), BASMALA = husary('bismillah.mp3');
+
+/**
+ * مشغّلُ مقاطع للكتاب: يشغّل واحداً ويُحمّل تاليَه.
+ * 🔑 **عنصرٌ واحدٌ يُعاد استعمالُه للتشغيل كلِّه:** iOS يفتح الصوتَ لعنصرٍ لمسه المستخدم، وعنصرٌ جديدٌ لكلّ جملة
+ *    يُمنع حين يبدأ من نهاية سابقتها لا من لمسة. والتحميلُ المسبق بعنصرٍ ثانٍ لا يُشغَّل — يملأ ذاكرةَ المتصفّح فحسب.
+ * 🔑 و`onstart(ms)` بطول المقطع حين يُعرف (بعد سرعته) — صمّامُ الكتاب يُضبط به لا بعدد الحروف.
+ */
+export function clipPlayer(){
+  let main = null, warm = null, token = 0;
+  return {
+    prefetch(key){
+      const url = mediaUrl(key);
+      if(!url) return;
+      warm ||= Object.assign(new Audio(), { preload: 'auto' });
+      if(warm.src !== url){ warm.src = url; try{ warm.load(); }catch(err){} }
+    },
+    play(key, { rate = 1, onstart, onend, onerror } = {}){
+      const url = mediaUrl(key);
+      if(!url) return false;
+      main ||= Object.assign(new Audio(), { preload: 'auto' });
+      const a = main, my = ++token;
+      a.onended = () => { if(my === token) onend?.(); };
+      a.onerror = () => { if(my === token) onerror?.('error'); };
+      a.onloadedmetadata = () => { if(my === token && isFinite(a.duration)) onstart?.(a.duration * 1000 / rate); };
+      a.src = url;
+      a.defaultPlaybackRate = a.playbackRate = rate;     // الأولى تبقى بعد تحميل المقطع، والثانيةُ للحال
+      /* catch لازمة: رفضٌ غيرُ ملتقَط يظهر خطأً أحمر — و«بلا إيماءة» غيرُ «انقطع بمقطعٍ أحدث» */
+      a.play().catch(e => {
+        if(my !== token) return;
+        onerror?.(e?.name === 'NotAllowedError' ? 'not-allowed' : e?.name === 'AbortError' ? 'interrupted' : 'error');
+      });
+      return true;
+    },
+    stop(){ token++; try{ main?.pause(); }catch(err){} }
+  };
+}
+
+/**
+ * صوتُ الكتاب المقلَّب (عقدُه في رأس book.js · `opt.voice`):
+ *   الإنجليزيّة ⇒ لسانُ المتصفّح كما كانت (b155) · العربيّة ⇒ ملفّاتٌ لما له ملفٌّ من الجمل، والباقي يُتخطّى.
+ * 🔑 **والآيةُ تُتلى إن عُرفت سورةُ كتلتها وطابق مداها ما حُفظ** (`quranRefs` = items.quran_refs · 188 ①): كتلةٌ
+ *    تغيّرت آياتُها بعد الحفظ تصمت، ولا تُتلى آيةٌ من غير سورتها — وذاك أسوأُ من الصمت.
+ * 🔑 **والتلاوةُ بسرعتها:** مقاديرُ المدّ من الأداء، فلا تسري عليها سرعةُ الكتاب (`rated`).
+ * 🔑 **وتُسبق بالاستعاذة، وبالبسملة قبل الآية الأولى من السورة — عدا الفاتحة والتوبة** (قرارُ المالك · ٢٧ أكتوبر):
+ *    · الاستعاذةُ لأوّل التلاوة لا لكلّ آية (`run`): تُعاد بعد انقطاعٍ — إيقافٍ أو صوتٍ غيرِ قرآنيّ — ولا تُعاد بين آيتين،
+ *      ولا بين كتلتين يصمت ما بينهما (فما قُرئ بينهما شيء).
+ *    · والبسملةُ حين تُتلى الآيةُ الأولى نفسُها: من بدأ الاستماعَ من ثالثة الآيات لم يبدأ بأوّل السورة. والفاتحةُ آيتُها
+ *      الأولى البسملةُ نفسُها، والتوبةُ بلا بسملة.
+ *    · والملفّان نافلةٌ قبل الآية: إن تعذّر أحدُهما مضت الآية، ولا تسقط هي لأجله. والجملةُ المظلَّلةُ أثناءهما الآيةُ نفسُها.
+ */
+const CLIP_WAIT = 30000;    // مهلةُ تحميل المقطع التالي في سلسلة الجملة الواحدة — ثمّ يحلّ طولُه محلَّها (onstart)
+export function bookVoice({ quranRefs = null } = {}){
+  const refs = Array.isArray(quranRefs) ? quranRefs : [];
+  const clips = clipPlayer();
+  let rtl = false, run = false, busy = false, later = null;
+  const refOf = s => {
+    const q = s?.q, r = q && refs[q.block];
+    return r && q.ayah && r.from === q.first && r.to === q.last ? r : null;
+  };
+  const ayah = s => { const r = refOf(s); return r ? ayahKey(r.surah, s.q.ayah) : null; };
+
+  /* مقاطعُ الجملة الواحدة على التوالي — ويُحمَّل كلٌّ قبل دوره. وما طلب الكتابُ تحميلَه للجملة التالية ينتظر حتى
+     يبدأ آخرُ مقاطع هذه (`later`): فالعنصرُ المحمِّلُ واحد، وآيةُ هذه الجملة أولى به من آية التالية. */
+  function playSeq(seq, o){
+    let k = 0;
+    busy = true;
+    const step = () => {
+      const last = k === seq.length - 1;
+      if(last){ busy = false; if(later){ clips.prefetch(later); later = null; } }
+      else clips.prefetch(seq[k + 1]);
+      return clips.play(seq[k], { rate: 1, onstart: o.onstart,
+        onend: () => { if(last) return o.onend?.(); k++; o.onstart?.(CLIP_WAIT); step(); },
+        onerror: e => {
+          if(last || e === 'not-allowed') return o.onerror?.(e);
+          if(e !== 'interrupted'){ k++; step(); }
+        } });
+    };
+    return step();
+  }
+  const tts = () => typeof window !== 'undefined' && !!window.speechSynthesis;
+  return {
+    get timed(){ return rtl; },
+    available(dir, sents){
+      rtl = dir === 'rtl';
+      return rtl ? sents.some(s => ayah(s)) : tts();
+    },
+    has: s => !rtl || !!ayah(s),
+    rated: () => !rtl,
+    speak(s, o){
+      /* والسرعةُ الأساسُ للإنجليزيّة ٠٫٩ كنطق الكلمة: المستمعُ متعلّمٌ لا ناطق (b155) */
+      if(!rtl) return narrate(s.text, { lang: 'en', rate: 0.9 * o.rate, onend: o.onend, onerror: o.onerror });
+      const r = refOf(s);
+      if(!r) return false;
+      const seq = run ? [] : [AUDHU];
+      if(s.q.ayah === 1 && r.surah !== 1 && r.surah !== 9) seq.push(BASMALA);
+      seq.push(ayahKey(r.surah, s.q.ayah));
+      run = true;
+      return playSeq(seq, o);
+    },
+    prefetch(s){
+      const key = rtl && ayah(s);
+      if(!key) return;
+      if(busy) later = key; else clips.prefetch(key);
+    },
+    stop(){ hush(); clips.stop(); run = busy = false; later = null; },
+    /* يظهر تلميحاً على الزرّ — ويحمل نسبةَ التلاوة إلى قارئها ومصدرِها */
+    name: () => rtl ? 'تلاوة الشيخ محمود خليل الحصري — المصدر: everyayah.com' : voiceName('en')
+  };
+}
+
 /* ═══════════ ⑤ أدوات صغيرة ═══════════ */
 
 /** أهذا مفتاحٌ نملكه (فيُحذف معه) أم رابطٌ لبيتِ غيرنا؟ */

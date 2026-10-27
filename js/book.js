@@ -507,6 +507,52 @@ const ABBR = /^(mr|mrs|ms|dr|prof|st|mt|jr|sr|vs|etc|e\.g|i\.e|no|[a-z])\.$/i;
 const isAbbr = tok => ABBR.test(String(tok).replace(/^[("'\[\u201C\u2018]+/, '').replace(EMPH, ''));
 const plainText = t => String(t).replace(/\*\*|__|_/g, '').replace(/\\[()[\]]/g, '').replace(/\s+/g, ' ').trim();
 
+/* 🆕 b198 · الجُمَل — وحدةُ القراءة المسموعة (b155) خرجت من `createBook`: تُبنى قبل أن يُسأل الجسر، وتصل إليها
+   أداةٌ تولّد الصوتَ جملةً جملة (`textSentences`) — فلا تقسيمان لنصٍّ واحد.
+   🔑 وتُعلَّم كتلُ النموذج بأرقام جملها (`sid` · `sids`) فيلفّ التقسيمُ كلَّ جملةٍ في `.bk-s`.
+   🆕 والجملةُ تعرف نوعَها، والآيةُ كتلتَها ورقمَها: { kind: 'cover'|'h'|'v'|'p'|'q', q?: { block, first, last, ayah } }
+      — `block` ترتيبُ الكتلة القرآنيّة في النصّ، وبه تُطابَق سورتُها المحفوظة (`items.quran_refs` · 188).
+   📖 والكتلةُ القرآنيّة تُقسَم عند نهاية الآية «۝١٥١» وحدها: الآيةُ ملفُّ تلاوةٍ واحد، وجملةٌ تقطعها «؟» كان
+      سيصمت نصفُها ويُتلى نصفُها الآخرُ بالآية كلِّها. */
+const AYAH_END = /۝\s*([0-9٠-٩۰-۹]+)/;
+function buildSents(model, title){
+  const sents = [];
+  if(title) sents.push({ cover: true, kind: 'cover', text: plainText(title) });
+  let qk = -1;
+  model.blocks.forEach(blk => {
+    if(blk.type === 'h'){ blk.sid = sents.length; sents.push({ kind: 'h', text: plainText(blk.text) }); return; }
+    if(blk.type === 'v'){                        // 🆕 b193 · البيتُ جملةٌ واحدة بشطريه
+      blk.sids = new Array(blk.tokens.length);
+      blk.rows.forEach(r => {
+        blk.sids.fill(sents.length, r.at, r.end);
+        sents.push({ kind: 'v', text: plainText(blk.tokens.slice(r.at, r.end).join(' ')) });
+      });
+      return;
+    }
+    if(blk.type !== 'p') return;                 // الصورةُ تُرى ولا تُقرأ
+    if(blk.q) qk++;
+    const T = blk.tokens;
+    blk.sids = new Array(T.length);
+    let a = 0;
+    for(let i = 0; i < T.length; i++){
+      const m = blk.q ? T[i].match(AYAH_END) : null;
+      if(!(i === T.length - 1 || (blk.q ? m : isSentEnd(T[i]) && !isAbbr(T[i])))) continue;
+      for(let j = a; j <= i; j++) blk.sids[j] = sents.length;
+      const s = { kind: blk.q ? 'q' : 'p', text: plainText(T.slice(a, i + 1).join(' ')) };
+      if(blk.q) s.q = { block: qk, first: blk.first, last: blk.last, ayah: m ? ayahNo(m[1]) : null };
+      sents.push(s);
+      a = i + 1;
+    }
+  });
+  return sents;
+}
+
+/* 🆕 b198 · جملُ النصّ كما يقرؤها الكتاب — `buildSents` نفسُها على `parse` نفسِه، لمن يولّد صوتَها جملةً جملة */
+export const textSentences = (body, title) => {
+  const t = String(title || '').trim();
+  return buildSents(parse(body, t), t);
+};
+
 /* ══════════════════════════════════════════════════════════
    createBook(host, opt) ⇒ { next, prev, jump, destroy }
 
@@ -528,8 +574,14 @@ const plainText = t => String(t).replace(/\*\*|__|_/g, '').replace(/\\[()[\]]/g,
    opt.wordHtml    (entry|null, word) ⇒ HTML النافذة
    opt.onWord      ({ entry, word, el, reflow, close }) — بعد فتح النافذة
 
-   🆕 b155 · استمع وتابع:
-   opt.voice       { available(dir), speak(text,{rate,onend,onerror}), stop(), name() }
+   🆕 b155 · استمع وتابع — 🆕 b198 · جملةً جملة، ولكلّ جملةٍ مصدرُها (والجسرُ يختاره):
+   opt.voice       { available(dir, sents) ⇒ bool — يظهر «استماع» أم لا
+                     has?(sent) ⇒ bool          — لهذه الجملة صوت؟ (غائبٌ ⇒ نعم) وما لا صوتَ له يُتخطّى
+                     rated?(sent) ⇒ bool        — تسري عليها السرعة؟ (التلاوةُ بسرعتها)
+                     timed?: bool               — صوتُه ملفّاتٌ يُعرف طولُها (onstart)
+                     speak(sent, { rate, onstart(ms), onend, onerror }) ⇒ bool
+                     prefetch?(sent) · stop() · name() }
+                   والجملة { text, kind: 'cover'|'h'|'v'|'p'|'q', q?: { block, first, last, ayah } } (`buildSents`)
    opt.onVoiceFail () — تعذّر النطق على هذا الجهاز
 
    🆕 b165 · الصورة — سطرٌ وحده في النصّ: [صورة: المصدر | التعليق]:
@@ -609,35 +661,12 @@ export async function createBook(host, opt = {}){
   });
   const tapAny = typeof opt.tapAny === 'function' ? !!opt.tapAny(dir) : !!opt.tapAny;
 
-  /* 🆕 b155 · الجُمَل — تُبنى إن وُجد صوتٌ لهذا اللسان وحده (الجسرُ يقرّر). والعنوانُ
-     جملتُها الأولى: من بدأ من الغلاف سمع اسمَ النصّ قبل متنه. */
-  const voice = opt.voice?.available?.(dir) ? opt.voice : null;
-  const sents = [];
-  if(voice){
-    if(title) sents.push({ cover: true, text: plainText(title) });
-    model.blocks.forEach(blk => {
-      if(blk.type === 'h'){ blk.sid = sents.length; sents.push({ text: plainText(blk.text) }); return; }
-      if(blk.type === 'v'){                        // 🆕 b193 · البيتُ جملةٌ واحدة بشطريه
-        blk.sids = new Array(blk.tokens.length);
-        blk.rows.forEach(r => {
-          blk.sids.fill(sents.length, r.at, r.end);
-          sents.push({ text: plainText(blk.tokens.slice(r.at, r.end).join(' ')) });
-        });
-        return;
-      }
-      if(blk.type !== 'p') return;                 // الصورةُ تُرى ولا تُقرأ
-      const T = blk.tokens;
-      blk.sids = new Array(T.length);
-      let a = 0;
-      for(let i = 0; i < T.length; i++){
-        if(i === T.length - 1 || (isSentEnd(T[i]) && !isAbbr(T[i]))){
-          for(let j = a; j <= i; j++) blk.sids[j] = sents.length;
-          sents.push({ text: plainText(T.slice(a, i + 1).join(' ')) });
-          a = i + 1;
-        }
-      }
-    });
-  }
+  /* 🆕 b155 · الجُمَل — والعنوانُ جملتُها الأولى: من بدأ من الغلاف سمع اسمَ النصّ قبل متنه.
+     🆕 b198 · تُبنى قبل أن يُسأل الجسر (`buildSents`): الصوتُ العربيّ من ملفّات بعض الجمل (التلاوة) لا من اللسان
+     كلِّه، فيحكم الجسرُ بالجمل نفسِها. وإن لم يُتح صوتٌ نُزعت أرقامُها عن الكتل، فلا يتغيّر للكتاب الصامت حرفٌ في صفحته. */
+  const sents = buildSents(model, title);
+  const voice = opt.voice?.available?.(dir, sents) ? opt.voice : null;
+  if(!voice) model.blocks.forEach(b => { delete b.sid; delete b.sids; });
 
 
 
@@ -1409,6 +1438,7 @@ export async function createBook(host, opt = {}){
         ومن أوّل الصفحة الظاهرة إن لم تكن.
      🎨 والظلُّ محايدٌ من حبر الورق: موضعُ القراءة حالٌ لا حكم ولا «اضغط هنا». */
   const RATES = [1, 0.8, 1.2];
+  const LOAD_WAIT = 45000;       /* 🆕 b198 · مهلةُ ملفٍّ لم يُعرف طولُه بعد — ثمّ يحلّ طولُه محلَّها */
   const nar = { on: false, started: false, auto: false, i: -1, hl: null, tok: 0, timer: 0, r: 0 };
 
   const sentPage = id => {
@@ -1444,7 +1474,7 @@ export async function createBook(host, opt = {}){
     b.setAttribute('aria-label', label);
     b.innerHTML = (nar.on ? ICO.pause : ICO.listen) + `<span class="bk-lbl">${esc(label)}</span>`;
     const r = btn('rate');
-    r.hidden = !nar.started;
+    r.hidden = !nar.started || !rateable();      // 🆕 b198 · كتابٌ صوتُه تلاوةٌ وحدها لا سرعةَ فيه
     r.textContent = uiNum(String(RATES[nar.r])).replace('.', '\u066B') + '\u00D7';
   }
 
@@ -1459,8 +1489,13 @@ export async function createBook(host, opt = {}){
     } finally { nar.auto = false; }
   }
 
+  /* 🆕 b198 · أوّلُ جملةٍ لها صوتٌ من i فما بعد — وما لا صوتَ له يُتخطّى ولا يوقف القراءة (نثرٌ بين آيتين) */
+  const audible = i => { while(i < sents.length && voice.has && !voice.has(sents[i])) i++; return i; };
+  const rateable = () => !!voice && sents.some(s => (!voice.has || voice.has(s)) && voice.rated?.(s) !== false);
+
   async function speakAt(i){
     if(!nar.on) return;
+    i = audible(i);
     if(i >= sents.length){                      // تمّ النصّ ⇒ إلى صفحة الختام
       narStop();
       const v = viewOfPage(pages.length - 1);
@@ -1475,13 +1510,24 @@ export async function createBook(host, opt = {}){
     paintHL();
     const my = ++nar.tok;
     const next = () => { if(my !== nar.tok || !nar.on) return; clearTimeout(nar.timer); speakAt(i + 1); };
-    const text = sents[i].text;
-    /* صمّامٌ إن لم يصل `onend` — وهو يتأخّر أو يغيب على بعض الأجهزة */
-    clearTimeout(nar.timer);
-    nar.timer = setTimeout(next, 4000 + text.length * 110 / RATES[nar.r]);
-    const ok = voice.speak(text, { rate: RATES[nar.r], onend: next,
-      onerror: e => { if(e === 'interrupted' || e === 'canceled') return; next(); } });
-    if(!ok){ narStop(); opt.onVoiceFail?.(); }
+    const s = sents[i], rate = RATES[nar.r];
+    /* صمّامٌ إن لم يصل `onend` — وهو يتأخّر أو يغيب على بعض الأجهزة.
+       🆕 b198 · **والملفُّ صمّامُه طولُه** (`onstart`)، وإلى أن يُعرف مهلةُ تحميلٍ سخيّة. 🔴 قِيس قبل التغيير: الأنعام
+       ١٥١ تلاوتُها نحو ٨٧ ث، والمهلةُ من عدد الحروف ٨٧٫٧ ث يدخل فيها التحميل — فكانت الآيةُ على حافّة القطع. */
+    const arm = ms => { clearTimeout(nar.timer); nar.timer = setTimeout(next, ms); };
+    arm(voice.timed ? LOAD_WAIT : 4000 + s.text.length * 110 / rate);
+    const ok = voice.speak(s, { rate, onend: next,
+      onstart: ms => { if(my === nar.tok && nar.on) arm(ms + 4000); },
+      onerror: e => {
+        if(e === 'interrupted' || e === 'canceled') return;
+        /* المتصفّحُ منع التشغيل (بلا إيماءة) ⇒ يُوقَف ويُقال، ولا يُتخطّى النصُّ كلُّه جملةً جملة */
+        if(e === 'not-allowed'){ if(my === nar.tok){ narStop(); opt.onVoiceFail?.(); } return; }
+        next();
+      } });
+    if(!ok){ narStop(); opt.onVoiceFail?.(); return; }
+    /* والتالي يُحمَّل وهذا يُقرأ — فلا فجوةَ بين جملتين */
+    const j = audible(i + 1);
+    if(j < sents.length) voice.prefetch?.(sents[j]);
   }
 
   function narStart(){
