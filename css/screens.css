@@ -1044,25 +1044,41 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
 .rt-a{font-weight:600}
 .rt-note{flex:1 1 100%;font-size:.82em;opacity:.65;line-height:1.7}
 .ed-grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+/* 🆕 b202 · بطاقةُ المقرَّر وصفُّ الدرس ينهضان عن الورق — طلبُ المالك (٢٧ أكتوبر): «تحتاجان قدراً أكبر
+   من التباين في الفاتحة والداكنة».
+   🔴 **ثلاثُ علل، قِيست قبل الإصلاح:**
+      ① صفُّ الدرس `--fill-soft` على ورق `--page` — **تباينُ السطحين ١٫٠٤٥ في الفاتحة و١٫٠٧٥ في الداكنة**
+         (ΔE ١٫٠ · ٢٫٢): لا تعرف العينُ أين ينتهي الصفّ إلا من حدّه.
+      ② بطاقةُ «مصادر فقط» `opacity:.75` — والشفافيةُ تُبهت ما في البطاقة لا البطاقةَ وحدها:
+         **نصُّ الشارة ٣٫٨١ (فاتحة) و٣٫٥٤ (داكنة) — تحت ٤٫٥** حدِّ النصّ المقروء. وكان ٦٫٩٩ و٥٫٠١.
+      ③ لا ظلّ، والحدُّ المتقطّع بـ`--line` (١٫٣٧ على الورق): خطٌّ يتقطّع يحتاج حبراً أثقلَ من المتّصل ليُرى.
+   🔑 **والعلاجُ وصفةُ `.card` بعينها — `--surface` + `--line` + `--shadow` — لا قيمةً جديدة**، كشريط الأدوات
+      فوقها (`.ed-tools`). فالسطحُ الأبيض يفصل في الفاتحة (والظلُّ يرسم حافّته السفلى)، و`#262626` يفصل
+      في الداكنة حيث لا يُرى ظلٌّ على ورقٍ داكن (١٫١٨٥ ⇐ ضعفُ ما كان، ΔE ٤٫٧).
+   🔑 **و«مرئيٌّ لا مملوك» يقوله الحدُّ المتقطّع وحده بـ`--line-strong`** (١٫٨٣ فاتحة · ٢٫٢٦ داكنة) — لا البهتان:
+      المعلّمُ يقرأ بطاقةَ «مصادر فقط» كما يقرأ غيرها، ويُفتح منها ما يُفتح. */
 .ed-card{display:flex;align-items:center;gap:13px;cursor:pointer;
   background:var(--surface);
   border:1px solid var(--line);border-radius:13px;padding:15px;
-  transition:border-color .18s}
+  box-shadow:var(--shadow);transition:border-color .18s}
 .ed-card:hover{border-color:var(--accent)}
-.ed-card.ro{border-style:dashed;opacity:.75}
+.ed-card.ro{border-style:dashed;border-color:var(--line-strong)}
+.ed-card.ro:hover{border-color:var(--accent)}
 .ed-ic{flex:0 0 42px;height:42px;border-radius:11px;font-size:1.3rem;
   background:var(--fill);display:flex;align-items:center;justify-content:center}
 .ed-t{font-family:'Almarai';font-weight:700;font-size:var(--fs-ui);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ed-m{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
 
+/* 🆕 b202 · والصفُّ على الوصفة نفسِها (التعليلُ عند `.ed-card` أعلاه) — وهو صفُّ كلِّ قائمةٍ تستعيره:
+   الدروس · البنوك · الفروع · معاينةُ البطاقات · ومجموعاتُ البطاقات عند الطالب. وصفةٌ واحدةٌ لصفٍّ واحد. */
 .ed-row{display:flex;align-items:center;gap:12px;cursor:pointer;
-  background:var(--fill-soft);border:1px solid var(--line);
+  background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);
   border-radius:12px;padding:13px 15px;margin-bottom:8px;transition:border-color .18s}
 .ed-row:hover{border-color:var(--accent)}
 /* صفٌّ لا يُفتح — كبطاقة «مصادر فقط»: حدٌّ متقطّع يقول «مرئيٌّ لا مملوك» */
-.ed-row.ro{cursor:default;border-style:dashed}
-.ed-row.ro:hover{border-color:var(--line)}
+.ed-row.ro{cursor:default;border-style:dashed;border-color:var(--line-strong)}
+.ed-row.ro:hover{border-color:var(--line-strong)}
 
 /* 🆕 b200 · الجوّال — طلبُ المالك (٢٧ أكتوبر) بلقطتين من هاتفه.
    🔴 **صفُّ الدرس:** عمودُ النصّ مرنٌ (`flex:1`) والأزرارُ الثلاثةُ بعرض كلماتها لا تنكمش
