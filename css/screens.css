@@ -1269,6 +1269,41 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
 .ay-note:empty{display:none}
 .ay-note.bad{color:var(--danger)}
 .ay-note.warn{color:var(--warn)}
+/* 🆕 b203 · صوتُ النصّ (`voice_panel.js` · الخطوة ٦) — محايدةٌ كمحدِّد السور فوقها: خبرٌ وأفعال، والأزرارُ أزرارُ أدوات
+   المربّع (`.mf-up`). **والحالُ وحدها تتلوّن بمعناها، ونصُّها هو الحامل:** «لم يُعتمد» و«ممسَكة» انتباهٌ (`warn` — في
+   الطريق إلى الطالب) · والتعذّرُ (`danger`) · و«معتمد ✔» و«بلا صوت» بلا عائلة. 🔴 **والمعتمدُ ليس «أصبتَ»:** `ok` حكمٌ على
+   إجابة، وأخضرُ خارج الحكم يُضعفه (bayan-visual-identity ①). وبالرمز الأساس لا بـ`-text` — علّةُ `.ay-note` المقيسة أعلاه. */
+.vp{margin-top:10px;padding:10px 14px 6px;border-radius:11px;background:var(--fill-soft);
+  border:1px solid var(--line);font-size:var(--fs-meta);line-height:1.7}
+.vp[hidden]{display:none}
+.vp-top{display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 12px}
+.vp-h{font-family:'Almarai';font-weight:800}
+.vp-sum{color:var(--text-muted)}
+.vp-say{margin:2px 0 4px;color:var(--text-muted)}
+.vp-note{margin:4px 0;color:var(--text-muted)}
+.vp-note:empty{display:none}
+.vp-note.warn{color:var(--warn)}
+.vp-note.bad{color:var(--danger)}
+.vp-acts{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:6px 0 4px}
+.vp-prog{color:var(--text-muted)}
+.vp-row{padding:9px 0;border-top:1px solid var(--line)}
+.vp-t{margin:0 0 6px;font-size:var(--fs-ui);line-height:1.9}
+.vp-tag{display:inline-block;margin-inline-end:8px;padding:0 8px;border-radius:999px;background:var(--fill);
+  border:1px solid var(--line);font-family:'Almarai';font-size:var(--fs-tag);color:var(--text-muted)}
+.vp-ctl{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px}
+.vp-st{font-family:'Almarai';font-weight:700;white-space:nowrap;margin-inline-end:4px}
+.vp-st.none{color:var(--text-muted)}
+.vp-st.made,.vp-st.held{color:var(--warn)}
+/* والقائمةُ تمتدّ في سطرها إلى سقف: «Algenib · الشخصيّة (مقترح)» قُطع آخرُه في ٣٧٥ بعرضٍ ثابتٍ ١٩٠ — قِيس */
+.vp-v{width:auto;flex:1 1 190px;min-width:150px;max-width:280px;padding:5px 10px;background:var(--surface);
+  font-size:var(--fs-meta);line-height:1.6}
+.vp-rn{margin:6px 0 0;color:var(--text-muted)}
+.vp-rn.warn{color:var(--warn)}
+.vp-rn.bad{color:var(--danger)}
+.vp-sayb{margin-top:8px;padding:8px 10px;border-radius:9px;background:var(--surface);border:1px solid var(--line)}
+.vp-spoken{margin:0 0 6px;font-size:var(--fs-ui);line-height:2}
+.vp-fixl{display:block;margin-bottom:4px;color:var(--text-muted)}
+.vp-fix{width:100%;min-height:58px;margin-bottom:6px;font-size:var(--fs-ui);line-height:1.9}
 /* 🆕 b189 · معاينةُ النصّ كما يراه الطالب (`openPreview`) — شاشةٌ كاملةٌ بلون الصفحة: الكتابُ
    يقيس الشاشةَ ليملأها. وتحت الإشعار (٥٩ < ٦٠) ليُرى ما يقوله الكتابُ فوقها. */
 html.pv-lock{overflow:hidden}

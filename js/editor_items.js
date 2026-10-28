@@ -262,6 +262,8 @@ function form(item, official, ro){
     const ayat = !ro && k.needs === 'body' ? attachAyat('bo', item) : null;
     attachPreview('bo', item, ayat);        // والمعاينةُ تُري ولا تُغيّر — فلمن يقرأ فقط أيضاً
     if(!ro) attachTidy('bo');
+    /* 🆕 b203 · صوتُ النصّ تحت محدِّد السور (`attachVoice`) — لمن يحرّر، والحارسُ في الدالّة لا هنا */
+    if(!ro && k.needs === 'body') attachVoice('bo', item, ayat);
     app.querySelectorAll("[data-k]").forEach(el => el.onclick = () => {
       if(!isNew) return;                    // النمط لا يتغيّر بعد الإنشاء
       k = kind(el.dataset.k); draw();
@@ -401,6 +403,9 @@ async function openPreview(inp, btn, item, ayat){
        🆕 b199 · المختارةُ الآن في المحدِّد لا المحفوظة (`result`): ما سيسمعه الطالبُ لو حُفظ النصُّ الآن، فاختيارٌ
        ناقصٌ يُعاين صامتاً كما سيُحفظ. ولمن يقرأ فقط (لا محدِّد) المحفوظةُ، وكتلةٌ لا يطابق مداها ما حُفظ تصمت */
     quranRefs: ay ? ay.result().refs : item?.quran_refs || null,
+    /* 🆕 b203 · والصوتُ المولَّد **المعتمدُ وحده** — ما يسمعه الطالب لا أكثر (خطّةُ الخطوة ٦ · أقرّها المالك)، وما لم
+       يُعتمد يُسمع في لوحة الصوت. والجملةُ التي عُدّلت في المربّع ولم تُحفظ تصمت: صوتُها لنصّها المحفوظ */
+    voices: item?.id ? await api.approvedVoices(item.id).then(r => r.data || null, () => null) : null,
     from: 'من المربّع قبل الحفظ، ولا تحفظ شيئاً'
   });
 }
@@ -419,12 +424,26 @@ function attachAyat(id, item){
   }, e => { console.error(e); return null; });
 }
 
+/* 🆕 b203 · صوتُ النصّ (`voice_panel.js` · الخطوة ٦ من ستّ): يولّد صوتَ كلّ جملةٍ ويُسمعه ويعتمده. ويُحمَّل للنصّ وحده
+   بعد محدِّد السور — يُنتظر وعدُه ليوضع تحته، وإلّا فبعد الأدوات ومنظّفِ اللصق كما يوضع المحدِّد. **وتعذُّرُ تحميله لا
+   يمسّ النصَّ ولا حفظَه:** اللوحةُ لا تكتب في المربّع، والصوتُ في جدوله (189). */
+function attachVoice(id, item, ayat){
+  const inp = document.getElementById(id);
+  Promise.resolve(ayat).then(ay => import('./voice_panel.js').then(m => {
+    if(!inp.isConnected) return;                       // غادر المعلّمُ قبل التحميل
+    const vp = m.voicePanel(inp, { item, title: document.getElementById("ti"), lang: document.getElementById("ln") });
+    let near = ay?.el?.isConnected ? ay.el : lastTool(inp);
+    if(near === lastTool(inp) && near.nextElementSibling?.classList.contains("tp")) near = near.nextElementSibling;
+    near.insertAdjacentElement("afterend", vp.el);
+  })).catch(e => console.error(e));
+}
+
 /* 🆕 b191 · والكتابُ نفسُه يخدم شاشةَ الاستيراد (معاينةُ كلّ نصٍّ في خطّة «نصوص القراءة») —
    فصُدِّر ولم يُنسخ: معاينتان تبني كلٌّ منهما كتابَها بيدها تفترقان يوماً بصمت (حجّةُ `bookLook`).
    والفرقُ بين الموضعين في المُدخَلات وحدها: من أين النصّ (`from`) وأيُّ درس.
    ⚠️ والدرسُ قد يغيب (`lesson = null`): فالمعاينةُ بلا كلماتٍ ملوّنة، ولا تتعطّل. */
 export async function previewText({ course, lesson, title, subtitle = '', body, lang = 'ar',
-                                    quiz = false, quranRefs = null, btn, from }){
+                                    quiz = false, quranRefs = null, voices = null, btn, from }){
   btn.disabled = true;
   const [{ createBook }, cardsRes, tags] = await Promise.all([
     import('./book.js'),
@@ -475,7 +494,7 @@ export async function previewText({ course, lesson, title, subtitle = '', body, 
 
   try {
     ctl = await createBook(box.querySelector(".bkpv-book"), {
-      ...bookLook({ cards: cardsRes.data, g: null, subject: tags[0], lesson, title, quranRefs, preview: true }),
+      ...bookLook({ cards: cardsRes.data, g: null, subject: tags[0], lesson, title, quranRefs, voices, preview: true }),
       title, subtitle, body, lang,
       endHtml: () => bookEnd(null, quiz),
       onAction: (act, book) => {

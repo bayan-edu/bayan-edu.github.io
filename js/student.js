@@ -1396,10 +1396,12 @@ async function textBook(i, l, back){
      فأخفاه؛ وصار الآن يحاكي المُنشئ تماماً. */
   /* 🆕 b164 · والقراءةُ الجهريّة معهما — أيُطلب في هذا النصّ؟ وفشلُها لا يحجب
      الكتاب: نصٌّ بلا زرّ تسجيلٍ خيرٌ من نصٍّ لا يُفتح. */
-  const [{ data, error }, cardsRes, raRes] = await Promise.all([
+  /* 🆕 b203 · والصوتُ المولَّدُ المعتمد معها (189 · الخطوة ٦): وفشلُه لا يحجب الكتاب — نثرٌ صامتٌ كما كان */
+  const [{ data, error }, cardsRes, raRes, voiceRes] = await Promise.all([
     api.itemText(i.id),
     l ? api.lessonCards(l.id).then(r => r, e => ({ error: e })) : Promise.resolve({ data: [] }),
-    api.myReading(i.id).then(r => r, e => ({ error: e }))
+    api.myReading(i.id).then(r => r, e => ({ error: e })),
+    api.approvedVoices(i.id).then(r => r, e => ({ error: e }))
   ]);
   const host = document.getElementById("book");
   if(!host) return;                                  // غادر قبل وصول النصّ
@@ -1420,7 +1422,8 @@ async function textBook(i, l, back){
   /* 🆕 b189 · المظهرُ والختامُ من `bookLook` و`bookEnd` أدناه — ومعاينةُ المحرّر تقرأ منهما،
      وما هنا سلوكُ الطالب وحده: الموضعُ والتسجيلُ والاختبارُ والإتمام. */
   const ctl = await createBook(host, {
-    ...bookLook({ cards: cardsRes?.data, g, subject: S.subj?.name, lesson: l, title, quranRefs: data.quran_refs }),
+    ...bookLook({ cards: cardsRes?.data, g, subject: S.subj?.name, lesson: l, title, quranRefs: data.quran_refs,
+                  voices: voiceRes?.data || null }),
     slot: raOn,
     title, subtitle: data.description, body: data.body, lang: data.lang || i.lang,
     storeKey: 'bayan.book.' + i.id,
@@ -1458,7 +1461,7 @@ async function textBook(i, l, back){
    المصدر (`editor_items.js`). ومعاينةٌ تبني مظهرَها بنفسها تفترق عن الحقيقة يوماً بصمت،
    فتُري المعلّمَ كتاباً غيرَ الذي يقرؤه طالبُه.
    `preview` ⇒ نافذةُ الكلمة بلا «إضافة إلى تذكّرها»: المعلّمُ يرى ولا يشترك. */
-export function bookLook({ cards, g, subject, lesson: l, title, quranRefs = null, preview = false }){
+export function bookLook({ cards, g, subject, lesson: l, title, quranRefs = null, voices = null, preview = false }){
   /* عنوانُ الدرس يسقط من الغلاف إن احتوى عنوانَ النصّ («Reading: X» و«X»)
      وتحلّ الوحدةُ محلَّه — السياقُ نفسُه بلا تكرار. */
   const lessonLine = l?.title && !l.title.includes(title) ? l.title : (l?.unit || '');
@@ -1485,8 +1488,9 @@ export function bookLook({ cards, g, subject, lesson: l, title, quranRefs = null
     /* 🆕 b155 · استمع وتابع — الإنجليزيّةُ بأحسن صوتٍ على جهاز الطالب.
        🆕 b198 · **والعربيّةُ من ملفّات:** الآيةُ بتلاوة الحصري إن حُفظت سورتُها (`quranRefs` · 188)، وما سواها صامتٌ
        حتى يُعتمد صوتُه المولَّد (⑥-ج في STATE) — وحكمُ `101` قائمٌ على لسان المتصفّح. والجسرُ كلُّه في media.js
-       (`bookVoice`): منطقُ «أيّ صوتٍ يُسمع» واحدٌ هناك. */
-    voice: bookVoice({ quranRefs }),
+       (`bookVoice`): منطقُ «أيّ صوتٍ يُسمع» واحدٌ هناك.
+       🆕 b203 · **والنثرُ بصوته المعتمد** (`voices` · الخطوة ٦): الطالبُ والمعاينةُ كلاهما بالمعتمد وحده. */
+    voice: bookVoice({ quranRefs, voices }),
     onVoiceFail: () => toast("تعذّر النطق على هذا الجهاز"),
     /* 🆕 b193 · كلٌّ باسمه: القصيدةُ «١٠ أبيات» لا «١٠ فقرات»، والآيتان «آيتان» — وما كان صفراً يغيب */
     coverMeta: ({ paragraphs, verses = 0, ayat = 0, words, minutes }) => [

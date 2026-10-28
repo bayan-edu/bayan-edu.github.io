@@ -405,10 +405,16 @@ export function clipPlayer(){
  *    · والبسملةُ حين تُتلى الآيةُ الأولى نفسُها: من بدأ الاستماعَ من ثالثة الآيات لم يبدأ بأوّل السورة. والفاتحةُ آيتُها
  *      الأولى البسملةُ نفسُها، والتوبةُ بلا بسملة.
  *    · والملفّان نافلةٌ قبل الآية: إن تعذّر أحدُهما مضت الآية، ولا تسقط هي لأجله. والجملةُ المظلَّلةُ أثناءهما الآيةُ نفسُها.
+ * 🆕 b203 · **والنثرُ بصوته المولَّد المعتمد** (`voices` = صفوفُ `voice_clips` المعتمدة: [{ sentence, audio }] · 189 · الخطوة ٦):
+ *    الجملةُ تُعرف بنصّها بحرفه — الصفُّ يحفظها كما قسمها الكتاب (189 ①) — فجملةٌ تغيّرت تصمت ولا يُسمع صوتُ غيرها.
+ *    والآيةُ لا تُطلب هنا (تلاوتُها قبلها)، والنثرُ بسرعته كالتلاوة (`rated`). **وصوتُ النثر يقطع التلاوة:** فالآيةُ بعده
+ *    تُسبق بالاستعاذة كما بعد الإيقاف (`run` — حكمُ المالك أعلاه: «صوتٍ غيرِ قرآنيّ»).
  */
 const CLIP_WAIT = 30000;    // مهلةُ تحميل المقطع التالي في سلسلة الجملة الواحدة — ثمّ يحلّ طولُه محلَّها (onstart)
-export function bookVoice({ quranRefs = null } = {}){
+export function bookVoice({ quranRefs = null, voices = null } = {}){
   const refs = Array.isArray(quranRefs) ? quranRefs : [];
+  const made = new Map((Array.isArray(voices) ? voices : []).filter(v => v?.sentence && v?.audio).map(v => [v.sentence, v.audio]));
+  const prose = s => (!s?.q && made.get(s?.text)) || null;
   const clips = clipPlayer();
   let rtl = false, run = false, busy = false, later = null;
   const refOf = s => {
@@ -440,15 +446,20 @@ export function bookVoice({ quranRefs = null } = {}){
     get timed(){ return rtl; },
     available(dir, sents){
       rtl = dir === 'rtl';
-      return rtl ? sents.some(s => ayah(s)) : tts();
+      return rtl ? sents.some(s => ayah(s) || prose(s)) : tts();
     },
-    has: s => !rtl || !!ayah(s),
+    has: s => !rtl || !!ayah(s) || !!prose(s),
     rated: () => !rtl,
     speak(s, o){
       /* والسرعةُ الأساسُ للإنجليزيّة ٠٫٩ كنطق الكلمة: المستمعُ متعلّمٌ لا ناطق (b155) */
       if(!rtl) return narrate(s.text, { lang: 'en', rate: 0.9 * o.rate, onend: o.onend, onerror: o.onerror });
       const r = refOf(s);
-      if(!r) return false;
+      if(!r){
+        const key = prose(s);
+        if(!key) return false;
+        run = false;                               // صوتٌ غيرُ قرآنيّ ⇒ الآيةُ بعده تُسبق بالاستعاذة
+        return playSeq([key], o);
+      }
       const seq = run ? [] : [AUDHU];
       if(s.q.ayah === 1 && r.surah !== 1 && r.surah !== 9) seq.push(BASMALA);
       seq.push(ayahKey(r.surah, s.q.ayah));
@@ -456,13 +467,15 @@ export function bookVoice({ quranRefs = null } = {}){
       return playSeq(seq, o);
     },
     prefetch(s){
-      const key = rtl && ayah(s);
+      const key = rtl && (ayah(s) || prose(s));
       if(!key) return;
       if(busy) later = key; else clips.prefetch(key);
     },
     stop(){ hush(); clips.stop(); run = busy = false; later = null; },
-    /* يظهر تلميحاً على الزرّ — ويحمل نسبةَ التلاوة إلى قارئها ومصدرِها */
-    name: () => rtl ? 'تلاوة الشيخ محمود خليل الحصري — المصدر: everyayah.com' : voiceName('en')
+    /* يظهر تلميحاً على الزرّ — ويحمل نسبةَ التلاوة إلى قارئها ومصدرِها، ويقول إنّ النثرَ صوتٌ مولَّد حين يكون */
+    name: () => !rtl ? voiceName('en')
+      : (made.size ? 'النثر بصوتٍ مولَّد اعتمده المعلّم · والآيات بتلاوة الشيخ محمود خليل الحصري — المصدر: everyayah.com'
+                   : 'تلاوة الشيخ محمود خليل الحصري — المصدر: everyayah.com')
   };
 }
 

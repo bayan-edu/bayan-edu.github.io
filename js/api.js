@@ -227,6 +227,28 @@ export const itemText = id =>
 /* 🆕 b198 · و`quran_refs` (188): سورةُ كلّ كتلةٍ قرآنيّة — بها تُتلى الآية. والعمودُ يُقرأ بمنح الجدول نفسِه
    (قِيس: `has_column_privilege` لـ`authenticated`)، والسياسةُ تحرس الصفّ كما كانت. */
 
+/* 🆕 b203 · صوتُ النصّ المولَّد (189 · الدالّة الطرفيّة `tts` · الخطوة ٦ من ستّ).
+   🔑 القراءةُ بسياسة `p_voice_clips_read`: من يقرأ النصَّ يرى المعتمدَ من جمله، ومؤلّفو المادّة يرون كلَّها.
+   ⇒ `itemVoices` للوحة في المحرّر (كلُّ ما يراه المؤلّف) · و`approvedVoices` للكتاب: **المعتمدُ وحده صراحةً** ولو
+   قرأه مؤلّف — فمعاينةُ المعلّم تُسمِع ما يسمعه الطالب لا أكثر (خطّةُ الخطوة ٦ · أقرّها المالك). والجملةُ بحرفها:
+   بها يعرف الكتابُ صوتَ جملته (189 ①). */
+export const itemVoices = id =>
+  db.from('voice_clips').select('sha, sentence, audio, spoken, ms, voice, approved_at').eq('item_id', id);
+export const approvedVoices = id =>
+  db.from('voice_clips').select('sentence, audio').eq('item_id', id).not('approved_at', 'is', null);
+/* التوليدُ دفعةً من خمس جملٍ على الأكثر: { item, sentences: [{ text, kind, voice?, spoken? }], context }
+   ⇒ { data: { results: [{ sha, state: 'ok'|'held'|'error', … }] }, error } — والردُّ بالعربيّة في جسمه يُقرأ كما هو
+   (كـ`uploadR2`). والحارسُ في الدالّة (`voice_problem` بهويّة المستدعي) لا هنا. */
+export async function generateVoices(item, sentences, context = ''){
+  const { data, error } = await db.functions.invoke('tts', { body: { item, sentences, context } });
+  if(!error) return { data, error: null };
+  let message = error.message, status = error.context?.status;
+  try { const j = await error.context?.json?.(); if(j?.error) message = j.error; } catch(e){}
+  return { data: null, error: { message, status } };
+}
+/* والاعتمادُ وإلغاؤه لجملٍ ببصماتها (189 ⑤): ⇒ { ok, count, missing } — وإعادةُ التوليد تُسقطه في القاعدة */
+export const approveVoices = (id, shas, ok = true) => db.rpc('approve_voice', { p_item: id, p_shas: shas, p_ok: ok });
+
 /* 🆕 b164 · القراءة الجهرية (sql/174) — أيُطلب في هذا النصّ؟ ومعه قراءاتي السابقة.
    والشرطُ في القاعدة وحدها (`reading_aloud_subject`): يقرؤه `my_reading` ليظهر
    الزرّ، و`start_reading` ليُصدر المسار — فلا زرٌّ يُردّ طلبُه. */
