@@ -586,7 +586,10 @@ export const quranBlocks = body => parse(body, '').blocks.filter(b => b.q)
                      has?(sent) ⇒ bool          — لهذه الجملة صوت؟ (غائبٌ ⇒ نعم) وما لا صوتَ له يُتخطّى
                      rated?(sent) ⇒ bool        — تسري عليها السرعة؟ (التلاوةُ بسرعتها)
                      timed?: bool               — صوتُه ملفّاتٌ يُعرف طولُها (onstart)
-                     speak(sent, { rate, onstart(ms), onend, onerror }) ⇒ bool
+                     speak(sent, { rate, onstart(ms), onend, onerror,
+                                   onmain?(ms|null), onboundary?(charIndex) }) ⇒ bool
+                       🆕 b206 · onmain: بدأ صوتُ الجملة نفسِها (ms طولُه إن عُرف) · onboundary: حدُّ كلمةٍ في نصّها
+                       — بهما تُقلَب صفحةُ الجملة المقسومة عند موضع قسمتها، وكلاهما اختياريّ
                      prefetch?(sent) · stop() · name() }
                    والجملة { text, kind: 'cover'|'h'|'v'|'p'|'q', q?: { block, first, last, ayah } } (`buildSents`)
    opt.onVoiceFail () — تعذّر النطق على هذا الجهاز
@@ -1038,6 +1041,8 @@ export async function createBook(host, opt = {}){
     if(!force && d === dims) return;
     dims = d;
     pages = paginate();
+    parts.clear();
+    forget();
     view = atEnd ? viewCount() - 1 : (keep ? viewOfAnchor(keep) : Math.min(view, viewCount() - 1));
     render();
   }
@@ -1102,10 +1107,20 @@ export async function createBook(host, opt = {}){
     </div>`;
   }
 
+  /* 🆕 b206 · الصفحةُ الظاهرة لا تُبنى من جديد إن كانت هي هي (`_pi` · `_pn`): البناءُ يُعيد فكَّ الصور ويُسقط ظلَّ
+     الجملة المقروءة، فكان رفعُ الزاوية تحت الفأرة يومض الصفحتين مرّتين — عند الرفع وعند الردّ (طلبُ المالك · ٢٨ أكتوبر).
+     والتقسيمُ الجديد يُبطل العلامتين (`forget`) — فالفهرسُ نفسُه صار صفحةً أخرى. */
   function fill(slotKey, idx, slotName){
     const s = slots[slotKey];
+    if(s._pi === idx && s._pn === slotName && (idx == null || s.firstElementChild)) return;
     s.replaceChildren(idx == null ? '' : pageEl(idx, slotName));
+    s._pi = idx; s._pn = slotName;
   }
+  const put = (slotKey, el, idx, slotName) => {
+    const s = slots[slotKey];
+    s.replaceChildren(el); s._pi = idx; s._pn = slotName;
+  };
+  const forget = () => { slots.a._pi = slots.b._pi = undefined; };
 
   function render(){
     tick();
@@ -1113,7 +1128,7 @@ export async function createBook(host, opt = {}){
       const [a, b] = viewPages(view);
       fill('a', a, 'a'); fill('b', b, 'b');
     } else {
-      fill('a', view, 'single'); slots.b.replaceChildren();
+      fill('a', view, 'single'); slots.b.replaceChildren(); slots.b._pi = undefined;
     }
 
     const shown = viewPages(view).map(i => pages[i]).filter(Boolean);
@@ -1239,17 +1254,21 @@ export async function createBook(host, opt = {}){
     return out;
   }
 
+  /* 🆕 b206 · وبدءُ الطيّ لا يوقف القراءة — فقد يكون رفعَ زاويةٍ تحت فأرةٍ عابرة. والقراءةُ تتبع التقليبَ حين يتمّ
+     (`close` ⇐ `narFollow`)، وتمضي إن رُدّت الصفحة. وكان هنا `narPause` فصمت الصوتُ كلّما مرّت الفأرةُ بحافّة. */
   function begin(delta, corner = 'bottom'){
     const P = plan(delta);
     if(!P) return null;
-    if(nar.on && !nar.auto) narPause();
     tick();
     closeWord();
 
-    if(spread()){ fill('a', P.under[0], 'a'); fill('b', P.under[1], 'b'); }
-    else fill('a', P.under[0], 'single');
-
-    const host = P.slot === 'b' ? slots.b : slots.a;
+    const hk = P.slot === 'b' ? 'b' : 'a';
+    const host = slots[hk];
+    /* 🆕 b206 · الصفحةُ التي تنثني هي الظاهرةُ نفسُها إن كانت هي (`live`) — تُنقل إلى الطيّ وتعود منه، فلا تُبنى
+       ثانيةً ولا يسقط ظلُّ جملتها. والتي تنكشف من خلفها (`backPage`) تُنقل إلى موضعها حين يتمّ التقليب. */
+    const live = host._pi === P.front && host._pn === P.slot ? host.firstElementChild : null;
+    const frontPage = live || pageEl(P.front, P.slot);
+    const backPage  = P.back < 0 ? blankBack(P.slot) : pageEl(P.back, P.backSlot);
     const s = spineOf(P.slot) === 'sp-l' ? 1 : -1;          // الصفحةُ يمينَ الكعب؟
     const W = host.offsetWidth, H = host.offsetHeight;
     const spineX = host.offsetLeft + (s > 0 ? 0 : W), top = host.offsetTop;
@@ -1280,8 +1299,10 @@ export async function createBook(host, opt = {}){
       o.append(EL('i', ''));
       return o;
     };
-    const front = sheet(pageEl(P.front, P.slot));
-    const back  = sheet(P.back < 0 ? blankBack(P.slot) : pageEl(P.back, P.backSlot));
+    const front = sheet(frontPage);              // تُنقل الظاهرةُ هنا أوّلاً — ثمّ يُملأ موضعُها بما تحتها
+    const back  = sheet(backPage);
+    if(spread()){ fill('a', P.under[0], 'a'); fill('b', P.under[1], 'b'); }
+    else fill('a', P.under[0], 'single');
     const cast  = shadeLayer('c');
     const sheen = shadeLayer('b');
     const flap  = EL('div', 'bk-flap');                       // يحمل ظلَّ الظهر على ما تحته
@@ -1371,14 +1392,20 @@ export async function createBook(host, opt = {}){
     let closed = false;
     const close = commit => {
       if(closed) return; closed = true;
+      if(commit){
+        view = P.nv;
+        if(P.reverse) put(hk, frontPage, P.front, P.slot);                       // السابقةُ عادت فوق الظاهرة
+        else if(P.back >= 0) put(P.backSlot, backPage, P.back, P.backSlot);      // ظهرُ المقلوبة صار صفحتَها
+      } else if(live) put(hk, live, P.front, P.slot);                            // رُدّت ⇒ تعود الصفحةُ نفسُها
       layer.remove();
       book.classList.remove('turning');
-      if(commit) view = P.nv;
       turning = null;
       render();
+      if(commit && !nar.auto) narFollow();        // 🆕 b206 · قلّبها القارئُ ⇒ تتبعه القراءة
       if(pending){ const d = pending; pending = 0; go(d, reduce.matches ? 300 : 560); }
     };
 
+    paintHL();
     draw();
     return {
       P,
@@ -1429,9 +1456,9 @@ export async function createBook(host, opt = {}){
 
   function jump(v){
     if(turning) return;
-    if(nar.on && !nar.auto) narPause();
     view = Math.max(0, Math.min(viewCount() - 1, v));
     render();
+    if(nar.on && !nar.auto) narFollow();
   }
 
   /* ═══════════ استمع وتابع (b155) ═══════════
@@ -1440,13 +1467,24 @@ export async function createBook(host, opt = {}){
         والاختبارُ يقيس القراءة) · الجملةُ المقروءة تُظلَّل فتبقى العينُ على النصّ ·
         والسرعةُ بيد الطالب.
      🔑 جملةً جملة (علّتُها عند `narrate` في media.js)، والصفحةُ تُقلَب حين تبلغ
-        القراءةُ ما بعدها. والتقليبُ باليد أو نقرُ كلمة **يوقف مؤقّتاً** ولا يُلغي:
-        يبقى الظلُّ على الجملة التي وقف عندها، والاستئنافُ منها إن كانت ظاهرة،
-        ومن أوّل الصفحة الظاهرة إن لم تكن.
+        القراءةُ ما بعدها. ونقرُ كلمة **يوقف مؤقّتاً** ولا يُلغي: يبقى الظلُّ على
+        الجملة التي وقف عندها، والاستئنافُ منها إن كانت ظاهرة، ومن أوّل جملةٍ تبدأ
+        في الصفحة الظاهرة إن لم تكن.
+     🆕 b206 · **والتقليبُ باليد تتبعه القراءة ولا تقف** (طلبُ المالك · ٢٨ أكتوبر — كان يوقفها، فإذا استُؤنفت
+        بدأت الجملةَ المقسومة من أوّلها في الصفحة السابقة): الجملةُ المقروءة إن بقيت ظاهرةً مضت، وإلّا فمن أوّل
+        جملةٍ **تبدأ** في الصفحة الجديدة (`narFollow`).
+     🆕 b206 · **والجملةُ المقسومة بين منظرين تُقلَب صفحتُها عند موضع القسمة لا بعد تمامها** — وكان الطالبُ يسمع
+        ذيلَها وعينُه على صفحةٍ ليس فيها. وموضعُها نسبةُ حروفها في كلّ صفحة (`parts`)، يُبلَغ بأدقّ ما يعطيه
+        الصوت: حدودُ الكلمات من لسان المتصفّح (`onboundary`) إن جاءت، وإلّا طولُ الملفّ (`onmain(ms)`)، وإلّا
+        سرعةُ نطقٍ تُتعلَّم من الجمل السابقة في الجلسة (`nar.cps`).
      🎨 والظلُّ محايدٌ من حبر الورق: موضعُ القراءة حالٌ لا حكم ولا «اضغط هنا». */
   const RATES = [1, 0.8, 1.2];
   const LOAD_WAIT = 45000;       /* 🆕 b198 · مهلةُ ملفٍّ لم يُعرف طولُه بعد — ثمّ يحلّ طولُه محلَّها */
-  const nar = { on: false, started: false, auto: false, i: -1, hl: null, tok: 0, timer: 0, r: 0 };
+  /* 🆕 b206 · سرعةُ لسان المتصفّح أوّلَ الجلسة: حرفٌ (بلا المسافات) كلَّ ٨٠ مللي عند السرعة ١ — نحو ١٦٠ كلمةً في الدقيقة
+     بنطق ٠٫٩. ثمّ تحلّ محلَّها سرعةُ الصوت المقيسة من كلّ جملةٍ تمّت */
+  const CPS0 = 1 / 80;
+  const nar = { on: false, started: false, auto: false, i: -1, hl: null, tok: 0, timer: 0, r: 0,
+                sp: [], cps: CPS0, bnd: false };
 
   const sentPage = id => {
     if(sents[id]?.cover) return 0;
@@ -1457,20 +1495,45 @@ export async function createBook(host, opt = {}){
     return -1;
   };
   const viewOfPage = p => spread() ? Math.floor(p / 2) : p;
+  /* 🆕 b206 · صفحاتُ الجملة كلُّها بترتيبها — والمقسومةُ تقع في صفحتين أو أكثر */
+  const pagesOf = id => {
+    if(sents[id]?.cover) return [0];
+    const out = [];
+    pages.forEach((g, p) => { if(g.kind === 'text' && id >= g.s0 && id <= g.s1) out.push(p); });
+    return out;
+  };
+  const inView = id => { const vp = viewPages(view); return pagesOf(id).some(p => vp.includes(p)); };
+  /* 🆕 b206 · أوّلُ جملةٍ **تبدأ** في المنظر — لا ذيلُ جملةٍ بدأت قبله (فيُستأنف من رأسٍ لا يُرى). فإن كانت الصفحةُ
+     كلُّها ذيلاً لجملةٍ واحدة فهي هي. */
   const firstInView = () => {
+    let tail = -1;
     for(const p of viewPages(view)){
       const g = pages[p];
       if(g?.kind === 'cover' && sents[0]?.cover) return 0;
-      if(g?.kind === 'text' && g.s0 >= 0) return g.s0;
+      if(g?.kind !== 'text' || g.s0 < 0) continue;
+      for(let id = g.s0; id <= g.s1; id++) if(sentPage(id) === p) return id;
+      if(tail < 0) tail = g.s0;
     }
-    return -1;
+    return tail;
+  };
+  /* حروفُ الجملة في صفحةٍ بعينها (بلا مسافات) — من HTML الصفحة كما قُسمت، ويُحفظ إلى التقسيم التالي */
+  const parts = new Map();
+  const partLen = (p, id) => {
+    const k = p + ':' + id;
+    if(!parts.has(k)){
+      const t = document.createElement('template');
+      t.innerHTML = pages[p]?.html || '';
+      parts.set(k, [...t.content.querySelectorAll(`.bk-s[data-s="${id}"]`)]
+        .reduce((n, e) => n + e.textContent.replace(/\s+/g, '').length, 0));
+    }
+    return parts.get(k);
   };
 
   function paintHL(){
-    root.querySelectorAll('.bk-slot .bk-s.on, .bk-slot .bk-cv-t.on').forEach(x => x.classList.remove('on'));
+    root.querySelectorAll('.bk-s.on, .bk-cv-t.on').forEach(x => x.classList.remove('on'));
     if(nar.hl == null) return;
-    if(sents[nar.hl]?.cover){ root.querySelector('.bk-slot .bk-cv-t')?.classList.add('on'); return; }
-    root.querySelectorAll(`.bk-slot .bk-s[data-s="${nar.hl}"]`).forEach(x => x.classList.add('on'));
+    if(sents[nar.hl]?.cover){ root.querySelectorAll('.bk-slot .bk-cv-t, .bk-turn .bk-cv-t').forEach(x => x.classList.add('on')); return; }
+    root.querySelectorAll(`.bk-slot .bk-s[data-s="${nar.hl}"], .bk-turn .bk-s[data-s="${nar.hl}"]`).forEach(x => x.classList.add('on'));
   }
 
   function narUI(){
@@ -1485,10 +1548,19 @@ export async function createBook(host, opt = {}){
     r.textContent = uiNum(String(RATES[nar.r])).replace('.', '\u066B') + '\u00D7';
   }
 
-  async function narTurnTo(v){
+  async function narTurnTo(v, tok){
     nar.auto = true;
     try{
+      /* 🆕 b206 · زاويةٌ مرفوعةٌ تحت الفأرة لا تحبس القراءة: كانت `turning` تبقى مشغولةً ما بقيت الفأرةُ على
+         الحافّة، فينتظر الصوتُ صامتاً. ⇒ إن رُفعت نحو الوجهة نفسِها أُتمّ بها التقليب، وإلّا رُدّت. */
+      if(peek && !drag){
+        const { T, hot } = peek; peek = null;
+        if(v === view + 1 && hotDelta(hot) === 1){ await T.finish(true, reduce.matches ? 300 : 620); return; }
+        await T.finish(false, 140);
+      }
       while(turning) await new Promise(r => setTimeout(r, 60));
+      /* وطلبٌ قديم لا يُنفَّذ بعد أن قلّب القارئُ بيده (`narFollow` يغيّر الرمز) — وإلّا قفز الكتابُ منظرين */
+      if((tok != null && tok !== nar.tok) || view === v) return;
       if(v === view + 1){
         turning = begin(1, 'bottom');
         if(turning) await turning.play(reduce.matches ? 380 : 760);
@@ -1509,15 +1581,47 @@ export async function createBook(host, opt = {}){
       if(v !== view) narTurnTo(v);
       return;
     }
-    const p = sentPage(i);
-    if(p < 0) return speakAt(i + 1);
-    const v = viewOfPage(p);
-    if(v !== view){ await narTurnTo(v); if(!nar.on) return; }
+    const ps = pagesOf(i);
+    if(!ps.length) return speakAt(i + 1);
+    /* 🆕 b206 · جملةٌ ظاهرٌ بعضُها لا يُرجَع إلى رأسها — يُقرأ ذيلُها حيث العين */
+    if(!inView(i)){
+      const tok0 = nar.tok;
+      await narTurnTo(viewOfPage(ps[0]), tok0);
+      if(!nar.on || tok0 !== nar.tok) return;     // قلّب القارئُ في أثناء ذلك فتبعته القراءة
+    }
     nar.i = nar.hl = i;
     paintHL();
+    clearSplit();
     const my = ++nar.tok;
-    const next = () => { if(my !== nar.tok || !nar.on) return; clearTimeout(nar.timer); speakAt(i + 1); };
     const s = sents[i], rate = RATES[nar.r];
+
+    /* 🆕 b206 · مواضعُ القسمة: لكلّ منظرٍ تالٍ تمتدّ إليه الجملةُ نسبةُ ما قبله من حروفها، ويُقلَب إليه حين يبلغه الصوت */
+    const w = ps.map(p => partLen(p, i)), total = w.reduce((a, b) => a + b, 0);
+    const due = [];
+    if(total > 0) for(let k = 1, acc = w[0]; k < ps.length; acc += w[k++]){
+      const v = viewOfPage(ps[k]);
+      if(v > viewOfPage(ps[k - 1]) && v > view) due.push({ v, f: acc / total });
+    }
+    const n = s.text.replace(/\s+/g, '').length;
+    const charAt = f => {                          // موضعُ النسبة في نصّ الجملة (لحدود كلمات المتصفّح)
+      for(let j = 0, c = 0; j < s.text.length; j++) if(!/\s/.test(s.text[j]) && ++c > f * n) return j;
+      return s.text.length;
+    };
+    due.forEach(d => { d.ci = charAt(d.f); });
+    const flip = d => {
+      const k = due.indexOf(d);
+      if(k < 0) return;
+      due.splice(k, 1);
+      if(my === nar.tok && nar.on && view < d.v) narTurnTo(d.v, my);
+    };
+    const schedule = ms => { clearSplit(); nar.sp = due.map(d => setTimeout(() => flip(d), ms * d.f)); };
+    let t0 = 0;
+    const learn = () => {                          // سرعةُ لسان المتصفّح تُقاس من كلّ جملةٍ تمّت
+      const el = t0 ? performance.now() - t0 : 0;
+      if(!voice.timed && n > 20 && el > 400) nar.cps = 0.6 * nar.cps + 0.4 * (n / (el * rate));
+    };
+
+    const next = () => { if(my !== nar.tok || !nar.on) return; clearTimeout(nar.timer); learn(); speakAt(i + 1); };
     /* صمّامٌ إن لم يصل `onend` — وهو يتأخّر أو يغيب على بعض الأجهزة.
        🆕 b198 · **والملفُّ صمّامُه طولُه** (`onstart`)، وإلى أن يُعرف مهلةُ تحميلٍ سخيّة. 🔴 قِيس قبل التغيير: الأنعام
        ١٥١ تلاوتُها نحو ٨٧ ث، والمهلةُ من عدد الحروف ٨٧٫٧ ث يدخل فيها التحميل — فكانت الآيةُ على حافّة القطع. */
@@ -1525,6 +1629,20 @@ export async function createBook(host, opt = {}){
     arm(voice.timed ? LOAD_WAIT : 4000 + s.text.length * 110 / rate);
     const ok = voice.speak(s, { rate, onend: next,
       onstart: ms => { if(my === nar.tok && nar.on) arm(ms + 4000); },
+      /* بدأ صوتُ الجملة نفسِها: الملفُّ بطوله ⇒ القسمةُ بالوقت · ولسانُ المتصفّح بلا طول ⇒ بحدود الكلمات إن عُرفت
+         في هذه الجلسة، وإلّا بالسرعة المتعلَّمة */
+      onmain: ms => {
+        if(my !== nar.tok || !nar.on) return;
+        t0 = performance.now();
+        if(!due.length) return;
+        if(ms > 0) schedule(ms);
+        else if(!nar.bnd) schedule(n / (nar.cps * rate));
+      },
+      onboundary: ci => {
+        if(my !== nar.tok || !nar.on) return;
+        if(!nar.bnd){ nar.bnd = true; clearSplit(); }
+        while(due.length && ci >= due[0].ci) flip(due[0]);
+      },
       onerror: e => {
         if(e === 'interrupted' || e === 'canceled') return;
         /* المتصفّحُ منع التشغيل (بلا إيماءة) ⇒ يُوقَف ويُقال، ولا يُتخطّى النصُّ كلُّه جملةً جملة */
@@ -1541,7 +1659,7 @@ export async function createBook(host, opt = {}){
     if(!voice) return;
     closeWord(false);
     let i = nar.i;
-    if(!(i >= 0 && viewPages(view).includes(sentPage(i)))) i = firstInView();
+    if(!(i >= 0 && inView(i))) i = firstInView();
     if(i < 0) i = 0;                             // صفحةُ الختام ⇒ من البداية
     nar.on = nar.started = true;
     const nm = voice.name?.();
@@ -1551,15 +1669,26 @@ export async function createBook(host, opt = {}){
   }
   function narPause(){
     if(!nar.on) return;
-    nar.on = false; nar.tok++; clearTimeout(nar.timer);
+    nar.on = false; nar.tok++; clearTimeout(nar.timer); clearSplit();
     voice?.stop();
     narUI();
   }
   function narStop(){
-    nar.on = false; nar.tok++; clearTimeout(nar.timer);
+    nar.on = false; nar.tok++; clearTimeout(nar.timer); clearSplit();
     voice?.stop();
     nar.hl = null; nar.i = -1;
     paintHL(); narUI();
+  }
+  function clearSplit(){ nar.sp.forEach(clearTimeout); nar.sp = []; }
+  /* 🆕 b206 · قلّب القارئُ والقراءةُ جارية: الجملةُ الجارية إن بقيت ظاهرةً مضت كما هي، وإلّا فمن أوّل جملةٍ تبدأ هنا.
+     وصفحةٌ لا نصَّ فيها (الختام) ⇒ إيقافٌ مؤقّت، والاستماعُ منها يبدأ من الأوّل كما كان. */
+  function narFollow(){
+    if(!nar.on || (nar.i >= 0 && inView(nar.i))) return;
+    const i = firstInView();
+    if(i < 0){ narPause(); return; }
+    nar.tok++; clearTimeout(nar.timer); clearSplit();
+    voice?.stop();
+    speakAt(i);
   }
 
   /* ═══════════ الإدخال ═══════════ */
@@ -1576,15 +1705,29 @@ export async function createBook(host, opt = {}){
     return cy < r.top + r.height / 2 ? 'top' : 'bottom';
   };
 
+  /* 🆕 b206 · والزاويةُ لا ترتفع لفأرةٍ عابرة: تنتظر وقفةً قصيرةً على الحافّة (`PEEK_DWELL`). كانت ترتفع وتنخفض
+     كلّما مرّت الفأرةُ بالشريطين — حركةٌ بلا تقليب يراها القارئُ عشوائيّة (طلبُ المالك · ٢٨ أكتوبر). */
+  const PEEK_DWELL = 260;
+  let peekT = 0, peekY = 0, peekIn = null;
   root.querySelectorAll('.bk-hot').forEach(h => {
     h.addEventListener('pointerenter', e => {
-      if(e.pointerType !== 'mouse' || turning || drag) return;
-      const T = begin(hotDelta(h), cornerAt(e.clientY));
-      if(!T) return;
-      turning = T; peek = { T, hot: h };
-      T.peek();
+      if(e.pointerType !== 'mouse') return;
+      peekIn = h;
+      if(turning || drag) return;
+      peekY = e.clientY;
+      clearTimeout(peekT);
+      peekT = setTimeout(() => {
+        if(turning || drag || h.hidden || peekIn !== h) return;
+        const T = begin(hotDelta(h), cornerAt(peekY));
+        if(!T) return;
+        turning = T; peek = { T, hot: h };
+        T.peek();
+      }, PEEK_DWELL);
     });
+    h.addEventListener('pointermove', e => { if(e.pointerType === 'mouse') peekY = e.clientY; });
     h.addEventListener('pointerleave', () => {
+      clearTimeout(peekT);
+      if(peekIn === h) peekIn = null;
       if(!peek || peek.hot !== h || drag) return;
       const T = peek.T; peek = null;
       T.finish(false, 220);
@@ -1593,6 +1736,7 @@ export async function createBook(host, opt = {}){
 
   book.addEventListener('pointerdown', e => {
     if(e.button !== 0) return;
+    clearTimeout(peekT);                               // نقرةٌ قبل تمام الوقفة لا ترفع زاويةً بعدها
     const hot = e.target.closest('.bk-hot');
     const start = { x0: e.clientX, y0: e.clientY, id: e.pointerId, hot,
                     hist: [[performance.now(), e.clientX]] };
@@ -1927,6 +2071,7 @@ export async function createBook(host, opt = {}){
     document.removeEventListener('pointerdown', onDocDown, true);
     window.removeEventListener('scroll', onScroll);
     clearInterval(endTimer);
+    clearTimeout(peekT);
     closeWord(false);
     closeZoom(false);
     narStop();

@@ -316,7 +316,7 @@ export function speak(text, lang = 'en'){
  *   يجري فعلاً: الإلغاءُ ثمّ النطقُ فوراً يُسقط الجديدَ على بعض الأنظمة،
  *   فبينهما مهلةٌ قصيرة.
  */
-export function narrate(text, { lang = 'en', rate = 0.9, onend, onerror } = {}){
+export function narrate(text, { lang = 'en', rate = 0.9, onend, onerror, onstart, onboundary } = {}){
   const t = String(text || '').trim();
   const ss = typeof window !== 'undefined' ? window.speechSynthesis : null;
   if(!t || !ss) return false;
@@ -328,6 +328,10 @@ export function narrate(text, { lang = 'en', rate = 0.9, onend, onerror } = {}){
     u.rate = rate;
     u.onend = () => onend?.();
     u.onerror = e => onerror?.(e?.error || 'error');
+    /* 🆕 b206 · بدءُ النطق وحدودُ كلماته — بها يُقلِب الكتابُ صفحةَ الجملة المقسومة عند موضع القسمة.
+       والحدودُ لا تأتي من كلّ صوت (أصواتُ Google في كروم بلا حدود) — والكتابُ يقدّر حين تغيب */
+    u.onstart = () => onstart?.();
+    u.onboundary = e => { if(e?.name !== 'sentence') onboundary?.(e.charIndex); };
     if(ss.speaking || ss.pending){ ss.cancel(); setTimeout(() => ss.speak(u), 60); }
     else ss.speak(u);
     return true;
@@ -432,7 +436,10 @@ export function bookVoice({ quranRefs = null, voices = null } = {}){
       const last = k === seq.length - 1;
       if(last){ busy = false; if(later){ clips.prefetch(later); later = null; } }
       else clips.prefetch(seq[k + 1]);
-      return clips.play(seq[k], { rate: 1, onstart: o.onstart,
+      /* 🆕 b206 · ومقطعُ الجملة نفسِها (الأخير — بعد الاستعاذة والبسملة) يُعلن طولَه (`onmain`): به تُقلَب صفحةُ الآية
+         المقسومة عند موضع قسمتها، لا بطول الاستعاذة قبلها */
+      return clips.play(seq[k], { rate: 1,
+        onstart: last ? ms => { o.onstart?.(ms); o.onmain?.(ms); } : o.onstart,
         onend: () => { if(last) return o.onend?.(); k++; o.onstart?.(CLIP_WAIT); step(); },
         onerror: e => {
           if(last || e === 'not-allowed') return o.onerror?.(e);
@@ -452,7 +459,8 @@ export function bookVoice({ quranRefs = null, voices = null } = {}){
     rated: () => !rtl,
     speak(s, o){
       /* والسرعةُ الأساسُ للإنجليزيّة ٠٫٩ كنطق الكلمة: المستمعُ متعلّمٌ لا ناطق (b155) */
-      if(!rtl) return narrate(s.text, { lang: 'en', rate: 0.9 * o.rate, onend: o.onend, onerror: o.onerror });
+      if(!rtl) return narrate(s.text, { lang: 'en', rate: 0.9 * o.rate, onend: o.onend, onerror: o.onerror,
+                                        onstart: () => o.onmain?.(null), onboundary: o.onboundary });
       const r = refOf(s);
       if(!r){
         const key = prose(s);
