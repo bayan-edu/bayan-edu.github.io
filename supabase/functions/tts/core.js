@@ -25,7 +25,7 @@
         المرونة عند التوليد مع التوصية بالصوت المناسب لكلّ» (`VOICES` · `recommend`) — «ولا داعي لتجربة أخرى».
    ══════════════════════════════════════════════════════════ */
 
-export const LIMITS = Object.freeze({ sentences: 5, chars: 2000, spoken: 4000 });
+export const LIMITS = Object.freeze({ sentences: 5, chars: 2000, spoken: 4000, tone: 200 });
 
 /* الصوتُ الذي اختاره المالكُ بأذنه (٢٧ أكتوبر · `tools/tts_compare.mjs`): Gemini 2.5 Flash بالعربيّة العامّة `ar-001`
    وصوت Charon. و`ar-001` «Preview» عند Google، والبديلُ القريب `ar-EG` بالصوت نفسِه.
@@ -62,10 +62,11 @@ const TASHKEEL_PROMPT = `شكّل الجمل العربيّة في «sentences»
 أعِد مصفوفةَ JSON بالجمل المشكولة وحدها، بعددها وترتيبها.`;
 
 /* ── الطلب ─────────────────────────────────────────────────
-   { item, sentences: [{ text, kind?, spoken?, voice? }], context? }
+   { item, sentences: [{ text, kind?, spoken?, voice?, lead?, tone? }], context? }
    `text` الجملةُ كما يقسمها الكتاب (`textSentences` · book.js) — وبصمتُها مفتاحُ صوتها (189 ①) · `kind` نوعُها عند الكتاب:
    cover (عنوانُ النصّ) · h (عنوانٌ فرعيّ) · p (نثر — وهو الأصل) · v (بيت) · `spoken` نصٌّ منطوقٌ صحّحه المعلّم فيُتخطّى به
-   التشكيل · `voice` صوتٌ من اللوحة (`VOICES`) اختاره المؤلّف، وإلّا فالمقترح (`recommend`) · `context` ما قبل الدفعة من النصّ.
+   التشكيل · `voice` صوتٌ من اللوحة (`VOICES`) اختاره المؤلّف، وإلّا فالمقترح (`recommend`) · `lead` الجملةُ قبلها في النصّ — بها يُعرف
+   قائلُ الحوار ونبرتُه (`femaleLead` · `voiceFor`) · `tone` نبرةٌ كتبها المؤلّف تغلب ما استُنبط · `context` ما قبل الدفعة من النصّ.
    والحدودُ حدودُ القاعدة: الجملةُ ١–٢٠٠٠ بلا مسافةٍ في طرفيها، ولا «۝» (189 ④) — يُردّ الطلبُ هنا قبل أن يُدفع فيه شيء. */
 const KINDS = new Set(['cover', 'h', 'p', 'v']);
 const fail = (error, status = 400) => ({ error, status });
@@ -90,7 +91,10 @@ export function checkRequest(body){
     }
     const voice = s?.voice == null ? null : String(s.voice);
     if(voice !== null && !Object.hasOwn(VOICES, voice)) return fail('الصوت غير معروف');
-    sentences.push({ text, kind, spoken, voice });
+    const lead = s?.lead == null ? null : String(s.lead).trim().slice(0, LIMITS.chars) || null;
+    const tone = s?.tone == null ? null : String(s.tone).replace(/\s+/g, ' ').trim();
+    if(tone !== null && (!tone || [...tone].length > LIMITS.tone)) return fail('النبرة فارغة أو أطول من ٢٠٠ حرف');
+    sentences.push({ text, kind, spoken, voice, lead, tone });
   }
   const context = typeof body?.context === 'string' ? body.context.slice(0, LIMITS.chars) : '';
   return { item, sentences, context };
@@ -238,24 +242,53 @@ export const isDialogue = text => /^\s*[-–—]\s*\S/.test(text) || /^\s*[«"�
      نحو عشرة طلباتٍ للمشروع كلّه — قِيس)، ولغتُه `ar-XA` لا `ar-001` الذي هو «Preview»، ويقبل إملاءَ النطق. وبديلُه Charon على
      Gemini بتوجيه القراءة
    · الشخصيّة — **Algenib على Gemini** بتوجيه الكلام المباشر
+   · **والشخصيّةُ النسائيّة — Gacrux، وAchernar بديلُه** على Gemini بالتوجيه نفسِه: سأل المالكُ «هل يمكن إضافة صوت يستخدم للشخصيات
+     النسائية؟» وسمع خمسةً على جملتين لزبيبة (`tools/tts_audition.mjs`) فحكم: «Gacrux والثاني Achernar»، و«نعم تلقائياً» (`femaleLead`).
    والعنوانُ والبيتُ بصوت الراوي، فالنصُّ بصوتٍ واحدٍ إلا حوارَه. */
 export const VOICES = Object.freeze({
-  iapetus: Object.freeze({ name: 'ar-XA-Chirp3-HD-Iapetus', label: 'chirp-3-hd · ar-XA · Iapetus' }),
-  charon:  Object.freeze({ name: TTS.voice.name, label: TTS.label }),
-  algenib: Object.freeze({ name: TTS.character.name, label: TTS.character.label })
+  iapetus:  Object.freeze({ name: 'ar-XA-Chirp3-HD-Iapetus', label: 'chirp-3-hd · ar-XA · Iapetus' }),
+  charon:   Object.freeze({ name: TTS.voice.name, label: TTS.label }),
+  algenib:  Object.freeze({ name: TTS.character.name, label: TTS.character.label }),
+  gacrux:   Object.freeze({ name: 'Gacrux', label: 'gemini-2.5-flash-tts · ar-001 · Gacrux' }),
+  achernar: Object.freeze({ name: 'Achernar', label: 'gemini-2.5-flash-tts · ar-001 · Achernar' })
 });
-export const NARRATOR = 'iapetus', CHARACTER = 'algenib';
-export const recommend = s => !isTitle(s) && isDialogue(s.text) ? CHARACTER : NARRATOR;
+export const NARRATOR = 'iapetus', CHARACTER = 'algenib', FEMALE = 'gacrux';
+
+/* مَن قال سطرَ الحوار: **آخرُ فعلِ قولٍ في الجملة قبله** — «فقالت» · «صاحت» · «قائلة» مؤنّثة، و«فقال» · «صاح» · «قائلاً» مذكّرة. قِيس على `603`
+   (٢٨ أكتوبر): ثلاثةَ عشرَ سطراً لزبيبة كلُّها بعد مؤنّث، ولا شيءَ من العشرة التي لعنترة — **فالقولُ هو الحَكَم لا التاء:** «وأخذت تبكي … وقال
+   يستعطفها» مذكّر. والمضارعُ لا يُعدّ («تقول» للمخاطَب وللغائبة معاً)، ولا «ردّ» و«سال» (اسمٌ وفعلُ سيلان). والحركاتُ تُنزع، وهمزةُ أوّل الفعل
+   تُوحَّد («اجابت» = «أجابت») — وهمزةُ وسطه لا: «سألت» قولٌ و«سالت دموعها» لا. وضميرُ المفعول المتّصل لا يحجبه: «فأجابته» · «سألها». */
+const SAY_F = ['قالت', 'صاحت', 'صرخت', 'هتفت', 'همست', 'اجابت', 'ردت', 'سألت', 'نادت', 'تمتمت', 'تابعت', 'اضافت', 'استطردت', 'قائلة'];
+const SAY_M = ['قال', 'صاح', 'صرخ', 'هتف', 'همس', 'اجاب', 'سأل', 'نادى', 'تمتم', 'تابع', 'اضاف', 'استطرد', 'قائلا'];
+const SAY = new RegExp(`(?<!\\p{L})[فو]?(${[...SAY_F, ...SAY_M].join('|')})(?:ه|ها|هما|هم|هن|ني|نا|ك|كما|كم)?(?!\\p{L})`, 'gu');
+const SAID_F = new Set(SAY_F);
+export function femaleLead(lead){
+  const bare = String(lead || '').replace(/[ً-ٰٟـ]/g, '').replace(/(?<!\p{L})([فو]?)[أإآ]/gu, '$1ا');
+  let last = null;
+  for(const m of bare.matchAll(SAY)) last = m[1];
+  return last !== null && SAID_F.has(last);
+}
+export const recommend = s => !isTitle(s) && isDialogue(s.text) ? (femaleLead(s.lead) ? FEMALE : CHARACTER) : NARRATOR;
 
 /* صوتُ Cloud اسمُه تامٌّ بلغته («ar-XA-Chirp3-HD-Iapetus» · «ar-XA-Wavenet-B»): لا توجيهَ له ولا نموذج، وسرعتُه رقمٌ (`rate`) */
 const cloudVoice = name => /^[a-z]{2,3}-[A-Z]{2}-/.test(name || '');
 
+/* والنبرةُ من النصّ نفسِه: ما قدّم به النصُّ لسطر الحوار («فقالت زبيبة بين شهقاتها:» · «قالت بصوت متهدج:») يُعطى للصوت فيؤدّيه بانفعاله —
+   حكمُ المالك بعد سماع الأصوات النسائيّة: «يحتاج ضبط للنبرة حسب النص، فالنص هنا حزين مثلاً فنبرة الأم منكسرة وباكية». وكان الصوتُ لا يرى
+   إلا السطرَ وحده. **وما كتبه المؤلّفُ (`tone`) يغلب ما استُنبط**، ويسري على صوت Gemini في السرد أيضاً. وآخرُ الجملة قبله أولى بها: فعلُ القول
+   وحالُه في آخرها (`LEAD_MAX`). */
+const LEAD_MAX = 300;
+const toneOf = s => s.tone ? ` وأدِّه بهذه النبرة: ${s.tone}.`
+  : s.lead ? ` وقد قدّم له النصّ بقوله: «${String(s.lead).slice(-LEAD_MAX)}» — فأدِّه بالانفعال الذي يصفه.` : '';
+
 /* وصوتُ الجملة: ما اختاره المؤلّف من اللوحة (`voice` — فُحص في `checkRequest`) وإلّا المقترح. والتوجيهُ لصوت Gemini وحده:
-   توجيهُ الكلام المباشر لسطر الحوار أيّاً كان صوتُه، وتوجيهُ القراءة لما سواه */
+   توجيهُ الكلام المباشر ونبرتُه لسطر الحوار أيّاً كان صوتُه، وتوجيهُ القراءة لما سواه — ونبرةُ المؤلّف إن كتبها */
 export function voiceFor(s){
   const id = s.voice ?? recommend(s), v = VOICES[id];
   if(cloudVoice(v.name)) return { id, name: v.name, label: v.label };
-  return { id, name: v.name, label: v.label, prompt: !isTitle(s) && isDialogue(s.text) ? TTS.dialogue : TTS.prompt };
+  const talk = !isTitle(s) && isDialogue(s.text);
+  return { id, name: v.name, label: v.label,
+           prompt: talk ? TTS.dialogue + toneOf(s) : TTS.prompt + (s.tone ? ` وبهذه النبرة: ${s.tone}.` : '') };
 }
 
 /* ── الصوت ── والصوتُ والنموذجُ واللهجةُ والتوجيهُ قابلةٌ للتجربة (`tools/tts_trial.mjs`)، والأصلُ ما اختاره المالك */

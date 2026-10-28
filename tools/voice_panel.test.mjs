@@ -114,5 +114,35 @@ const rows = V.voiceRows(sents, clips);
   ok('ومعها الصوتُ المختار والنطقُ المصحَّح', !asked.error && asked.sentences[1].voice === 'charon' && asked.sentences[1].spoken === '- لَسْتُ أَحْتَمِلُ.', show(asked));
 }
 
+/* ④ الشخصيّةُ النسائيّة والنبرة (حكمُ المالك: «Gacrux والثاني Achernar» · «نعم تلقائياً» · «يحتاج ضبط للنبرة حسب النص») */
+{
+  /* الجملُ التي قدّمت لسطور الحوار في `603` بحرفها — وهي فيصلُ النسختين */
+  const LEADS = ['فقالت له زبيبة:', 'فنظر إليها عنترة ولم يجب فاستمرت قائلة:', 'وكانت زبيبة تستمع إليه فى دهشة متعجبة من قوله وصاحت فى ألم:',
+    'فقالت زبيبة مسرعة:', 'فقالت زبيبة هادئة:', 'وما كاد ينطق بالكلمة الأخيرة حتى صاحت به زبيبة فى حنق:', 'فقالت زبيبة بين شهقاتها:',
+    'فتخاذلت زبيبة، ومدت يديها فى تضرع وقالت:', 'وسكتت لحظة ثم قالت بصوت متهدج:', 'ثم وثب واقفًا وقامت أمه تتعلق به قائلة:',
+    'فخضع عنترة وأطرق حينا ثم قال لها:', 'فقال عنترة فى مرارة:', 'فصاح عنترة:', 'ثم وضعت رأسها بين كفيها وأخذت تبكى وفلان عنترة وقال يستعطفها:',
+    'فنظر عنترة إليها وقد هدأت ثائرته وقال ساخرًا:', 'فنظر عنترة إلى وجه أمه وقال:', 'فَقَالَتْ زَبِيبَةُ:', 'فأجابته:', 'سألته أمه:',
+    'قال وقد سالت دموعه:', 'فقالت زبيبة: كفى. فقال عنترة:', 'وكان الليل حالكاً.', '', 'وهي تقول:'];
+  const diff = LEADS.filter(l => V.femaleLead(l) !== T.femaleLead(l));
+  ok(`femaleLead كالدالّة على ${LEADS.length} جملة (منها ستَّ عشرةَ من 603)`, !diff.length, show(diff));
+  ok('والصوتُ النسائيّ المقترح مقترحُ الدالّة، وAchernar في اللوحة', V.FEMALE === T.FEMALE && 'achernar' in V.VOICES && V.VOICES.gacrux.tone === true, '');
+  ok('وChirp وحده لا يأخذ نبرة', Object.entries(V.VOICES).every(([id, v]) => v.tone === !id.startsWith('iapetus')), show(V.VOICES));
+
+  const body = ['وكانت ليلةً حزينة.', 'فقالت زبيبة بين شهقاتها:', '- إنك ابنه.', 'فقال عنترة:', '- إذن فهو أبي؟'].join('\n\n');
+  const ss = textSentences(body, '');
+  const rs = V.voiceRows(ss, []);
+  ok('سطرُها بـGacrux وسطرُه بـAlgenib، والسردُ بالراوي', show(rs.map(r => r.recommended)) === show(['iapetus', 'iapetus', 'gacrux', 'iapetus', 'algenib']),
+     show(rs.map(r => [r.text, r.recommended])));
+  ok('وكلُّ سطرٍ يعرف الجملةَ قبله، وسطرُ الحوار معلَّم', rs[2].lead === 'فقالت زبيبة بين شهقاتها:' && rs[2].talk && !rs[1].talk && rs[0].lead === null, show(rs[2]));
+  const [bb] = V.voiceBatches(ss, rs, { tone: { '- إذن فهو أبي؟': 'ساخرة' } });
+  ok('والدفعةُ: الجملةُ قبل سطر الحوار وحده، والنبرةُ المكتوبة', bb.sentences[2].lead === 'فقالت زبيبة بين شهقاتها:' && !('lead' in bb.sentences[1])
+     && bb.sentences[4].tone === 'ساخرة' && !('tone' in bb.sentences[2]), show(bb));
+  const checked = T.checkRequest({ item: 1, sentences: bb.sentences, context: bb.context });
+  ok('وما تراه اللوحةُ مقترحاً تقترحه الدالّةُ للطلب نفسِه (فلا يُرسل الصوتُ إلا مخالفاً)', !checked.error
+     && checked.sentences.every((s, k) => T.recommend(s) === rs[k].recommended), show(checked));
+  ok('والدالّةُ تعطي سطرَها Gacrux بنبرة «بين شهقاتها»، وسطرَه بالنبرة المكتوبة', T.voiceFor(checked.sentences[2]).name === 'Gacrux'
+     && T.voiceFor(checked.sentences[2]).prompt.includes('بين شهقاتها') && T.voiceFor(checked.sentences[4]).prompt.includes('ساخرة'), '');
+}
+
 console.log(`\n${n - bad}/${n}${bad ? ' — فشل' : ''}`);
 process.exit(bad ? 1 : 0);

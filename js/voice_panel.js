@@ -9,13 +9,15 @@
       الطالب ⇒ التوليدُ ينتظر الحفظ، والاستماعُ والاعتمادُ لا (جملُهما محفوظة).
    🔑 **والنطقُ** (المشكولُ الذي سمعه الصوت) يعود في ردّ التوليد (`text`)، ومكانُه الدائم ملفُّ `.txt` بجوار صوته في R2 —
       يُقرأ إن أذن المخزنُ للموقع (CORS)، وإلّا ظهر ساعةَ التوليد وحدها (189: «ثلاثٌ للخطوتين التاليتين» ①).
+   🔑 **والنبرةُ:** سطرُ الحوار يحمل الجملةَ قبله، فتعرف بها الدالّةُ قائلَه (فالصوتُ النسائيّ بعد «فقالت») ونبرتَه («بين شهقاتها»)، وما
+      كتبه المؤلّفُ في «النبرة» يغلبها — حكمُ المالك: «نعم تلقائياً» و«يحتاج ضبط للنبرة حسب النص».
    🔑 **والدفعاتُ تتوالى ولا تتوازى:** حصّةُ Gemini للمشروع كلّه نحو عشرة طلباتٍ في الدقيقة (قِيس)، والحوارُ عليه.
       وبعد كلّ دفعةٍ تُقرأ الأصواتُ من القاعدة — فاللوحةُ تُري ما حُفظ لا ما ظنّت.
    🎨 محايدةٌ كمحدِّد السور، والحالُ تتلوّن بمعناها: «لم يُعتمد» و«ممسَكة» انتباهٌ (`warn`) · والتعذّرُ (`danger`).
    ══════════════════════════════════════════════════════════ */
 import { textSentences } from './book.js';
 import { VOICES, HELD, voiceRows, voiceBatches, tally } from './voice_rows.js';
-import { esc, AR, N, toast } from './ui.js';
+import { esc, escA, AR, N, toast } from './ui.js';
 import { clipPlayer, mediaUrl } from './media.js';
 import * as realApi from './api.js';
 
@@ -46,8 +48,9 @@ export function voicePanel(inp, { item = null, title = null, lang = null, api = 
 
   const sents = textSentences(item.body || '', item.title || '');
   const player = clipPlayer();
-  /* ما يخصّ الجملة بنصّها: صوتٌ اختاره المؤلّف · نطقُها (نصٌّ، أو false إن تعذّرت قراءتُه) · تصحيحٌ يُكتب · خطأُ آخر توليد */
-  const chosen = {}, spoken = {}, fixes = {}, errs = {}, open = new Set();
+  /* ما يخصّ الجملة بنصّها: صوتٌ اختاره المؤلّف · نطقُها (نصٌّ، أو false إن تعذّرت قراءتُه) · تصحيحٌ يُكتب · نبرةٌ يكتبها المؤلّف
+     (تغلب ما تستنبطه الدالّةُ من الجملة قبل الحوار · حكمُ المالك: «يحتاج ضبط للنبرة حسب النص») · خطأُ آخر توليد */
+  const chosen = {}, spoken = {}, fixes = {}, tones = {}, errs = {}, open = new Set();
   let rows = [], busy = false, stop = false, playing = null, progress = '', timer = 0;
 
   /* والمحفوظُ يُقارَن بما في المربّع بعد توحيد نهايات الأسطر: المربّعُ يكتبها «\n» أبداً، والمحفوظُ قد يحمل «\r\n»
@@ -77,12 +80,20 @@ export function voicePanel(inp, { item = null, title = null, lang = null, api = 
       <p class="vp-spoken">${shown}</p>
       <label class="vp-fixl">تصحيح النطق: الجملة مشكولةً كما تُنطق</label>
       <textarea class="vp-fix" dir="rtl" rows="2">${esc(fixes[r.text] ?? (typeof s === 'string' ? s : ''))}</textarea>
-      <button type="button" class="mf-up" data-act="fix"${busy || dirty() ? ' disabled' : ''}>توليد بهذا النطق</button>
+      <label class="vp-fixl">النبرة: ${toneSay(r)}</label>
+      <input class="vp-tone" type="text" dir="rtl" maxlength="200" placeholder="مثل: منكسرة باكية" value="${escA(tones[r.text] || '')}">
+      <button type="button" class="mf-up" data-act="fix"${busy || dirty() ? ' disabled' : ''}>توليد بالنطق والنبرة</button>
     </div>`;
+  };
+  /* من أين نبرةُ الجملة إن لم تُكتب: صوتُ Chirp لا يأخذها · والحوارُ من الجملة قبله · والسردُ بلا نبرةٍ ما لم تُكتب */
+  const toneSay = r => {
+    const v = VOICES[chosen[r.text] || r.voice];
+    if(!v?.tone) return 'صوت Chirp لا يأخذ نبرة، وأصوات Gemini تأخذها.';
+    return r.talk && r.lead ? `تُستنبط من الجملة قبلها «${esc(r.lead.slice(-90))}»، أو تُكتب هنا فتغلبها.` : 'تُكتب هنا إن أُريدت.';
   };
   const rowHtml = (r, k) => {
     const v = chosen[r.text] || r.voice;
-    const tag = KIND[r.kind] || (r.recommended === 'algenib' ? 'حوار' : '');
+    const tag = KIND[r.kind] || (r.talk ? 'حوار' : '');
     const opts = Object.entries(VOICES).map(([id, x]) => `<option value="${id}"${id === v ? ' selected' : ''}>${
       x.name} · ${x.role}${id === r.recommended ? ' (مقترح)' : ''}</option>`).join('');
     const off = busy ? ' disabled' : '';
@@ -93,7 +104,7 @@ export function voicePanel(inp, { item = null, title = null, lang = null, api = 
         ${r.clip ? `<button type="button" class="mf-up" data-act="play">${playing === r.text ? 'إيقاف' : 'استماع'}</button>` : ''}
         <button type="button" class="mf-up" data-act="gen"${busy || dirty() ? ' disabled' : ''}>${r.clip ? 'إعادة التوليد' : 'توليد'}</button>
         ${r.clip ? `<button type="button" class="mf-up" data-act="approve"${off}>${r.state === 'ok' ? 'إلغاء الاعتماد' : 'اعتماد'}</button>` : ''}
-        <button type="button" class="mf-up" data-act="say" aria-expanded="${open.has(r.text)}">النطق</button>`}</div>
+        <button type="button" class="mf-up" data-act="say" aria-expanded="${open.has(r.text)}">النطق والنبرة</button>`}</div>
       ${r.state === 'held' ? `<p class="vp-rn warn">${HELD}</p>` : ''}
       ${errs[r.text] ? `<p class="vp-rn bad">${esc(errs[r.text])}</p>` : ''}
       ${open.has(r.text) && r.state !== 'held' ? sayBox(r) : ''}
@@ -119,7 +130,8 @@ export function voicePanel(inp, { item = null, title = null, lang = null, api = 
     busy = true; stop = false;
     todo.forEach(r => { delete errs[r.text]; });
     const voice = Object.fromEntries(todo.map(r => [r.text, chosen[r.text] || r.voice]));
-    const batches = voiceBatches(sents, todo, { voice, spoken: extra.spoken || {} });
+    const tone = Object.fromEntries(todo.filter(r => String(tones[r.text] || '').trim()).map(r => [r.text, tones[r.text].trim()]));
+    const batches = voiceBatches(sents, todo, { voice, spoken: extra.spoken || {}, tone });
     const total = batches.reduce((n, b) => n + b.sentences.length, 0);
     let done = 0;
     for(const b of batches){
@@ -179,10 +191,11 @@ export function voicePanel(inp, { item = null, title = null, lang = null, api = 
   const act = {
     play, gen: r => generate([r]), approve: r => approve([r], r.state !== 'ok'),
     say: r => { open.has(r.text) ? open.delete(r.text) : open.add(r.text); draw(); if(open.has(r.text)) readSpoken(r); },
+    /* بالنطق المكتوب إن كُتب (فلا يُعاد التشكيل)، وبالنبرة المكتوبة إن كُتبت — وأحدُهما يكفي */
     fix: r => {
       const t = String(fixes[r.text] ?? (typeof spoken[r.text] === 'string' ? spoken[r.text] : '')).trim();
-      if(!t){ toast('لا نطق مكتوب بعد'); return; }
-      generate([r], { spoken: { [r.text]: t } });
+      if(!t && !String(tones[r.text] || '').trim()){ toast('لا نطق ولا نبرة مكتوبان'); return; }
+      generate([r], { spoken: t ? { [r.text]: t } : {} });
     }
   };
   const rowOf = n => rows[+n.closest('.vp-row')?.dataset.k];
@@ -192,7 +205,10 @@ export function voicePanel(inp, { item = null, title = null, lang = null, api = 
     if(r) act[b.dataset.act]?.(r);
   });
   list.addEventListener('change', e => { const s = e.target.closest('.vp-v'), r = s && rowOf(s); if(r) chosen[r.text] = s.value; });
-  list.addEventListener('input', e => { const t = e.target.closest('.vp-fix'), r = t && rowOf(t); if(r) fixes[r.text] = t.value; });
+  list.addEventListener('input', e => {
+    const t = e.target.closest('.vp-fix, .vp-tone'), r = t && rowOf(t);
+    if(r) (t.classList.contains('vp-tone') ? tones : fixes)[r.text] = t.value;
+  });
   acts.addEventListener('click', e => {
     const b = e.target.closest('button[data-act]');
     if(!b) return;

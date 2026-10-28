@@ -177,6 +177,49 @@ const show = v => JSON.stringify(v);
      && cl.input.text === 'نَصٌّ.' && cl.audioConfig.speakingRate === 1.1, show(cl));
   const wn = T.ttsRequest('نص', { name: 'ar-XA-Wavenet-B' });
   ok('وWaveNet كذلك، وبلا سرعةٍ لا رقمَ لها', wn.voice.languageCode === 'ar-XA' && !('speakingRate' in wn.audioConfig), show(wn));
+}
+
+/* ⑤-ب الشخصيّةُ النسائيّة ونبرةُ النصّ (حكمُ المالك: «Gacrux والثاني Achernar» · «نعم تلقائياً» · «يحتاج ضبط للنبرة حسب النص») */
+{
+  /* الجملُ التي قدّمت لسطور الحوار في `603` بحرفها — ثلاثَ عشرةَ لزبيبة وعشرٌ لعنترة (قُرئت من اللوحة الحيّة · ٢٨ أكتوبر) */
+  const HER = ['فقالت له زبيبة:', 'فنظر إليها عنترة ولم يجب فاستمرت قائلة:', 'وكانت زبيبة تستمع إليه فى دهشة متعجبة من قوله وصاحت فى ألم:',
+    'فقالت زبيبة مسرعة:', 'فقالت زبيبة هادئة:', 'فقالت زبيبة:', 'وما كاد ينطق بالكلمة الأخيرة حتى صاحت به زبيبة فى حنق:',
+    'فقالت زبيبة بين شهقاتها:', 'فتخاذلت زبيبة، ومدت يديها فى تضرع وقالت:', 'وسكتت لحظة ثم قالت بصوت متهدج:',
+    'ثم وثب واقفًا وقامت أمه تتعلق به قائلة:'];
+  const HIS = ['فخضع عنترة وأطرق حينا ثم قال لها:', 'فقال عنترة فى مرارة:', 'فصاح عنترة:',
+    'ثم وضعت رأسها بين كفيها وأخذت تبكى وفلان عنترة وقال يستعطفها:', 'فقال عنترة فى شبه صيحة:', 'فقال عنترة:',
+    'فنظر عنترة إليها وقد هدأت ثائرته وقال ساخرًا:', 'بت من عينيه دمعه بادر إليها فمسحها، ثم تخلص منها برفق، وقال بصوت خافت:',
+    'فقال عنترة فى دفعة:', 'فنظر عنترة إلى وجه أمه وقال:'];
+  const wrongHer = HER.filter(l => !T.femaleLead(l)), wrongHis = HIS.filter(l => T.femaleLead(l));
+  ok('سطورُ زبيبة في 603 بعد فعل قولٍ مؤنّث — كلُّها', !wrongHer.length, show(wrongHer));
+  ok('وسطورُ عنترة لا شيءَ منها — ولو سبق القولَ مؤنّثٌ غيرُ قول («وأخذت تبكى … وقال»)', !wrongHis.length, show(wrongHis));
+  const cases = [
+    ['فَقَالَتْ زَبِيبَةُ:', true, 'والمشكولُ كغيره'], ['فأجابته:', true, 'وهمزةُ أوّل الفعل وضميرُ المفعول'], ['فاجابت:', true, 'وبلا همزة'],
+    ['سألته أمه:', true, '«سألته» قولٌ'], ['قال وقد سالت دموعه:', false, '«سالت» سيلانٌ لا قول'],
+    ['فقالت زبيبة: كفى. فقال عنترة:', false, 'وآخرُ القولين هو الحَكَم'], ['وكان الليل حالكاً.', false, 'ولا قولَ ⇒ لا'],
+    ['', false, 'ولا جملةَ قبله ⇒ لا'], ['وهي تقول:', false, 'والمضارعُ لا يُعدّ']
+  ];
+  for(const [lead, want, why] of cases) ok(`femaleLead: ${why}`, T.femaleLead(lead) === want, `${lead} ⇒ ${T.femaleLead(lead)}`);
+
+  const her = { text: '- إنك ابنه.', kind: 'p', lead: 'فقالت زبيبة بين شهقاتها:' };
+  ok('المقترحُ لسطرها Gacrux، ولسطره Algenib، وبلا جملةٍ قبله Algenib', T.recommend(her) === 'gacrux' && T.FEMALE === 'gacrux'
+     && T.recommend({ ...her, lead: 'فقال عنترة:' }) === 'algenib' && T.recommend({ ...her, lead: null }) === 'algenib', '');
+  ok('والسردُ بعد «قالت» سردٌ لا شخصيّة', T.recommend({ text: 'ثم سكتت.', kind: 'p', lead: 'فقالت زبيبة:' }) === 'iapetus', '');
+  const v = T.voiceFor(her);
+  ok('وصوتُها Gacrux على Gemini بتوجيه الحوار ونبرةِ ما قدّم له النصّ', v.name === 'Gacrux' && v.prompt.startsWith(T.TTS.dialogue)
+     && v.prompt.includes('«فقالت زبيبة بين شهقاتها:»'), show(v));
+  const mine = T.voiceFor({ ...her, tone: 'منكسرة باكية' });
+  ok('ونبرةُ المؤلّف تغلب ما استُنبط', mine.prompt.includes('منكسرة باكية') && !mine.prompt.includes('شهقاتها'), show(mine));
+  const alt = T.voiceFor({ ...her, voice: 'achernar' });
+  ok('وAchernar بديلٌ في اللوحة بالتوجيه نفسِه', alt.name === 'Achernar' && alt.prompt.includes('شهقاتها'), show(alt));
+  const nar = T.voiceFor({ text: 'ثم سكتت.', kind: 'p', voice: 'charon', tone: 'حزينة' });
+  ok('ونبرةُ المؤلّف في السرد لصوت Gemini، ولا توجيهَ لصوت Chirp', nar.prompt === T.TTS.prompt + ' وبهذه النبرة: حزينة.'
+     && T.voiceFor({ text: 'ثم سكتت.', kind: 'p', tone: 'حزينة' }).prompt === undefined, show(nar));
+  const long = T.voiceFor({ ...her, lead: 'س'.repeat(500) + ' فقالت بين شهقاتها:' });
+  ok('والجملةُ الطويلة قبله يُعطى آخرُها (فيه فعلُ القول وحالُه)', long.prompt.includes('فقالت بين شهقاتها:') && !long.prompt.includes('س'.repeat(400)), '');
+  const req = T.checkRequest({ item: 1, sentences: [{ text: '- إنك ابنه.', lead: '  فقالت زبيبة:  ', tone: '  منكسرة   باكية ' }] });
+  ok('والطلبُ يحمل الجملةَ قبله والنبرةَ مشذَّبتين', req.sentences?.[0]?.lead === 'فقالت زبيبة:' && req.sentences[0].tone === 'منكسرة باكية', show(req));
+  ok('والنبرةُ فوق ٢٠٠ حرف تُردّ', T.checkRequest({ item: 1, sentences: [{ text: 'ب.', tone: 'ح'.repeat(201) }] }).error === 'النبرة فارغة أو أطول من ٢٠٠ حرف', '');
 
   /* إطاراتٌ مصنوعة: MPEG-2 · الطبقة ٣ · ٢٤ كيلوهرتز · ٣٢ ك.ب/ث ⇒ ٩٦ بايتاً و٢٤ م.ث لكلّ إطار */
   const mpeg2 = (count, { xing = false, id3 = 0 } = {}) => {

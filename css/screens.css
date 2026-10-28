@@ -1304,6 +1304,7 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
 .vp-spoken{margin:0 0 6px;font-size:var(--fs-ui);line-height:2}
 .vp-fixl{display:block;margin-bottom:4px;color:var(--text-muted)}
 .vp-fix{width:100%;min-height:58px;margin-bottom:6px;font-size:var(--fs-ui);line-height:1.9}
+.vp-tone{width:100%;margin-bottom:8px;padding:6px 10px;font-size:var(--fs-ui)}
 /* 🆕 b189 · معاينةُ النصّ كما يراه الطالب (`openPreview`) — شاشةٌ كاملةٌ بلون الصفحة: الكتابُ
    يقيس الشاشةَ ليملأها. وتحت الإشعار (٥٩ < ٦٠) ليُرى ما يقوله الكتابُ فوقها. */
 html.pv-lock{overflow:hidden}
