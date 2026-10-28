@@ -204,7 +204,9 @@ const ttsCalls = () => log.google.filter(c => c.url.includes('texttospeech')).ma
   ok('صوتٌ اختاره المؤلّف (Charon) يغلب المقترح، بتوجيه القراءة', tts.some(x => x.voice.name === 'Charon' && x.input.prompt === T.TTS.prompt
      && x.input.text.endsWith('مُتَنَابِذَهْ.')), show(tts));
   ok('والمشكولُ والمصحَّحُ لا يُرسلان إلى التشكيل', log.google.every(c => !c.url.includes('aiplatform')) && j.results.every(x => x.state === 'ok')
-     && j.results[0].source === 'المؤلّف' && j.results[1].source === 'المعلّم' && j.results[1].text === 'جُمْلَهْ.', show(j));
+     && j.results[0].source === 'المؤلّف' && j.results[1].source === 'المعلّم' && j.results[1].text === 'جُمْلَةٌ.', show(j));
+  ok('وما صحّحه المعلّمُ يبلغ الصوتَ بحرفه، بلا وقفٍ آليّ', tts.some(x => x.input.text === 'جُمْلَةٌ.')
+     && log.r2.some(x => x.url.endsWith('.txt') && new TextDecoder().decode(x.init.body) === 'جُمْلَةٌ.'), show(tts.map(x => x.input.text)));
 
   reset({ change: new Set(['وكان عنترة يسمع.']) });
   const c = await (await call({ item: 603, sentences: [{ text: 'وكان عنترة يسمع.' }, { text: 'ويزأر زئيرا.' }] })).json();
