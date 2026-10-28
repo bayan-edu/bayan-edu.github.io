@@ -5,6 +5,8 @@
    لا Deno على جهاز المالك، والدالّةُ ذاهبةٌ إلى المشروع الحيّ ⇒ يُشغَّل الغلافُ نفسُه في node (يُنزع منه TypeScript — node 24)
    ويُستبدل ما حوله: `Deno.serve` · `Deno.env` · `fetch` إلى Google · `AwsClient` إلى R2 · `createClient` إلى القاعدة — كلُّها
    تُسجّل ما طُلب منها. فيُقاس الترتيبُ (الحارسُ قبل الكلفة) والمسارُ والملفّاتُ والصفوف، لا Google ولا R2.
+   🆕 b207 · و`fetch` إلى المخزن بعنوانه العامّ (`media.bayanclass.com`) يقدّم المصحفَ من عيّنة القياس (`tools/fixtures/quran_quotes.json`)
+   وتلاوةً مصنوعةً بإطاراتٍ معلومة المدّة (⑥).
    ══════════════════════════════════════════════════════════ */
 import { readFileSync, writeFileSync, mkdtempSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -46,13 +48,29 @@ const mp3 = (() => { const out = new Uint8Array(9600); for(let k = 0; k < 100; k
 const MP3_B64 = Buffer.from(mp3).toString('base64');
 const json = (body, status = 200, headers = {}) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json', ...headers } });
 
+/* المصحفُ من عيّنة القياس بحرفها، وتلاوةٌ مصنوعة: ألفا إطارٍ MPEG-2 كلٌّ ٢٤ مللي ⇒ ٤٨ ثانية — تسع أطول آيات العيّنة */
+const FX = JSON.parse(readFileSync(join(ROOT, 'tools/fixtures/quran_quotes.json'), 'utf8'));
+const MEDIA = 'https://media.bayanclass.com/';
+const ayahMp3 = (() => { const out = new Uint8Array(2000 * 96); for(let k = 0; k < 2000; k++) out.set([0xFF, 0xF3, 0x44, 0xC4], k * 96); return out; })();
+const FX_WORDS = (key, f, t) => { const w = FX.tanzil.find(l => l.startsWith(key.replace(':', '|') + '|')).split('|')[2].split(' ');
+  return (f === undefined ? w : w.slice(f, t + 1)).join(' '); };
+
 let log, plan;
 function reset(p = {}){
-  log = { google: [], r2: [], db: [], dbAuth: [] };
-  plan = { problem: null, denied: null, change: new Set(), tts429: 0, save: null, ...p };
+  log = { google: [], r2: [], db: [], dbAuth: [], media: [] };
+  plan = { problem: null, denied: null, change: new Set(), tts429: 0, save: null, noData: false, ...p };
 }
 globalThis.fetch = async (url, init) => {
   url = String(url);
+  if(url.startsWith(MEDIA)){
+    const path = url.slice(MEDIA.length);
+    log.media.push(path);
+    if(plan.noData && path.startsWith('quran/tanzil/')) return new Response('missing', { status: 404 });
+    if(path === 'quran/tanzil/quran-uthmani.txt') return new Response(FX.tanzil.join('\n'), { status: 200 });
+    if(path === 'quran/align/Husary_64kbps.json') return json(FX.timing);
+    if(/^quran\/husary\/\d{6}\.mp3$/.test(path)) return new Response(ayahMp3, { status: 200 });
+    return new Response('nope', { status: 404 });
+  }
   const body = init?.body ? (typeof init.body === 'string' ? init.body : '') : '';
   log.google.push({ url, body });
   if(url.startsWith('https://oauth2.googleapis.com/token')) return json({ access_token: 'tok', expires_in: 3600 });
@@ -200,6 +218,59 @@ const ttsCalls = () => log.google.filter(c => c.url.includes('texttospeech')).ma
   reset({ save: { ok: false, error: 'مدة الصوت غير صالحة' } });
   const s = await (await call({ item: 603, sentences: [{ text: 'جملة.' }] })).json();
   ok('وحفظٌ ردّته القاعدة ⇒ خطأٌ برسالتها', s.results[0].state === 'error' && s.results[0].error === 'مدة الصوت غير صالحة', show(s));
+}
+
+/* ⑥ الآيةُ المقتبسة (b207): بلا Google ولا سرّه · بياناتُ المصحف صاخبةٌ إن غابت · حكمُ المالك في الوصل · وما ليس آيةً نثرٌ · وما بينهما يُمسَك
+   (وفهرسُ المصحف يبقى ما بقيت الدالّةُ دافئة ⇒ الغيابُ يُقاس أوّلاً) */
+{
+  const Q1 = '﴿كُنتُمْ خَيْرَ أُمَّةٍ أُخْرِجَتْ لِلنَّاسِ﴾', Q2 = '﴿لِّلرِّجَالِ نَصِيبٌ مِّمَّا اكْتَسَبُوا ۖ وَلِلنِّسَاءِ نَصِيبٌ مِّمَّا اكْتَسَبْنَ﴾';
+  reset({ noData: true });
+  const miss = await (await call({ item: 593, sentences: [{ text: Q1 }] })).json();
+  ok('بياناتُ المصحف غائبةٌ عن المخزن ⇒ خطأٌ باسمها، ولا Google ولا R2', miss.results[0].state === 'error'
+     && /^بيانات المصحف لم تُقرأ من المخزن \(404 · quran\/tanzil\/quran-uthmani\.txt\)$/.test(miss.results[0].error)
+     && log.google.length === 0 && log.r2.length === 0, show(miss));
+
+  reset(); ENV = { ...BASE_ENV, GOOGLE_SA_JSON: undefined };
+  const r = await call({ item: 593, sentences: [{ text: Q1 }, { text: Q2 }, { text: Q1 }] });
+  const j = await r.json();
+  ok('آيتان مقتبستان بلا مفتاح Google ولا نداءٍ له ⇒ ٢٠٠ والثلاثُ ok', r.status === 200 && j.results?.every(x => x.state === 'ok')
+     && log.google.length === 0, show(j));
+  const [a, b, twin] = j.results;
+  ok('آل عمران ١١٠ تنتهي وصلاً ⇒ الآيةُ كاملة (حكمُ المالك)', a.voice === 'husary' && a.source === 'المصحف'
+     && show(a.ref) === show([{ s: 3, a: 110, from: 0, to: 22, whole: true, widened: true }]), show(a));
+  ok('والنساء ٣٢ يقف الحصري قبلها وبعدها ⇒ كلماتُها وحدها', show(b.ref) === show([{ s: 4, a: 32, from: 9, to: 16, whole: false, widened: false }]), show(b));
+  ok('والمكرَّرةُ بنتيجة أختها', twin.audio === a.audio && twin.sha === a.sha, show(twin));
+  ok('والملفّاتُ من المخزن بعنوانه العامّ: النصُّ والتوقيتُ مرّةً، وتلاوتا الآيتين', log.media.filter(p => p === 'quran/tanzil/quran-uthmani.txt').length === 1
+     && log.media.filter(p => p === 'quran/align/Husary_64kbps.json').length === 1
+     && log.media.includes('quran/husary/003110.mp3') && log.media.includes('quran/husary/004032.mp3'), show(log.media));
+  const saves = log.db.filter(x => x.fn === 'save_voice');
+  const s1 = saves.find(x => x.args.p_sentence === Q1), s2 = saves.find(x => x.args.p_sentence === Q2);
+  ok('والصفُّ: الجزءُ بقوسيه · واسمُ الصوت مرجعُه', saves.length === 2 && s1?.args.p_voice === 'الحصري · Husary_64kbps · 3:110 · كاملة للوصل'
+     && s2?.args.p_voice === 'الحصري · Husary_64kbps · 4:32 · 10-17', show(saves));
+  ok('والمقصوصُ بطول ما بين حدّيه بالإطارات (١٣٢٩٦ مللي)، ومدّةُ الصفّ مدّتُه', b.ms === 13296 && s2?.args.p_ms === 13296, show([b.ms, s2?.args.p_ms]));
+  const spoken = log.r2.filter(x => x.url.endsWith('.txt')).map(x => new TextDecoder().decode(x.init.body));
+  ok('وملفُّ المنطوق ما تُلي بحرفه من المصحف', spoken.includes(FX_WORDS('3:110')) && spoken.includes(FX_WORDS('4:32', 9, 16)), show(spoken));
+  ok('وفي مجلّد النصّ باسم بصمة الجزء', log.r2.every(x => /\/voice\/593\/[0-9a-f]{16}\.[a-z0-9]{1,16}\.(mp3|txt)$/.test(x.url)) && log.r2.length === 4, '');
+  ENV = { ...BASE_ENV };
+
+  reset();
+  const p = await (await call({ item: 593, sentences: [{ text: '﴿قال الشاعر في وصف الليل﴾' }] })).json();
+  const tash = log.google.filter(c => c.url.includes('aiplatform'));
+  const sent = tash[0] && JSON.parse(JSON.parse(tash[0].body).contents[0].parts[0].text.split('\n\n').pop());
+  const tts = ttsCalls();
+  ok('وما ليس آيةً يُقرأ نثراً بلا قوسيه، ويُحفظ باسم جزئه', p.results[0].state === 'ok' && p.results[0].voice === 'iapetus'
+     && sent?.sentences[0].text === 'قال الشاعر في وصف الليل' && tts.length === 1 && !tts[0].input.text.includes('﴿')
+     && log.db.find(x => x.fn === 'save_voice')?.args.p_sentence === '﴿قال الشاعر في وصف الليل﴾', show(p));
+
+  reset();
+  const u = await (await call({ item: 593, sentences: [{ text: '﴿كنتم خير امة خرجت للناس جميعا﴾' }] })).json();
+  ok('وما يشبه آيةً ولا يطابقها يُمسَك بسببه وأقربِ آيةٍ له، بلا كلفة', u.results[0].state === 'held'
+     && /^تشبه آية ولا تطابقها \(أقربها 3:110 بتطابق 86٪\)/.test(u.results[0].reason) && log.google.length === 0 && log.r2.length === 0, show(u));
+
+  reset();
+  const mix = await (await call({ item: 593, sentences: [{ text: 'يَقُولُ جَلَّ ذِكْرُهُ:' }, { text: Q1 }] })).json();
+  ok('ونثرٌ وآيةٌ في دفعة: النثرُ وحده إلى Google، والآيةُ من المصحف', mix.results.every(x => x.state === 'ok') && ttsCalls().length === 1
+     && mix.results[0].voice === 'iapetus' && mix.results[1].voice === 'husary', show(mix));
 }
 
 console.log(`\n${n - bad}/${n}${bad ? ' — فشل' : ''}`);

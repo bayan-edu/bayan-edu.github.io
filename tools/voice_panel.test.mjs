@@ -5,8 +5,10 @@
    ما يُقاس: **نسختا القاعدة** — اللوحةُ تُري المقترحَ والإمساكَ قبل التوليد، والدالّةُ تحكم بهما عنده، فتُقاس الأولى على
    `supabase/functions/tts/core.js` ولا تُصدَّق · السطورُ من جمل الكتاب وأصوات القاعدة (الحالاتُ · الآياتُ خارجها ·
    المكرَّرة · الممسَكة · صوتُ الصفّ · صوتُ جملةٍ خرجت من النصّ) · الدفعاتُ (خمسٌ · المكرَّرةُ مرّة · السياق · الصوتُ حين
-   يخالف المقترح وحده · النطق) · والعدّ · والنبراتُ الجاهزة (ما سمّاه المالك · صفةُ النبرة · تقبلها الدالّةُ كما هي).
+   يخالف المقترح وحده · النطق) · والعدّ · والنبراتُ الجاهزة (ما سمّاه المالك · صفةُ النبرة · تقبلها الدالّةُ كما هي) ·
+   🆕 b207 · والآيةُ المقتبسة (⑥): الجملةُ أجزاءً · سطورُها في اللوحة · دفعتُها تقبلها الدالّة · مرجعُها من اسم صوتها · وتسلسلُها في الكتاب.
    ══════════════════════════════════════════════════════════ */
+import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -33,10 +35,11 @@ const show = v => JSON.stringify(v);
     { text: 'حسدوا الفتى إذ لم ينالوا سعيه', kind: 'v' }, { text: '«بيتٌ يبدأ بتنصيص»', kind: 'v' },
     { text: 'قال تعالى ﴿وَالْعَصْرِ﴾ في سورته.', kind: 'p' }, { text: '﴿ وحدها', kind: 'cover' }, { text: 'نثرٌ بلا قوسين.', kind: 'p' }
   ];
+  /* والإمساكُ في اللوحة قوسان لا يتقابلان وحدهما: الجملةُ بقوسين متقابلين تُرسل أجزاءً، وتُمسكها الدالّةُ إن أتتها كاملة (b207) */
   const diff = samples.filter(s => V.recommend(s) !== T.recommend(s) || V.isDialogue(s.text) !== T.isDialogue(s.text)
-                                || V.held(s) !== !!T.held(s));
+                                || V.held(s) !== (T.held(s) === T.QUOTE_UNPAIRED));
   ok(`والمقترحُ والحوارُ والإمساكُ كالدالّة على ${samples.length} جملة`, !diff.length, show(diff));
-  ok('وسببُ الإمساك بحرف الدالّة', V.HELD === T.QUOTE_HELD, show([V.HELD, T.QUOTE_HELD]));
+  ok('وسببُ الإمساك بحرف الدالّة', V.HELD === T.QUOTE_UNPAIRED, show([V.HELD, T.QUOTE_UNPAIRED]));
   ok('وحدُّ الدفعة حدُّ الدالّة', V.BATCH === T.LIMITS.sentences, '');
   ok('voiceOf: اسمُ الصفّ ومعه مصدرُ تشكيله ⇒ مفتاحُ صوته',
      V.voiceOf(T.voiceLabel(T.TASHKEEL_MODEL, T.VOICES.iapetus.label)) === 'iapetus'
@@ -53,7 +56,7 @@ const BODY = [
   '- لست أحتمل أن أعيش بعد اليوم.',
   'حَسَدُوا الفَتَى إِذْ لَمْ يَنَالُوا سَعْيَهُ ۞ فَالقَوْمُ أَعْدَاءٌ لَهُ وَخُصُومُ',
   '﴿وَالْعَصْرِ ۝١﴾',
-  'قال تعالى ﴿إِنَّ الْإِنسَانَ لَفِي خُسْرٍ﴾ في سورته.',
+  'قال تعالى ﴿إِنَّ الْإِنسَانَ لَفِي خُسْرٍ في سورته.',   // قوسٌ لا يقابله آخر ⇒ ممسَكة (والمتقابلان في ⑥)
   'جملة مكررة.',
   'جملة مكررة.'
 ].join('\n\n');
@@ -153,6 +156,68 @@ const rows = V.voiceRows(sents, clips);
   const asked = V.TONES.map(tone => T.checkRequest({ item: 1, sentences: [{ text: '- لقد عاد أبي.', kind: 'p', voice: 'gacrux', tone }], context: '' }));
   ok(`والدالّةُ تقبل النبراتِ الـ${V.TONES.length} كما هي، وتبلغ كلٌّ منها الصوت`, asked.every((a, k) => !a.error
      && T.voiceFor(a.sentences[0]).prompt.includes(`بهذه النبرة: ${V.TONES[k]}.`)), show(asked.filter(a => a.error)));
+}
+
+/* ⑥ الآيةُ المقتبسة (b207) — خطّةُ المالك: «نعم نفذ الخطة» */
+{
+  const S1 = 'يقول جل ذكره: ﴿إِنَّ هَٰذِهِ أُمَّتُكُمْ﴾، ويقول: ﴿كُنتُمْ خَيْرَ أُمَّةٍ﴾ وهي أمة واحدة.';
+  const S2 = 'يقول تبارك وتعالى: ﴿لَا إِكْرَاهَ فِي الدِّينِ﴾.';
+  const S3 = '﴿لَا إِكْرَاهَ فِي الدِّينِ﴾ هكذا قال.';
+  const S4 = '- قالت: ﴿رَبِّ اغْفِرْ لِي﴾ ثم بكت.';
+  const texts = p => p && p.map(x => (x.quote ? 'آ:' : 'ن:') + x.text);
+  ok('الأجزاءُ على ترتيبها: النثرُ وحده والآيةُ بقوسيها، وصدرُ نثرٍ بعد آيةٍ بلا ترقيمه، وما لا حرفَ فيه يسقط',
+     show(texts(V.quoteParts(S1))) === show(['ن:يقول جل ذكره:', 'آ:﴿إِنَّ هَٰذِهِ أُمَّتُكُمْ﴾', 'ن:ويقول:', 'آ:﴿كُنتُمْ خَيْرَ أُمَّةٍ﴾', 'ن:وهي أمة واحدة.'])
+     && show(texts(V.quoteParts(S2))) === show(['ن:يقول تبارك وتعالى:', 'آ:﴿لَا إِكْرَاهَ فِي الدِّينِ﴾'])
+     && show(texts(V.quoteParts(S3))) === show(['آ:﴿لَا إِكْرَاهَ فِي الدِّينِ﴾', 'ن:هكذا قال.']), show([S1, S2, S3].map(s => texts(V.quoteParts(s)))));
+  ok('وصدرُ الجملة كما هو (شرطةُ الحوار)', V.quoteParts(S4)[0].text === '- قالت:', show(V.quoteParts(S4)));
+  ok('ولا أجزاءَ بلا قوسين، ولا لقوسين لا يتقابلان', V.quoteParts('نثر.') === null && V.quoteParts('قال ﴿ناقص') === null
+     && V.quoteParts('قال ناقص﴾') === null && V.quoteParts('﴿ا ﴿ب﴾﴾') === null, '');
+  ok('وكلُّ جزءٍ آيةً تعرفه الدالّةُ جزءاً، ولا تُمسكه', [S1, S2, S3, S4].flatMap(V.quoteParts).every(p => p.quote === T.isQuote(p.text) && !T.held(p)), '');
+
+  const body = ['فقالت زبيبة:', S4, S2].join('\n\n');
+  const ss = textSentences(body, '');
+  const Q = '﴿لَا إِكْرَاهَ فِي الدِّينِ﴾';
+  const rs = V.voiceRows(ss, [{ sha: 'q1', sentence: Q, audio: 'r2:voice/9/q1.x.mp3', voice: 'الحصري · Husary_64kbps · 2:256 · 1-4', approved_at: null }]);
+  const row = t => rs.find(r => r.text === t);
+  ok('السطور: الجملةُ المقتبِسة أجزاءٌ بمواضعها من جملتها', show(rs.map(r => r.text)) === show(['فقالت زبيبة:', '- قالت:', '﴿رَبِّ اغْفِرْ لِي﴾', 'ثم بكت.',
+     'يقول تبارك وتعالى:', Q]) && row('ثم بكت.').part.k === 2 && row('ثم بكت.').part.n === 3 && row('ثم بكت.').part.of === S4, show(rs.map(r => [r.text, r.part])));
+  ok('والآيةُ بلا صوتٍ يُختار، وصفُّها بنصّها بقوسيه', row(Q).voice === null && row(Q).recommended === null && row(Q).part.quote
+     && row(Q).clip?.sha === 'q1' && row(Q).state === 'made' && row('﴿رَبِّ اغْفِرْ لِي﴾').state === 'none', show(row(Q)));
+  ok('وصدرُ الحوار يعرف الجملةَ قبله فيُقترح له Gacrux · والجزءُ بعد الآية مقترحُه مقترحُ جملته بلا حوارٍ ولا جملةٍ قبله',
+     row('- قالت:').talk && row('- قالت:').lead === 'فقالت زبيبة:' && row('- قالت:').recommended === 'gacrux'
+     && !row('ثم بكت.').talk && row('ثم بكت.').lead === null && row('ثم بكت.').recommended === 'gacrux', show([row('- قالت:'), row('ثم بكت.')]));
+  ok('ولا إمساكَ لجملةٍ قوساها متقابلان', !rs.some(r => r.state === 'held'), '');
+
+  const todo = rs.filter(r => r.state === 'none');
+  const [bb] = V.voiceBatches(ss, todo, { voice: Object.fromEntries(todo.map(r => [r.text, r.voice])), tone: { '﴿رَبِّ اغْفِرْ لِي﴾': 'حزينة' } });
+  const sent = t => bb.sentences.find(x => x.text === t);
+  ok('الدفعة: الآيةُ بنصّها وحده — لا صوتَ ولا نبرةَ ولا جملةَ قبلها', show(sent('﴿رَبِّ اغْفِرْ لِي﴾')) === show({ text: '﴿رَبِّ اغْفِرْ لِي﴾', kind: 'p' }), show(bb));
+  ok('وصدرُ الحوار بجملته قبله ولا صوت (المقترحُ نفسُه) · والجزءُ بعد الآية بصوت جملته صريحاً', sent('- قالت:').lead === 'فقالت زبيبة:'
+     && !('voice' in sent('- قالت:')) && sent('ثم بكت.').voice === 'gacrux' && !('lead' in sent('ثم بكت.')), show(bb));
+  const checked = T.checkRequest({ item: 1, sentences: bb.sentences, context: bb.context });
+  ok('والدالّةُ تقبل الدفعةَ: الآيةُ جزءٌ تعرفه، والجزءُ بعدها بـGacrux', !checked.error && T.isQuote(checked.sentences.find(x => x.text.startsWith('﴿')).text)
+     && T.voiceFor(checked.sentences.find(x => x.text === 'ثم بكت.')).name === 'Gacrux'
+     && T.voiceFor(checked.sentences.find(x => x.text === '- قالت:')).name === 'Gacrux', show(checked));
+
+  const fx = JSON.parse(readFileSync(join(ROOT, 'tools/fixtures/quran_quotes.json'), 'utf8'));
+  const QI = T.quranIndex(fx.tanzil.join('\n'), fx.timing);
+  const spans = ['كُنتُمْ خَيْرَ أُمَّةٍ أُخْرِجَتْ لِلنَّاسِ', 'لِّلرِّجَالِ نَصِيبٌ مِّمَّا اكْتَسَبُوا ۖ وَلِلنِّسَاءِ نَصِيبٌ مِّمَّا اكْتَسَبْنَ',
+                 'قُلْ هُوَ اللَّهُ أَحَدٌ اللَّهُ الصَّمَدُ', 'إِنَّ هَٰذِهِ أُمَّتُكُمْ أُمَّةً وَاحِدَةً وَأَنَا رَبُّكُمْ فَاعْبُدُونِ']
+    .map(q => T.findQuote(QI, q).ranges.map(r => T.quoteSpan(QI, r)));
+  const want = sp => sp.map(x => ({ s: x.s, a: x.a, whole: x.whole, widened: x.widened, from: x.whole ? null : x.from + 1, to: x.whole ? null : x.to + 1 }));
+  ok('ومرجعُ الآية يُقرأ من اسم صوتها كما تكتبه الدالّة: كاملة · كاملة للوصل · كلمات · وآيتان', spans.every(sp => show(V.quoteRef(T.quoteLabel(sp))) === show(want(sp)))
+     && spans.some(sp => sp[0].widened) && spans.some(sp => !sp[0].whole) && spans.some(sp => sp.length === 2), show(spans.map(sp => T.quoteLabel(sp))));
+  ok('وصوتٌ غيرُه ليس مرجعاً · واسمُ صوت الحصري بحرف الدالّة', V.quoteRef(T.voiceLabel(T.TASHKEEL_MODEL, T.VOICES.iapetus.label)) === null
+     && V.quoteRef(null) === null && V.QUOTE_VOICE === T.QUOTE_VOICE, '');
+
+  const made = new Map([['يقول تبارك وتعالى:', { audio: 'r2:a.mp3', ms: 1500 }], [Q, { audio: 'r2:q.mp3', ms: 6191 }], ['نثر.', { audio: 'r2:p.mp3', ms: 900 }]]);
+  ok('الكتاب: الجملةُ أجزاءً على ترتيبها، وطولُها مجموعُ أطوالها', show(V.proseSeq(made, { text: S2, kind: 'p' })) === show({ keys: ['r2:a.mp3', 'r2:q.mp3'], ms: 7691 }),
+     show(V.proseSeq(made, { text: S2, kind: 'p' })));
+  ok('وجزءٌ لم يُعتمد يُصمت الجملةَ كلَّها · والجملةُ بلا قوسين ملفُّها · والآيةُ المرقّمة ليست نثراً · والقوسان لا يتقابلان صمت',
+     V.proseSeq(made, { text: S1, kind: 'p' }) === null && show(V.proseSeq(made, { text: 'نثر.', kind: 'p' })) === show({ keys: ['r2:p.mp3'], ms: 900 })
+     && V.proseSeq(made, { text: 'نثر.', q: { block: 0 } }) === null && V.proseSeq(made, { text: 'يقول ﴿لا', kind: 'p' }) === null, '');
+  ok('والكتابُ يجمعها بالدالّة نفسِها، ويقرأ طولَ المعتمد', readFileSync(join(ROOT, 'js/media.js'), 'utf8').includes("import { proseSeq } from './voice_rows.js'")
+     && readFileSync(join(ROOT, 'js/api.js'), 'utf8').includes("select('sentence, audio, ms')"), '');
 }
 
 console.log(`\n${n - bad}/${n}${bad ? ' — فشل' : ''}`);

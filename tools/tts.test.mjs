@@ -6,7 +6,11 @@
    العنوانُ بضبطه التامّ · جوابُ التشكيل · طلبُ الصوت — والشخصيّةُ وأصواتُ Cloud ·
    مدّةُ MP3 من إطاراتٍ مصنوعةٍ معلومةِ المدّة · البصمةُ = بصمةُ القاعدة · المفاتيحُ = قيدُ القاعدة (189) · وتوقيعُ JWT يُتحقَّق
    منه بمفتاحٍ عامّ. والطريقُ الحقيقيّ إلى Google في `tools/tts_trial.mjs`.
+   🆕 b207 · والآيةُ المقتبسة (⑧): الجزءُ بقوسيه والإمساك · المعرفةُ على عيّنةٍ من المصحف بحرفه (`tools/fixtures/quran_quotes.json`) — آياتُ
+   `593` السبعُ وآيتان في اقتباسٍ واحد والبسملة · العتبة · ما يُتلى بحكم المالك · القصُّ بالإطارات · واسمُ الصوت. والمصحفُ كلُّه في
+   `tools/quran_quotes.mjs`.
    ══════════════════════════════════════════════════════════ */
+import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { generateKeyPairSync, createVerify } from 'node:crypto';
@@ -297,6 +301,84 @@ const show = v => JSON.stringify(v);
      && T.backoffMs(2) === 20000 && T.backoffMs(0, '7') === 7000 && T.backoffMs(0, '120') === 30000, '');
   ok('وخطأُ Google بلا رابطٍ يحمل رقمَ المشروع', T.googleError(403, { error: { status: 'PERMISSION_DENIED', message: 'denied https://x.y/z?project=123' } })
      === '403 PERMISSION_DENIED denied', T.googleError(403, { error: { status: 'PERMISSION_DENIED', message: 'denied https://x.y/z?project=123' } }));
+}
+
+/* ⑧ الآيةُ المقتبسة (b207) — حكمُ المالك: «المعرفة سليمة، لكن ما انتهى وصلاً تُتلى فيه الآية كاملة» */
+{
+  const fx = JSON.parse(readFileSync(join(ROOT, 'tools/fixtures/quran_quotes.json'), 'utf8'));
+  const Q = T.quranIndex(fx.tanzil.join('\n'), fx.timing);
+  ok('الفهرس: الآياتُ كلماتٍ وتوقيتُها، والسورُ هياكل', Q.verses.size === fx.tanzil.length && Q.timing.size === fx.timing.length
+     && Q.verses.get('3:110').length === 23 && Q.surahs.every(c => c.text.length === c.ayah.length && c.text.length === c.word.length), '');
+  const line112 = fx.tanzil.find(l => l.startsWith('112|1|')).split('|')[2].split(' ');
+  ok('والبسملةُ تُنزع من رأس الأولى إلا في الفاتحة — فيتّفق عدُّ الكلمات والتوقيت', line112.length === 8
+     && Q.verses.get('112:1').join(' ') === line112.slice(4).join(' ')
+     && Q.verses.get('1:1').length === 4 && Math.max(...Q.timing.get('112:1').map(x => x[1])) === Q.verses.get('112:1').length, show(Q.verses.get('112:1')));
+
+  ok('الجزءُ بقوسيه وحده آيةٌ مقتبسة، والجملةُ بقوسيها ليست جزءاً', T.isQuote('﴿لَا إِكْرَاهَ فِي الدِّينِ﴾') && T.isQuote(' ﴿ا﴾ ')
+     && !T.isQuote('قال ﴿ا﴾') && !T.isQuote('﴿ا﴾ ﴿ب﴾') && !T.isQuote('نثر') && !T.isQuote('﴿﴾'), '');
+  ok('والإمساك: الجملةُ كاملةً بقوسيها تُرسل أجزاءً · وقوسان لا يتقابلان · والجزءُ والنثرُ لا يُمسكان',
+     T.held({ text: 'قال ﴿ا﴾ هنا.' }) === T.QUOTE_HELD && T.held({ text: 'قال ﴿ا هنا.' }) === T.QUOTE_UNPAIRED
+     && T.held({ text: 'قال ا﴾ هنا.' }) === T.QUOTE_UNPAIRED && T.held({ text: '﴿ا ﴿ب﴾﴾' }) === T.QUOTE_UNPAIRED
+     && T.held({ text: '﴿لَا إِكْرَاهَ فِي الدِّينِ﴾' }) === null && T.held({ text: 'نثر.' }) === null, '');
+  ok('وما بين القوسين نثراً بلا قوسيه', T.quoteInner(' ﴿ نص ﴾ ') === 'نص', '');
+  ok('والطلبُ يقبل الجزءَ بقوسيه', !T.checkRequest({ item: 593, sentences: ['﴿لَا إِكْرَاهَ فِي الدِّينِ﴾'] }).error, '');
+
+  /* آياتُ 593 السبعُ كما كتبها المؤلّف — والكلماتُ من الصفر كما عرفتها التجربة (الأنبياء ٩٢ ١–٨ · آل عمران ١١٠ ١–٥ …) */
+  const QUOTES = [
+    ['إِنَّ هَٰذِهِ أُمَّتُكُمْ أُمَّةً وَاحِدَةً وَأَنَا رَبُّكُمْ فَاعْبُدُونِ', 21, 92, 0, 7],
+    ['كُنتُمْ خَيْرَ أُمَّةٍ أُخْرِجَتْ لِلنَّاسِ', 3, 110, 0, 4],
+    ['وَلَهُنَّ مِثْلُ الَّذِي عَلَيْهِنَّ بِالْمَعْرُوفِ', 2, 228, 29, 33],
+    ['لِّلرِّجَالِ نَصِيبٌ مِّمَّا اكْتَسَبُوا ۖ وَلِلنِّسَاءِ نَصِيبٌ مِّمَّا اكْتَسَبْنَ', 4, 32, 9, 16],
+    ['وَمِنْ آيَاتِهِ أَنْ خَلَقَ لَكُم مِّنْ أَنفُسِكُمْ أَزْوَاجًا لِّتَسْكُنُوا إِلَيْهَا وَجَعَلَ بَيْنَكُم مَّوَدَّةً وَرَحْمَةً', 30, 21, 0, 13],
+    ['لَا إِكْرَاهَ فِي الدِّينِ', 2, 256, 0, 3],
+    ['وَلَوْ شَاءَ رَبُّكَ لَآمَنَ مَن فِي الْأَرْضِ كُلُّهُمْ جَمِيعًا ۚ أَفَأَنتَ تُكْرِهُ النَّاسَ حَتَّىٰ يَكُونُوا مُؤْمِنِينَ', 10, 99, 0, 14]
+  ];
+  const hits = QUOTES.map(([q]) => T.findQuote(Q, `﴿${q}﴾`));
+  const wrong = hits.filter((h, k) => { const [, s, a, f, t] = QUOTES[k], r = h.ranges[0];
+    return !(h.score === 1 && h.ranges.length === 1 && r.s === s && r.a === a && r.from === f && r.to === t); });
+  ok('آياتُ 593 السبعُ تُعرف بسورتها وآيتها وكلماتها، وتطابقُها ١٠٠٪', !wrong.length, show(wrong));
+  ok('وبإملاءٍ بلا حركاتٍ ولا همز، وبخطأ: ٩٠٪ فأكثر', ['كنتم خير امه اخرجت للناس', 'لا اكراه فى الدين', 'ولهن مثل التي عليهن بالمعروف']
+     .every(q => T.quoteVerdict(T.findQuote(Q, q).score) === 'quran'), '');
+  const prose = ['يقول جل ذكره', 'قال الشاعر في وصف الليل', 'وهي أمة يعلو فيها السلطان الإلهي على السلطان القبلي'];
+  ok('والنثرُ دون ٨٠٪ ⇒ يُقرأ نثراً', prose.every(q => T.quoteVerdict(T.findQuote(Q, q).score) === 'prose'),
+     show(prose.map(q => T.findQuote(Q, q).score)));
+  ok('والعتبة: ٩٠٪ فأكثر آية · دون ٨٠٪ نثر · وما بينهما يُمسَك بسببه وأقربِ آيةٍ له', T.quoteVerdict(1) === 'quran' && T.quoteVerdict(0.9) === 'quran'
+     && T.quoteVerdict(0.857) === 'unsure' && T.quoteVerdict(0.8) === 'unsure' && T.quoteVerdict(0.79) === 'prose'
+     && T.quoteVerdict(T.findQuote(Q, 'كنتم خير امة خرجت للناس جميعا').score) === 'unsure'
+     && /3:110/.test(T.quoteUnsure({ score: 0.857, ranges: [{ s: 3, a: 110 }] })) && /86٪/.test(T.quoteUnsure({ score: 0.857, ranges: [{ s: 3, a: 110 }] })), '');
+  ok('وفارغٌ بلا حروف ⇒ صفر', T.findQuote(Q, '﴿ ۖ ﴾').score === 0 && T.findQuote(Q, '').ranges.length === 0, '');
+
+  const span = k => T.quoteSpan(Q, hits[k].ranges[0]);
+  ok('حكمُ المالك: ما انتهى وصلاً تُتلى فيه الآيةُ كاملة — آل عمران ١١٠ والبقرة ٢٢٨', span(1).whole && span(1).widened && span(1).from === 0
+     && span(1).to === 22 && span(2).whole && span(2).widened && span(1).words === Q.verses.get('3:110').join(' '), show([span(1), span(2)]));
+  ok('وما وقف قبله وبعده يُقصّ وحده — النساء ٣٢ والروم ٢١ والبقرة ٢٥٦', [3, 4, 5].every(k => !span(k).whole && !span(k).widened)
+     && span(3).from === 9 && span(3).to === 16 && span(5).words === Q.verses.get('2:256').slice(0, 4).join(' '), show([span(3), span(4), span(5)]));
+  ok('والهامشُ في الصمت كما سُمع في التجربة: النساء ٣٢ من ٩٨٥٠ إلى ٢٣١٠٠ مللي', span(3).start === 9850 && span(3).end === 23100, show(span(3)));
+  ok('والمقتبسةُ كاملةً تُتلى كاملة بلا توسيع — الأنبياء ٩٢ ويونس ٩٩', span(0).whole && !span(0).widened && span(6).whole && !span(6).widened, '');
+  ok('وآيةٌ بلا توقيتٍ تُتلى كاملةً من أوّل ملفّها إلى آخره', (() => {
+    const x = T.quoteSpan({ verses: Q.verses, timing: new Map() }, { s: 2, a: 256, from: 0, to: 3 });
+    return x.whole && x.widened && x.start === 0 && x.end === Infinity; })(), '');
+  ok('وآيةٌ لا يتّفق عدُّ كلماتها والتوقيت تُتلى كاملة', (() => {
+    const odd = new Map(Q.timing); odd.set('2:256', Q.timing.get('2:256').map(x => [x[0] + 1, x[1] + 1, x[2], x[3]]));
+    return T.quoteSpan({ verses: Q.verses, timing: odd }, { s: 2, a: 256, from: 0, to: 3 }).widened; })(), '');
+
+  const two = T.findQuote(Q, 'قُلْ هُوَ اللَّهُ أَحَدٌ اللَّهُ الصَّمَدُ');
+  ok('والممتدّةُ على آيتين مداها في كلٍّ — والبسملةُ ليست منها', two.score === 1 && show(two.ranges)
+     === show([{ s: 112, a: 1, from: 0, to: 3 }, { s: 112, a: 2, from: 0, to: 1 }]), show(two));
+  ok('واسمُ الصوت مرجعُه: كاملة · مدى كلماتٍ من الواحد · كاملة للوصل · وآيتان بـ«+»',
+     T.quoteLabel(two.ranges.map(r => T.quoteSpan(Q, r))) === 'الحصري · Husary_64kbps · 112:1 · كاملة + 112:2 · كاملة'
+     && T.quoteLabel([span(3)]) === 'الحصري · Husary_64kbps · 4:32 · 10-17' && T.quoteLabel([span(1)]) === 'الحصري · Husary_64kbps · 3:110 · كاملة للوصل'
+     && T.quoteLabel([span(1)]).startsWith(T.QUOTE_VOICE), T.quoteLabel([span(1)]));
+
+  /* القصُّ بالإطارات: مئةُ إطارٍ MPEG-2 كلٌّ ٢٤ مللي — كتسجيل الحصري (MPEG-2) */
+  const frames = new Uint8Array(9600);
+  for(let k = 0; k < 100; k++) frames.set([0xFF, 0xF3, 0x44, 0xC4], k * 96);
+  const f = T.mp3Frames(frames);
+  ok('الإطاراتُ بمواضعها وأزمنتها', f.length === 100 && f[1].off === 96 && f[1].t === 24 && f[99].t === 2376 && T.mp3Ms(frames) === 2400, '');
+  const c = T.mp3Cut(frames, 500, 1000);
+  ok('القصُّ: من الإطار الذي يبلغ البدءَ ومعه إطارٌ قبله، إلى آخر إطارٍ يبدأ قبل النهاية — بلا إعادة ترميز', c.ms === 552
+     && c.bytes.length === 23 * 96 && c.bytes[0] === 0xFF && c.bytes[96] === 0xFF && T.mp3Ms(c.bytes) === 552, show({ ms: c?.ms, len: c?.bytes.length }));
+  ok('وما بعد آخر الملفّ يقف عند آخره، وما بعده كلُّه لا شيء', T.mp3Cut(frames, 2300, Infinity).ms === 144 && T.mp3Cut(frames, 5000, 6000) === null, '');
 }
 
 console.log(`\n${n - bad}/${n}${bad ? ' — فشل' : ''}`);

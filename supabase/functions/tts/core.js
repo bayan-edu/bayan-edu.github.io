@@ -10,7 +10,8 @@
       ولا يبلغ الطالبَ إلا ملفٌّ ثابتٌ في R2 اعتمده معلّم.
 
    المسارُ لكلّ دفعة (خمسُ جملٍ على الأكثر — والطلبُ يُردّ عليه قبل ١٥٠ ثانية، حدُّ Supabase):
-     ① الحارس `voice_problem` بهويّة المستدعي ② ما فيه «﴿ ﴾» يُمسَك بلا صوت (`held`) ③ التشكيل — إلا ما شكّله المؤلّفُ
+     ① الحارس `voice_problem` بهويّة المستدعي ② الآيةُ المقتبسة بقوسيها تُعرف بنصّ المصحف وتُقصّ من تلاوة الحصري بلا Google
+     (🆕 b207 · `findQuote` · `quoteSpan`)، والجملةُ المرسلة كاملةً بقوسيها تُمسَك (`held`) ③ التشكيل — إلا ما شكّله المؤلّفُ
      أو صحّحه المعلّم ④ فحصُ الحروف ⑤ الوقفُ والابتداء ⑥ الصوت — المقترحُ لكلّ جملة أو ما اختاره المؤلّفُ من اللوحة
      ⑦ الملفّان إلى R2 ⑧ `save_voice` بهويّة المستدعي (189)
    🎧 **وما سمعه المالكُ في الجولتين صاغ ②–⑥** (٢٨ أكتوبر · STATE):
@@ -101,12 +102,16 @@ export function checkRequest(body){
 }
 export const isTitle = s => s.kind === 'cover' || s.kind === 'h';
 
-/* ما بين «﴿» و«﴾» لا يقرؤه الصوت: سمع المالكُ الآيتين في الجولتين «قراءة عادية لا تخلو من خطأ» — والآيةُ تُتلى ولا
-   تُقرأ، والقرآنُ «يحتاج إلى وسيلة للتعرّف عليه وتلاوته تلاوة صحيحة». والقوسان لغير القرآن أيضاً (حكمُه · 189)، فلا
-   يُعرف القرآنُ بهما وحدهما ⇒ **تُمسَك الجملةُ كلُّها بلا صوت** — لا يُردّ الطلبُ، ولا يُدفع فيها شيء — حتى يُبنى التعرّفُ
-   على الآيات بنصّ المصحف وتلاوتُها بصوت الحصري. (اقتراحٌ يُعرض على المالك: جملةٌ بلا صوتٍ خيرٌ من آيةٍ تُقرأ بخطأ.) */
-export const QUOTE_HELD = 'فيها نص بين «﴿ ﴾»، فتبقى بلا صوت حتى تُبنى تلاوة الآيات المقتبسة';
-export const held = s => s.text.includes('﴿') ? QUOTE_HELD : null;
+/* ما بين «﴿» و«﴾» لا يقرؤه الصوتُ المولَّد: سمع المالكُ الآيتين في الجولتين «قراءة عادية لا تخلو من خطأ» — والآيةُ تُتلى ولا
+   تُقرأ. 🆕 b207 · **والجملةُ المقتبِسة تُرسل أجزاءً** (`quoteParts` في اللوحة والكتاب): النثرُ وحده بصوته، والآيةُ بقوسيها وحدها
+   تُعرف بنصّ المصحف وتُقصّ من تلاوة الحصري (`findQuote` · `quoteSpan` أدناه) — خطّةٌ أقرّها المالك (٢٨ أكتوبر: «نعم نفذ الخطة»).
+   ⇒ جملةٌ أُرسلت كاملةً وفيها قوسان تُمسَك بسببها (لوحةٌ قبل b207)، وقوسان لا يتقابلان يُمسكانها حتى يُصلَح النصّ.
+   (وكانت كلُّ جملةٍ فيها «﴿» تُمسَك بلا صوت حتى تُبنى تلاوةُ المقتبَس.) */
+export const QUOTE_HELD = 'فيها آية مقتبسة، فتُرسل أجزاءً: النثر وحده، والآية بقوسيها وحدها';
+export const QUOTE_UNPAIRED = 'قوسا الآية «﴿ ﴾» غير متقابلين، فتبقى بلا صوت حتى يُصلَح النص';
+export const isQuote = text => /^﴿[^﴿﴾]+﴾$/.test(String(text ?? '').trim());
+const paired = text => /^[^﴿﴾]*(?:﴿[^﴿﴾]+﴾[^﴿﴾]*)*$/.test(text);
+export const held = s => isQuote(s.text) || !/[﴿﴾]/.test(s.text) ? null : paired(s.text) ? QUOTE_HELD : QUOTE_UNPAIRED;
 
 /* ── ما شكّله المؤلّف ─────────────────────────────────────
    النصوصُ المشكولة أصلاً لا تُرسل إلى التشكيل: تشكيلُ الكتاب هو الحكم — والنموذجُ أخطأ في قياسه ما أصاب فيه الكتاب
@@ -319,11 +324,12 @@ const KBPS = { 1: [0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 
                2: [0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160] };
 const RATES = { 3: [44100, 48000, 32000], 2: [22050, 24000, 16000], 0: [11025, 12000, 8000] };
 const tagAt = (b, i, tag) => [...tag].every((c, k) => b[i + k] === c.charCodeAt(0));
-export function mp3Ms(b){
-  let i = 0;
+/* 🆕 b207 · إطاراتُ الصوت بمواضعها وأزمنتها ⇒ [{ off, len, t, dur, spf, sr }] — منها الطولُ (`mp3Ms`) والقصُّ (`mp3Cut`) */
+export function mp3Frames(b){
+  let i = 0, t = 0, first = true;
   if(tagAt(b, 0, 'ID3') && b.length > 10)
     i = 10 + ((b[6] & 0x7f) << 21 | (b[7] & 0x7f) << 14 | (b[8] & 0x7f) << 7 | (b[9] & 0x7f));
-  let samples = 0, rate = 0, first = true;
+  const out = [];
   while(i + 4 <= b.length){
     if(b[i] !== 0xFF || (b[i + 1] & 0xE0) !== 0xE0){ i++; continue; }
     const ver = (b[i + 1] >> 3) & 3, layer = (b[i + 1] >> 1) & 3;
@@ -332,12 +338,149 @@ export function mp3Ms(b){
     const sr = RATES[ver][sri], spf = ver === 3 ? 1152 : 576;
     const len = Math.floor(spf / 8 * KBPS[ver === 3 ? 1 : 2][bri] * 1000 / sr) + pad;
     const info = first && [13, 21, 36].some(o => tagAt(b, i + o, 'Xing') || tagAt(b, i + o, 'Info'));
-    if(!info){ samples += spf; rate = sr; }
+    if(!info){ const dur = spf * 1000 / sr; out.push({ off: i, len, t, dur, spf, sr }); t += dur; }
     first = false;
     i += len;
   }
-  return rate ? Math.round(samples * 1000 / rate) : 0;
+  return out;
 }
+export function mp3Ms(b){
+  const f = mp3Frames(b);
+  return f.length ? Math.round(f.reduce((n, x) => n + x.spf, 0) * 1000 / f[f.length - 1].sr) : 0;
+}
+/* ما بين زمنين من الصوت بإطاراته كما هي — بلا إعادة ترميز — ومعه إطارٌ قبله: قد تسكن بتّاتُ أوّل إطارٍ فيما قبله (خزّانُ MP3).
+   ⇒ { bytes, ms } أو null إن لم يقع في الملفّ شيءٌ بينهما */
+export function mp3Cut(b, start, end){
+  const f = mp3Frames(b);
+  let k0 = f.findIndex(x => x.t + x.dur > start);
+  const k1 = f.findLastIndex(x => x.t < end);
+  if(k0 < 0 || k1 < k0) return null;
+  k0 = Math.max(0, k0 - 1);
+  const use = f.slice(k0, k1 + 1), bytes = new Uint8Array(use.reduce((n, x) => n + Math.min(x.len, b.length - x.off), 0));
+  let at = 0;
+  for(const x of use){ const part = b.subarray(x.off, x.off + x.len); bytes.set(part, at); at += part.length; }
+  return { bytes, ms: Math.round(use.reduce((n, x) => n + x.dur, 0)) };
+}
+
+/* ── الآيةُ المقتبسة في النثر (🆕 b207) ─────────────────────
+   جزءُ الجملة بقوسيها («﴿…﴾») يُعرف بنصّ المصحف ويُقصّ من تلاوة الحصري — بلا Google، فلا كلفة. وما قِيس قبل البناء في
+   `tools/quran_quotes.mjs` (٢٨ أكتوبر): آياتُ `593` السبعُ عُرفت كلُّها بتطابق ١٠٠٪، وحكم المالكُ بأذنه: «المعرفة سليمة، لكن ما انتهى وصلاً تُتلى
+   فيه الآية كاملة».
+   والبياناتُ ملفّان في R2 بحرفهما (`QURAN` · ترفعهما يدُ المالك كالتلاوة)، تحملهما الدالّةُ مرّةً ما بقيت دافئة:
+   · نصُّ المصحف العثمانيّ من Tanzil («سورة|آية|نصّ») — CC BY 3.0: يُنقل بحرفه مع نسبته
+   · توقيتُ كلمات الحصري من quran-align (إصدار 2016-11-24 · `Husary_64kbps` — التسجيلُ الذي في R2 بعينه) — CC BY 4.0:
+     [{ surah, ayah, segments: [[أوّلُ كلمة، الكلمةُ بعد آخره، بدء، نهاية], …] }] بالمللي ثانية، والكلماتُ من الصفر كما فصلتها المسافةُ في نصّ
+     Tanzil (قِيس: آخرُ مقطعٍ يطابق عددَها في ٦١٢١ من ٦٢٣٦ آية — والباقي كلماتٌ في أواخرها لم توقَّت) */
+export const MEDIA = 'https://media.bayanclass.com/';
+export const QURAN = Object.freeze({
+  text: 'quran/tanzil/quran-uthmani.txt',
+  timing: 'quran/align/Husary_64kbps.json',
+  ayah: (s, a) => `quran/husary/${String(s).padStart(3, '0')}${String(a).padStart(3, '0')}.mp3`
+});
+
+/* هيكلُ المطابقة: هيكلُ فحص الحروف (`skeleton`) بلا همزٍ ولا ألف، والتاءُ المربوطةُ هاءٌ، والهمزةُ على كرسيّها حرفُه — فالعثمانيُّ يرسم ألفاتٍ
+   لا يرسمها الإملائيّ وبالعكس («ٱلْكِتَٰبُ» · «الكتاب»)، والكلمةُ هي هي */
+export const quoteSkeleton = w => skeleton(w).replace(/ة/g, 'ه').replace(/ؤ/g, 'و').replace(/ئ/g, 'ي').replace(/[اء]/g, '');
+export const quoteInner = text => String(text ?? '').trim().replace(/^﴿/, '').replace(/﴾$/, '').trim();
+
+/* فهرسُ المصحف: الآياتُ كلماتٍ، وتوقيتُها، ولكلّ سورةٍ هيكلُها حرفاً حرفاً مع آيةِ كلّ حرفٍ وكلمته.
+   🔴 **والبسملةُ في رأس الآية الأولى تُنزع** — إلّا في الفاتحة، فهي آيتُها: Tanzil يكتبها هناك في ١١١ سورة، وملفُّ الآية في everyayah بلاها
+   (البسملةُ ملفٌّ وحدها)، وتوقيتُ quran-align يعدّ الكلماتِ بعدها (قِيس: الإخلاص ١ أربعةُ مقاطع لـ«قُلْ هُوَ ٱللَّهُ أَحَدٌ») — فبقاؤها يُزيح كلَّ
+   كلمةٍ في أولى السور أربعاً. ويُعرف رأسُها بهيكله، فرسمُها يختلف («بِّسْمِ»). */
+const BASMALA = 'بسم الله الرحمن الرحيم'.split(' ').map(w => skeleton(w).replace(/[اء]/g, '').replace(/ة/g, 'ه')).join('');
+export function quranIndex(text, align){
+  const verses = new Map();
+  for(const line of String(text ?? '').split(/\r?\n/)){
+    const m = line.match(/^\s*(\d+)\|(\d+)\|(.+)$/);
+    if(!m) continue;
+    let words = m[3].trim().split(/ +/);
+    if(+m[2] === 1 && +m[1] !== 1 && words.length > 4 && words.slice(0, 4).map(quoteSkeleton).join('') === BASMALA) words = words.slice(4);
+    verses.set(`${+m[1]}:${+m[2]}`, words);
+  }
+  const timing = new Map((Array.isArray(align) ? align : []).map(r => [`${r.surah}:${r.ayah}`, Array.isArray(r.segments) ? r.segments : []]));
+  const by = new Map();
+  for(const [key, words] of verses){
+    const [s, a] = key.split(':').map(Number);
+    let c = by.get(s);
+    if(!c) by.set(s, c = { s, chars: [], ayah: [], word: [] });
+    words.forEach((w, k) => { for(const ch of quoteSkeleton(w)){ c.chars.push(ch); c.ayah.push(a); c.word.push(k); } });
+  }
+  const surahs = [...by.values()].map(c => ({ s: c.s, text: c.chars.join(''), ayah: Int16Array.from(c.ayah), word: Int16Array.from(c.word) }));
+  return { verses, timing, surahs };
+}
+
+/* أين الآيةُ المقتبسة: مسافةُ تحريرٍ طرفاها حرّان (Sellers) بين هيكلها وهيكل كلّ سورة ⇒ أقربُ حروفٍ متتالية ⇒
+   { score: ١ − المسافةُ ÷ طولِ الهيكل, ranges: [{ s, a, from, to }] } — والممتدّةُ على آيتين مداها في كلٍّ، ومن تساوت مواضعُه فالأوّلُ في المصحف.
+   قِيس على المصحف كلّه: ٢٠–١٠٧ مللي ثانيةٍ للآية المقتبسة */
+export function findQuote(index, text){
+  const q = String(text ?? '').replace(/[﴿﴾]/g, ' ').split(/\s+/).map(quoteSkeleton).join('');
+  const m = q.length;
+  if(!m) return { score: 0, ranges: [] };
+  let best = null, prev = new Uint16Array(m + 1), cur = new Uint16Array(m + 1), pst = new Int32Array(m + 1), cst = new Int32Array(m + 1);
+  for(const c of index.surahs){
+    for(let i = 0; i <= m; i++){ prev[i] = i; pst[i] = 0; }
+    for(let j = 1; j <= c.text.length; j++){
+      const tj = c.text.charCodeAt(j - 1);
+      cur[0] = 0; cst[0] = j;
+      for(let i = 1; i <= m; i++){
+        const sub = prev[i - 1] + (q.charCodeAt(i - 1) === tj ? 0 : 1), del = prev[i] + 1, ins = cur[i - 1] + 1;
+        if(sub <= del && sub <= ins){ cur[i] = sub; cst[i] = pst[i - 1]; }
+        else if(del <= ins){ cur[i] = del; cst[i] = pst[i]; }
+        else { cur[i] = ins; cst[i] = cst[i - 1]; }
+      }
+      if(!best || cur[m] < best.d) best = { d: cur[m], c, from: cst[m], to: j };
+      [prev, cur] = [cur, prev];
+      [pst, cst] = [cst, pst];
+    }
+  }
+  if(!best || best.to <= best.from) return { score: 0, ranges: [] };
+  const c = best.c, a1 = c.ayah[best.from], a2 = c.ayah[best.to - 1], ranges = [];
+  for(let a = a1; a <= a2; a++)
+    ranges.push({ s: c.s, a, from: a === a1 ? c.word[best.from] : 0,
+                  to: a === a2 ? c.word[best.to - 1] : (index.verses.get(`${c.s}:${a}`) || []).length - 1 });
+  return { score: 1 - best.d / m, ranges };
+}
+
+/* أآيةٌ هي؟ — قِيس قبل البناء (٢٨ أكتوبر): الآياتُ المقتبسة ٩٢–١٠٠٪ ولو كُتبت بإملاءٍ آخر أو بلا حركاتٍ أو بخطأ، والنثرُ ٣٨–٧٥٪ ⇒
+   ٩٠٪ فأكثر آيةٌ تُتلى · ودون ٨٠٪ ليست آيةً فتُقرأ كالنثر (حكمُ المالك · ٢٨ أكتوبر: القوسان لغير الآيات أيضاً، ومنعُهما «يعطّل العمل») ·
+   وما بينهما يُمسَك بسببه حتى يُصحَّح نصُّه */
+export const QUOTE_SURE = 0.9, QUOTE_NOT = 0.8;
+export const quoteVerdict = score => score >= QUOTE_SURE ? 'quran' : score < QUOTE_NOT ? 'prose' : 'unsure';
+export const quoteUnsure = hit => `تشبه آية ولا تطابقها (أقربها ${hit.ranges[0] ? `${hit.ranges[0].s}:${hit.ranges[0].a}` : '؟'} بتطابق ${
+  Math.round(hit.score * 100)}٪)، فتبقى بلا صوت حتى يُصحَّح نصها`;
+
+/* ما يُتلى من آيةٍ اقتُبس منها — حكمُ المالك بأذنه: **«ما انتهى وصلاً تُتلى فيه الآية كاملة»**، وما بدأ وصلاً كذلك (أقرّه بالخطّة) ⇒ القصُّ
+   حيث يقف الحصري قبل المقتبَس وبعده وحده، وإلّا الآيةُ كاملة — وكذلك ما لا توقيتَ لحدّيه، أو حدُّه في مقطعٍ يضمّ كلمةً خارجه، **أو آيةٌ لا يتّفق
+   عددُ كلماتها والتوقيت** (خمسٌ في المصحف — قِيس بعد نزع البسملة: ٦٢٣١ من ٦٢٣٦ تتّفق): قصٌّ بعدٍّ مُزاحٍ يقطع عند غير كلمته. والوصلُ ما دون
+   `QUOTE_JOIN` بين نهاية كلمةٍ وبدء التالية، والهامشُ في الصمت وحده (`QUOTE_PAD` قبلُ · `QUOTE_TAIL` بعدُ).
+   ⇒ { s, a, from, to, whole, widened, start, end (مللي ثانية — يُحدّان بطول الملفّ عند القصّ), words (ما يُتلى بحرفه من المصحف) } */
+export const QUOTE_JOIN = 40, QUOTE_PAD = 150, QUOTE_TAIL = 250;
+export function quoteSpan(index, r){
+  const key = `${r.s}:${r.a}`, words = index.verses.get(key) || [], segs = index.timing.get(key) || [];
+  const lettered = words.flatMap((w, k) => /\p{L}/u.test(w) ? [k] : []);
+  const covers = r.from <= (lettered[0] ?? 0) && r.to >= (lettered[lettered.length - 1] ?? words.length - 1);
+  const seg = w => segs.find(x => x[0] <= w && w < x[1]);
+  const a = seg(r.from), b = seg(r.to);
+  const prev = a && segs.filter(x => x[1] <= r.from).sort((x, y) => y[3] - x[3])[0];
+  const next = b && segs.filter(x => x[0] > r.to).sort((x, y) => x[2] - y[2])[0];
+  const merged = !!a && !!b && (a[0] < r.from || b[1] > r.to + 1);
+  const wasl = (!!prev && a[2] - prev[3] <= QUOTE_JOIN) || (!!next && next[2] - b[3] <= QUOTE_JOIN);
+  const sound = segs.length > 0 && Math.max(...segs.map(x => x[1])) === words.length;
+  if(covers || !sound || !a || !b || merged || wasl)
+    return { s: r.s, a: r.a, from: 0, to: words.length - 1, whole: true, widened: !covers,
+             start: segs.length ? Math.max(0, Math.min(...segs.map(x => x[2])) - QUOTE_PAD) : 0,
+             end: segs.length ? Math.max(...segs.map(x => x[3])) + QUOTE_TAIL : Infinity, words: words.join(' ') };
+  return { s: r.s, a: r.a, from: r.from, to: r.to, whole: false, widened: false,
+           start: prev ? Math.max(prev[3] + 20, a[2] - QUOTE_PAD) : Math.max(0, a[2] - QUOTE_PAD),
+           end: next ? Math.min(next[2] - 20, b[3] + QUOTE_TAIL) : b[3] + QUOTE_TAIL,
+           words: words.slice(r.from, r.to + 1).join(' ') };
+}
+
+/* واسمُ الصوت في القاعدة (`voice_clips.voice` · ١٢٠ حرفاً): «الحصري · Husary_64kbps · 3:110 · كاملة» — والمدى كلماتٌ من الواحد («4:32 · 10-17»)،
+   و«كاملة للوصل» لما اقتُبس بعضُه وتُلي كلُّه، والممتدّةُ على آيتين يفصلها « + ». تقرؤه اللوحةُ مرجعاً (`quoteRef` في voice_rows.js) */
+export const QUOTE_VOICE = 'الحصري · Husary_64kbps';
+export const quoteLabel = spans => `${QUOTE_VOICE} · ${spans.map(x =>
+  `${x.s}:${x.a} · ${x.whole ? (x.widened ? 'كاملة للوصل' : 'كاملة') : `${x.from + 1}-${x.to + 1}`}`).join(' + ')}`.slice(0, 120);
 
 /* ── البصمة والمفاتيح ───────────────────────────────────────
    البصمةُ بصمةُ القاعدة (`sentence_sha` · 189): أوّلُ ١٦ خانةً من SHA-256 للجملة بـUTF-8 — قِيستا متطابقتين.

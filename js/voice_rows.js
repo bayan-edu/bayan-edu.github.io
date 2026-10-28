@@ -51,9 +51,49 @@ export function femaleLead(lead){
 }
 export const recommend = s => !isTitle(s) && isDialogue(s.text) ? (femaleLead(s.lead) ? FEMALE : CHARACTER) : NARRATOR;
 
-/* ما فيه «﴿» تُمسكه الدالّةُ بلا صوت حتى تُبنى تلاوةُ الآيات المقتبسة — والسببُ بحرف الدالّة (`QUOTE_HELD`) */
-export const HELD = 'فيها نص بين «﴿ ﴾»، فتبقى بلا صوت حتى تُبنى تلاوة الآيات المقتبسة';
-export const held = s => String(s.text).includes('﴿');
+/* 🆕 b207 · الجملةُ المقتبِسة آيةً تُقرأ أجزاءً: النثرُ وحده بصوته، والآيةُ بقوسيها وحدها تتلوها الدالّةُ من المصحف (`findQuote` في `core.js`)
+   — على ترتيبها. والترقيمُ في صدر نثرٍ بعد آيةٍ يُنزع (الفاصلةُ بعدها)، وما لا حرفَ فيه يسقط (النقطةُ بعد آخر آية)، وصدرُ الجملة كما هو
+   (شرطةُ الحوار). ⇒ null حين لا قوسَ فيها أو لا يتقابل قوساها · وإلّا [{ text, quote }]. **والكتابُ يجمع أصوات الأجزاء بها نفسِها**
+   (`proseSeq` · media.js) — فما تولّده اللوحةُ جزءاً يجده الكتابُ بنصّه. */
+export function quoteParts(text){
+  const t = String(text ?? '');
+  if(!/[﴿﴾]/.test(t) || !/^[^﴿﴾]*(?:﴿[^﴿﴾]+﴾[^﴿﴾]*)*$/.test(t)) return null;
+  const out = [];
+  t.split(/(﴿[^﴿﴾]+﴾)/).forEach((x, k) => {
+    x = x.trim();
+    if(x.startsWith('﴿')){ out.push({ text: x, quote: true }); return; }
+    if(k > 0) x = x.replace(/^[\s،؛,.:!؟…\-–—]+/, '').trim();
+    if(/\p{L}/u.test(x)) out.push({ text: x, quote: false });
+  });
+  return out;
+}
+/* وقوسان لا يتقابلان يُمسكان الجملةَ حتى يُصلَح النصّ — والسببُ بحرف الدالّة (`QUOTE_UNPAIRED`) */
+export const HELD = 'قوسا الآية «﴿ ﴾» غير متقابلين، فتبقى بلا صوت حتى يُصلَح النص';
+export const held = s => /[﴿﴾]/.test(String(s.text)) && !quoteParts(s.text);
+
+/* مرجعُ الآية المقصوصة من اسم صوتها في القاعدة (`quoteLabel` في الدالّة): «الحصري · Husary_64kbps · 3:110 · كاملة» ⇒
+   [{ s, a, whole, widened, from, to }] — الكلماتُ من الواحد · أو null لصوتٍ غيرِها (جزءٌ بقوسين ليس آيةً قرأه الصوتُ المولَّد) */
+export const QUOTE_VOICE = 'الحصري · Husary_64kbps';
+export function quoteRef(label){
+  const t = String(label ?? '');
+  if(!t.startsWith(QUOTE_VOICE + ' · ')) return null;
+  const refs = t.slice(QUOTE_VOICE.length + 3).split(' + ').map(x => {
+    const m = x.match(/^(\d+):(\d+) · (?:(كاملة للوصل)|(كاملة)|(\d+)-(\d+))$/);
+    return m && { s: +m[1], a: +m[2], whole: !m[5], widened: !!m[3], from: m[5] ? +m[5] : null, to: m[6] ? +m[6] : null };
+  });
+  return refs.every(Boolean) ? refs : null;
+}
+
+/* وصوتُ جملة النثر في الكتاب: ملفُّها، أو أجزاؤها على ترتيبها إن اقتبست آية — ولا يُسمع منها شيءٌ ما لم تُعتمد أجزاؤها كلُّها، فجملةٌ نصفُها
+   مسموعٌ أسوأُ من صامتة. `made`: الجملةُ بنصّها ⇒ { audio, ms } (المعتمدُ وحده · `approvedVoices`) ⇒ { keys, ms } أو null — و`ms` مجموعُ
+   الأطوال المحفوظة: به تُقلَب صفحةُ الجملة المقسومة عند موضع قسمتها (b206) */
+export function proseSeq(made, s){
+  if(!s || s.q || !s.text) return null;
+  const parts = /[﴿﴾]/.test(s.text) ? quoteParts(s.text) : [{ text: s.text }];
+  const clips = parts && parts.map(p => made.get(p.text));
+  if(!clips || clips.some(c => !c?.audio)) return null;
+  return { keys: clips.map(c => c.audio), ms: clips.reduce((n, c) => n + (Number(c.ms) || 0), 0) };
+}
 
 /* أيُّ صوتٍ من اللوحة ولّد هذا الصفّ: اسمُه في القاعدة اسمُ صوته ومعه مصدرُ التشكيل (`voiceLabel` في الدالّة) */
 export const voiceOf = label => Object.keys(VOICES).find(id => String(label || '').startsWith(VOICES[id].label)) || null;
@@ -62,17 +102,28 @@ export const voiceOf = label => Object.keys(VOICES).find(id => String(label || '
    [{ i, text, kind, lead, talk, clip, state, recommended, voice }] — و`i` موضعُها في جمل النصّ (للسياق) · `lead` الجملةُ قبلها
    (بها يُعرف قائلُ الحوار ونبرتُه) · `talk` سطرُ حوار · state: 'none' بلا صوت · 'made' وُلّد ولم يُعتمد · 'ok' معتمد · 'held' ممسَكة ·
    voice: صوتُ صفّها أو المقترح. والجملةُ المكرَّرة سطرٌ في كلّ موضعٍ لها، وصوتُها واحد (البصمةُ من النصّ) */
+/* 🆕 b207 · والجملةُ المقتبِسة سطورٌ بأجزائها (`part`: { k, n, of, quote }): النثرُ بصوته واختياره، والآيةُ بلا صوتٍ يُختار (`voice: null` —
+   تتلوها الدالّةُ من المصحف). والجزءُ بعد آيةٍ ليس صدرَ حوار ولا يعرف الجملةَ قبله، ومقترحُه مقترحُ جملته — فيُرسل صوتُه صريحاً إن خالف ما
+   تقترحه الدالّةُ لنصّه وحده (`voiceBatches`) */
 export function voiceRows(sents, clips){
   const by = new Map((clips || []).map(c => [c.sentence, c]));
   const rows = [];
   (sents || []).forEach((s, i) => {
     if(s.kind === 'q') return;
-    const clip = by.get(s.text) || null;
     const lead = i > 0 ? sents[i - 1].text : null;
     const recommended = recommend({ ...s, lead });
-    const state = held(s) ? 'held' : !clip ? 'none' : clip.approved_at ? 'ok' : 'made';
-    rows.push({ i, text: s.text, kind: s.kind, lead, talk: !isTitle(s) && isDialogue(s.text), clip, state, recommended,
-                voice: (clip && voiceOf(clip.voice)) || recommended });
+    const row = text => {
+      const clip = by.get(text) || null;
+      return { i, text, kind: s.kind, lead, talk: !isTitle(s) && isDialogue(s.text), clip, recommended,
+               state: !clip ? 'none' : clip.approved_at ? 'ok' : 'made', voice: (clip && voiceOf(clip.voice)) || recommended };
+    };
+    const parts = quoteParts(s.text);
+    if(!parts){ rows.push(held(s) ? { ...row(s.text), state: 'held' } : row(s.text)); return; }
+    parts.forEach((p, k) => {
+      const part = { k, n: parts.length, of: s.text, quote: p.quote };
+      rows.push(p.quote ? { ...row(p.text), lead: null, talk: false, recommended: null, voice: null, part }
+                        : { ...row(p.text), ...(k ? { lead: null, talk: false } : {}), part });
+    });
   });
   return rows;
 }
@@ -96,10 +147,13 @@ export function voiceBatches(sents, rows, { voice = {}, spoken = {}, tone = {} }
       out.push(b);
     }
     const one = { text: r.text, kind: r.kind };
-    if(voice[r.text] && voice[r.text] !== r.recommended) one.voice = voice[r.text];
-    if(spoken[r.text]) one.spoken = spoken[r.text];
-    if(r.talk && r.lead) one.lead = r.lead;
-    if(tone[r.text]) one.tone = tone[r.text];
+    /* والآيةُ المقتبسة بنصّها وحده: لا صوتَ ولا نطقَ ولا نبرة — تعرفها الدالّةُ وتتلوها */
+    if(!r.part?.quote){
+      if(r.talk && r.lead) one.lead = r.lead;
+      if(voice[r.text] && voice[r.text] !== recommend(one)) one.voice = voice[r.text];
+      if(spoken[r.text]) one.spoken = spoken[r.text];
+      if(tone[r.text]) one.tone = tone[r.text];
+    }
     b.sentences.push(one);
   }
   return out;

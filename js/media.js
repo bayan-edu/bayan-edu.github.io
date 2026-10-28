@@ -19,6 +19,7 @@
       لقاعدة «طبقةٌ واحدة تلمس Supabase».
    ══════════════════════════════════════════════════════════ */
 import { publicUrl } from './api.js';
+import { proseSeq } from './voice_rows.js';
 
 
 /* ═══════════ ① المستودعات ═══════════
@@ -413,12 +414,16 @@ export function clipPlayer(){
  *    الجملةُ تُعرف بنصّها بحرفه — الصفُّ يحفظها كما قسمها الكتاب (189 ①) — فجملةٌ تغيّرت تصمت ولا يُسمع صوتُ غيرها.
  *    والآيةُ لا تُطلب هنا (تلاوتُها قبلها)، والنثرُ بسرعته كالتلاوة (`rated`). **وصوتُ النثر يقطع التلاوة:** فالآيةُ بعده
  *    تُسبق بالاستعاذة كما بعد الإيقاف (`run` — حكمُ المالك أعلاه: «صوتٍ غيرِ قرآنيّ»).
+ * 🆕 b207 · **والجملةُ المقتبِسة آيةً تُقرأ أجزاءً** (`proseSeq` · voice_rows.js): النثرُ بصوته، والآيةُ مقصوصةً من تلاوة الحصري —
+ *    متتاليةً متى اعتُمدت كلُّها، وإلّا صمتت. **ولا استعاذةَ قبل المقتبَس** (حكمُ المالك بالخطّة: استشهادٌ يسبقه «قال تعالى») — فهو نثرٌ
+ *    في `run` كذلك. وطولُ الجملة مجموعُ أجزائها المحفوظ، يُعلَن مع أوّلها (`onmain`) فتُقلَب الصفحةُ عند موضع القسمة (b206).
  */
 const CLIP_WAIT = 30000;    // مهلةُ تحميل المقطع التالي في سلسلة الجملة الواحدة — ثمّ يحلّ طولُه محلَّها (onstart)
 export function bookVoice({ quranRefs = null, voices = null } = {}){
   const refs = Array.isArray(quranRefs) ? quranRefs : [];
-  const made = new Map((Array.isArray(voices) ? voices : []).filter(v => v?.sentence && v?.audio).map(v => [v.sentence, v.audio]));
-  const prose = s => (!s?.q && made.get(s?.text)) || null;
+  const made = new Map((Array.isArray(voices) ? voices : []).filter(v => v?.sentence && v?.audio)
+    .map(v => [v.sentence, { audio: v.audio, ms: v.ms }]));
+  const prose = s => proseSeq(made, s);
   const clips = clipPlayer();
   let rtl = false, run = false, busy = false, later = null;
   const refOf = s => {
@@ -429,7 +434,7 @@ export function bookVoice({ quranRefs = null, voices = null } = {}){
 
   /* مقاطعُ الجملة الواحدة على التوالي — ويُحمَّل كلٌّ قبل دوره. وما طلب الكتابُ تحميلَه للجملة التالية ينتظر حتى
      يبدأ آخرُ مقاطع هذه (`later`): فالعنصرُ المحمِّلُ واحد، وآيةُ هذه الجملة أولى به من آية التالية. */
-  function playSeq(seq, o){
+  function playSeq(seq, o, { main = seq.length - 1, total = null } = {}){
     let k = 0;
     busy = true;
     const step = () => {
@@ -437,9 +442,9 @@ export function bookVoice({ quranRefs = null, voices = null } = {}){
       if(last){ busy = false; if(later){ clips.prefetch(later); later = null; } }
       else clips.prefetch(seq[k + 1]);
       /* 🆕 b206 · ومقطعُ الجملة نفسِها (الأخير — بعد الاستعاذة والبسملة) يُعلن طولَه (`onmain`): به تُقلَب صفحةُ الآية
-         المقسومة عند موضع قسمتها، لا بطول الاستعاذة قبلها */
+         المقسومة عند موضع قسمتها، لا بطول الاستعاذة قبلها. 🆕 b207 · والجملةُ أجزاءً تُعلنه مع أوّلها بطولها كلّه (`main` · `total`) */
       return clips.play(seq[k], { rate: 1,
-        onstart: last ? ms => { o.onstart?.(ms); o.onmain?.(ms); } : o.onstart,
+        onstart: k === main ? ms => { o.onstart?.(ms); o.onmain?.(total ?? ms); } : o.onstart,
         onend: () => { if(last) return o.onend?.(); k++; o.onstart?.(CLIP_WAIT); step(); },
         onerror: e => {
           if(last || e === 'not-allowed') return o.onerror?.(e);
@@ -463,10 +468,10 @@ export function bookVoice({ quranRefs = null, voices = null } = {}){
                                         onstart: () => o.onmain?.(null), onboundary: o.onboundary });
       const r = refOf(s);
       if(!r){
-        const key = prose(s);
-        if(!key) return false;
+        const seq = prose(s);
+        if(!seq) return false;
         run = false;                               // صوتٌ غيرُ قرآنيّ ⇒ الآيةُ بعده تُسبق بالاستعاذة
-        return playSeq([key], o);
+        return playSeq(seq.keys, o, seq.keys.length > 1 ? { main: 0, total: seq.ms || null } : {});
       }
       const seq = run ? [] : [AUDHU];
       if(s.q.ayah === 1 && r.surah !== 1 && r.surah !== 9) seq.push(BASMALA);
@@ -475,14 +480,16 @@ export function bookVoice({ quranRefs = null, voices = null } = {}){
       return playSeq(seq, o);
     },
     prefetch(s){
-      const key = rtl && (ayah(s) || prose(s));
+      const key = rtl && (ayah(s) || prose(s)?.keys[0]);
       if(!key) return;
       if(busy) later = key; else clips.prefetch(key);
     },
     stop(){ hush(); clips.stop(); run = busy = false; later = null; },
-    /* يظهر تلميحاً على الزرّ — ويحمل نسبةَ التلاوة إلى قارئها ومصدرِها، ويقول إنّ النثرَ صوتٌ مولَّد حين يكون */
+    /* يظهر تلميحاً على الزرّ — ويحمل نسبةَ التلاوة إلى قارئها ومصدرِها، ويقول إنّ النثرَ صوتٌ مولَّد حين يكون.
+       🆕 b207 · والمقتبسُ ينسب نصَّه وتوقيتَ كلماته (Tanzil · quran-align — رخصتاهما تشترطان النسبة) */
     name: () => !rtl ? voiceName('en')
       : (made.size ? 'النثر بصوتٍ مولَّد اعتمده المعلّم · والآيات بتلاوة الشيخ محمود خليل الحصري — المصدر: everyayah.com'
+                     + ([...made.keys()].some(t => t.startsWith('﴿')) ? ' · ونصّ المقتبس منها من tanzil.net وتوقيت كلماته من quran-align' : '')
                    : 'تلاوة الشيخ محمود خليل الحصري — المصدر: everyayah.com')
   };
 }

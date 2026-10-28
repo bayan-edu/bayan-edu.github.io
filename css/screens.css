@@ -1314,6 +1314,11 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
 .vp-tn[aria-pressed="true"]{background:var(--accent-fill);border-color:var(--accent-edge);color:var(--accent)}
 .vp-tn:disabled{opacity:.55;cursor:default}
 .vp-tn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* 🆕 b207 · الجملةُ المقتبِسة آيةً سطورٌ بأجزائها: رأسٌ يحمل الجملةَ كلَّها، والأجزاءُ بحدٍّ في بدايتها — مجموعةٌ لا حكم، فمحايدة.
+   ومرجعُ الآية سطرٌ خافتٌ تحت نصّها */
+.vp-grp{margin:0 0 6px;color:var(--text-muted);line-height:1.9}
+.vp-part{padding-inline-start:12px;border-inline-start:2px solid var(--line)}
+.vp-ref{margin:0 0 6px;color:var(--text-muted)}
 /* 🆕 b189 · معاينةُ النصّ كما يراه الطالب (`openPreview`) — شاشةٌ كاملةٌ بلون الصفحة: الكتابُ
    يقيس الشاشةَ ليملأها. وتحت الإشعار (٥٩ < ٦٠) ليُرى ما يقوله الكتابُ فوقها. */
 html.pv-lock{overflow:hidden}

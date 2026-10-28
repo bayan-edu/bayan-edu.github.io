@@ -4,9 +4,11 @@
    CORS · الحارس · الأسرار · Google · R2 · القاعدة.
 
    📞 النداء (من لوحة الصوت · الخطوة ٦):
-        db.functions.invoke('tts', { body: { item, sentences: [{ text, kind?, spoken?, voice? }], context? } })
-      ⇒ { results: [{ sha, state: 'ok', audio, spoken, text, ms, voice, source }
+        db.functions.invoke('tts', { body: { item, sentences: [{ text, kind?, spoken?, voice?, lead?, tone? }], context? } })
+      ⇒ { results: [{ sha, state: 'ok', audio, spoken, text, ms, voice, source, ref? }
                   | { sha, state: 'held', reason } | { sha, state: 'error', error }] }   — بترتيب الجمل
+      🆕 b207 · والجزءُ «﴿…﴾» وحده آيةٌ مقتبسة: تُعرف بنصّ المصحف وتُقصّ من تلاوة الحصري بلا Google (`voice: 'husary'` · `ref` مداها)،
+      وما ليس آيةً يُقرأ بلا قوسيه كسائر النثر، وما بينهما يُمسَك بسببه (`core.js` · «الآيةُ المقتبسة في النثر»).
       خمسُ جملٍ على الأكثر، والردُّ قبل ١٥٠ ثانية (حدُّ Supabase): ما لم يتمّ في وقته يعود بسببه ويُطلب ثانية، وما تمّ محفوظ.
       و`text` المنطوقُ نفسُه — تعرضه اللوحةُ ساعةَ التوليد، ومكانُه الدائم `spoken` في R2 بجوار صوته (189 ②).
 
@@ -78,6 +80,42 @@ async function call(url: string, token: string, body: string, deadline: number):
   }
 }
 
+/* 🆕 b207 · ملفّاتُ المصحف من المخزن بعنوانه العامّ — بلا مفتاح: منشورةٌ للطالب أصلاً (`T.MEDIA`) */
+async function media(path: string): Promise<Uint8Array> {
+  const res = await fetch(T.MEDIA + path, { signal: AbortSignal.timeout(30_000) });
+  if (!ok(res.status)) throw new Error(`${res.status} · ${path}`);
+  return new Uint8Array(await res.arrayBuffer());
+}
+/* وفهرسُ المصحف مرّةً ما بقيت الدالّةُ دافئة: نصُّ Tanzil وتوقيتُ quran-align (`T.QURAN`) — وغيابُهما صاخبٌ باسمهما */
+let quranIdx: any = null;
+async function quran(): Promise<any> {
+  if (quranIdx) return quranIdx;
+  try {
+    const [text, timing] = await Promise.all([media(T.QURAN.text), media(T.QURAN.timing)]);
+    const dec = new TextDecoder();
+    quranIdx = T.quranIndex(dec.decode(text), JSON.parse(dec.decode(timing)));
+  } catch (e) { throw new Error(`بيانات المصحف لم تُقرأ من المخزن (${(e as Error).message})`); }
+  return quranIdx;
+}
+/* الآيةُ المقتبسة: ما كان آيةً قُصّ من تلاوة الحصري (`quoteSpan` · `mp3Cut`) · وما ليس آيةً يُقرأ بلا قوسيه كسائر النثر (`say`) ·
+   وما بينهما يُمسَك بسببه */
+async function recite(q: any, r: any) {
+  const hit = T.findQuote(q, r.s.text), verdict = T.quoteVerdict(hit.score);
+  if (verdict === 'prose') { r.say = { ...r.s, text: T.quoteInner(r.s.text) }; r.source = T.tashkeelSource(r.say); return; }
+  if (verdict === 'unsure') { r.held = T.quoteUnsure(hit); return; }
+  const spans = hit.ranges.map((x: any) => T.quoteSpan(q, x));
+  let files: Uint8Array[];
+  try { files = await Promise.all(spans.map((x: any) => media(T.QURAN.ayah(x.s, x.a)))); }
+  catch { r.error = 'تعذّر جلب تلاوة الآية من المخزن'; return; }
+  const cuts = spans.map((x: any, k: number) => T.mp3Cut(files[k], x.start, x.end));
+  if (cuts.some((c: any) => !c)) { r.error = 'تعذّر قصّ الآية من ملفّ تلاوتها'; return; }
+  const bytes = new Uint8Array(cuts.reduce((n: number, c: any) => n + c.bytes.length, 0));
+  let at = 0;
+  for (const c of cuts) { bytes.set(c.bytes, at); at += c.bytes.length; }
+  Object.assign(r, { quran: true, spans, bytes, ms: cuts.reduce((n: number, c: any) => n + c.ms, 0), source: 'المصحف',
+                     spoken: spans.map((x: any) => x.words).join(' '), voice: { id: 'husary', label: T.quoteLabel(spans) } });
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(req) });
   if (req.method !== 'POST') return reply(req, 405, { error: 'POST وحده' });
@@ -100,54 +138,68 @@ Deno.serve(async (req) => {
 
   /* الجملُ بترتيبها: بصمتُها · ما يُمسَك منها · من أين تشكيلُها. والمكرَّرةُ في الدفعة تُولَّد مرّةً وتأخذ أختُها نتيجتَها */
   const rows: any[] = await Promise.all(c.sentences.map(async (s: any) =>
-    ({ s, sha: await T.sentenceSha(s.text), held: T.held(s), source: T.tashkeelSource(s), voweled: null, error: null })));
+    ({ s, say: s, sha: await T.sentenceSha(s.text), held: T.held(s), quote: T.isQuote(s.text), source: T.tashkeelSource(s),
+       voweled: null, error: null })));
   const first = new Map<string, any>();
   for (const r of rows) { if (first.has(r.s.text)) r.twin = first.get(r.s.text); else first.set(r.s.text, r); }
   const work = rows.filter(r => !r.held && !r.twin);
 
   if (work.length) {
-    const sa = T.readServiceAccount(Deno.env.get('GOOGLE_SA_JSON') ?? '');
     const r2 = { accountId: Deno.env.get('R2_ACCOUNT_ID'), accessKeyId: Deno.env.get('R2_ACCESS_KEY_ID'),
                  secretAccessKey: Deno.env.get('R2_SECRET_ACCESS_KEY'), bucket: Deno.env.get('R2_BUCKET') || 'bayan-media' };
     /* صاخبٌ لا صامت: دالّةٌ بلا أسرارها تقول ذلك باسمه — للمأذون وحده */
-    if (!sa) return reply(req, 500, { error: 'مفتاحُ Google لم يُضبط في الدالّة (GOOGLE_SA_JSON)' });
     if (!r2.accountId || !r2.accessKeyId || !r2.secretAccessKey) return reply(req, 500, { error: 'أسرارُ R2 لم تُضبط في الدالّة' });
-    let token: string;
-    try { token = await googleToken(sa); }
-    catch (e) { return reply(req, 502, { error: `تعذّر الدخول إلى Google: ${(e as Error).message}` }); }
 
-    /* ② التشكيل — دفعةً واحدةً لما يحتاجه، ومحاولةٌ ثانيةٌ لما غيّر النموذجُ حروفَه. وتشكيلُ المعلّم والمؤلّف كما هو */
-    for (const r of work) if (r.source !== T.TASHKEEL_MODEL) r.voweled = r.s.spoken ?? r.s.text;
-    for (let attempt = 1; attempt <= 2; attempt++) {
-      const pending = work.filter(r => r.voweled === null && !r.error);
-      if (!pending.length) break;
-      const res = await call(T.tashkeelUrl(sa.project_id), token, JSON.stringify(T.tashkeelRequest(pending.map(r => r.s), c.context)), deadline);
-      const t: any = res.error ? { error: res.error }
-        : ok(res.status) ? T.readTashkeel(res.json, pending.length) : { error: T.googleError(res.status, res.json) };
-      if ('error' in t) {
-        if (attempt === 2 || res.error) pending.forEach(r => { r.error = res.error ?? `تعذّر التشكيل: ${t.error}`; });
-        continue;
-      }
-      pending.forEach((r, k) => {
-        if (T.sameLetters(r.s.text, t.list[k])) r.voweled = t.list[k];
-        else if (attempt === 2) r.error = 'غيّر التشكيلُ حروفَ الجملة مرّتين، فلم يُولَّد صوتها';
-      });
+    /* ② الآياتُ المقتبسة أوّلاً — بلا Google ولا سرّه (🆕 b207) */
+    const quotes = work.filter(r => r.quote);
+    if (quotes.length) {
+      let q: any = null;
+      try { q = await quran(); } catch (e) { for (const r of quotes) r.error = (e as Error).message; }
+      if (q) await Promise.all(quotes.map(r => recite(q, r)));
     }
 
-    /* ③ الوقفُ والصوت — Gemini اثنان معاً (حصّتُه نحو عشرةٍ في الدقيقة)، وChirp أربعة */
-    const ready = work.filter(r => !r.error && r.voweled !== null);
-    for (const r of ready) { r.spoken = T.spokenFor(r.s, r.voweled); r.voice = T.voiceFor(r.s); }
-    const speak = async (r: any) => {
-      const res = await call(T.TTS.endpoint, token, JSON.stringify(T.ttsRequest(r.spoken, r.voice)), deadline);
-      if (res.error) { r.error = res.error; return; }
-      if (!ok(res.status)) { r.error = `تعذّر توليد الصوت: ${T.googleError(res.status, res.json)}`; return; }
-      const a: any = T.readTts(res.json);
-      if ('error' in a) r.error = a.error; else Object.assign(r, { bytes: a.bytes, ms: a.ms });
-    };
-    const lane = async (list: any[], width: number) => {
-      for (let k = 0; k < list.length; k += width) await Promise.all(list.slice(k, k + width).map(speak));
-    };
-    await Promise.all([lane(ready.filter(r => 'prompt' in r.voice), 2), lane(ready.filter(r => !('prompt' in r.voice)), 4)]);
+    /* ③ والنثرُ بصوته المولَّد — وما خرج من الأقواس نثراً معه (`say`) */
+    const prose = work.filter(r => !r.quran && !r.held && !r.error);
+    if (prose.length) {
+      const sa = T.readServiceAccount(Deno.env.get('GOOGLE_SA_JSON') ?? '');
+      if (!sa) return reply(req, 500, { error: 'مفتاحُ Google لم يُضبط في الدالّة (GOOGLE_SA_JSON)' });
+      let token: string;
+      try { token = await googleToken(sa); }
+      catch (e) { return reply(req, 502, { error: `تعذّر الدخول إلى Google: ${(e as Error).message}` }); }
+
+      /* التشكيل — دفعةً واحدةً لما يحتاجه، ومحاولةٌ ثانيةٌ لما غيّر النموذجُ حروفَه. وتشكيلُ المعلّم والمؤلّف كما هو */
+      for (const r of prose) if (r.source !== T.TASHKEEL_MODEL) r.voweled = r.say.spoken ?? r.say.text;
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        const pending = prose.filter(r => r.voweled === null && !r.error);
+        if (!pending.length) break;
+        const res = await call(T.tashkeelUrl(sa.project_id), token, JSON.stringify(T.tashkeelRequest(pending.map(r => r.say), c.context)), deadline);
+        const t: any = res.error ? { error: res.error }
+          : ok(res.status) ? T.readTashkeel(res.json, pending.length) : { error: T.googleError(res.status, res.json) };
+        if ('error' in t) {
+          if (attempt === 2 || res.error) pending.forEach(r => { r.error = res.error ?? `تعذّر التشكيل: ${t.error}`; });
+          continue;
+        }
+        pending.forEach((r, k) => {
+          if (T.sameLetters(r.say.text, t.list[k])) r.voweled = t.list[k];
+          else if (attempt === 2) r.error = 'غيّر التشكيلُ حروفَ الجملة مرّتين، فلم يُولَّد صوتها';
+        });
+      }
+
+      /* الوقفُ والصوت — Gemini اثنان معاً (حصّتُه نحو عشرةٍ في الدقيقة)، وChirp أربعة */
+      const ready = prose.filter(r => !r.error && r.voweled !== null);
+      for (const r of ready) { r.spoken = T.spokenFor(r.say, r.voweled); r.voice = T.voiceFor(r.say); }
+      const speak = async (r: any) => {
+        const res = await call(T.TTS.endpoint, token, JSON.stringify(T.ttsRequest(r.spoken, r.voice)), deadline);
+        if (res.error) { r.error = res.error; return; }
+        if (!ok(res.status)) { r.error = `تعذّر توليد الصوت: ${T.googleError(res.status, res.json)}`; return; }
+        const a: any = T.readTts(res.json);
+        if ('error' in a) r.error = a.error; else Object.assign(r, { bytes: a.bytes, ms: a.ms });
+      };
+      const lane = async (list: any[], width: number) => {
+        for (let k = 0; k < list.length; k += width) await Promise.all(list.slice(k, k + width).map(speak));
+      };
+      await Promise.all([lane(ready.filter(r => 'prompt' in r.voice), 2), lane(ready.filter(r => !('prompt' in r.voice)), 4)]);
+    }
 
     /* ④ الملفّان إلى R2 ثمّ الصفُّ في القاعدة بهويّة المستدعي. واسمُ الملفّ بإصداره فلا يُطمَس قائم (`If-None-Match`)، ويُخزَّن
        في الذاكرة أبداً (`immutable`): الصوتُ المعاد توليدُه ملفٌّ جديد (189 ③) */
@@ -155,15 +207,16 @@ Deno.serve(async (req) => {
     const rev = T.revision();
     const put = (path: string, data: Uint8Array, type: string) => aws.fetch(T.r2Url(r2, path), { method: 'PUT', body: data,
       headers: { 'Content-Type': type, 'Cache-Control': 'public, max-age=31536000, immutable', 'If-None-Match': '*' } });
-    await Promise.all(ready.filter(r => r.bytes).map(async (r: any) => {
+    /* والآيةُ المقصوصة كذلك: منطوقُها ما تُلي بحرفه من المصحف، واسمُ صوتها مرجعُها (`quoteLabel`) */
+    await Promise.all(work.filter(r => r.bytes && !r.error).map(async (r: any) => {
       const k = T.clipKeys(c.item, r.sha, rev);
       try {
         const [a, t] = await Promise.all([put(k.audioPath, r.bytes, 'audio/mpeg'),
                                           put(k.spokenPath, new TextEncoder().encode(r.spoken), 'text/plain; charset=utf-8')]);
         if (!ok(a.status) || !ok(t.status)) { r.error = `تعذّر حفظ الملف في R2 (${ok(a.status) ? t.status : a.status})`; return; }
       } catch { r.error = 'تعذّر الوصول إلى R2'; return; }
-      const { data, error } = await db.rpc('save_voice', { p_item: c.item, p_sentence: r.s.text, p_audio: k.audio,
-                                                           p_ms: r.ms, p_voice: T.voiceLabel(r.source, r.voice.label) });
+      const { data, error } = await db.rpc('save_voice', { p_item: c.item, p_sentence: r.s.text, p_audio: k.audio, p_ms: r.ms,
+                                                           p_voice: r.quran ? r.voice.label : T.voiceLabel(r.source, r.voice.label) });
       if (error || !data?.ok) { r.error = error ? `تعذّر حفظ الصوت: ${error.message}` : data.error; return; }
       Object.assign(r, { audio: k.audio, spokenKey: k.spoken });
     }));
@@ -173,7 +226,8 @@ Deno.serve(async (req) => {
     if (r.twin) return { ...out(r.twin), sha: r.sha };
     if (r.held) return { sha: r.sha, state: 'held', reason: r.held };
     if (r.error || !r.audio) return { sha: r.sha, state: 'error', error: r.error ?? 'لم يُولَّد الصوت' };
-    return { sha: r.sha, state: 'ok', audio: r.audio, spoken: r.spokenKey, text: r.spoken, ms: r.ms, voice: r.voice.id, source: r.source };
+    return { sha: r.sha, state: 'ok', audio: r.audio, spoken: r.spokenKey, text: r.spoken, ms: r.ms, voice: r.voice.id, source: r.source,
+             ...(r.quran ? { ref: r.spans.map(({ s, a, from, to, whole, widened }: any) => ({ s, a, from, to, whole, widened })) } : {}) };
   };
   return reply(req, 200, { results: rows.map(out) });
 });

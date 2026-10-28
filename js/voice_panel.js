@@ -12,12 +12,15 @@
    🔑 **والنبرةُ:** سطرُ الحوار يحمل الجملةَ قبله، فتعرف بها الدالّةُ قائلَه (فالصوتُ النسائيّ بعد «فقالت») ونبرتَه («بين شهقاتها»)، وما
       كتبه المؤلّفُ في «النبرة» يغلبها — حكمُ المالك: «نعم تلقائياً» و«يحتاج ضبط للنبرة حسب النص». ونبراتٌ جاهزةٌ تملأ الحقلَ
       بلمسة (`TONES`) والكتابةُ باقيةٌ لما سواها — «يمكن إضافة أكثر من نبرة».
+   🔑 **والجملةُ المقتبِسة آيةً سطورٌ بأجزائها** (🆕 b207 · `quoteParts`): النثرُ بصوته واختياره، والآيةُ بلا صوتٍ يُختار — تعرفها الدالّةُ في
+      المصحف وتتلوها بصوت الحصري، ومرجعُها يُقرأ من اسم صوتها بعد التوليد (`quoteRef`)، وما أمسكته الدالّةُ يُقال سببُه تحته.
    🔑 **والدفعاتُ تتوالى ولا تتوازى:** حصّةُ Gemini للمشروع كلّه نحو عشرة طلباتٍ في الدقيقة (قِيس)، والحوارُ عليه.
       وبعد كلّ دفعةٍ تُقرأ الأصواتُ من القاعدة — فاللوحةُ تُري ما حُفظ لا ما ظنّت.
    🎨 محايدةٌ كمحدِّد السور، والحالُ تتلوّن بمعناها: «لم يُعتمد» و«ممسَكة» انتباهٌ (`warn`) · والتعذّرُ (`danger`).
    ══════════════════════════════════════════════════════════ */
 import { textSentences } from './book.js';
-import { VOICES, TONES, HELD, voiceRows, voiceBatches, tally } from './voice_rows.js';
+import { VOICES, TONES, HELD, voiceRows, voiceBatches, tally, quoteRef } from './voice_rows.js';
+import { surahName } from './quran.js';
 import { esc, escA, AR, N, toast } from './ui.js';
 import { clipPlayer, mediaUrl } from './media.js';
 import * as realApi from './api.js';
@@ -34,7 +37,7 @@ export function voicePanel(inp, { item = null, title = null, lang = null, api = 
   el.className = 'vp';
   el.setAttribute('aria-label', 'صوت النص');
   el.innerHTML = `<div class="vp-top"><b class="vp-h">صوت النص</b><span class="vp-sum"></span></div>
-    <p class="vp-say">يُولَّد صوت كل جملة ويُسمع هنا، ولا يسمعه الطالب حتى يُعتمد. والآيات المرقّمة تُتلى بصوت الحصري.</p>
+    <p class="vp-say">يُولَّد صوت كل جملة ويُسمع هنا، ولا يسمعه الطالب حتى يُعتمد. والآيات تُتلى بصوت الحصري: المرقّمة، والمقتبسة بين «﴿ ﴾» في الجمل.</p>
     <p class="vp-note" aria-live="polite"></p>
     <div class="vp-acts"></div>
     <div class="vp-rows"></div>`;
@@ -51,7 +54,7 @@ export function voicePanel(inp, { item = null, title = null, lang = null, api = 
   const player = clipPlayer();
   /* ما يخصّ الجملة بنصّها: صوتٌ اختاره المؤلّف · نطقُها (نصٌّ، أو false إن تعذّرت قراءتُه) · تصحيحٌ يُكتب · نبرةٌ يكتبها المؤلّف
      (تغلب ما تستنبطه الدالّةُ من الجملة قبل الحوار · حكمُ المالك: «يحتاج ضبط للنبرة حسب النص») · خطأُ آخر توليد */
-  const chosen = {}, spoken = {}, fixes = {}, tones = {}, errs = {}, open = new Set();
+  const chosen = {}, spoken = {}, fixes = {}, tones = {}, errs = {}, holds = {}, open = new Set();
   let rows = [], busy = false, stop = false, playing = null, progress = '', timer = 0;
 
   /* والمحفوظُ يُقارَن بما في المربّع بعد توحيد نهايات الأسطر: المربّعُ يكتبها «\n» أبداً، والمحفوظُ قد يحمل «\r\n»
@@ -100,13 +103,34 @@ export function voicePanel(inp, { item = null, title = null, lang = null, api = 
     if(!v?.tone) return 'صوت Chirp لا يأخذ نبرة، وأصوات Gemini تأخذها.';
     return r.talk && r.lead ? `تُستنبط من الجملة قبلها «${esc(r.lead.slice(-90))}»، أو تُكتب هنا فتغلبها.` : 'تُكتب هنا إن أُريدت.';
   };
+  /* 🆕 b207 · الجملةُ المقتبِسة: رأسٌ بالجملة كلِّها فوق أوّل أجزائها · والآيةُ جزءاً بمرجعها من اسم صوتها، بلا صوتٍ يُختار ولا نطقٍ ولا نبرة */
+  const groupHead = r => r.part?.k === 0 ? `<p class="vp-grp">جملة فيها آية، تُقرأ أجزاءً: ${esc(r.part.of)}</p>` : '';
+  const refText = r => {
+    if(!r.clip) return 'تُعرف في المصحف عند توليدها، وتُتلى بصوت الحصري.';
+    const ref = quoteRef(r.clip.voice);
+    if(!ref) return 'ليست آية في المصحف، فقرأها الصوت المولَّد.';
+    return ref.map(x => `${surahName(x.s)} ${AR(x.a)} — ${x.whole ? (x.widened ? 'الآية كاملة، فالمقتبس منها لا يُقصّ وحده' : 'الآية كاملة')
+      : `الكلمات ${AR(x.from)}–${AR(x.to)}`}`).join(' · ');
+  };
+  const notes = r => `${holds[r.text] ? `<p class="vp-rn warn">${esc(holds[r.text])}</p>` : ''}${
+    errs[r.text] ? `<p class="vp-rn bad">${esc(errs[r.text])}</p>` : ''}`;
+  const quoteRow = (r, k) => `<div class="vp-row vp-part" data-k="${k}">${groupHead(r)}
+      <p class="vp-t"><span class="vp-tag">آية</span>${esc(r.text)}</p>
+      <p class="vp-ref">${refText(r)}</p>
+      <div class="vp-ctl"><span class="vp-st ${r.state}">${STATE[r.state]}</span>
+        ${r.clip ? `<button type="button" class="mf-up" data-act="play">${playing === r.text ? 'إيقاف' : 'استماع'}</button>` : ''}
+        <button type="button" class="mf-up" data-act="gen"${busy || dirty() ? ' disabled' : ''}>${r.clip ? 'إعادة التوليد' : 'توليد'}</button>
+        ${r.clip ? `<button type="button" class="mf-up" data-act="approve"${busy ? ' disabled' : ''}>${r.state === 'ok' ? 'إلغاء الاعتماد' : 'اعتماد'}</button>` : ''}</div>
+      ${notes(r)}
+    </div>`;
   const rowHtml = (r, k) => {
+    if(r.part?.quote) return quoteRow(r, k);
     const v = chosen[r.text] || r.voice;
     const tag = KIND[r.kind] || (r.talk ? 'حوار' : '');
     const opts = Object.entries(VOICES).map(([id, x]) => `<option value="${id}"${id === v ? ' selected' : ''}>${
       x.name} · ${x.role}${id === r.recommended ? ' (مقترح)' : ''}</option>`).join('');
     const off = busy ? ' disabled' : '';
-    return `<div class="vp-row" data-k="${k}">
+    return `<div class="vp-row${r.part ? ' vp-part' : ''}" data-k="${k}">${groupHead(r)}
       <p class="vp-t">${tag ? `<span class="vp-tag">${tag}</span>` : ''}${esc(r.text)}</p>
       <div class="vp-ctl"><span class="vp-st ${r.state}">${STATE[r.state]}</span>${r.state === 'held' ? '' : `
         <select class="vp-v" aria-label="صوت الجملة"${off}>${opts}</select>
@@ -115,7 +139,7 @@ export function voicePanel(inp, { item = null, title = null, lang = null, api = 
         ${r.clip ? `<button type="button" class="mf-up" data-act="approve"${off}>${r.state === 'ok' ? 'إلغاء الاعتماد' : 'اعتماد'}</button>` : ''}
         <button type="button" class="mf-up" data-act="say" aria-expanded="${open.has(r.text)}">النطق والنبرة</button>`}</div>
       ${r.state === 'held' ? `<p class="vp-rn warn">${HELD}</p>` : ''}
-      ${errs[r.text] ? `<p class="vp-rn bad">${esc(errs[r.text])}</p>` : ''}
+      ${notes(r)}
       ${open.has(r.text) && r.state !== 'held' ? sayBox(r) : ''}
     </div>`;
   };
@@ -137,7 +161,7 @@ export function voicePanel(inp, { item = null, title = null, lang = null, api = 
     if(busy || !todo.length) return;
     if(dirty()){ toast('التوليد ينتظر حفظ التعديلات'); return; }
     busy = true; stop = false;
-    todo.forEach(r => { delete errs[r.text]; });
+    todo.forEach(r => { delete errs[r.text]; delete holds[r.text]; });
     const voice = Object.fromEntries(todo.map(r => [r.text, chosen[r.text] || r.voice]));
     const tone = Object.fromEntries(todo.map(r => [r.text, toneFor(r)]).filter(([, t]) => t));
     const batches = voiceBatches(sents, todo, { voice, spoken: extra.spoken || {}, tone });
@@ -159,6 +183,7 @@ export function voicePanel(inp, { item = null, title = null, lang = null, api = 
           if(!t) return;
           if(x.state === 'ok'){ spoken[t] = x.text; delete fixes[t]; }
           else if(x.state === 'error') errs[t] = x.error;
+          else if(x.state === 'held') holds[t] = x.reason;       // 🆕 b207 · آيةٌ لم تطابق المصحفَ تمامَ المطابقة — بسببها
         });
       }
       done += b.sentences.length;

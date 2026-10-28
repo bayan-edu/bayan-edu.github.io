@@ -234,8 +234,9 @@ export const itemText = id =>
    بها يعرف الكتابُ صوتَ جملته (189 ①). */
 export const itemVoices = id =>
   db.from('voice_clips').select('sha, sentence, audio, spoken, ms, voice, approved_at').eq('item_id', id);
+/* 🆕 b207 · ومعه طولُه: الجملةُ أجزاءً تُقلَب صفحتُها المقسومة بمجموع أطوالها (`proseSeq` · media.js) */
 export const approvedVoices = id =>
-  db.from('voice_clips').select('sentence, audio').eq('item_id', id).not('approved_at', 'is', null);
+  db.from('voice_clips').select('sentence, audio, ms').eq('item_id', id).not('approved_at', 'is', null);
 /* التوليدُ دفعةً من خمس جملٍ على الأكثر: { item, sentences: [{ text, kind, voice?, spoken? }], context }
    ⇒ { data: { results: [{ sha, state: 'ok'|'held'|'error', … }] }, error } — والردُّ بالعربيّة في جسمه يُقرأ كما هو
    (كـ`uploadR2`). والحارسُ في الدالّة (`voice_problem` بهويّة المستدعي) لا هنا. */
