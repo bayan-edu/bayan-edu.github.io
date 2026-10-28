@@ -7,9 +7,13 @@
    🎧 الجولاتُ كلٌّ في صفحته، والسابقةُ باقية:
       الأولى (`female.html`) — سأل المالك «هل يمكن إضافة صوت يستخدم للشخصيات النسائية؟»: جملتان لزبيبة بخمسة أصواتٍ نسائيّة،
         فحكم: «Gacrux والثاني Achernar» و«نعم تلقائياً» — «لكن يحتاج ضبط للنبرة حسب النص، فالنص هنا حزين مثلاً فنبرة الأم منكسرة وباكية».
-      **والثانية (`female2.html` · `female2/`) — النبرة:** أربعُ جملٍ لزبيبة من `603` بحرفها وما قدّم لها النصّ — ألمٌ وبكاءٌ وتهدّجٌ،
+      والثانية (`female2.html` · `female2/`) — النبرة: أربعُ جملٍ لزبيبة من `603` بحرفها وما قدّم لها النصّ — ألمٌ وبكاءٌ وتهدّجٌ،
         وهدوءٌ يُسمع أنّ الهادئَ لا ينكسر — بثلاثة وجوه: بلا نبرة (كما كان الصوتُ يسمع السطرَ وحده) · بنبرة النصّ (`lead`: الجملةُ قبله)
-        بالصوتين · وبنبرةٍ يكتبها المؤلّف («منكسرة باكية» · `tone`) للحزينة وحدها.
+        بالصوتين · وبنبرةٍ يكتبها المؤلّف («منكسرة باكية» · `tone`) للحزينة وحدها. فحكم: «النبرة معقولة، يمكن إضافة أكثر من نبرة،
+        سعيدة، مثيرة، ضاحكة… إلخ».
+      **والثالثة (`tones.html` · `tones/`) — النبراتُ الجاهزة (`TONES` في `js/voice_rows.js`):** سطران محايدا المعنى يحتملان كلَّ نبرة
+        (فالفرقُ النبرةُ وحدها لا ما يقوله الكلام) — لامرأةٍ بـGacrux ولرجلٍ بـAlgenib — بلا نبرةٍ ثمّ بكلّ نبرة. والطلباتُ متباعدةٌ
+        (`GAP`): حصّةُ Gemini نحو عشرةٍ في الدقيقة، واثنان وثلاثون مقطعاً يتجاوزونها لو تتابعوا.
    ══════════════════════════════════════════════════════════ */
 import { writeFileSync, mkdirSync, existsSync, readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -17,27 +21,22 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { post, parse, okStatus } from './google.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const DIR = join(ROOT, '.tts-compare', 'trial'), OUT = join(DIR, 'female2');
+const DIR = join(ROOT, '.tts-compare', 'trial'), OUT = join(DIR, 'tones');
 const T = await import(pathToFileURL(join(ROOT, 'supabase/functions/tts/core.js')));
+const { TONES } = await import(pathToFileURL(join(ROOT, 'js/voice_rows.js')));
 mkdirSync(OUT, { recursive: true });
 
-const SAD = 'منكسرة باكية';
+/* سطران يحتملان كلَّ نبرة — و`lead` سياقُ التشكيل وحده هنا: النبرةُ المكتوبة تغلبه في التوجيه (`toneOf`)، والأوّلُ بلا شيء */
 const LINES = [
-  { id: 'pain', mood: 'ألم', sad: true, lead: 'وكانت زبيبة تستمع إليه فى دهشة متعجبة من قوله وصاحت فى ألم:',
-    text: '- إنك تقطع نياط قلبى يا عنترة.' },
-  { id: 'sob', mood: 'بكاء', sad: true, lead: 'فقالت زبيبة بين شهقاتها:', text: '- إنك ابنه.' },
-  { id: 'shake', mood: 'تهدّج', sad: true, lead: 'وسكتت لحظة ثم قالت بصوت متهدج:',
-    text: '- إنه أبوك يا ولدى ولست أنكر أنه عزيز علىَّ، ولن أرضى أن أفقده كما لست أرضى أن أفقدك.' },
-  { id: 'calm', mood: 'هدوء', sad: false, lead: 'فقالت زبيبة هادئة:',
-    text: '- لقد عرفت يا عنتر أنى لا أكذب، ولو أردت أن أكذب على الناس جميعًا ما كذبت على ولدى.' }
+  { id: 'her', mood: 'امرأة · Gacrux', voice: 'gacrux', lead: 'فقالت:', text: '- لقد عاد أبي من السفر، وسيبقى معنا هذه المرة.' },
+  { id: 'him', mood: 'رجل · Algenib', voice: 'algenib', lead: 'فقال:', text: '- سنخرج إلى البحر غدا قبل أن تطلع الشمس.' }
 ];
-/* الوجوه — والتوجيهُ من `voiceFor` بعينه: بلا `lead` ⇒ ما كان الصوتُ يسمعه قبل · بـ`lead` ⇒ نبرةُ النصّ · بـ`tone` ⇒ نبرةُ المؤلّف */
+/* الوجوه — والتوجيهُ من `voiceFor` بعينه: توجيهُ الحوار وحده، ثمّ هو ومعه كلُّ نبرةٍ من اللوحة بلفظها */
 const WAYS = [
-  { id: 'plain', label: 'Gacrux · بلا نبرة (كما كان)', s: l => ({ voice: 'gacrux' }) },
-  { id: 'lead', label: 'Gacrux · نبرة النص', s: l => ({ voice: 'gacrux', lead: l.lead }) },
-  { id: 'lead2', label: 'Achernar · نبرة النص', s: l => ({ voice: 'achernar', lead: l.lead }) },
-  { id: 'tone', label: `Gacrux · نبرة مكتوبة «${SAD}»`, s: l => ({ voice: 'gacrux', lead: l.lead, tone: SAD }), only: l => l.sad }
+  { id: 'plain', label: 'بلا نبرة', s: l => ({ voice: l.voice }) },
+  ...TONES.map((tone, k) => ({ id: `t${String(k + 1).padStart(2, '0')}`, label: tone, s: l => ({ voice: l.voice, tone }) }))
 ];
+const GAP = 6500;                   // بين بدء طلبين للصوت: أقلُّ من عشرةٍ في الدقيقة
 
 /* الدخولُ بحساب الخدمة، والعابرُ يُعاد — كما في `tts_trial.mjs` */
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -75,10 +74,13 @@ for(const l of LINES){
   console.log(`✔ tashkeel ${l.id} · ${l.spoken}`);
 }
 
-/* ② الصوتُ بكلّ وجه — اثنان معاً (حصّةُ Gemini) */
+/* ② الصوتُ بكلّ وجه — اثنان معاً، وبين بدء طلبين `GAP` على الأقلّ (حصّةُ Gemini) */
 const jobs = LINES.flatMap(l => WAYS.filter(w => !w.only || w.only(l)).map(w => ({ l, w })));
 const clips = {};
+let next = 0;
+const gate = async () => { const now = Date.now(), at = Math.max(now, next); next = at + GAP; if(at > now) await sleep(at - now); };
 const voice = async ({ l, w }) => {
+  await gate();
   const v = T.voiceFor({ text: l.text, kind: 'p', spoken: l.spoken, ...w.s(l) });
   const res = await call(T.TTS.endpoint, JSON.stringify(T.ttsRequest(l.spoken, v)), 120000);
   const j = parse(res.text);
@@ -104,7 +106,7 @@ const player = (l, w) => {
 const html = `<!doctype html>
 <html lang="ar" dir="rtl"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>نبرة الشخصيات النسائية</title>
+<title>النبرات الجاهزة</title>
 <style>
   :root { --bg:#f7f6f2; --card:#fff; --ink:#1f2328; --mute:#5f6368; --line:#e3e1da; --err:#b3261e; }
   @media (prefers-color-scheme: dark) { :root { --bg:#16181c; --card:#1f2228; --ink:#e8e6e1; --mute:#a3a7ad; --line:#30343b; --err:#f2b8b5; } }
@@ -119,9 +121,9 @@ const html = `<!doctype html>
   .add { margin:6px 0 0; color:var(--mute); font-size:.8rem; line-height:1.6; }
   .err { color:var(--err); } audio { width:100%; margin-top:4px; }
 </style></head><body><main>
-<h1>نبرة الشخصيات النسائية</h1>
-<p class="lead">أربع جمل لزبيبة من النص 603، ولكلٍّ ما قدّم لها به النص. تُسمع كل جملة: بلا نبرة كما كان الصوت يسمع السطر وحده ·
-وبنبرة النص (الجملة قبلها) بالصوتين Gacrux وAchernar · وبنبرةٍ يكتبها المؤلّف «${SAD}» للحزينة. وتحت كل مقطع ما زيد على توجيه الحوار.</p>
+<h1>النبرات الجاهزة</h1>
+<p class="lead">سطران معناهما محايد يحتمل كل نبرة، فالفرق بين المقاطع هو النبرة وحدها: الأول لامرأة بصوت Gacrux، والثاني لرجل بصوت Algenib.
+يُسمع كل سطر بلا نبرة، ثم بكل نبرة من الـ${TONES.length} التي في لوحة الصوت. وتحت كل مقطع ما زيد على توجيه الحوار بحرفه.</p>
 ${LINES.map(l => `<section><h3>${l.mood}</h3>
   <p class="ctx">${esc(l.lead)}</p>
   <p class="shown">${esc(l.text)}</p>
@@ -129,7 +131,7 @@ ${LINES.map(l => `<section><h3>${l.mood}</h3>
   <div class="grid">${WAYS.map(w => player(l, w)).join('')}</div></section>`).join('\n')}
 </main></body></html>
 `;
-writeFileSync(join(DIR, 'female2.html'), html);
+writeFileSync(join(DIR, 'tones.html'), html);
 const bad = Object.values(clips).filter(c => c.error).length;
-console.log(`\n${Object.keys(clips).length - bad}/${Object.keys(clips).length} clips · ${join(DIR, 'female2.html')}`);
+console.log(`\n${Object.keys(clips).length - bad}/${Object.keys(clips).length} clips · ${join(DIR, 'tones.html')}`);
 process.exit(bad ? 1 : 0);

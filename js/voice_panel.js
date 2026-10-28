@@ -10,13 +10,14 @@
    🔑 **والنطقُ** (المشكولُ الذي سمعه الصوت) يعود في ردّ التوليد (`text`)، ومكانُه الدائم ملفُّ `.txt` بجوار صوته في R2 —
       يُقرأ إن أذن المخزنُ للموقع (CORS)، وإلّا ظهر ساعةَ التوليد وحدها (189: «ثلاثٌ للخطوتين التاليتين» ①).
    🔑 **والنبرةُ:** سطرُ الحوار يحمل الجملةَ قبله، فتعرف بها الدالّةُ قائلَه (فالصوتُ النسائيّ بعد «فقالت») ونبرتَه («بين شهقاتها»)، وما
-      كتبه المؤلّفُ في «النبرة» يغلبها — حكمُ المالك: «نعم تلقائياً» و«يحتاج ضبط للنبرة حسب النص».
+      كتبه المؤلّفُ في «النبرة» يغلبها — حكمُ المالك: «نعم تلقائياً» و«يحتاج ضبط للنبرة حسب النص». ونبراتٌ جاهزةٌ تملأ الحقلَ
+      بلمسة (`TONES`) والكتابةُ باقيةٌ لما سواها — «يمكن إضافة أكثر من نبرة».
    🔑 **والدفعاتُ تتوالى ولا تتوازى:** حصّةُ Gemini للمشروع كلّه نحو عشرة طلباتٍ في الدقيقة (قِيس)، والحوارُ عليه.
       وبعد كلّ دفعةٍ تُقرأ الأصواتُ من القاعدة — فاللوحةُ تُري ما حُفظ لا ما ظنّت.
    🎨 محايدةٌ كمحدِّد السور، والحالُ تتلوّن بمعناها: «لم يُعتمد» و«ممسَكة» انتباهٌ (`warn`) · والتعذّرُ (`danger`).
    ══════════════════════════════════════════════════════════ */
 import { textSentences } from './book.js';
-import { VOICES, HELD, voiceRows, voiceBatches, tally } from './voice_rows.js';
+import { VOICES, TONES, HELD, voiceRows, voiceBatches, tally } from './voice_rows.js';
 import { esc, escA, AR, N, toast } from './ui.js';
 import { clipPlayer, mediaUrl } from './media.js';
 import * as realApi from './api.js';
@@ -76,15 +77,23 @@ export function voicePanel(inp, { item = null, title = null, lang = null, api = 
     const shown = typeof s === 'string' ? esc(s)
       : !r.clip ? 'لم يُولَّد صوت هذه الجملة بعد.'
       : s === false ? 'لا يُقرأ نطق هذا الصوت من المخزن، ويظهر عند إعادة التوليد.' : 'يُقرأ النطق…';
+    const off = VOICES[chosen[r.text] || r.voice]?.tone ? '' : ' disabled', cur = String(tones[r.text] || '').trim();
     return `<div class="vp-sayb">
       <p class="vp-spoken">${shown}</p>
       <label class="vp-fixl">تصحيح النطق: الجملة مشكولةً كما تُنطق</label>
       <textarea class="vp-fix" dir="rtl" rows="2">${esc(fixes[r.text] ?? (typeof s === 'string' ? s : ''))}</textarea>
       <label class="vp-fixl">النبرة: ${toneSay(r)}</label>
-      <input class="vp-tone" type="text" dir="rtl" maxlength="200" placeholder="مثل: منكسرة باكية" value="${escA(tones[r.text] || '')}">
+      <div class="vp-tones" role="group" aria-label="نبرات جاهزة">${TONES.map(t => `<button type="button" class="vp-tn" data-act="tone"
+        data-tone="${escA(t)}" aria-pressed="${t === cur}"${off}>${esc(t)}</button>`).join('')}</div>
+      <input class="vp-tone" type="text" dir="rtl" maxlength="200" placeholder="أو نبرة أخرى تُكتب هنا" value="${escA(tones[r.text] || '')}"${off}>
       <button type="button" class="mf-up" data-act="fix"${busy || dirty() ? ' disabled' : ''}>توليد بالنطق والنبرة</button>
     </div>`;
   };
+  /* أيُّ نبرةٍ جاهزةٍ تطابق الحقل — تُعلَّم في مربّعها وحده، فالكتابةُ لا تُعيد رسمَ اللوحة ولا يضيع موضعُ المؤشّر */
+  const pressTones = (box, t) => box.querySelectorAll('.vp-tn')
+    .forEach(c => c.setAttribute('aria-pressed', String(c.dataset.tone === String(t || '').trim())));
+  /* النبرةُ التي تُرسل: المكتوبةُ لصوتٍ يأخذها — وChirp لا يأخذها، فما كُتب له لا يُرسل */
+  const toneFor = r => VOICES[chosen[r.text] || r.voice]?.tone ? String(tones[r.text] || '').trim() : '';
   /* من أين نبرةُ الجملة إن لم تُكتب: صوتُ Chirp لا يأخذها · والحوارُ من الجملة قبله · والسردُ بلا نبرةٍ ما لم تُكتب */
   const toneSay = r => {
     const v = VOICES[chosen[r.text] || r.voice];
@@ -130,7 +139,7 @@ export function voicePanel(inp, { item = null, title = null, lang = null, api = 
     busy = true; stop = false;
     todo.forEach(r => { delete errs[r.text]; });
     const voice = Object.fromEntries(todo.map(r => [r.text, chosen[r.text] || r.voice]));
-    const tone = Object.fromEntries(todo.filter(r => String(tones[r.text] || '').trim()).map(r => [r.text, tones[r.text].trim()]));
+    const tone = Object.fromEntries(todo.map(r => [r.text, toneFor(r)]).filter(([, t]) => t));
     const batches = voiceBatches(sents, todo, { voice, spoken: extra.spoken || {}, tone });
     const total = batches.reduce((n, b) => n + b.sentences.length, 0);
     let done = 0;
@@ -194,20 +203,36 @@ export function voicePanel(inp, { item = null, title = null, lang = null, api = 
     /* بالنطق المكتوب إن كُتب (فلا يُعاد التشكيل)، وبالنبرة المكتوبة إن كُتبت — وأحدُهما يكفي */
     fix: r => {
       const t = String(fixes[r.text] ?? (typeof spoken[r.text] === 'string' ? spoken[r.text] : '')).trim();
-      if(!t && !String(tones[r.text] || '').trim()){ toast('لا نطق ولا نبرة مكتوبان'); return; }
+      if(!t && !toneFor(r)){ toast('لا نطق ولا نبرة مكتوبان'); return; }
       generate([r], { spoken: t ? { [r.text]: t } : {} });
+    },
+    /* نبرةٌ جاهزة تملأ الحقلَ بلفظها فيُرى ما يُرسل، ولمسةٌ ثانيةٌ عليها تُفرغه */
+    tone: (r, b) => {
+      const t = String(tones[r.text] || '').trim() === b.dataset.tone ? '' : b.dataset.tone;
+      const box = b.closest('.vp-sayb');
+      tones[r.text] = box.querySelector('.vp-tone').value = t;
+      pressTones(box, t);
     }
   };
   const rowOf = n => rows[+n.closest('.vp-row')?.dataset.k];
   list.addEventListener('click', e => {
     const b = e.target.closest('button[data-act]');
     const r = b && rowOf(b);
-    if(r) act[b.dataset.act]?.(r);
+    if(r) act[b.dataset.act]?.(r, b);
   });
-  list.addEventListener('change', e => { const s = e.target.closest('.vp-v'), r = s && rowOf(s); if(r) chosen[r.text] = s.value; });
+  /* والصوتُ يغيّر ما تقوله النبرة (Chirp لا يأخذها) ⇒ يُعاد رسمُ مربّعها إن كان مفتوحاً، والقائمةُ في مكانها فلا يضيع موضعُها */
+  list.addEventListener('change', e => {
+    const s = e.target.closest('.vp-v'), r = s && rowOf(s);
+    if(!r) return;
+    chosen[r.text] = s.value;
+    const box = s.closest('.vp-row').querySelector('.vp-sayb');
+    if(box) box.outerHTML = sayBox(r);
+  });
   list.addEventListener('input', e => {
     const t = e.target.closest('.vp-fix, .vp-tone'), r = t && rowOf(t);
-    if(r) (t.classList.contains('vp-tone') ? tones : fixes)[r.text] = t.value;
+    if(!r) return;
+    if(t.classList.contains('vp-tone')){ tones[r.text] = t.value; pressTones(t.closest('.vp-sayb'), t.value); }
+    else fixes[r.text] = t.value;
   });
   acts.addEventListener('click', e => {
     const b = e.target.closest('button[data-act]');

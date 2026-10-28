@@ -5,7 +5,7 @@
    ما يُقاس: **نسختا القاعدة** — اللوحةُ تُري المقترحَ والإمساكَ قبل التوليد، والدالّةُ تحكم بهما عنده، فتُقاس الأولى على
    `supabase/functions/tts/core.js` ولا تُصدَّق · السطورُ من جمل الكتاب وأصوات القاعدة (الحالاتُ · الآياتُ خارجها ·
    المكرَّرة · الممسَكة · صوتُ الصفّ · صوتُ جملةٍ خرجت من النصّ) · الدفعاتُ (خمسٌ · المكرَّرةُ مرّة · السياق · الصوتُ حين
-   يخالف المقترح وحده · النطق) · والعدّ.
+   يخالف المقترح وحده · النطق) · والعدّ · والنبراتُ الجاهزة (ما سمّاه المالك · صفةُ النبرة · تقبلها الدالّةُ كما هي).
    ══════════════════════════════════════════════════════════ */
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -142,6 +142,17 @@ const rows = V.voiceRows(sents, clips);
      && checked.sentences.every((s, k) => T.recommend(s) === rs[k].recommended), show(checked));
   ok('والدالّةُ تعطي سطرَها Gacrux بنبرة «بين شهقاتها»، وسطرَه بالنبرة المكتوبة', T.voiceFor(checked.sentences[2]).name === 'Gacrux'
      && T.voiceFor(checked.sentences[2]).prompt.includes('بين شهقاتها') && T.voiceFor(checked.sentences[4]).prompt.includes('ساخرة'), '');
+}
+
+/* ⑤ النبراتُ الجاهزة (حكمُ المالك: «يمكن إضافة أكثر من نبرة، سعيدة، مثيرة، ضاحكة… إلخ») */
+{
+  const OWNER = ['سعيدة', 'مثيرة', 'ضاحكة', 'منكسرة باكية', 'حزينة'];
+  ok('فيها ما سمّاه المالك', OWNER.every(t => V.TONES.includes(t)), show(OWNER.filter(t => !V.TONES.includes(t))));
+  ok('بلا تكرارٍ ولا فراغٍ على طرفيها', new Set(V.TONES).size === V.TONES.length && V.TONES.every(t => t && t === t.trim()), show(V.TONES));
+  ok('وكلُّ كلمةٍ صفةُ النبرة (مؤنّثةٌ بالتاء) فتصلح للرجل والمرأة', V.TONES.every(t => t.split(' ').every(w => w.endsWith('ة'))), show(V.TONES));
+  const asked = V.TONES.map(tone => T.checkRequest({ item: 1, sentences: [{ text: '- لقد عاد أبي.', kind: 'p', voice: 'gacrux', tone }], context: '' }));
+  ok(`والدالّةُ تقبل النبراتِ الـ${V.TONES.length} كما هي، وتبلغ كلٌّ منها الصوت`, asked.every((a, k) => !a.error
+     && T.voiceFor(a.sentences[0]).prompt.includes(`بهذه النبرة: ${V.TONES[k]}.`)), show(asked.filter(a => a.error)));
 }
 
 console.log(`\n${n - bad}/${n}${bad ? ' — فشل' : ''}`);

@@ -13,16 +13,25 @@
 /* لوحةُ الأصوات — مفاتيحُها مفاتيحُ الدالّة، واسمُ الصوت في القاعدة (`voice_clips.voice`) يبدأ بـ`label`.
    والمقترحُ حكمُ المالك بعد الجولة الرابعة (٢٨ أكتوبر): Iapetus على Chirp للسرد، وAlgenib على Gemini للحوار. */
 /* والدورُ معرَّفاً («الراوي»): «راوٍ» نكرةً يُرسم تنوينُه في القائمة أو يسقط فتبقى «راو» — قِيس في المتصفّح.
+   و«رجل» و«امرأة» لا «شخصيّة رجاليّة/نسائيّة»: «Gacrux · شخصيّة نسائيّة (مقترح)» يحتاج ٢٣٥ بكسلاً، فقُطع «(مقترح)» في سطرٍ عرضُه ٢٠٨ — قِيس.
    و`tone` أيأخذ الصوتُ نبرةً: أصواتُ Gemini تأخذ التوجيه، وChirp لا (`core.js`).
    والصوتان النسائيّان حكمُ المالك بأذنه (٢٨ أكتوبر · `tools/tts_audition.mjs`): «Gacrux والثاني Achernar». */
 export const VOICES = Object.freeze({
   iapetus:  Object.freeze({ name: 'Iapetus', role: 'الراوي', tone: false, label: 'chirp-3-hd · ar-XA · Iapetus' }),
   charon:   Object.freeze({ name: 'Charon', role: 'الراوي', tone: true, label: 'gemini-2.5-flash-tts · ar-001 · Charon' }),
-  algenib:  Object.freeze({ name: 'Algenib', role: 'شخصيّة رجاليّة', tone: true, label: 'gemini-2.5-flash-tts · ar-001 · Algenib' }),
-  gacrux:   Object.freeze({ name: 'Gacrux', role: 'شخصيّة نسائيّة', tone: true, label: 'gemini-2.5-flash-tts · ar-001 · Gacrux' }),
-  achernar: Object.freeze({ name: 'Achernar', role: 'شخصيّة نسائيّة', tone: true, label: 'gemini-2.5-flash-tts · ar-001 · Achernar' })
+  algenib:  Object.freeze({ name: 'Algenib', role: 'رجل', tone: true, label: 'gemini-2.5-flash-tts · ar-001 · Algenib' }),
+  gacrux:   Object.freeze({ name: 'Gacrux', role: 'امرأة', tone: true, label: 'gemini-2.5-flash-tts · ar-001 · Gacrux' }),
+  achernar: Object.freeze({ name: 'Achernar', role: 'امرأة', tone: true, label: 'gemini-2.5-flash-tts · ar-001 · Achernar' })
 });
 export const NARRATOR = 'iapetus', CHARACTER = 'algenib', FEMALE = 'gacrux';
+
+/* نبراتٌ جاهزةٌ يُختار منها بلمسة، والكتابةُ باقيةٌ لما سواها — حكمُ المالك بعد سماع النبرة: «النبرة معقولة، يمكن إضافة أكثر من نبرة:
+   سعيدة، مثيرة، ضاحكة… إلخ». **وهي صفةُ النبرة لا القائل** («نبرةٌ حزينة»)، فتصلح للرجل والمرأة بلفظٍ واحد. وتُرسل كما تُرى (`tone`)،
+   فلا معنى خفيٌّ وراء الكلمة. مرتّبةٌ أسراً: الحزنُ (وهو ما طلبه المالكُ أوّلَ مرّة) · الفرحُ · الدهشةُ والغضبُ والخوف · السخريةُ
+   والحزم · اللينُ · الرجاء. و«متحمّسة» بجوار «مثيرة»: الأولى حماسةُ القائل، والثانية تشويقُ السامع — ولفظُ «مثيرة» يحتمل غيرَه،
+   فالأذنُ تحكم بينهما (`tools/tts_audition.mjs`). */
+export const TONES = Object.freeze(['حزينة', 'منكسرة باكية', 'سعيدة', 'ضاحكة', 'متحمّسة', 'مثيرة', 'متعجّبة', 'غاضبة', 'خائفة',
+  'ساخرة', 'حازمة', 'هادئة', 'حانية', 'هامسة', 'متوسّلة']);
 
 const isTitle = s => s.kind === 'cover' || s.kind === 'h';
 /* الكلامُ المباشر: سطرٌ يبدأ بشرطة الحوار أو بعلامة تنصيص — والعنوانُ لا يكون حواراً */
