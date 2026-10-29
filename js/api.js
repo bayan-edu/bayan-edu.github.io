@@ -477,6 +477,11 @@ export const importCards = (course, payload, dry = true) =>
 export const importTexts = (course, payload, dry = true) =>
   db.rpc('import_texts', { p_course: course, p_payload: payload, p_dry_run: dry });
 
+/* 🆕 b208 · عقدُ «بنك الأسئلة» (192) — أسئلةُ ملفّ الاختبار حرفاً، والرأسُ `bank` عنوانُ البنك في المادّة:
+   القائمُ تُضاف إليه الدفعة والغائبُ يُنشأ، والهدفُ إلزاميّ (به فرعُ السؤال). والحارسُ `can_curate`. */
+export const importBank = (course, payload, dry = true) =>
+  db.rpc('import_bank', { p_course: course, p_payload: payload, p_dry_run: dry });
+
 /* 🗺️ عقدُ استيراد خريطة الدروس (131) — وفرقُه عن أخويه فرقان:
    · **يُنشئ ويُحدّث ولا يحذف.** درسٌ في القاعدة ليس في الخريطة يُعرض
      في «خارج الخريطة» ويبقى كما هو — والحذفُ لا يقع من هنا أبداً.

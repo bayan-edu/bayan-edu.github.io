@@ -19,7 +19,7 @@ import { openStrands, strandsOf, strandSelect, clearStrands } from './editor_str
 import { openObjectives } from './editor_objectives.js';
 import { openBanks } from './editor_banks.js';
 import { openQuizImport, openCardsImport, openMapImport, openIndexImport,
-         openTextsImport } from './editor_import.js';
+         openTextsImport, openBankImport } from './editor_import.js';
 
 /* شجرة التأليف تُحمَّل مرة وتُخزَّن — لا تتغيّر أثناء الجلسة */
 async function tree(){
@@ -700,6 +700,8 @@ export async function openCourse(course){
             ${toolBtn('imm', 'mindmap', 'خريطة الدروس')}
             ${toolBtn('imo', 'target', 'فهرس الأهداف')}
             ${toolBtn('imt', 'text', 'نصوص القراءة')}
+            ${/* 🆕 b208 · سادسُ البوّابات (192): بنكُ أسئلةٍ للمادّة — وبابُه الثاني في «بنوك المادة» */''}
+            ${s.id ? toolBtn('imb', 'bank', 'بنك أسئلة') : ''}
           </div>
         </details>
       </div>` :`<div class="warnbox">يمكنك إضافة مصادر إلى الدروس القائمة.</div>`}
@@ -734,6 +736,8 @@ export async function openCourse(course){
   if(imc) imc.onclick = () => openCardsImport(course);
   const imt = document.getElementById("imt");               // 📖 b191 · بوّابةُ النصوص (180)
   if(imt) imt.onclick = () => openTextsImport(course);
+  const imb = document.getElementById("imb");               // 🆕 b208 · بوّابةُ البنك (192)
+  if(imb) imb.onclick = () => openBankImport(course);
   /* 🆕 b195 · و`[data-l]` لا كلُّ صفّ: صفُّ الدرس المستعار بلا مفتاح، وبلا الشرط يفتح «درساً جديداً» */
   if(course.curate) app.querySelectorAll(".ed-row[data-l]").forEach(el =>
     el.onclick = () => editLesson(course, lessons.find(x => String(x.id) === el.dataset.l)));

@@ -21,6 +21,7 @@ import * as api from './api.js';
 import { app, head, toast, esc, escA, AR, errBox, nav, setWide, scrollTop, N } from './ui.js';
 import { openCourse } from './editor.js';
 import { openBank, openQuizPreview, quizSettings } from './editor_quiz.js';
+import { openBankImport } from './editor_import.js';
 import { strandsOf } from './editor_strands.js';
 import { KIND_LABEL } from './render_q.js';
 
@@ -71,6 +72,11 @@ export async function openBanks(course, subject){
     <div class="grp">البنوك <span class="chip">${AR(banks.length)}</span></div>
     ${banks.length ? banks.map(row).join('') : '<div class="ed-empty">لا بنوك بعد</div>'}
 
+    ${/* 🆕 b208 · والاستيرادُ بابٌ ثانٍ إلى البنك (192): ملفٌّ يُضيف إلى بنكٍ بعنوانه أو يُنشئه — ويعود إلى هنا */''}
+    <div class="nav" style="margin-top:12px">
+      <button class="btn ghost" id="bkImp">⇪ استيراد أسئلة من ملفّ</button>
+    </div>
+
     <div class="card" style="margin-top:18px">
       <div class="grp" style="margin-top:0">بنك جديد</div>
       <label class="fl">العنوان *</label>
@@ -82,6 +88,8 @@ export async function openBanks(course, subject){
     </div>`;
 
   document.getElementById("bk").onclick = () => openCourse(course);
+  document.getElementById("bkImp").onclick = () =>
+    openBankImport(course, { label: 'بنوك المادة', go: () => openBanks(course, subject) });
   app.querySelectorAll("[data-bk]").forEach(el =>
     el.onclick = () => openBank(course, subject, Number(el.dataset.bk)));
   document.getElementById("bkNew").onclick = async e => {

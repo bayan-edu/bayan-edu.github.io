@@ -20,6 +20,10 @@
       وجاءت بحقلٍ واحدٍ جديد (`onOut`): زرُّ «معاينة» لكلّ نصٍّ في الخطّة يفتح الكتابَ الحقيقيّ
       بمظهر الطالب (`previewText` في editor_items.js — الذي يخدم المحرّرَ نفسَه).
 
+   🆕 b208 · **وبوّابةٌ سادسة: بنكُ الأسئلة** (`import_bank` · 192) — سطرٌ في الجدول، ومعه حقلان اختياريّان:
+      `same` (سطرُ «لا جديد» بعنوان البنك لا بكود اختبار) · و`back` معاملاً لا حقلاً: البوّابةُ تُفتح من
+      «بنوك المادة» أيضاً، **فتعود إلى حيث فُتحت** — والأخواتُ إلى دروس المقرّر كما كانت.
+
    🔴 **ولو نُسخ الملفّ لصارا اثنين يفترقان.** وتلك سابقةُ هذا الملفّ
       نفسِه: صندوقُ الاستيراد القديم حمل نسخةً من الحراسة فسقط منها
       ثلاثةُ حقولٍ صامتةً. **ونسختان من مسطرةٍ واحدة تفترقان** — في
@@ -128,6 +132,27 @@ const SAMPLE_TEXTS = JSON.stringify({
   }]
 }, null, 2);
 
+/* 🆕 b208 · قالبُ البنك (192) — أسئلةُ ملفّ الاختبار حرفاً، والرأسُ عنوانُ البنك. ونصّان في مجموعةٍ واحدة
+   (`group`) بديلان لنصٍّ واحد، وسؤالاهما صيغتا خانةٍ واحدة (`variant`): تُختار حارةٌ لكلّ محاولة. */
+const SAMPLE_BANK = JSON.stringify({
+  bank: "بنك الاستيعاب المقروء",
+  passages: [
+    { ref: "p1", title: "نصّ للقراءة", body: "متن النصّ…", group: "RC-1" },
+    { ref: "p2", title: "نصّ بديل", body: "متن نصٍّ بديل يقيس الشيء نفسه…", group: "RC-1" }
+  ],
+  questions: [{
+    objective: "RC.MAIN", variant: "s1", section: "القسم اللفظي",
+    kind: "mcq", difficulty: "medium", passage: "p1",
+    body: "ما الفكرة الرئيسة في النصّ؟", explanation: "شرح الخطأ — يقرؤه الطالب بعد محاولته.",
+    options: [{ body: "الصواب", correct: true }, { body: "مشتّت", dx: "SKIM" }]
+  }, {
+    objective: "RC.MAIN", variant: "s1", section: "القسم اللفظي",
+    kind: "mcq", difficulty: "medium", passage: "p2",
+    body: "ما الفكرة الرئيسة في النصّ؟", explanation: "شرح الخطأ — يقرؤه الطالب بعد محاولته.",
+    options: [{ body: "الصواب", correct: true }, { body: "مشتّت", dx: "SKIM" }]
+  }]
+}, null, 2);
+
 /* ── عرضُ الخطّة كما تردُّها الدالّة — بلا إعادة حساب ──
    🔑 كلُّ رقمٍ هنا من القاعدة، فلا ينحرف عن الذي سيُكتب. */
 function planBox(pl){
@@ -153,6 +178,34 @@ function planBox(pl){
       Object.keys(vars).length ? ' · ' + N(Object.keys(vars).length,
         'خانة تُقرن', 'خانتان تُقرنان', 'خانات تُقرن', 'خانة تُقرن') : ''}</div>
     <div class="ed-m" style="margin-bottom:6px">${bag(pl['بأنماطها'])}</div>
+    <div class="ed-m" style="margin-bottom:6px">${bag(pl['بأهدافها'])}</div>
+    <div class="ed-m">${bag(pl['بأقسامها'])}</div>`;
+}
+
+/* 🆕 b208 · خطّةُ البنك (192) — البنكُ أوّلاً: أيُنشأ أم تُضاف إليه، وما فيه قبلها. ثمّ الدفعةُ بأرقامها،
+   ثمّ توزيعُها. 🔑 **والفروعُ قبل الأهداف:** الفرعُ هو ما يزنه النموذج (191)، فهو ما يُقرأ أوّلاً. */
+function planBank(pl){
+  if(!pl) return '';
+  const bag = o => Object.entries(o || {}).map(([k, v]) =>
+    `<span class="chip">${esc(k)} <b>${AR(v)}</b></span>`).join(' ');
+  const b = pl['البنك'] || {}, was = b['فيه قبلها'];
+  const vars = Object.keys(pl['خاناتٌ ستُقرن'] || {}).length;
+  const grps = Object.keys(pl['مجموعاتُ نصوص'] || {}).length;
+  return `
+    <div class="line" style="margin-bottom:8px"><b><bdi>${esc(b['العنوان'] || '—')}</bdi></b>
+      <span class="chip${b['جديد'] ? ' g' : ''}">${b['جديد'] ? 'بنك جديد' : 'بنك قائم'}</span></div>
+    ${was ? `<div class="ed-m" style="margin-bottom:10px">
+      <span class="chip">فيه قبلها: ${N(was['أسئلة'] || 0, 'سؤال', 'سؤالان', 'أسئلة', 'سؤالاً')}</span>
+      <span class="chip">${N(was['خانات'] || 0, 'خانة', 'خانتان', 'خانات', 'خانة')}</span>
+      <span class="chip">${N(was['نصوص'] || 0, 'نصّ', 'نصّان', 'نصوص', 'نصّاً')}</span></div>` : ''}
+    <div class="line" style="margin-bottom:8px">${
+      N(pl['أسئلة'] || 0, 'سؤال', 'سؤالان', 'أسئلة', 'سؤالاً')}${
+      pl['نصوصٌ مشتركة'] ? ' · ' + N(pl['نصوصٌ مشتركة'],
+        'نصّ مشترك', 'نصّان مشتركان', 'نصوص مشتركة', 'نصّاً مشتركاً') : ''}${
+      vars ? ' · ' + N(vars, 'خانة تُقرن', 'خانتان تُقرنان', 'خانات تُقرن', 'خانة تُقرن') : ''}${
+      grps ? ' · ' + N(grps, 'مجموعة نصوص', 'مجموعتا نصوص', 'مجموعات نصوص', 'مجموعة نصوص') : ''}</div>
+    <div class="ed-m" style="margin-bottom:6px">${bag(pl['بفروعها'])}</div>
+    <div class="ed-m" style="margin-bottom:6px">${bag(pl['بأنماطها'])} ${bag(pl['بصعوباتها'])}</div>
     <div class="ed-m" style="margin-bottom:6px">${bag(pl['بأهدافها'])}</div>
     <div class="ed-m">${bag(pl['بأقسامها'])}</div>`;
 }
@@ -523,6 +576,26 @@ const K = {
                  d['حُدِّث'] ? N(d['حُدِّث'], 'نصّ محدَّث', 'نصّان محدَّثان', 'نصوص محدَّثة', 'نصّاً محدَّثاً') : ''
                ].filter(Boolean).join(' · ') || 'بلا تغيير'),
     okline: 'حُفظت النصوص، ولم يُحذف شيء. أعِد الإرسال بعد أيّ تصحيح — العنوان يمنع التكرار.'
+  },
+  /* 🆕 b208 · البوّابةُ السادسة (192): بنكُ الأسئلة — والفرقُ عن «اختبار» في الرأس وحده */
+  bank: {
+    head: ['استيراد بنك أسئلة', 'دفعة إلى بنك من بنوك المادة'],
+    card: '⇪ استيراد أسئلة إلى بنك المادة',
+    intro: `يُلصق ملفّ الأسئلة كما سُلّم. والبنك يُعرف <b>بعنوانه</b> في المادة
+      (<code dir="ltr">bank</code>): القائم تُضاف إليه الدفعة، والغائب يُنشأ.<br>
+      والأسئلة بصيغة ملفّ الاختبار نفسها: الهدف بكوده — <b>وهو إلزامي هنا</b>، فبه يأخذ
+      السؤال فرعه ويزنه النموذج — وكلّ مشتّت خاطئ بكود تشخيصه.<br>
+      والصيغ تُقرن داخل الملفّ (<code dir="ltr">variant</code>)، والنصوص البديلة لنصّ واحد
+      مجموعة (<code dir="ltr">group</code>).<br>
+      <b>ويُضيف ولا يستبدل:</b> والملفّ نفسه يُعاد فيُقال «لا جديد».`,
+    ph: '{ "bank": "بنك الاستيعاب المقروء", "passages": [ … ], "questions": [ … ] }',
+    sample: SAMPLE_BANK,
+    call: (course, payload, dry) => api.importBank(course.id, payload, dry),
+    plan: planBank,
+    same: d => `البنك «<bdi>${esc(d.bank || '')}</bdi>»`,
+    count: pl => N(pl?.['أسئلة'] || 0, 'سؤال', 'سؤالين', 'أسئلة', 'سؤالاً'),
+    done: d => `اعتُمد ${N(d.questions || 0, 'سؤال', 'سؤالان', 'أسئلة', 'سؤالاً')}`,
+    okline: 'اعتُمدت الدفعة — ولا يرى الطالب أسئلة البنك إلا داخل نموذج'
   }
 };
 
@@ -531,9 +604,12 @@ export const openMapImport   = course => openImport(course, 'map');
 export const openCardsImport = course => openImport(course, 'cards');
 export const openIndexImport = course => openImport(course, 'objectives');
 export const openTextsImport = course => openImport(course, 'texts');
+/* 🆕 b208 · و`back` من «بنوك المادة»: { label, go } — وبلاها فدروسُ المقرّر كأخواتها */
+export const openBankImport  = (course, back) => openImport(course, 'bank', back);
 
-async function openImport(course, kind){
+async function openImport(course, kind, back){
   const C = K[kind];
+  const B = back || { label: 'دروس المقرّر', go: () => openCourse(course) };
   nav('editor'); setWide(true);
   head(C.head[0], C.head[1]);
 
@@ -564,7 +640,7 @@ async function openImport(course, kind){
 
   const draw = () => {
     app.innerHTML = `
-      <div class="crumb" id="bk">→ دروس المقرّر</div>
+      <div class="crumb" id="bk">→ ${esc(B.label)}</div>
       <div class="card">
         <div class="qnum">${C.card}</div>
         <div class="line" style="margin-bottom:12px">
@@ -592,8 +668,8 @@ async function openImport(course, kind){
         <div id="out"></div>
       </div>`;
 
-    document.getElementById("bk").onclick = () => openCourse(course);
-    document.getElementById("x").onclick  = () => openCourse(course);
+    document.getElementById("bk").onclick = B.go;
+    document.getElementById("x").onclick  = B.go;
     document.getElementById("sm").onclick = () => {
       document.getElementById("js").value = C.sample; };
 
@@ -662,11 +738,11 @@ async function openImport(course, kind){
     if(data?.['لا جديد']){
       out.innerHTML = `<div class="eq-ready ok" style="margin-top:14px">
         <div class="eq-ok">لا جديد — هذه الدفعة بعينها مستوردة من قبل</div>
-        <div class="line">الاختبار <b dir="ltr">${esc(data.quiz_code || '')}</b> ·
-          ${N(data.questions || 0, 'سؤال', 'سؤالان', 'أسئلة', 'سؤالاً')}</div></div>
+        <div class="line">${C.same ? C.same(data) : `الاختبار <b dir="ltr">${esc(data.quiz_code || '')}</b> ·
+          ${N(data.questions || 0, 'سؤال', 'سؤالان', 'أسئلة', 'سؤالاً')}`}</div></div>
         <div class="nav" style="margin-top:12px">
-          <button class="btn ghost" id="bk2">→ دروس المقرّر</button></div>`;
-      document.getElementById("bk2").onclick = () => openCourse(course);
+          <button class="btn ghost" id="bk2">→ ${esc(B.label)}</button></div>`;
+      document.getElementById("bk2").onclick = B.go;
       return;
     }
 
@@ -705,8 +781,8 @@ async function openImport(course, kind){
         ${warns.length ? `<div class="warnbox" style="margin-top:10px">
           ${warns.map(x => `<div>⚠️ ${esc(x)}</div>`).join('')}</div>` : ''}
         <div class="nav" style="margin-top:12px">
-          <button class="btn primary" id="bk3">→ دروس المقرّر</button></div>`;
-      document.getElementById("bk3").onclick = () => openCourse(course);
+          <button class="btn primary" id="bk3">→ ${esc(B.label)}</button></div>`;
+      document.getElementById("bk3").onclick = B.go;
       return;
     }
 
