@@ -1507,8 +1507,19 @@ html.pv-lock{overflow:hidden}
 .fm-acts{flex:0 0 auto;display:flex;gap:6px}
 .fm-acts .btn,.fm-slot .btn{flex:0 0 auto;padding:6px 12px;font-size:.85em}
 .fm-slot .chip.g{flex:0 0 auto}
-.fm-filt{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:8px 0 10px}
+/* 🆕 b209 · عمودان لا ثلاثة، والهدفُ سطرٌ وحده: كودُه في ثلث العمود كان يُقصّ أوّلُه تحت السهم */
+.fm-filt{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:8px 0 10px}
+.fm-filt .fm-ob{grid-column:1 / -1}
 .fm-pick select{padding:7px 10px;font-size:.88em}
+/* 🆕 b209 · التركيبُ التلقائيّ — بطاقةٌ تُطوى، وخياراتُها أسطرٌ قصيرة.
+   ⚠️ و`width:auto` للمربّع والدائرة: `input{width:100%}` العامّةُ تمطّهما (سابقةُ مربّع الأذون في الاستيراد) */
+.fm-auto summary{cursor:pointer}
+.fm-ac-ch{display:flex;flex-wrap:wrap;gap:6px 14px;margin:6px 0 4px;font-size:var(--fs-meta)}
+.fm-ac-ch label,.fm-ac-d label{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.fm-auto input[type=checkbox],.fm-auto input[type=radio]{width:auto;flex:none;margin:0}
+.fm-ac-d{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;font-size:var(--fs-meta)}
+.fm-ac-d input{padding:6px 8px;min-width:0}
+.fm-ac-r{margin-top:10px;font-size:var(--fs-meta);line-height:1.8}
 .fm-slots{max-height:60vh;overflow-y:auto}
 .fm-w{display:flex;justify-content:space-between;align-items:baseline;gap:10px;
   font-size:var(--fs-meta);padding:6px 0;border-bottom:1px solid var(--line)}

@@ -9,6 +9,8 @@
    المادّة، وهذه شاشةُ تركيبه (spec §٤):
      ① بنكٌ ⇐ ② خاناتٌ تُصفّى بالفرع والهدف والصعوبة ⇐ ③ ترتيبٌ وأقسام ⇐
      ④ عدّادُ كلّ فرعٍ أمام الوزن الرسميّ لشعبة المقرَّر.
+     ⑤ 🆕 b209 · أو **تركيبٌ تلقائيّ** يقترح السطورَ بالعدد والصعوبة والفروع، مسودّةً تُحرَّر
+        بـ①–③ ثمّ تُحفظ كما تُحفظ اليدويّة (طلبُ المالك · ٢٩ أكتوبر) — والتعليلُ عند `autoCompose`.
 
    🔑 والسطرُ يشير إلى الخانة لا إلى سؤالها: الصيغةُ تُختار لكلّ طالبٍ ببذرته، والسؤالُ
       المتقاعد يرثه وريثُه في خانته — فيبلغ النماذجَ كلَّها بلا لمسةٍ هنا.
@@ -108,7 +110,7 @@ export async function openBanks(course, subject){
 
 /* ═══════════ ② تركيب النموذج ═══════════ */
 
-let F = null;              // { course, lesson, z, rows, dirty, banks, bankErr, strands, bank, f }
+let F = null;              // { course, lesson, z, rows, dirty, banks, bankErr, strands, bank, f, ac }
 const SLOTS = new Map();   // خاناتُ كلّ بنك — تُجلب مرّةً للشاشة، وتُبطَل حين يتغيّر عدُّ نماذجها
 
 /* يناديها `load` في editor_quiz.js حين يكون اختبارُ الدرس نموذجاً — و`z` حمولةُ `quiz_for_edit` */
@@ -123,7 +125,11 @@ export async function openForm(course, lesson, z){
   const banks = bk.data?.ok ? bk.data.banks || [] : [];
   F = { course, lesson, z, rows: rowsOf(z), dirty: false, banks, strands,
         bankErr: bk.error?.message || (bk.data && !bk.data.ok ? bk.data.error : null),
-        bank: banks[0]?.id ?? null, f: { strand: '', obj: '', diff: '' } };
+        bank: banks[0]?.id ?? null, f: { strand: '', obj: '', diff: '' },
+        /* ⑤ مدخلاتُ التركيب — تبقى ما بقيت الشاشة. `banks: null` كلُّها · `off` فروعٌ مستثناة ·
+           `base` لقطةُ السطور ساعةَ «تركيب»، ومنها يبدأ «تركيبٌ آخر» */
+        ac: { open: false, n: 20, dist: (z.weights || []).length ? 'w' : 'eq', banks: null, off: [],
+              diff: { easy: 30, medium: 50, hard: 20 }, any: false, mode: 'fill', base: null, report: null } };
   if(F.bank != null) await loadSlots(F.bank);
   render();
   scrollTop();
@@ -174,7 +180,7 @@ function render(){
       ${issues(r)}
       <div class="fm">
         <section class="fm-main">${rowsPanel()}</section>
-        <aside class="fm-side">${weightsPanel()}${pickPanel()}</aside>
+        <aside class="fm-side">${weightsPanel()}${autoPanel()}${pickPanel()}</aside>
       </div>
     </div>`;
 
@@ -270,6 +276,212 @@ function weightsPanel(){
   </div>`;
 }
 
+/* ═══ ⑤ 🆕 b209 · التركيبُ التلقائيّ ═══
+   يقترح السطورَ من بنوك المادّة بالعدد والصعوبة والفروع، **مسودّةً لا حفظاً**: تُحرَّر بالأدوات نفسِها
+   ثمّ «حفظ السطور» — فالقاعدةُ لا تعرف من أين جاء السطر، و`save_form_slots` تحرسه كما تحرس اليدويّ.
+   🔑 **حصّةُ كلّ فرعٍ من وزنه** (أو بالتساوي)، بالباقي الأكبر حتى يبلغ المجموعُ العددَ حرفاً — تقريبُ كلِّ
+      حصّةٍ وحدها يُنقص سطراً أو يزيده.
+   🔑 **وأسئلةُ النصّ الواحد وحدةٌ لا تُقطع** (`group` من bank_slots: مجموعةُ النصوص أو النصُّ نفسُه) —
+      تُؤخذ معاً متتاليةً وتُحسب كلُّها من حصّة فرعها. ونصٌّ أكبرُ من الباقي لا يُؤخذ ليُبتر.
+   🔑 **وما لم يسحبه نموذجٌ أوّلاً** (`forms`)، ثمّ الأقلُّ سحباً — فتختلف النماذجُ ما أمكن. والاختيارُ بعدها عشوائيّ.
+   ⚠️ **والنقصُ يُقال ولا يُسدّ من فرعٍ آخر:** فرعٌ لا يكفيه بنكُه يُذكر بما طُلب وما وُجد، وصعوبةٌ نفدت يُؤخذ
+      أقربُها ويُعدّ «بديلاً» — فلا يُخدع العدّادُ بنموذجٍ تمّ عددُه وفسد توزيعُه. */
+
+/* الباقي الأكبر: أعدادٌ صحيحةٌ بنسب `ws` مجموعُها `n` حرفاً */
+function split(n, ws){
+  const sum = ws.reduce((s, w) => s + (Number(w) || 0), 0);
+  if(!(sum > 0) || !(n > 0)) return ws.map(() => 0);
+  const raw = ws.map(w => n * (Number(w) || 0) / sum);
+  const out = raw.map(Math.floor);
+  let left = n - out.reduce((s, v) => s + v, 0);
+  raw.map((v, i) => [v - out[i], i]).sort((a, b) => b[0] - a[0])
+     .forEach(([, i]) => { if(left > 0){ out[i]++; left--; } });
+  return out;
+}
+
+/* أوزانُ الشعبة الأولى — نموذجٌ في وحدةٍ مستعارة قد يقرأ شعبتين، والعدّادُ يعرضهما، والتركيبُ يتبع أولاهما */
+function streamWeights(){
+  const W = F.z.weights || [];
+  const sid = W.length ? String(W[0].stream_id) : null;
+  return W.filter(w => String(w.stream_id) === sid)
+          .map(w => ({ id: String(w.strand_id), name: w.strand, pct: Number(w.pct) || 0, stream: w.stream }));
+}
+
+const DK = ['easy', 'medium', 'hard'];
+
+function autoPanel(){
+  if(F.bankErr || !F.banks.length) return '';
+  const A = F.ac, W = streamWeights();
+  const byW = A.dist === 'w' && W.length;
+  const scope = byW ? W : F.strands.map(s => ({ id: String(s.id), name: s.name }));
+  const off = new Set(A.off);
+  const chk = (attr, v, on, label) => `<label><input type="checkbox" ${attr}="${escA(v)}"${on ? ' checked' : ''}>
+      <bdi>${esc(label)}</bdi></label>`;
+  const R = A.report;
+
+  return `<details class="card fm-auto" id="acBox"${A.open ? ' open' : ''}>
+    <summary class="grp" style="margin:0">تركيب تلقائي</summary>
+    <p class="small">يقترح السطور من البنوك بالعدد والصعوبة والفروع — ثمّ تُحرَّر يدوياً وتُحفظ.</p>
+
+    <label class="fl" for="acN">عدد الأسئلة</label>
+    <input type="number" id="acN" min="1" max="300" value="${escA(A.n)}">
+
+    <label class="fl" for="acDist">التوزيع على الفروع</label>
+    <select id="acDist">
+      ${W.length ? `<option value="w"${byW ? ' selected' : ''}>بأوزان الهيئة${
+        W[0].stream ? ' — ' + esc(W[0].stream) : ''}</option>` : ''}
+      <option value="eq"${byW ? '' : ' selected'}>بالتساوي بين الفروع</option>
+    </select>
+    <div class="fm-ac-ch">${scope.map(s => chk('data-acs', s.id, !off.has(s.id),
+      byW ? `${s.name} ${AR(Math.round(s.pct))}٪` : s.name)).join('')}</div>
+
+    ${F.banks.length > 1 ? `<label class="fl">البنوك</label>
+      <div class="fm-ac-ch">${F.banks.map(b => chk('data-acb', String(b.id),
+        !A.banks || A.banks.includes(String(b.id)), b.title)).join('')}</div>` : ''}
+
+    <label class="fl">الصعوبة ٪</label>
+    <div class="fm-ac-d">${DK.map((d, i) => `<label>${DIFF[d]}
+      <input type="number" id="acD${i}" min="0" max="100" value="${escA(A.diff[d])}"${A.any ? ' disabled' : ''}></label>`).join('')}</div>
+    <div class="fm-ac-ch"><label><input type="checkbox" id="acAny"${A.any ? ' checked' : ''}> بلا قيد للصعوبة</label></div>
+
+    ${F.rows.length ? `<label class="fl">السطور القائمة</label>
+      <div class="fm-ac-ch">
+        <label><input type="radio" name="acMode" value="fill"${A.mode !== 'new' ? ' checked' : ''}> إكمالها إلى العدد</label>
+        <label><input type="radio" name="acMode" value="new"${A.mode === 'new' ? ' checked' : ''}> تركيب من جديد</label>
+      </div>` : ''}
+
+    <div class="nav" style="margin-top:12px">
+      <button type="button" class="btn primary" id="acGo">تركيب</button>
+      ${R ? '<button type="button" class="btn ghost" id="acRe">تركيب آخر</button>' : ''}
+    </div>
+    ${R ? reportBox(R) : ''}
+  </details>`;
+}
+
+/* ما تحقّق وما نقص — بالأرقام، والنقصُ بلون التنبيه */
+function reportBox(R){
+  if(R.full) return `<div class="fm-ac-r">النموذج بلغ العدد المطلوب — لا سطر يُضاف.</div>`;
+  return `<div class="fm-ac-r">
+    <div><b>رُكّب ${N(R.added, 'سطر', 'سطران', 'سطور', 'سطراً')}</b>${R.base
+      ? ` بعد ${N(R.base, 'سطر قائم', 'سطرين قائمين', 'سطور قائمة', 'سطراً قائماً')}` : ''} — والسطور مسودّة:
+      تُحرَّر ثمّ «حفظ السطور».</div>
+    <div>الصعوبة: ${DK.map(d => `${DIFF[d]} ${AR(R.d[d] || 0)}`).join(' · ')}${R.fallback
+      ? ` · ${N(R.fallback, 'سطر', 'سطران', 'سطور', 'سطراً')} من صعوبة أقرب بعد نفاد المطلوبة` : ''}</div>
+    <div>لم يسحبها نموذج قبل: ${AR(R.fresh)} من ${AR(R.added)}</div>
+    ${R.short.length ? `<div class="eq-iss">⚠️ نقص في البنوك — ${R.short.map(s =>
+      `<bdi>${esc(s.name)}</bdi>: طُلب ${AR(s.want)} ووُجد ${AR(s.got)}`).join(' · ')}</div>` : ''}
+  </div>`;
+}
+
+/* 🔑 والمدخلاتُ تُقرأ من F.ac لا من الشاشة: الرسمُ يُعاد بعد التركيب، وما كُتب باقٍ */
+async function autoCompose(again){
+  const A = F.ac;
+  const n = Math.floor(Number(A.n));
+  if(!(n > 0)){ toast('عدد الأسئلة مطلوب'); return; }
+  const banks = F.banks.filter(b => !A.banks || A.banks.includes(String(b.id)));
+  if(!banks.length){ toast('لا بنك مختاراً'); return; }
+
+  /* «تركيبٌ آخر» يبدأ من اللقطة نفسِها — لا من مقترحٍ سبقه */
+  if(!again || !A.base) A.base = A.mode === 'new' ? [] : F.rows.slice();
+  const base = A.base;
+  if(base.length >= n){ A.report = { full: true }; A.open = true; render(); return; }
+
+  const go = document.getElementById("acGo");
+  if(go) go.disabled = true;
+  for(const b of banks) await loadSlots(b.id);
+
+  /* الوحدات: خانةٌ وحدها، أو خاناتُ النصّ الواحد معاً بترتيبها في البنك */
+  const taken = new Set(base.map(x => x.bank + ':' + x.slot));
+  const units = [];
+  banks.forEach((b, bi) => {
+    const groups = new Map();
+    (SLOTS.get(String(b.id))?.list || [])
+      .filter(x => !taken.has(b.id + ':' + x.slot))
+      .forEach(x => {
+        const k = x.group ? 'g:' + x.group : 's:' + x.slot;
+        if(!groups.has(k)) groups.set(k, []);
+        groups.get(k).push(x);
+      });
+    groups.forEach(xs => {
+      xs.sort((p, q) => p.position - q.position);
+      units.push({ b, bi, xs, size: xs.length, strand: String(xs[0].strand_id ?? ''), pos: xs[0].position,
+                   uses: xs.reduce((s, x) => s + (Number(x.forms) || 0), 0), r: Math.random() });
+    });
+  });
+
+  /* النطاق والحصص: الوزنُ (أو التساوي بين ما له خانات)، ثمّ يُطرح ما في السطور القائمة من كلّ فرع */
+  const W = streamWeights(), off = new Set(A.off);
+  const scope = (A.dist === 'w' && W.length)
+    ? W.filter(s => !off.has(s.id))
+    : F.strands.map(s => ({ id: String(s.id), name: s.name, pct: 1 }))
+        .filter(s => !off.has(s.id) && units.some(u => u.strand === s.id));
+  if(!scope.length){ if(go) go.disabled = false; toast('لا فرع في النطاق'); return; }
+
+  const target = split(n, scope.map(s => s.pct));
+  const have = new Map();
+  base.forEach(x => { const k = String(x.strand_id ?? ''); have.set(k, (have.get(k) || 0) + 1); });
+  let need = scope.map((s, i) => Math.max(0, target[i] - (have.get(s.id) || 0)));
+  const room = n - base.length;
+  if(need.reduce((s, v) => s + v, 0) > room) need = split(room, need);
+
+  /* 🔑 الصعوبةُ تُحسب للنموذج كلِّه لا لكلّ فرع: فرعٌ حصّتُه سطرٌ أو سطران يُقرَّب «متوسطاً» دائماً، فتنقلب
+     النسبُ في نموذجٍ أكثرُ فروعه صغيرة (قِيس: إكمالُ أربعة سطور جاء متوسطاً كلُّه). فلكلّ فرعٍ من الصعوبة
+     بقدر ما بقي منها في النموذج — والباقي يُنقص بما أُخذ فعلاً، ومنه النصوصُ بصعوباتها */
+  const dw = DK.map(d => Math.max(0, Number(A.diff[d]) || 0));
+  const useDiff = !A.any && dw.some(v => v > 0);
+  const gs = useDiff ? split(need.reduce((s, v) => s + v, 0), dw) : null;
+  const gleft = gs ? Object.fromEntries(DK.map((d, j) => [d, gs[j]])) : null;
+  const picked = [], R = { base: base.length, added: 0, d: {}, fallback: 0, fresh: 0, short: [] };
+
+  scope.forEach((s, i) => {
+    let left = need[i];
+    const ds = gleft ? split(left, DK.map(d => gleft[d])) : null;
+    const want = ds ? Object.fromEntries(DK.map((d, j) => [d, ds[j]])) : null;
+    const cand = units.filter(u => u.strand === s.id && !u.used)
+      .sort((p, q) => (p.uses > 0) - (q.uses > 0) || p.uses - q.uses || p.r - q.r);
+    const take = u => {
+      u.used = true; picked.push(u); left -= u.size;
+      if(want) u.xs.forEach(x => {
+        if(want[x.difficulty] > 0) want[x.difficulty]--;
+        if(gleft[x.difficulty] > 0) gleft[x.difficulty]--;
+      });
+    };
+    /* النصوصُ أوّلاً — وحداتٌ كبيرة لا تُقسم، ثمّ المفردةُ بالصعوبة المطلوبة، ثمّ أقربُها */
+    cand.filter(u => u.size > 1).forEach(u => { if(u.size <= left) take(u); });
+    const singles = cand.filter(u => u.size === 1);
+    if(want) singles.forEach(u => { if(left > 0 && !u.used && want[u.xs[0].difficulty] > 0) take(u); });
+    const most = want ? DK.reduce((m, d) => (want[d] > want[m] ? d : m), 'medium') : 'medium';
+    singles.filter(u => !u.used)
+      .sort((p, q) => Math.abs(DK.indexOf(p.xs[0].difficulty) - DK.indexOf(most))
+                    - Math.abs(DK.indexOf(q.xs[0].difficulty) - DK.indexOf(most)))
+      .forEach(u => { if(left > 0 && !u.used){ if(want) R.fallback++; take(u); } });
+    if(left > 0) R.short.push({ name: s.name, want: need[i], got: need[i] - left });
+  });
+
+  /* الترتيب: القسمُ بأوّل ظهوره في البنوك، ثمّ الفرعُ بترتيب النطاق، والنصُّ متّصلٌ بأسئلته */
+  const secRank = new Map();
+  banks.forEach(b => (SLOTS.get(String(b.id))?.list || []).slice()
+    .sort((p, q) => p.position - q.position)
+    .forEach(x => { const k = x.section || ''; if(k && !secRank.has(k)) secRank.set(k, secRank.size); }));
+  const rank = u => secRank.has(u.xs[0].section || '') ? secRank.get(u.xs[0].section || '') : secRank.size;
+  const stRank = new Map(scope.map((s, i) => [s.id, i]));
+  picked.sort((p, q) => rank(p) - rank(q) || stRank.get(p.strand) - stRank.get(q.strand)
+                     || p.bi - q.bi || p.pos - q.pos);
+
+  const rows = picked.flatMap(u => u.xs.map(x => ({
+    bank: Number(u.b.id), bankTitle: u.b.title, slot: x.slot, section: x.section || '',
+    kind: x.kind, difficulty: x.difficulty, sample: x.sample, objective_id: x.objective_id,
+    strand_id: x.strand_id, variants: x.variants, passage_id: x.passage_id })));
+  rows.forEach(x => { R.d[x.difficulty] = (R.d[x.difficulty] || 0) + 1; });
+  R.added = rows.length;
+  R.fresh = picked.reduce((s, u) => s + u.xs.filter(x => !Number(x.forms)).length, 0);
+
+  F.rows = base.concat(rows);
+  F.dirty = true;
+  A.report = R; A.open = true;
+  render();
+}
+
 /* ① + ② الإضافةُ من بنك: الخاناتُ بصيغتها الأولى عيّنةً، تُصفّى بالفرع والهدف والصعوبة — والمصفاةُ
    تُبنى ممّا في البنك لا من قوائم المادّة كلِّها، فلا يُختار فرعٌ لا خانةَ فيه */
 function pickPanel(){
@@ -312,13 +524,15 @@ function pickPanel(){
   return `<div class="card fm-pick">
     <div class="grp" style="margin-top:0">الإضافة من بنك</div>
     <select id="fmBank" aria-label="البنك">${F.banks.map(b => opt(b.id, b.title, F.bank)).join('')}</select>
+    ${/* 🆕 b209 · والهدفُ سطرٌ وحده آخرَ المصفاة: كودُه لاتينيٌّ طويل (`ARI.ORDER_OPS`)، وفي ثلث العمود كان
+          يُقصّ أوّلُه تحت السهم — «C.MAIN» مكان «RC.MAIN» (بلاغُ المالك بلقطة) */''}
     <div class="fm-filt">
       <select id="fmSt" aria-label="الفرع"><option value="">— الفرع —</option>${
         strandIds.map(id => opt(id, strandName(id) || '—', F.f.strand)).join('')}</select>
-      <select id="fmOb" aria-label="الهدف"><option value="">— الهدف —</option>${
-        objs.map(([id, code]) => opt(id, code || '—', F.f.obj)).join('')}</select>
       <select id="fmDf" aria-label="الصعوبة"><option value="">— الصعوبة —</option>${
         diffs.map(d => opt(d, DIFF[d], F.f.diff)).join('')}</select>
+      <select id="fmOb" class="fm-ob" aria-label="الهدف"><option value="">— الهدف —</option>${
+        objs.map(([id, code]) => opt(id, code || '—', F.f.obj)).join('')}</select>
     </div>
     ${S.error ? `<div class="ed-empty">${esc(S.error)}</div>` : ''}
     <div class="fm-slots">${list.length ? list.map(slot).join('')
@@ -369,6 +583,32 @@ function wire(){
   };
   const filt = (id, k) => { const el = $(id); if(el) el.onchange = () => { F.f[k] = el.value; render(); }; };
   filt("fmSt", 'strand'); filt("fmOb", 'obj'); filt("fmDf", 'diff');
+
+  /* ⑤ مدخلاتُ التركيب تُكتب في F.ac ساعةَ تتغيّر — وما يغيّر الشاشةَ نفسَها (النطاقُ والقيد) يُعيد رسمها */
+  const ab = $("acBox");
+  if(ab){
+    const A = F.ac;
+    ab.ontoggle = () => { A.open = ab.open; };
+    $("acN").oninput = e => { A.n = e.target.value; };
+    $("acDist").onchange = e => { A.dist = e.target.value; render(); };
+    app.querySelectorAll("[data-acs]").forEach(el => el.onchange = () => {
+      const s = new Set(A.off);
+      el.checked ? s.delete(el.dataset.acs) : s.add(el.dataset.acs);
+      A.off = [...s];
+    });
+    app.querySelectorAll("[data-acb]").forEach(el => el.onchange = () => {
+      const all = F.banks.map(b => String(b.id));
+      const cur = new Set(A.banks || all);
+      el.checked ? cur.add(el.dataset.acb) : cur.delete(el.dataset.acb);
+      A.banks = cur.size === all.length ? null : [...cur];
+    });
+    DK.forEach((d, i) => { const el = $("acD" + i); if(el) el.oninput = () => { A.diff[d] = el.value; }; });
+    $("acAny").onchange = e => { A.any = e.target.checked; render(); };
+    app.querySelectorAll('[name="acMode"]').forEach(el => el.onchange = () => { A.mode = el.value; });
+    $("acGo").onclick = () => autoCompose(false);
+    const re = $("acRe");
+    if(re) re.onclick = () => autoCompose(true);
+  }
 }
 
 function leave(){
@@ -391,6 +631,7 @@ async function save(){
   /* والمنشورُ الذي تُفقده السطورُ جاهزيّتَه يُردّ استثناءً بنصّ القاعدة — فيُقال كما جاء */
   if(error || !data?.ok){ if(b) b.disabled = false; toast(error?.message || data?.error); return; }
   toast("حُفظت السطور");
+  F.ac.report = null; F.ac.base = null;                // ⑤ المقترحُ صار سطوراً محفوظة
   F.banks.forEach(x => SLOTS.delete(String(x.id)));   // عدُّ «في N نماذج» تغيّر
   if(F.bank != null) await loadSlots(F.bank);
   reloadForm();
