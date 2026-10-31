@@ -22,7 +22,7 @@
       `can_curate()` في `save_stream` (183)، فالمشرفُ على المادّة يملك شُعبَها.
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
-import { esc, AR, N, toast, errBox } from './ui.js';
+import { esc, AR, N, toast, errBox, gradesText } from './ui.js';
 
 /* ── حالةُ اللسان — تبقى بين الرسمات فلا يفقد الناظر موضعه ── */
 let sec  = 'scales';     // القسم المعروض
@@ -95,6 +95,11 @@ const FORMS = {
     ['title','العنوان','text',1],
     ['subject','المادّة','select',1,'subjects'],
     ['level','المستوى','select',0,'levels'],
+    /* 🆕 b210 · مدى الصفوف (193): يعبر المناهج، ولا يجتمع مع المستوى — والنموذجُ يعطّل أحدَهما
+       بالآخر (`wireGrades`)، ويحفظه بنداءٍ ثانٍ (`saveCourseForm`) */
+    ['minRank','من الصفّ','select',0,'grades'],
+    ['maxRank','إلى الصفّ','select',0,'grades'],
+    ['gradesHint','يراه كلُّ طالبٍ صفُّه بين الحدّين، في أيّ منهج — ولا يجتمع مع المستوى','hint'],
     ['path','المسار','select',0,'paths'],
     ['stream','الشعبة','select',0,'streams','لكلّ الشعب'],     // 🆕 b194 · 183
     ['electiveGroup','مجموعة الاختيار','num'],
@@ -124,6 +129,14 @@ function options(src){
       (s.streams||[]).map(st => [st.id, s.name + ' · ' + st.name]));
   if(src === 'streamLabels') return [...new Set(['التخصص', 'نوع الاختبار',
       ...tree.subjects.map(s => s.stream_label).filter(Boolean)])].map(v => [v, v]);
+  /* 🆕 b210 · الصفوف ١–١٢ — رتبةُ المستوى الدراسيّ رقمُ صفّه (193 ①)، وبجانب الرقم اسمُه في المناهج
+     الدراسيّة إن وُجد. ⚠️ والفاصلُ شرطةٌ لا `·`: الخيارُ نصٌّ لا يحمل `S_`، و«١٠ ·» تُقرأ «١٠٠» (رأسُ الوحدة) */
+  if(src === 'grades') return Array.from({ length: 12 }, (_, i) => {
+      const names = [...new Set(tree.scales.filter(s => s.kind === 'academic')
+        .flatMap(s => (s.levels || []).filter(l => l.rank === i + 1))
+        .map(l => l.name.replace(/^الصف\s+/, '')))];
+      return [i + 1, `الصف ${AR(i + 1)}` + (names.length ? ' — ' + names.join('، ') : '')];
+    });
   return [];
 }
 
@@ -134,6 +147,8 @@ function formHtml(kind, row, extra){
   const val = k => row && row[k] != null ? row[k] : '';
   const one = ([k, label, type, need, src, none]) => {
     const id = `cf-${k}`;
+    /* 🆕 b210 · سطرُ عونٍ بين الحقول لا حقل — بلا `id` فلا تقرؤه `readForm` */
+    if(type === 'hint') return `<div class="ad-pn">${label}</div>`;
     if(type === 'bool')
       return `<label class="ad-cb"><input type="checkbox" id="${id}"
                 ${row == null || row[k] ? 'checked' : ''}><span>${label}</span></label>`;
@@ -340,7 +355,7 @@ function coursesHtml(){
         ${list.map(x => `<div class="ad-r">
           <div class="ad-rt">${esc(x.title)}${x.active ? '' : ' <span class="chip ad-no">مغلق</span>'}</div>
           <div class="ad-rm">${[
-            esc(x.level || '— بلا مستوى'),
+            x.min_rank != null ? gradesText(x) : esc(x.level || '— بلا مستوى'),   // 🆕 b210 · 193
             x.path ? esc(x.path) : '',
             x.stream ? esc(x.stream) : '',                               // 🆕 b194 · 183
             N(Number(x.units),'وحدة','وحدتان','وحدات','وحدة'),
@@ -349,7 +364,8 @@ function coursesHtml(){
           <button class="ad-b" data-edit="course" data-i="${x.id}">تعديل</button>
           ${open?.kind === 'course' && open.id === x.id ? formHtml('course', {
              ...x, subject: x.subject_id, level: x.level_id, path: x.path_id,
-             stream: x.stream_id, electiveGroup: x.elective_group }) : ''}
+             stream: x.stream_id, electiveGroup: x.elective_group,
+             minRank: x.min_rank, maxRank: x.max_rank }) : ''}
         </div>`).join('')}
       </div>`).join('') : '<div class="status">لا مقرَّر بعد.</div>'}`;
 }
@@ -395,6 +411,7 @@ function wire(body){
 
   const back = document.getElementById('cfBack');
   if(back) back.onclick = () => { open = null; paintContent(host); };
+  if(open?.kind === 'course') wireGrades();
 
   const save = document.getElementById('cfSave');
   if(save) save.onclick = async () => {
@@ -405,10 +422,59 @@ function wire(body){
     if(open.kind === 'path')    return run(api.savePath,    { ...o, scale: open.scale }, 'حفظ المسار');
     if(open.kind === 'subject') return run(api.saveSubject, o, 'حفظ المادّة');
     if(open.kind === 'stream')  return run(api.saveStream,  { ...o, subject: open.scale }, 'حفظ الشعبة');   // 🆕 b194
-    if(open.kind === 'course')  return run(api.saveCourse,  o, 'حفظ المقرَّر');
+    if(open.kind === 'course')  return saveCourseForm(o);                               // 🆕 b210
     /* والكودُ مفتاحُه نصُّه: `id` لا معنى له، والقاعدةُ تُدرج أو تُحدّث */
     if(open.kind === 'dx')      return run(api.saveDxCode,  o, 'حفظ الكود');
   };
+}
+
+/* 🆕 b210 · المستوى ومدى الصفوف لا يجتمعان (193 ②) — يُعطَّل أحدُهما بالآخر، فلا يُرسَل ما تردّه
+   القاعدة. وحدٌّ يُختار وأخوه فارغ يأخذ قيمتَه (مدى صفٍّ واحد)، ثمّ يُعدَّل */
+function wireGrades(){
+  const lv = document.getElementById('cf-level');
+  const lo = document.getElementById('cf-minRank');
+  const hi = document.getElementById('cf-maxRank');
+  if(!lv || !lo || !hi) return;
+  const sync = () => {
+    lv.disabled = lo.value !== '' || hi.value !== '';
+    lo.disabled = hi.disabled = lv.value !== '';
+  };
+  lo.onchange = () => { if(lo.value && !hi.value) hi.value = lo.value; sync(); };
+  hi.onchange = () => { if(hi.value && !lo.value) lo.value = hi.value; sync(); };
+  lv.onchange = sync;
+  sync();
+}
+
+/* 🆕 b210 · المقرَّرُ ومداه نداءان (193 ⑧): `save_course` لا تكتب المدى، و`set_course_grades` تكتبه وحده.
+   ⇒ يُنادى المدى إن تغيّر وحده، وبترتيبٍ تقبله القاعدة: صفٌّ يُختار لمقرَّرٍ كان له مدى ⇐ المدى يُمحى
+   أوّلاً، وإلّا فالمقرَّرُ أوّلاً — والجديدُ لا مدى له قبل أن يوجد.
+   ⚠️ وإن نجح الأوّلُ وردّت القاعدةُ الثاني بقي النموذجُ مفتوحاً بما كُتب فيه، **وعلى المقرَّر الذي
+      أُنشئ**: فحفظٌ ثانٍ يعدّله ولا يُنشئ أخاه. والشجرةُ تُقرأ بعد آخر نداءٍ ينجح. */
+async function saveCourseForm(o){
+  const was = (tree.courses || []).find(c => c.id === open.id) || {};
+  const min = o.minRank == null ? null : Number(o.minRank);
+  const max = o.maxRank == null ? null : Number(o.maxRank);
+  const moved = (was.min_rank ?? null) !== min || (was.max_rank ?? null) !== max;
+  const first = moved && was.min_rank != null && o.level != null;    // صفٌّ مكانَ مدى
+  const grades = () => step(api.setCourseGrades({ id: open.id, minRank: min, maxRank: max, note: o.note }),
+                            'حفظ مدى الصفوف');
+
+  if(first && !await grades()) return;
+  const saved = await step(api.saveCourse(o), 'حفظ المقرَّر');
+  if(!saved) return;
+  if(open.id == null) open.id = saved.id;
+  if(moved && !first && !await grades()) return;
+  toast('تمّ');
+  open = null; tree = null;
+  await paintContent(host);
+}
+
+/* خطوةٌ من حفظٍ بنداءين — بقراءتَي `run` نفسيهما، ولا تُغلق النموذج: الإغلاقُ بعد آخرها */
+async function step(call, where){
+  const { data, error } = await call;
+  if(error){ host.insertAdjacentHTML('afterbegin', errBox(error, where)); return null; }
+  if(data && data.ok === false){ toast(data.error || 'تعذّر الحفظ'); return null; }
+  return data || {};
 }
 
 /* تُنادى من `admin.js` حين يُغادَر اللسان — فالشجرةُ لا تبقى بين الجلسات */

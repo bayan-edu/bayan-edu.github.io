@@ -779,6 +779,12 @@ export const saveCourse = o => db.rpc('save_course', {
   p_position: o.position ?? 0, p_active: o.active ?? true, p_note: o.note ?? null,
   p_stream: o.stream ?? null });
 
+/* 🆕 b210 · مدى الصفوف على المقرَّر (193) — للمدير وحده، والحدّان الفارغان يمحوانه.
+   ⚠️ وليس في `saveCourse`: `save_course` لا تكتب العمودين فيبقى المدى حين يُحفظ غيرُه، وتردّ صفّاً
+      يُختار لمقرَّرٍ ذي مدى — فترتيبُ النداءين في نموذج المقرَّر يتبع الصفّ (`admin_content.js`). */
+export const setCourseGrades = o => db.rpc('set_course_grades', {
+  p_course: o.id, p_min: o.minRank ?? null, p_max: o.maxRank ?? null, p_note: o.note ?? null });
+
 /* 🆕 b194 · شُعبةُ المادّة — إضافةٌ وتعديل (183). والحارسُ `can_curate` في الدالّة لا
    `is_admin`: المشرفُ على المادّة يملك شُعبَها. ولا حذفَ لها — كسائر هذا الباب. */
 export const saveStream = o => db.rpc('save_stream', {

@@ -11,7 +11,7 @@
 import * as api from './api.js';
 import { S } from './state.js';
 import { app, head, toast, esc, escA, AR, errBox, nav, setWide, scrollTop, N,
-         ICONS, KINDS, icon } from './ui.js';
+         ICONS, KINDS, icon, gradesText } from './ui.js';
 import { openQuiz } from './editor_quiz.js';
 import { openItems } from './editor_items.js';
 import { openCards } from './editor_cards.js';
@@ -76,8 +76,11 @@ export async function openEditor(scaleId, levelId){
   if(t._error){ app.innerHTML = errBox(t._error, 'شجرة التأليف'); return; }
 
   /* 🏠 بيتُ المقرَّر سُلّمُ مادته لا مستواه.
-     ومادةٌ بلا سُلّم («كيف أذاكر؟») تسكن سلّماً اصطلاحياً id='free'. */
-  const FREE    = { id:'free', name:'🚀 مهارات عامة', kind:'proficiency' };
+     ومادةٌ بلا سُلّم تسكن سلّماً اصطلاحياً id='free'.
+     🆕 b210 · وكانت «كيف أذاكر؟» مثالَها واسمُها «🚀 مهارات عامة» — حتى رُبطت بالمنهج ١٢ (٣٠ أكتوبر)، وسُمّي
+     المنهجُ باسم المجموعة بقرار المالك. فصار الاسمُ يكرّر منهجاً حقيقيّاً ⇒ «بلا منهج»، اسمُ المنصّة للفراغ
+     نفسه (`admin_content.js` · «— بلا منهج»). ولا مادّةَ فيها اليوم (قِيس ٣١ أكتوبر). */
+  const FREE    = { id:'free', name:'🗂️ بلا منهج', kind:'proficiency' };
   const scaleOf = c => (byId(t.subjects, c.subject_id) || {}).scale_id ?? 'free';
   const owned   = new Set((t.courses || []).map(scaleOf));
   const scales  = [...(t.scales || []), FREE].filter(s => owned.has(s.id));
@@ -127,6 +130,8 @@ export async function openEditor(scaleId, levelId){
           ${/* 🆕 b194 · شارةُ الشُّعبة (183) — والبطاقةُ تحمل اسمَ المادّة لا المقرَّر، فمقرَّرا القدرات
                 (علميّ · نظريّ) بطاقتان بالاسم نفسِه لا يفرّقهما غيرُها. وعلى نسق المسار: كلاهما «لمن». */''}
           ${c.stream ? `<span class="chip g" dir="auto">${esc(c.stream)}</span>` : ''}
+          ${/* 🆕 b210 · شارةُ مدى الصفوف (193) — «لمن» كالمسار والشعبة، فبلونهما */''}
+          ${c.min_rank != null ? `<span class="chip g">${gradesText(c)}</span>` : ''}
           ${c.elective_group ? '<span class="chip">اختيارية</span>' : ''}
           <span class="chip">👥 ${N(c.students,'طالب','طالبان','طلاب','طالباً')}</span>
           <span class="chip ${c.lessons ? 'g' : ''}">${N(c.lessons,'درس','درسان','دروس','درساً')}</span>
@@ -153,6 +158,8 @@ export async function openEditor(scaleId, levelId){
       ${S.roleInfo?.role === 'admin' ? `<button class="btn ghost" id="tools"
          style="margin-inline-start:auto">🎯 أدوات القياس</button>` : ''}
     </div>
+    ${/* 🆕 b210 · الفهرسُ يُرفض لمادّةٍ بلا منهج («لا يُكتب هدفٌ بلا سلّم») — فيُقال قبل أن يُطلب */''}
+    ${sc.id === 'free' ? '<div class="line">لا يُكتب فهرسُ أهدافٍ لمادّةٍ بلا منهج</div>' : ''}
     <div class="ed-grid">${courses.map(card).join("")}</div>
     ${!courses.length ? `<div class="status">لا مقرّرات في هذا ال${rung}</div>` : ''}`;
 

@@ -13,7 +13,7 @@ import { renderMark, whenReady as avatarReady } from './avatar.js';
    والدمجُ مرّ بلا تعارضٍ **لأنّ الجانبين كتبا السطرَ نفسَه حرفاً** — وهو
    أخبثُ ما في التصادم: لا يشتكي. ⇒ هذه ترفعه، **فالختمُ يجيب «أيُّ شيفرةٍ
    يشغّلها المتصفّح»، وجوابان لسؤالٍ واحدٍ لا جواب.** */
-export const BUILD = "b209";
+export const BUILD = "b210";
 
 /* ── مراسي الصفحة ── */
 export const app = document.getElementById("app");
@@ -1166,6 +1166,11 @@ export function N(n, one, two, few, many){
   if(v === 2) return two;
   return `${AR(n)} ${NW(v, one, two, few, many)}`;
 }
+
+/* 🆕 b210 · مدى الصفوف على المقرَّر (193) — «الصفوف ١٠–١٢»، وصفٌّ واحدٌ «الصف ١٠».
+   موضعٌ واحد لقائمة المقرّرات في الإدارة وبطاقتها في المحرّر: نسختان لعبارةٍ واحدة تفترقان. */
+export const gradesText = c => c.min_rank === c.max_rank
+  ? `الصف ${AR(c.min_rank)}` : `الصفوف ${AR(c.min_rank)}–${AR(c.max_rank)}`;
 
 /* اسمُ الدور — ومحايدُه **فراغ** لا مذكّر: الدرجُ يعرض تحته الصفَّ أو
    المدرسة، فيبقى السطرُ ذا معنًى بلا كلمة الدور. ولو رُدَّ «طالب» عند
