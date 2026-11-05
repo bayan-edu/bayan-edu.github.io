@@ -43,7 +43,7 @@
 import * as api from './api.js';
 import { S } from './state.js';
 import { app, head, toast, esc, fmt, AR, errBox, nav, setWide, scrollTop, L,
-                  pgMedia, srcOf, SAFE_HOSTS, optLabel, dirOf, backText, N } from './ui.js';
+                  pgMedia, srcOf, SAFE_HOSTS, optLabel, dirOf, backText, N, icon } from './ui.js';
 import { attachUpload } from './upload.js';
 import { openCourse, openTools, toolBtn, cmdHead } from './editor.js';
 import { openItems } from './editor_items.js';
@@ -756,6 +756,17 @@ function cardPick(q, now){
     </div></div>`;
 }
 
+/* 🆕 b215 · قائمةُ ⋮ في لوحتَي النصّ والخانة — طلبُ المالك (٥ نوفمبر): تجميعُ الخيارات في درجٍ نقطيّ.
+   🔴 كانت أربعةَ أزرارٍ وثلاثةً بوزنٍ واحد، و«✕ فصل» يلاصق «تحرير» ويُنفَّذ بنقرةٍ واحدة بلا تأكيد.
+   ⇒ يبقى ظاهراً الفعلُ الأوّل في كلّ لوحة، والباقي وراء نقرة. واختيارُه تقديرٌ لا قياس: المحرّر لا يسجّل الاستعمال.
+   🔑 وشريطُ الأوامر خارجها عمداً: زرُّ النشر وحالُه لا يُطويان، والأدواتُ لها طيُّها (`fitKinds`).
+   🔑 و`.ed-tm` بعينها لا قائمةٌ ثانية: الفتحُ وإعلانُ الحال من `<details>`، والنقرُ خارجها وEsc في editor.js.
+   📌 والمعرّفاتُ هي هي: `bind` في `wire` لم يُمسّ. واسمُ الزرّ يسمّي لوحتَه لأنّ قارئ الشاشة يسمعه وحده (الهوية اللغوية §١٣ ④). */
+const moreMenu = (label, items) => `<details class="ed-tm eq-more">
+    <summary class="it-b" title="${esc(label)}" aria-label="${esc(label)}">${icon('more')}</summary>
+    <div class="ed-tpop">${items}</div>
+  </details>`;
+
 function passageBar(q, locked){
   const p = (Z.passages||[]).find(x => String(x.id) === String(q.passage_id));
   const r = range(cur, 'passage_id');
@@ -763,13 +774,17 @@ function passageBar(q, locked){
     `<button class="eq-bar add" id="addpg">＋ نصّ مشترك ${
        r.n > 1 ? `— سيشمل الأسئلة ${AR(r.from)}–${AR(r.to)}`
                : `— سيشمل السؤال ${AR(r.from)}`}</button>`;
+  /* والمقفلُ يسقط منه «تحرير» و«فصل» فيبقى فعلان: قائمةٌ لهما نقرةٌ تخفي كلَّ ما في اللوحة ولا تكسب شيئاً. */
+  const both = c => `<button class="${c}" id="pgrange" title="عدّل نطاق الأسئلة">⇢ النطاق</button>
+        <button class="${c}" id="pairpg">⇄ اقرن الكتلة</button>`;
   return `<div class="eq-bar pg">
     <div class="eq-brow">
       <span class="eq-bs">${span(r)}</span>
-      <button class="it-b" id="pgrange" title="عدّل نطاق الأسئلة">⇢ النطاق</button>
-      <button class="it-b" id="pairpg">⇄ اقرن الكتلة</button>
-      ${locked ? '' : `<button class="it-b" id="edpg">✏️ تحرير</button>
-                       <button class="it-b" id="rmpg">✕ فصل</button>`}
+      <span class="eq-bact">
+        ${locked ? both('it-b') : `<button class="it-b" id="edpg">✏️ تحرير</button>
+        ${moreMenu('أدوات النصّ المشترك', both('ed-tb') + `
+        <button class="ed-tb" id="rmpg">✕ فصل</button>`)}`}
+      </span>
     </div>
     ${p.media ? `<div style="margin-top:9px">${pgMedia(p)}</div>` : ''}
     ${p.body ? `<div class="psg" dir="auto" style="max-height:160px;margin-top:9px">
@@ -828,9 +843,11 @@ function variantBar(q, locked){
       <span class="eq-bt">⇄ خانة ${esc(q.variant_key)}</span>
       <span class="eq-bs">${copies(ps.length + 1)} في الخانة${
         v.cls === 'ok' ? ' · ✅ متّسقة فيما يُفحص آلياً' : ''}</span>
-      <button class="it-b" id="cmpv">⇄ قارِن النسخ</button>
-      <button class="it-b" id="addvar">＋ نسخة قائمة</button>
-      <button class="it-b" id="rmvar">✕ فكّ</button>
+      <span class="eq-bact">
+        <button class="it-b" id="cmpv">⇄ قارِن النسخ</button>
+        ${moreMenu('أدوات الخانة', `<button class="ed-tb" id="addvar">＋ نسخة قائمة</button>
+        <button class="ed-tb" id="rmvar">✕ فكّ</button>`)}
+      </span>
     </div>
 
     ${ps.map(p => `<div class="eq-brow" style="margin-top:8px">
@@ -1305,6 +1322,23 @@ function wire(q){
   bind("cmpv",   () => compareVariant(q.variant_key));
   bind("addvar", () => pairForm(q));
   bind("rmvar",  () => unVariant(q));
+  /* 🆕 b215 · قائمةُ ⋮ تُطوى قبل أن يعمل بندُها، فالالتقاطُ هنا لا الفقاعة: «النطاق» يفتح `prompt` يوقف الصفحة،
+     و«فكّ» ينتظر الخادم — والقائمةُ مفتوحةٌ فوق النصّ طوال ذلك. والتركيزُ إلى زرّها: البندُ المنقور صار مخفيّاً. */
+  main.querySelectorAll('.eq-more').forEach(d => {
+    d.addEventListener('click', e => {
+      if(!e.target.closest('.ed-tpop button')) return;
+      d.open = false;
+      d.querySelector('summary').focus({ preventScroll: true });
+    }, true);
+    /* 🔴 وتنفتح إلى أعلى إن لم تتّسع تحتها — قيس عند ١٤١٢×٥٧٤ (نافذةُ المالك) بقسمٍ ونصٍّ وخانة: قائمةُ الخانة تنتهي
+       عند y=٦١٦، فيقع «فكّ» خارج النافذة. والقلبُ لا التمرير: الصفحةُ لا تتحرّك تحت يد المؤلّف (حكمُ b211).
+       وتُقاس بعد الفتح لا قبله: القائمةُ المطويّة لا حجمَ لها. */
+    d.addEventListener('toggle', () => {
+      d.classList.remove('up');
+      if(d.open && d.querySelector('.ed-tpop').getBoundingClientRect().bottom > innerHeight)
+        d.classList.add('up');
+    });
+  });
 
   /* الهدف: يُكتب في السؤال نفسِه لا في نموذجٍ جانبيّ، و`saveQ` تقرؤه
      من `q.objective_id` فلا يحتاج سطراً في `collect`. */

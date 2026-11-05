@@ -2019,6 +2019,21 @@ html.pv-lock{overflow:hidden}
 .eq-bar.sec .eq-bt{color:var(--warn)}
 .eq-bar.pg  .eq-bt{color:var(--accent)}
 .eq-bs{font-size:var(--fs-tag);color:var(--text-muted);margin-left:auto}
+/* 🆕 b215 · أفعالُ اللوحة: الفعلُ الظاهرُ وقائمتُه ⋮ (`moreMenu`) جاران لا ينفصلان.
+   🔴 ومجموعةٌ لا أخوان في الصفّ: `.ed-tm` تُدفع إلى طرف سطرها بهامشٍ تلقائيّ لتنفتح إلى الداخل (التعليلُ عندها)،
+      فلو بقيت أختاً للفعل لتقاسم هامشُها الفراغَ مع هامش `.eq-bs`، فانفصل الفعلُ عن قائمته ووقف وسط الصفّ.
+      ⇒ الهامشُ على المجموعة: إذا التفّت في الضيّق بقيت في طرف سطرها، والقائمةُ داخل الشاشة. */
+.eq-bact{display:flex;align-items:center;gap:9px;margin-inline-start:auto}
+.eq-bact .ed-tm{margin:0;align-self:stretch}
+/* الارتفاعُ من الجار بالبناء (`stretch`) لا برقمٍ يُجرَّب، والعرضُ ما تصيبه الفأرة (٣٨px · حكمُ b211).
+   وبعد قاعدة الاستيراد في الجوّال عمداً: `summary{width:100%}` هناك لزرٍّ يملأ خانةً في شبكة، وهذا زرٌّ مربّع. */
+.eq-more > summary{box-sizing:border-box;width:38px;height:100%;padding:0;
+  display:flex;align-items:center;justify-content:center}
+.eq-more > summary .ic:last-child{width:18px;height:18px}
+.eq-more[open] > summary{border-color:var(--accent);color:var(--accent)}
+.eq-more > summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.eq-more .ed-tpop{min-width:168px}
+.eq-more.up .ed-tpop{top:auto;bottom:calc(100% + 8px)}
 .eq-pgbox{border-color:var(--accent-edge)}
 
 /* زرُّ مصطلح البطاقة (158 · b131) — يسكن فراغَ سطرِ الهدف ولا يأخذ
