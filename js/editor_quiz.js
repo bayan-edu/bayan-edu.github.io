@@ -3622,6 +3622,11 @@ const kIcon = k => k === 'essay' ? '✍️' : k === 'msq' ? '☑'
                  : k === 'matching' ? '⇄' : k === 'gap' ? '✎'
                  : k === 'cloze' ? '⇢' : '◉';
 
+/* نصُّ الصفّ في الشريط — والقصُّ هنا سقفٌ للرسم لا حدٌّ لما يُرى: ما يُرى يحكمه عرضُ الصفّ ونقاطُ CSS.
+   🔴 b212 · كان ٣٠ حرفاً في الخانة و٣٨ في السؤال، والحركاتُ تُعدّ أحرفاً ⇒ يُقطع النصّ قبل أن يمتلئ
+      الصفّ بلا نقاطٍ تدلّ على القطع، ويضيع ما يُفسَح له. و١٦٠ لأنّ الشريط في الضيّق بعرض الصفحة. */
+const rowText = x => esc((x.body || '').slice(0, 160) || '—');
+
 function stats(){
   const qs = Z.questions || [];
   const keys = [...new Set(qs.map(x => x.variant_key).filter(Boolean))];
@@ -3685,7 +3690,7 @@ function listBody(){
     const x = qs[i];
     return `<div class="eq-item ${i===cur?'on':''}" data-i="${i}">
       <span class="eq-n">${AR(i+1)}</span>
-      <span class="eq-b" dir="auto">${esc((x.body||'').slice(0,38) || '—')}</span>
+      <span class="eq-b" dir="auto">${rowText(x)}</span>
       <span class="eq-k">${x.passage_id?'📖':''}${kIcon(x.kind)}</span></div>`;
   };
 
@@ -3695,11 +3700,15 @@ function listBody(){
     const open  = LS.open.has('v:' + n.key) || searching;
     const here  = n.idx.includes(cur);
     const first = qs[n.idx[0]];              // لا تسمَّ head: مستوردةٌ من ui.js
+    /* 🔴 b212 · ومفتاحُ الخانة لا يُكتب في صفّها: `v8940` يولّده `set_variant` من أصغر معرّف، وعملُه
+       جمعُ النسخ عند السحب. لا يكتبه المعلّم ولا يبحث به (رقمُ البحث رقمُ السؤال)، وكان يأخذ
+       من نصّ السؤال — وبالنصّ وحده تُعرف الخانة. ويبقى العدد، وهو ما يتغيّر به قرارُ المعلّم.
+       والمفتاحُ عند الوقوف: فبه يسمّيها عمودُ التحرير والمقارنة، وهو الجسرُ بينهما وبين الشريط. */
     return `<div class="eq-var ${here?'on':''}">
       <div class="eq-vh" data-v="${esc(n.key)}">
         <span class="eq-ar">${open?'▾':'▸'}</span>
-        <span class="eq-vk">⇄ ${esc(n.key)} · ${AR(ms.length)}</span>
-        <span class="eq-vb" dir="auto">${esc((first.body||'').slice(0,30) || '—')}</span>
+        <span class="eq-vk" title="خانة ${esc(n.key)} · ${N(ms.length,'نسخة','نسختان','نسخ','نسخة')}">⇄ ${AR(ms.length)}</span>
+        <span class="eq-vb" dir="auto">${rowText(first)}</span>
         <span class="eq-flag ${v.cls}" data-cmp="${esc(n.key)}"
               title="قارِن نسخ الخانة" style="cursor:pointer">${v.icon}</span>
       </div>
