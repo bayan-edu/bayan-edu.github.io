@@ -1531,8 +1531,11 @@ html.pv-lock{overflow:hidden}
 
 /* ═══ العمودان ═══ */
 .eq{display:grid;grid-template-columns:300px minmax(0,1fr);gap:18px;align-items:start}
-.eq-h{font-family:'Almarai';font-weight:800;font-size:.85rem;margin-bottom:2px;
-  display:flex;align-items:center;gap:8px}
+/* العنوانُ يقاسم الفعلَ صفَّه، والخاناتُ تحت الأسئلة لا بجانبها: رقمان في سطرٍ ينافسان زرَّين على ٢٧٧px */
+.eq-hrow{display:flex;align-items:center;gap:8px}
+.eq-h{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;line-height:1.35}
+.eq-h b{font-family:'Almarai';font-weight:800;font-size:.85rem;white-space:nowrap}
+.eq-h span{font-size:var(--fs-tag);color:var(--text-muted);white-space:nowrap}
 
 .eq-list{background:var(--fill-soft);border:1px solid var(--line);
   border-radius:12px;padding:13px;position:sticky}
@@ -1761,8 +1764,8 @@ html.pv-lock{overflow:hidden}
 /* 🔑 «سؤال جديد» فعلُ المحرّر الأول، والاستيرادُ فعلُ مرّةٍ في عمر
    الاختبار — فلا يقتسمان الصفَّ نصفين كما كانا. الأولُ زرٌّ رئيسٌ
    بكلمته، والثاني أيقونةٌ مربّعة بجانبه. */
-.eq-adds{display:flex;gap:6px}
-.eq-new{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;
+.eq-adds{flex:0 0 auto;display:flex;gap:6px}
+.eq-new{flex:0 0 auto;display:flex;align-items:center;justify-content:center;gap:8px;
   background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);
   border-radius:10px;padding:11px 12px;cursor:pointer;line-height:1.5;
   font-family:'Almarai';font-weight:800;font-size:var(--fs-ui);
@@ -1805,17 +1808,25 @@ html.pv-lock{overflow:hidden}
 
 /* الجسد — هو وحده الذي يُمرَّر
    ⚠️ min-height:0 لازم: عنصر المرونة لا ينكمش تحت مقاس محتواه بلا هذا،
-      فيتمدّد الصندوق ولا يعمل overflow أبداً. */
-.eq-body{flex:1 1 auto;min-height:0;overflow-y:auto;padding-inline-end:3px}
+      فيتمدّد الصندوق ولا يعمل overflow أبداً.
+   🆕 b211 · ‎overscroll-behavior‎: بلوغُ آخر القائمة لا يُحرّك الصفحة تحتها.
+      و‎scrollbar-gutter‎: ظهورُ الشريط حين يُفتح قسمٌ لا يُضيّق الصفوف فتتحرّك نصوصُها. */
+.eq-body{flex:1 1 auto;min-height:0;overflow-y:auto;padding-inline-end:3px;
+  overscroll-behavior:contain;scrollbar-gutter:stable}
 .eq-body::-webkit-scrollbar{width:7px}
 .eq-body::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:7px}
 .eq-body::-webkit-scrollbar-track{background:transparent}
 
-/* رأس القسم — مظروفٌ يُطوى */
+/* رأس القسم — مظروفٌ يُطوى
+   🆕 b211 · ولاصقٌ في حدود قسمه: في قائمةٍ طويلة يبقى اسمُ القسم حيث ينظر المؤلّف، ونقرةٌ عليه تطويه
+   من أيّ موضع، والقسمُ التالي يدفعه (‎.eq-sec‎ هو حدُّه).
+   ⚠️ وخلفيّتُه طبقتان: ‎--fill‎ في الداكنة شفّافة، فلولا ‎--page‎ تحتها لقُرئت الصفوف من خلاله. */
+.eq-sec + .eq-sec{margin-top:11px}
 .eq-grp{display:flex;align-items:center;gap:7px;padding:8px 9px;border-radius:9px;
-  cursor:pointer;background:var(--fill);border:1px solid var(--line);
-  margin:11px 0 5px;font-family:'Almarai';font-weight:800;font-size:.76rem}
-.eq-grp:first-child{margin-top:0}
+  cursor:pointer;background:linear-gradient(var(--fill),var(--fill)),var(--page);
+  border:1px solid var(--line);margin:0 0 5px;
+  position:sticky;top:0;z-index:2;
+  font-family:'Almarai';font-weight:800;font-size:.76rem}
 .eq-grp:hover{border-color:var(--accent-edge)}
 .eq-gt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .eq-gc{font-size:var(--fs-tag);color:var(--text-muted);font-weight:400;white-space:nowrap}
@@ -1851,6 +1862,29 @@ html.pv-lock{overflow:hidden}
 .eq-flag.none{color:var(--text-muted);opacity:.8}
 .eq-none{font-size:var(--fs-meta);color:var(--text-muted);text-align:center;padding:18px 6px;line-height:1.8}
 
+/* 🔴 b211 · كثافةُ الحاسوب — رأسُ الشريط كان يأكل القائمة: قيس عند ٥٧٤px ارتفاعاً فكان الرأس
+      ٢٠٥px وأوّلُ سؤالٍ عند y=٤٩٦، فلا يظهر من ثمانيةٍ وعشرين إلا واحد. والأسئلة هي عملُ الشريط،
+      وما فوقها أدواتٌ له.
+   ⚠️ وفي الحاسوب وحده: الفأرةُ تصيب ٣٦px، واللمسُ يحتاج ما كان — فالجوّال يبقى على قيم الكتلة أعلاه.
+   ⚠️ و‎line-height‎ للبحث لازم: ‎input‎ العامّةُ ١٫٩، وهي ما كان يرفعه إلى ٤١px لا حشوُه. */
+@media(min-width:1001px){
+  .eq-list{padding:9px;gap:7px}
+  .eq-top{gap:6px}
+  .eq-new{padding:6px 11px;font-size:var(--fs-meta)}
+  .eq-ab.ico{flex-basis:36px}
+  .eq-sr{padding:6px 10px;font-size:.78rem;line-height:1.5}
+  .eq-f{gap:4px}
+  .eq-fb{padding:3px 7px}
+  .eq-sec + .eq-sec{margin-top:7px}
+  .eq-grp{padding:6px 8px;margin-bottom:4px;line-height:1.5}
+  .eq-pgs{padding:0 2px 5px}
+  .eq-pgc{line-height:1.5}
+  .eq-item{padding:6px 8px;margin-bottom:2px;line-height:1.5}
+  .eq-var{margin-bottom:3px}
+  .eq-vh{padding:6px 8px;line-height:1.5}
+  .eq-subs{padding:0 8px 7px}
+}
+
 /* ══ شاشة مقارنة نسخ الخانة ══
    الأعمدة تُضبط في الشيفرة — عددها عدد النسخ. */
 .cmp{display:grid;gap:12px;align-items:start}
@@ -1877,6 +1911,8 @@ html.pv-lock{overflow:hidden}
      بصنفٍ واحد لا تنقضها مهما تأخّرت. */
   .eq-sc .eq-list{max-height:none}
   .eq-body{overflow:visible}
+  /* والجسد لا يُمرَّر هنا، فاللصوقُ يكون على الصفحة نفسِها — تحت شريطها الأعلى */
+  .eq-grp{position:static}
   .cmp{grid-template-columns:1fr!important}
 }
 

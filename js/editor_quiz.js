@@ -105,6 +105,11 @@ async function load(qid){
   if(error){ app.innerHTML = errBox(error, 'تحميل الاختبار'); return; }
   if(!data.ok){ app.innerHTML = errBox({ message: data.error }, 'تحميل الاختبار'); return; }
 
+  /* 🔴 b211 · وحالُ الشريط تتبع الاختبار لا الجلسة: كانت `LS` تعبر من اختبارٍ إلى اختبار، فيرث
+     الثاني فلترَ الأوّل وبحثَه. وأسوأُها `lastCur`: يُفتح الثاني على سؤالٍ رقمُه رقمُ آخرِ ما
+     وُقف عليه في الأوّل ⇒ لا يتغيّر ⇒ لا يُفتح مظروفُ سؤاله، فتبدو القائمة بلا سؤالٍ محدَّد.
+     ⚠️ والمعاد فتحُه (`reopen` بعد الإعدادات) هو نفسُه، فيبقى له ما طواه المؤلّف. */
+  if(Z?.id !== data.id) LS = { open: new Set(), q: '', f: 'all', lastCur: -1 };
   Z = data; cur = 0; dirty = false;
 
   /* 🆕 b196 · والنموذجُ لا أسئلةَ له من عنده (185): محرّرُه شاشةُ تركيبٍ من خانات البنوك، لا شريطُ
@@ -236,10 +241,15 @@ async function createQuiz(){
    🔴 و'keep' جوابُ عطلٍ قِيس: الشريط ملازمٌ للشاشة، فالمؤلّف يبدّل
       السؤال وهو ينظر إليه — ولا ينتقل بين شاشتين. وكانت كلُّ نقرةٍ
       تقذفه إلى أعلى الصفحة، فيعود بالتمرير إلى حيث كان. حركةٌ تحت
-      القدمين تُفقد الموضع، ولا تُشترى بشيء. */
+      القدمين تُفقد الموضع، ولا تُشترى بشيء.
+   🔴 b211 · و'keep' صانت الصفحةَ ونسيت القائمة: موضعُ التمرير يسكن العنصر، و`app.innerHTML`
+      يهدم جسدَ الشريط ⇒ تعود القائمة إلى أوّلها مع كلّ نقرة والسؤالُ المختار خارجها — قيس:
+      السؤال ٢٨ عند y=١٩٩٤ والقائمة تعرض ٣٥٦–٥٥٨. ⇒ يُحفظ قبل الهدم ويُعاد بعده، ثمّ يُظهَر
+      الحاضر إن كان خارجها (revealCur). ودخولٌ جديد ('top') يبدأ من أوّلها. */
 function render(at = 'focus'){
   const qs = Z.questions || [];
   const q  = qs[cur] || null;
+  const lt = at === 'top' ? 0 : (app.querySelector('#lbody')?.scrollTop || 0);
 
   app.innerHTML = `
     <div class="eq-sc">
@@ -254,6 +264,9 @@ function render(at = 'focus'){
   wireToolbar();
   wireList();
   if(q) wire(q);
+  const lb = app.querySelector('#lbody');
+  if(lb) lb.scrollTop = lt;
+  revealCur();
   if(at === 'top')        scrollTop();
   else if(at === 'focus') focusMain();
 }
@@ -272,10 +285,15 @@ const emptyCard = () => `<div class="card" style="text-align:center;padding:34px
 
 function go(i){
   /* نقرةٌ على الحاضر: تقريبٌ لا انتقال — وهي المنفذ الوحيد إلى البطاقة
-     بعد أن صار تبديل السؤال لا يُحرّك الصفحة. */
-  if(i === cur) return focusMain();
+     بعد أن صار تبديل السؤال لا يُحرّك الصفحة.
+     🔴 b211 · وهذا حين تكون البطاقة معروضة: كان الوسط إذا عرض مقارنةً أو نموذجاً لا يعود إلى
+        السؤال الحاضر بنقرته — و«✏️ حرّر» في عموده زرٌّ لا يفعل شيئاً. (‎#qb‎ في كلّ بطاقة سؤال.) */
+  if(i === cur && document.getElementById('qb')) return focusMain();
   if(dirty && !confirm("تغييرات غير محفوظة في هذا السؤال — أتتركها؟")) return;
-  cur = i; dirty = false; render('keep');
+  cur = i; dirty = false;
+  /* 🆕 b211 · وعلّةُ 'keep' أنّ الشريط ملازمٌ للشاشة — وفي الضيّق ليس كذلك: هو في المجرى فوق
+     البطاقة، فمن يختار سؤالاً يبقى أمام القائمة والسؤالُ تحتها. ⇒ يُنقل إليه هناك وحده. */
+  render(listSticks() ? 'keep' : 'focus');
 }
 
 function leave(){
@@ -3470,7 +3488,7 @@ let kindsRO = null;
 
 function watchKinds(tb){
   if(!kindsRO && window.ResizeObserver)
-    kindsRO = new ResizeObserver(es => { es.forEach(e => syncTbH(e.target)); fitKinds(); });
+    kindsRO = new ResizeObserver(es => { es.forEach(e => syncTbH(e.target)); fitKinds(); fitList(); });
   if(kindsRO){ kindsRO.disconnect(); kindsRO.observe(tb); }
 
   const box = tb.querySelector('.eq-kinds');
@@ -3479,7 +3497,7 @@ function watchKinds(tb){
   /* والخطُّ قد لا يكون حُمِّل بعدُ، وعرضُ الرقيقة وارتفاعُ الشريط يتبعانه
      — فيُقاس مرّةً الآن ومرّةً بعد حضوره. ‎document.fonts‎ غير مضمونةٍ في
      كلّ متصفّح، فيُسأل عن وجودها ولا يُفترض. */
-  const tick = () => { syncTbH(tb); fitKinds(); };
+  const tick = () => { syncTbH(tb); fitKinds(); fitList(); };
   tick();
   document.fonts?.ready?.then(tick);
 }
@@ -3508,9 +3526,9 @@ async function pubLesson(quiet){
       مهما تباعدت نسخُها. **صدقٌ فارغ** — والعلاج حالةٌ ثالثة:
       لا «متطابق» ولا «مختلف» بل **«لا مادّة للفحص»**.
 
-   🔓 والشريط يُرسَم وحده بـ paintList — نظير repaint(q) في الاتجاه
-      المعاكس. فالبحث والطيّ والفلترة لا تمسّ cur ولا dirty ولا
-      بطاقة التحرير المفتوحة.
+   🔓 والشريط يُرسَم وحده بـ paintList (وجسدُه وحده بـ paintBody · b211)
+      — نظير repaint(q) في الاتجاه المعاكس. فالبحث والطيّ والفلترة لا
+      تمسّ cur ولا dirty ولا بطاقة التحرير المفتوحة.
    ══════════════════════════════════════════════════════════ */
 
 let LS = { open: new Set(), q: '', f: 'all', lastCur: -1 };
@@ -3640,9 +3658,15 @@ function nodePass(n){
 
 /* ═══════════ الرسم ═══════════ */
 
-function sidebar(){
+/* 🔴 b211 · قسمان يُرسم كلٌّ منهما وحده. كان الشريط يُرسم جملةً مع كلّ طيٍّ وكلّ حرفٍ في البحث،
+   وموضعُ التمرير يسكن العنصر ⇒ نقرةُ قسمٍ في آخر القائمة تُعيدها إلى أوّلها فيخرج ما نُقر عليه
+   — قيس: الموضع ١٢٩٨ ⇒ ٠ والرأسُ المنقور عند y=١٨١١ والقائمة تعرض ٣٥٦–٥٥٨. وبقاءُ الجسد
+   نفسِه يحفظ موضعَه بلا حسابٍ يُكتب، وحقلُ البحث يبقى بتركيزه بلا إعادةٍ يدويّة. */
+const sidebar = () => `<div class="eq-top">${listHead()}</div>
+    <div class="eq-body" id="lbody">${listBody()}</div>`;
+
+function listBody(){
   const qs = Z.questions || [];
-  const st = stats();
   const pg = new Map((Z.passages || []).map((p, i) => [String(p.id), i + 1]));
 
   /* الانتقال يفتح مظروفَ السؤال — والطيّ اليدويّ يبقى بعده */
@@ -3656,8 +3680,6 @@ function sidebar(){
   }
 
   const searching = !!LS.q.trim() || LS.f !== 'all';
-  const fb = (k, label, n, cls) => `<button class="eq-fb ${cls || ''} ${LS.f===k?'on':''}"
-      data-f="${k}">${label}${n !== undefined ? ' ' + AR(n) : ''}</button>`;
 
   const qRow = i => {
     const x = qs[i];
@@ -3697,31 +3719,55 @@ function sidebar(){
     const slots = new Set(idxs.map(i => qs[i].variant_key || ('q' + i))).size;
     const pgs = [...new Set(idxs.map(i => qs[i].passage_id).filter(Boolean).map(String))];
 
-    body += `<div class="eq-grp" data-s="${esc(sec)}">
+    /* المظروف عنصرٌ يحوي رأسَه وصفوفَه — ليلتصق الرأس في حدود قسمه ويدفعه القسم التالي */
+    body += `<div class="eq-sec"><div class="eq-grp" data-s="${esc(sec)}">
         <span class="eq-ar">${open?'▾':'▸'}</span>
         <span class="eq-gt" dir="auto">${esc(sec)}</span>
         <span class="eq-gc">${AR(idxs.length)} · ${N(slots,'خانة','خانتان','خانات','خانة')}</span></div>`;
-    if(!open) continue;
-    if(pgs.length) body += `<div class="eq-pgs">${pgs.map(id =>
-        `<span class="eq-pgc" data-pg="${esc(id)}">📖 ${AR(pg.get(id)||0)}
-          ${esc(((Z.passages||[]).find(p => String(p.id)===id)?.title) || 'نصّ مشترك')}
-        </span>`).join('')}</div>`;
-    body += ns.map(n => n.t === 'q' ? qRow(n.i) : vRow(n)).join('');
+    if(open){
+      if(pgs.length) body += `<div class="eq-pgs">${pgs.map(id =>
+          `<span class="eq-pgc" data-pg="${esc(id)}">📖 ${AR(pg.get(id)||0)}
+            ${esc(((Z.passages||[]).find(p => String(p.id)===id)?.title) || 'نصّ مشترك')}
+          </span>`).join('')}</div>`;
+      body += ns.map(n => n.t === 'q' ? qRow(n.i) : vRow(n)).join('');
+    }
+    body += '</div>';
   }
+
+  return body || '<div class="eq-none">لا سؤال يطابق البحث أو الفلتر</div>';
+}
+
+function listHead(){
+  const st = stats();
+  const fb = (k, label, n, cls) => `<button class="eq-fb ${cls || ''} ${LS.f===k?'on':''}"
+      data-f="${k}">${label}${n !== undefined ? ' ' + AR(n) : ''}</button>`;
+
+  /* 🔑 b211 · الفلترُ الذي لا يغيّر شيئاً لا يُعرض: صفرٌ لا نتيجةَ له، و«بلا خانة» في اختبارٍ
+     كلُّه بلا خانات هو «الكلّ» باسمٍ ثانٍ. وكانت الأربعة تُرسم أبداً فتلتفّ صفَّين (٦٠px)
+     لتقول ما لا يُفيد — قيس: «٢٨ · ٠ · ٠ · ٢٨». ولا تُفقَد معلومة: حكمُ الخانة على صفّها،
+     والعددُ الكلّيّ في العنوان. وإذا ظهر «⚠️ يحتاج نظرة ٣» صار خبراً لا زخرفة.
+     ⚠️ والفعّال يبقى وإن صار صفراً: هو منفذُ الخروج من نفسه. */
+  const judge = [['warn', '⚠️ يحتاج نظرة', st.warn, 'warn'],
+                 ['none', '⬜ بلا فحص',    st.none],
+                 ['free', 'بلا خانة',      st.free]]
+    .filter(([k, , n]) => LS.f === k || (n > 0 && !(k === 'free' && n === st.n)));
 
   /* 🔑 «سؤال جديد» يتصدّر الشريط بكلمته لا برمزه: كان ＋ وحده في
      صندوقٍ يقاسمه ⇪ نصفين، فبدا الفعلُ الأكثرُ تكراراً في المحرّر
      كلِّه زرَّ أداةٍ ثانوية. والاستيراد فعلُ مرّةٍ في عمر الاختبار
-     ⇒ أيقونةٌ مربّعة بجانبه، لا نصفُ الصفّ. */
-  return `<div class="eq-top">
-      <div class="eq-h">الأسئلة <span class="chip">${AR(st.n)}</span>
-        <span class="chip g">${N(st.slots,'خانة','خانتان','خانات','خانة')}</span></div>
-
-      <div class="eq-adds">
-        <button class="eq-new" id="addq">
-          <span class="eq-new-p">＋</span><span>سؤال جديد</span>
-          <span class="eq-new-c">▾</span></button>
-        <button class="eq-ab ico" id="imp" title="استيراد وتصدير">⇪</button>
+     ⇒ أيقونةٌ مربّعة بجانبه، لا نصفُ الصفّ.
+     🆕 b211 · ويقاسم العنوانَ صفَّه: صفٌّ للعنوان وصفٌّ للفعل كانا ٨٥px، والعنوانُ لا يشغل
+     إلا ثلثَ عرضه. والخانات تحت الأسئلة وحيث تختلف عنها فقط — سنّةُ رقائق الأنماط (kindChips). */
+  return `
+      <div class="eq-hrow">
+        <div class="eq-h"><b>الأسئلة ${AR(st.n)}</b>${st.slots !== st.n
+          ? `<span>${N(st.slots,'خانة','خانتان','خانات','خانة')}</span>` : ''}</div>
+        <div class="eq-adds">
+          <button class="eq-new" id="addq">
+            <span class="eq-new-p">＋</span><span>سؤال جديد</span>
+            <span class="eq-new-c">▾</span></button>
+          <button class="eq-ab ico" id="imp" title="استيراد وتصدير">⇪</button>
+        </div>
       </div>
       <div class="addmenu" id="addmenu" hidden>
         <button data-k="mcq"><i>◉</i><div><b>اختيار من متعدد</b><span>إجابة واحدة صحيحة</span></div></button>
@@ -3735,47 +3781,132 @@ function sidebar(){
 
       <input class="eq-sr" id="lsq" value="${esc(LS.q)}"
              placeholder="بحث في النصّ · أو رقم ثمّ Enter">
-      <div class="eq-f">
+      ${judge.length ? `<div class="eq-f">
         ${fb('all','الكل', st.n)}
-        ${fb('warn','⚠️ يحتاج نظرة', st.warn, 'warn')}
-        ${fb('none','⬜ بلا فحص', st.none)}
-        ${fb('free','بلا خانة', st.free)}
-      </div>
+        ${judge.map(([k, label, n, cls]) => fb(k, label, n, cls)).join('')}
+      </div>` : ''}
       ${F_JUDGE.has(LS.f) ? '' : `<button class="eq-chipf" id="lclr">
         <span>${esc(F_LABEL[LS.f] || LS.f)}</span>
-        <span style="margin-inline-start:auto">✕</span></button>`}
-    </div>
-    <div class="eq-body" id="lbody">${body ||
-      '<div class="eq-none">لا سؤال يطابق البحث أو الفلتر</div>'}</div>`;
+        <span style="margin-inline-start:auto">✕</span></button>`}`;
 }
 
-/* الشريط وحده — فلا يفقد الوسط ما فيه */
+/* الشريط كلُّه — لتبدّل الفلتر وحده: رقائقُه في الرأس ونتيجتُه في الجسد */
 function paintList(){
   const box = app.querySelector('.eq-list');
   if(!box) return;
   box.innerHTML = sidebar();
   wireList();
-  box.querySelector('.eq-sub.on, .eq-item.on')?.scrollIntoView({ block:'nearest' });
+  revealCur();
 }
+
+/* الجسد وحده — لِما لا يمسّ الرأس: طيٌّ وفتحٌ وبحث. والعنصرُ باقٍ فموضعُه باقٍ. */
+function paintBody(){
+  const body = app.querySelector('#lbody');
+  if(!body) return null;
+  body.innerHTML = listBody();
+  wireBody(body);
+  return body;
+}
+
+/* ═══════════ b211 · القائمة لا تتحرّك تحت يد المؤلّف ═══════════
+   🔴 كان بعد كلّ رسمٍ ‎.on‎.scrollIntoView — وهو **يحرّك كلَّ ما يقبل التمرير حتى الصفحة**،
+      و‎.on‎ هو السؤال الحاضر لا ما نُقر عليه. ففي الضيّق نقرةُ قسمٍ في أسفل القائمة تقذف
+      الصفحة إلى السؤال الحاضر في أعلاها — قيس: ١٣٩٦ ⇒ ٥١٦، والرأسُ المنقور من y=٢٠٠ إلى ١٠٨٠.
+   ⇒ لا ‎scrollIntoView‎ هنا: الحساب على جسد الشريط وحده، والصفحة لا تُمسّ. */
+
+/* الشريطُ ملازمٌ للشاشة في الحاسوب، وفي الضيّق عنصرٌ في المجرى وجسدُه لا يُمرَّر.
+   والسؤالُ للنمط نفسِه لا لعرضٍ يُكتب هنا: نقطةُ القطع تسكن @media في screens.css. */
+const listSticks = () => {
+  const b = app?.querySelector('.eq-list');
+  return !!b && getComputedStyle(b).position === 'sticky';
+};
+
+/* رأسُ القسم لاصقٌ فوق الجسد، فما تحته محجوبٌ وإن كان «داخل» القائمة */
+const stuckH = el => el.closest('.eq-sec')?.querySelector('.eq-grp')?.offsetHeight || 0;
+
+/* الحاضر — يُظهَر إن كان خارج القائمة ولا يتحرّك شيءٌ إن كان ظاهراً.
+   والخانةُ كلُّها لا نسختُها: صفُّها هو ما يُقرأ، و‎.eq-var.on‎ تبقى وإن طوى المؤلّف نسخَها. */
+function revealCur(){
+  const body = app.querySelector('#lbody');
+  const on = body?.querySelector('.eq-item.on, .eq-var.on');
+  if(!on || !listSticks()) return;
+  const B = body.getBoundingClientRect(), R = on.getBoundingClientRect();
+  const top = B.top + stuckH(on) + 4, bottom = B.bottom - 6;
+  if(R.top < top) body.scrollTop -= top - R.top;
+  else if(R.bottom > bottom) body.scrollTop += Math.min(R.bottom - bottom, R.top - top);
+}
+
+/* الطيّ والفتح: ما نُقر عليه يبقى تحت المؤشّر.
+   والتصحيحُ لرأسٍ لاصق يُطوى: موضعُه الطبيعيّ فوق الجسد، فيختفي من تحت اليد لولاه.
+   ثمّ ما انفتح يُظهَر كاملاً — فلا يبقى على المؤلّف أن يمرّر ليرى ما طلبه — ولا يخرج رأسُه. */
+function toggleNode(key, el){
+  const y = el.getBoundingClientRect().top;
+  const opening = !LS.open.has(key);
+  opening ? LS.open.add(key) : LS.open.delete(key);
+
+  const body = paintBody();
+  const now = [...(body?.querySelectorAll(key[0] === 's' ? '.eq-grp' : '.eq-vh') || [])]
+    .find(x => (x.dataset.s ?? x.dataset.v) === key.slice(2));
+  if(!now) return;
+
+  const dy = now.getBoundingClientRect().top - y, sticks = listSticks();
+  if(dy){
+    if(sticks) body.scrollTop += dy;
+    else window.scrollBy({ top: dy, behavior: 'instant' });
+  }
+  if(!opening || !sticks) return;
+
+  const box = now.closest('.eq-var') || now.closest('.eq-sec');
+  const B = body.getBoundingClientRect(), R = box.getBoundingClientRect();
+  const over = R.bottom - B.bottom + 6;
+  if(over <= 0) return;
+  const room = R.top - B.top - (box.matches('.eq-var') ? stuckH(box) : 0);
+  body.scrollBy({ top: Math.min(over, room),
+    behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+}
+
+/* 🔴 ارتفاعُ الشريط يتبع ما بقي من الشاشة: سقفُه في CSS محسوبٌ لحال الالتصاق، وأعلى الصفحة
+   يبدأ أدنى من ذلك بعنوان الشاشة ⇒ يفيض أسفلها — قيس ٥٦px عند ارتفاع ٥٧٤، فتختفي آخرُ
+   الأسئلة ولا يدلّ على ذلك شيء. ⇒ يُقاس ما بقي فعلاً كلّما تحرّكت الصفحة.
+   والمستمعان مرّةً في عمر الوحدة (درسُ shutMenuOnce أدناه)، ويبحثان عن الشريط عند الحاجة.
+   ⚠️ وقاعٌ ٢٤٠: شاشةٌ أقصرُ من ذلك يمرّرها ‎.eq-list‎ نفسُه، خيرٌ من قائمةٍ لا تُرى. */
+function fitList(){
+  const box = app?.querySelector('.eq-list');
+  if(!box) return;
+  box.style.maxHeight = listSticks()
+    ? Math.max(240, Math.floor(innerHeight - box.getBoundingClientRect().top - 10)) + 'px'
+    : '';
+}
+addEventListener('scroll', fitList, { passive: true });
+addEventListener('resize', fitList);
 
 function wireList(){
   const box = app.querySelector('.eq-list');
   if(!box) return;
+  wireHead(box);
+  wireBody(box.querySelector('#lbody'));
+}
 
+function wireHead(box){
   const sr = box.querySelector("#lsq");
   if(sr){
     sr.oninput = e => {
-      const p = e.target.selectionStart;
-      LS.q = e.target.value; paintList();
-      const n = app.querySelector('.eq-list #lsq');
-      if(n){ n.focus(); n.setSelectionRange(p, p); }
+      LS.q = e.target.value;
+      const body = paintBody();
+      /* نتائجُ جديدة ⇒ من أوّلها · وأُفرغ البحث ⇒ عودةٌ إلى حيث كان المؤلّف */
+      if(LS.q.trim()){ if(body) body.scrollTop = 0; }
+      else revealCur();
     };
     sr.onkeydown = e => {
       if(e.key !== 'Enter') return;
       const m = /^\d+$/.exec(LS.q.trim());
       if(!m) return;
       const i = +m[0] - 1;
-      if(i >= 0 && i < (Z.questions||[]).length){ LS.q = ''; go(i); }
+      /* ⚠️ ويُفرَغ الحقل هنا لا بالرسم بعده: رقمُ السؤال الحاضر لا تُعيد `go` رسمَ شيءٍ لأجله،
+         فيبقى الرقم في الحقل والأقسامُ كلُّها مفتوحة. */
+      if(i >= 0 && i < (Z.questions||[]).length){
+        LS.q = ''; e.target.value = ''; paintBody(); go(i);
+      }
       else toast("لا سؤال بهذا الرقم");
     };
   }
@@ -3784,23 +3915,6 @@ function wireList(){
     el.onclick = () => setFilter(el.dataset.f));
   const cl = box.querySelector("#lclr");
   if(cl) cl.onclick = () => setFilter(LS.f);     // نقضٌ لنفسه ⇒ 'all'
-
-  box.querySelectorAll("[data-s]").forEach(el => el.onclick = () => {
-    const k = 's:' + el.dataset.s;
-    LS.open.has(k) ? LS.open.delete(k) : LS.open.add(k); paintList(); });
-  box.querySelectorAll(".eq-vh").forEach(el => el.onclick = () => {
-    const k = 'v:' + el.dataset.v;
-    LS.open.has(k) ? LS.open.delete(k) : LS.open.add(k); paintList(); });
-
-  /* ⚠️ الحكم داخل الرأس — فلولا إيقاف الفقاعة لطوى المظروفَ معه */
-  box.querySelectorAll("[data-cmp]").forEach(el => el.onclick = e => {
-    e.stopPropagation(); compareVariant(el.dataset.cmp); });
-  box.querySelectorAll("[data-i]").forEach(el => el.onclick = e => {
-    e.stopPropagation(); go(+el.dataset.i); });
-  box.querySelectorAll("[data-pg]").forEach(el => el.onclick = () => {
-    const i = (Z.questions||[]).findIndex(x => String(x.passage_id) === el.dataset.pg);
-    if(i >= 0) go(i);
-  });
 
   const am = box.querySelector("#addmenu");
   /* زنادان لقائمةٍ واحدة: زرّ الشريط، وزرّ البطاقة الفارغة وسط
@@ -3834,6 +3948,24 @@ function wireList(){
   box.querySelector("#imp").onclick = importBox;
   const i0 = document.getElementById("imp0");      // في البطاقة الفارغة وسط الشاشة
   if(i0) i0.onclick = importBox;
+}
+
+function wireBody(body){
+  if(!body) return;
+  body.querySelectorAll("[data-s]").forEach(el => el.onclick = () =>
+    toggleNode('s:' + el.dataset.s, el));
+  body.querySelectorAll(".eq-vh").forEach(el => el.onclick = () =>
+    toggleNode('v:' + el.dataset.v, el));
+
+  /* ⚠️ الحكم داخل الرأس — فلولا إيقاف الفقاعة لطوى المظروفَ معه */
+  body.querySelectorAll("[data-cmp]").forEach(el => el.onclick = e => {
+    e.stopPropagation(); compareVariant(el.dataset.cmp); });
+  body.querySelectorAll("[data-i]").forEach(el => el.onclick = e => {
+    e.stopPropagation(); go(+el.dataset.i); });
+  body.querySelectorAll("[data-pg]").forEach(el => el.onclick = () => {
+    const i = (Z.questions||[]).findIndex(x => String(x.passage_id) === el.dataset.pg);
+    if(i >= 0) go(i);
+  });
 }
 
 /* 🔴 عطلٌ صامت: كانت مستمعات scroll/resize/click تُركَّب داخل
@@ -3947,5 +4079,7 @@ function compareVariant(key){
     const i = (Z.questions||[]).findIndex(x => x.id === +el.dataset.cmed);
     if(i >= 0) go(i);
   });
-  scrollTop();
+  /* 🔴 b211 · وكانت ‎scrollTop()‎: مقارنةُ خانةٍ تُفتح من الشريط، فتقذف الصفحةَ إلى أعلاها قبل أن
+     تُرى نسخُ الخانة. والوجهة ما تقوله ‎focusMain‎: الوسطُ لا رأسُ الصفحة. */
+  focusMain();
 }
