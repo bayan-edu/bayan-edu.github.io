@@ -45,7 +45,7 @@ import { S } from './state.js';
 import { app, head, toast, esc, fmt, AR, errBox, nav, setWide, scrollTop, L,
                   pgMedia, srcOf, SAFE_HOSTS, optLabel, dirOf, backText, N } from './ui.js';
 import { attachUpload } from './upload.js';
-import { openCourse, openTools } from './editor.js';
+import { openCourse, openTools, toolBtn, cmdHead } from './editor.js';
 import { openItems } from './editor_items.js';
 import { questionText, questionBody, KIND_LABEL, kindLabel, paperIsEnglish,
          gapCount } from './render_q.js';
@@ -3304,32 +3304,37 @@ function toolbar(){
           : live  ? { c:'live',  t:'منشور ويصل الطلاب' }
                   : { c:'half',  t:'منشور — والدرس مسودّة' };
 
+  /* 🆕 b214 · ثلاثُ مجموعاتٍ على سطح `.ed-tools` (التعليلُ عند `.eq-tb` في screens.css):
+     «ما هذا» (الرجوعُ والعنوانُ والدرس والرقائق) ⇐ «أدواته» ⇐ «حالُ نشره وفعلُه» متجاورَين في الطرف:
+     الكلمةُ التي تقول حالَه بجانب الزرّ الذي يبدّلها.
+     📌 والمعرّفاتُ هي هي (rd*): ربطُها في `wireToolbar` لم يُمسّ.
+     📌 واسمُ البنك يظهر تحت عنوانه — ولم يكن في الشاشة موضعٌ يقوله؛ والمحطّةُ اسمُها في العنوان (`openQuiz`). */
+  const backTo = bk ? 'عودة لبنوك المادة' : st ? 'عودة لأدوات القياس' : 'عودة لدروس المقرَّر';
+
   return `
-    <div class="eq-tb">
-      <button class="eq-back" id="rdBack" title="رجوع">
-        <span class="eq-back-a">→</span>
-        <span class="eq-back-t" dir="auto">${esc(bk ? 'بنوك المادة' : ctx.lesson?.title || 'أدوات القياس')}</span>
-      </button>
+    <div class="ed-tools eq-tb">
+      ${cmdHead('rdBack', backTo, bk ? Z.title : ctx.lesson?.title)}
 
       <div class="eq-kinds">${kindChips()}</div>
 
-      <span class="eq-state ${s.c}"${bk ? ' title="البنك لا يراه الطالب إلا داخل نموذج"' : ''}>${s.t}</span>
-
-      <div class="eq-acts">
-        <button class="eq-tbb" id="rdSet"><span class="eq-i">⚙</span> الإعدادات</button>
-        <button class="eq-tbb" id="rdPrev" title="عِش تجربة الطالب"><span class="eq-i">👁</span> معاينة</button>
+      <div class="ed-tg eq-acts">
+        ${toolBtn('rdSet', 'settings', 'الإعدادات', '', 'title="الإعدادات"')}
+        ${toolBtn('rdPrev', 'eye', 'معاينة', '', 'title="معاينة بعين الطالب"')}
         ${/* 🆕 b89 · الفعلُ واقعٌ على الاختبار كلِّه ⇒ موضعُه شريطُ الأوامر
               لا بطاقةُ سؤال. ولا يشترط نشراً: النشرُ يُدخل البوّابةَ
               والدرجة، وهذه جلسةٌ لا تُقيَّم — وحالُ الأصل يُقال في
               الصندوق قبل التوليد، فلا يُجمَّد مسودّةٌ على غفلة. */''}
-        ${bk ? '' : `<button class="eq-tbb" id="rdLink"
-                title="رابط يتدرّب به من لا حساب له"><span class="eq-i">🔗</span> رابط تدرّب</button>`}
-        ${pub && !live ? `<button class="eq-tbb warn" id="rdLsn">نشر الدرس أيضاً</button>` : ''}
-        ${bk ? '' : `<button class="eq-tbb ${pub?'':'go'}" id="rdPub" ${r.ok?'':'disabled'}
-          title="${r.ok ? '' : pub
-            ? 'الجاهزية ناقصة — والزرّ محجوب حتى تكتمل (انظر اللافتة أعلاه)'
-            : 'لا يُنشر قبل أن تكتمل الجاهزية'}">${
-          pub ? 'إلغاء النشر' : 'نشر الاختبار'}</button>`}
+        ${bk ? '' : toolBtn('rdLink', 'link', 'رابط تدرّب', '', 'title="رابط يتدرّب به من لا حساب له"')}
+      </div>
+
+      <div class="ed-tg">
+        <span class="eq-state ${s.c}"${bk ? ' title="البنك لا يراه الطالب إلا داخل نموذج"' : ''}>${s.t}</span>
+        ${pub && !live ? toolBtn('rdLsn', 'publish', 'نشر الدرس أيضاً', ' warn') : ''}
+        ${bk ? '' : toolBtn('rdPub', pub ? 'unpublish' : 'publish',
+             pub ? 'إلغاء النشر' : 'نشر الاختبار', pub ? '' : ' pri',
+             `${r.ok ? '' : 'disabled '}title="${r.ok ? '' : pub
+               ? 'الجاهزية ناقصة — والزرّ محجوب حتى تكتمل، والتفصيل في اللافتة تحته'
+               : 'لا يُنشر قبل أن تكتمل الجاهزية'}"`)}
       </div>
     </div>`;
 }
@@ -3347,7 +3352,8 @@ function kindChips(){
     const s = kindStat(k);
     const lack = k === 'mcq' && n < 6;
     return `<button class="eq-kb ${LS.f===k?'on':''} ${lack?'lack':''}" data-f="${k}"
-        title="${esc(label)} — اعرضه وحده في شريط الأسئلة">
+        aria-pressed="${LS.f===k}"
+        title="${esc(label)} — عرضه وحده في شريط الأسئلة">
         <i>${kIcon(k)}</i><b>${AR(n)}</b><span>${esc(label)}</span>
         ${lack ? '<em>٦ مطلوبة</em>' : ''}
         ${s.slots !== s.n ? `<em>${N(s.slots,'خانة','خانتان','خانات','خانة')}</em>` : ''}
@@ -3450,12 +3456,22 @@ const KTOL = 6;
 function fitKinds(){
   const box = app?.querySelector('.eq-kinds');
   if(!box) return;
+  const bar = box.closest('.eq-tb');
+  const over = () => box.scrollWidth - box.clientWidth > KTOL;
 
   /* ⚠️ يُقاس موسَّعاً دائماً: لو قيس مطويّاً لوجده يتّسع فرفع الطيَّ،
      فيفيض فيُعاد — تذبذبٌ لا يسكن. فالسؤال «أيتّسع مبسوطاً؟» لا
-     «أيتّسع على حاله الآن؟». */
+     «أيتّسع على حاله الآن؟».
+     🆕 b214 · ودرجةٌ بعد طيّ الرقائق: أسماءُ الأدوات تُطوى إن بقي الفيض (`.eq-tb.icons`).
+     🔴 لأنّ الشريط صار يحمل العنوانَ والسهم معهما — قيس «منشور والدرس مسودّة» عند ١٠١٠px بلا
+        هذه الدرجة: الرقائقُ صفرُ عرضٍ، والشريطُ يفيض عن إطاره ٣٩px ويدفع الصفحةَ ٢٠px. وطيُّها يردّ
+        نحو ١٧٠px، والاسمُ باقٍ في `title`. وزرُّ النشر وحالُه لا يُطويان: هما ما لا يُخطأ فيه. */
   box.classList.remove('tight');
-  if(box.scrollWidth - box.clientWidth > KTOL) box.classList.add('tight');
+  bar?.classList.remove('icons');
+  if(over()){
+    box.classList.add('tight');
+    if(over()) bar?.classList.add('icons');
+  }
 
   edgeMark(box);
 }

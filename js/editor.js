@@ -514,6 +514,23 @@ export const toolBtn = (id, ic, label, cls = '', attrs = '') =>
   `<button type="button" class="ed-tb${cls}" id="${id}"${attrs ? ' ' + attrs : ''}>${
     icon(ic)}<span>${label}</span></button>`;
 
+/* 🆕 b214 · رأسُ شريط الأوامر (`.eq-tb`) — سهمُ الرجوع وعنوانُ الشاشة وما يخصّها، لمحرّر الاختبار
+   وشاشة تركيب النموذج معاً. والتعليلُ البصريّ عند `.eq-tb` في screens.css.
+   🔑 **والعنوانُ يُقرأ من `#head` ولا يُمرَّر:** `head()` تكتبه هناك وتبني منه عنوانَ التبويب — فنصٌّ
+      ثانٍ يُكتب هنا يفترق عنه يوماً. والترويسةُ مخفيّةٌ بنمطٍ على هذه الشاشات، فهذا موضعُه المرئيّ الوحيد.
+   📌 والرجوعُ سهمٌ يقول وجهتَه في `title` و`aria-label` — حكمُ b186: «اسمُ الوجهة وحده لا يقول إنّه رجوع»،
+      والسهمُ وحده لا يقول إلى أين. وكان زرُّه يحمل اسمَ الدرس فيَعِد بالدرس، ووجهتُه قائمةُ الدروس. */
+export const cmdHead = (id, backTo, sub) => {
+  const t = document.getElementById('head')?.textContent || '';
+  return `
+    <button type="button" class="iconbtn eq-back" id="${id}"
+            aria-label="${escA(backTo)}" title="${escA(backTo)}">${icon('back')}</button>
+    <div class="eq-id">
+      <h1 class="eq-ttl" dir="auto" title="${escA(t)}">${esc(t)}</h1>
+      ${sub ? `<div class="eq-lsn" dir="auto" title="${escA(sub)}">${esc(sub)}</div>` : ''}
+    </div>`;
+};
+
 export async function openCourse(course){
   nav('editor'); setWide(true);
   const t = await tree();

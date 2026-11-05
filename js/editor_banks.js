@@ -21,7 +21,7 @@
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
 import { app, head, toast, esc, escA, AR, errBox, nav, setWide, scrollTop, N } from './ui.js';
-import { openCourse } from './editor.js';
+import { openCourse, toolBtn, cmdHead } from './editor.js';
 import { openBank, openQuizPreview, quizSettings } from './editor_quiz.js';
 import { openBankImport } from './editor_import.js';
 import { strandsOf } from './editor_strands.js';
@@ -162,19 +162,18 @@ function render(){
 
   app.innerHTML = `
     <div class="eq-sc">
-      <div class="eq-tb">
-        <button class="eq-back" id="fmBack" title="رجوع">
-          <span class="eq-back-a">→</span>
-          <span class="eq-back-t" dir="auto">${esc(F.lesson?.title || 'دروس المقرَّر')}</span>
-        </button>
+      <div class="ed-tools eq-tb">
+        ${cmdHead('fmBack', 'عودة لدروس المقرَّر', F.lesson?.title)}
         <div class="eq-kinds"><span class="chip">${
           !n ? 'لا سطور بعد' : n === 1 ? 'سطر واحد' : N(n, 'سطر', 'سطران', 'سطور', 'سطراً')}</span></div>
-        <span class="eq-state ${s.c}">${s.t}</span>
-        <div class="eq-acts">
-          <button class="eq-tbb" id="fmSet"><span class="eq-i">⚙</span> الإعدادات</button>
-          <button class="eq-tbb" id="fmPrev" title="عِش تجربة الطالب"><span class="eq-i">👁</span> معاينة</button>
-          <button class="eq-tbb" id="fmSave">حفظ السطور</button>
-          <button class="eq-tbb" id="fmPub">${pub ? 'إلغاء النشر' : 'نشر النموذج'}</button>
+        <div class="ed-tg eq-acts">
+          ${toolBtn('fmSet', 'settings', 'الإعدادات')}
+          ${toolBtn('fmPrev', 'eye', 'معاينة', '', 'title="معاينة بعين الطالب"')}
+          ${toolBtn('fmSave', 'save', 'حفظ السطور')}
+        </div>
+        <div class="ed-tg">
+          <span class="eq-state ${s.c}">${s.t}</span>
+          ${toolBtn('fmPub', pub ? 'unpublish' : 'publish', pub ? 'إلغاء النشر' : 'نشر النموذج')}
         </div>
       </div>
       ${issues(r)}
@@ -193,12 +192,12 @@ function paintBar(){
   const $ = id => document.getElementById(id);
   const pub = !!F.z.published, ready = !!F.z.readiness?.ok;
   const sv = $("fmSave"), pv = $("fmPrev"), pb = $("fmPub");
-  if(sv){ sv.disabled = !F.dirty; sv.classList.toggle('go', F.dirty); }
+  if(sv){ sv.disabled = !F.dirty; sv.classList.toggle('pri', F.dirty); }
   if(pv){ pv.disabled = F.dirty || !F.rows.length;
-          pv.title = F.dirty ? 'تُحفظ السطور أولاً' : 'عِش تجربة الطالب'; }
+          pv.title = F.dirty ? 'تُحفظ السطور أولاً' : 'معاينة بعين الطالب'; }
   if(pb && !pub){
     pb.disabled = F.dirty || !ready;
-    pb.classList.toggle('go', !F.dirty && ready);
+    pb.classList.toggle('pri', !F.dirty && ready);
     pb.title = F.dirty ? 'تُحفظ السطور أولاً' : ready ? '' : 'لا يُنشر قبل أن تكتمل الجاهزية';
   }
 }

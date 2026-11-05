@@ -1361,39 +1361,80 @@ html.pv-lock{overflow:hidden}
       شكوى. ⇒ صار ‎syncTbH‎ يقرأ الارتفاعَ من الشريط نفسه ويكتبه هنا عند
       كلّ تغيّرِ حجم. والرقم أدناه ما قِيس عند الإصلاح: يحكم اللحظةَ قبل
       أوّل قياسٍ لا غير — **ولا يُنقل منه رقمٌ إلى موضعٍ آخر.**
+      🆕 b214 · و٥٦ منذ دخل العنوانُ الشريط (كانت ٥٨).
    ══════════════════════════════════════════════════════════ */
-.eq-sc{--eqbar:57px;--eqtb:58px}
+.eq-sc{--eqbar:57px;--eqtb:56px}
 
-/* شريط الأوامر — لاصقٌ تحت الشريط الأعلى، وخلفيّتُه صمّاء:
+/* 🆕 b214 · صفُّ العنوان يدخل الشريط — طلبُ المالك (٥ نوفمبر): «استغلال المساحة الفارغة المقابلة للعنوان».
+   🔴 قيس عند ١٢٨٠×٧٢٠: الترويسةُ ٦٣px فيها كلمتان وفراغٌ بعرض الصفحة، وتحتها شريطٌ يعصر تسعةَ عناصر في
+      سطرٍ واحد — ورقائقُه مطويّةٌ من الضيق. فأوّلُ ما يُعمل فيه يبدأ عند y=١٩١.
+   ⇒ العنوانُ في الشريط، والترويسةُ تُخفى حيث يوجد الشريط وحده. والسطرُ الواحد يكفيهما، فلا يطول الشريطُ
+      ولا يدفع المؤلّفُ ثمنَه حين يمرّر.
+   🔑 و`head()` تبقى ممرَّها الإجباريّ: تكتب `#head` وعنوانَ التبويب، ورأسُ الشريط يقرأ منها (`cmdHead`).
+   🔑 و:has() لا نداءٌ في الشيفرة — سنّةُ مراسي العرض في base.css: فما لا شريطَ فيه (`offerCreate` · المعاينة)
+      تعود إليه ترويستُه بلا سطرٍ يُنسى. */
+.wrap:has(.eq-sc) > header{display:none}
+
+/* شريط الأوامر — لاصقٌ تحت الشريط الأعلى، وسطحُه صمّ:
    ما يمرّ تحته لا يُقرأ من خلاله.
+   🆕 b214 · **وصار سطحَ `.ed-tools` وأزرارَها بعينها** — طلبُ المالك: «إطارٌ بخلفيّةٍ بيضاء».
+   🔴 قيس: الصفحةُ والشريطُ والأزرارُ كلُّها ‎#F5F5F4‎ (‎--page‎ و‎--fill‎ قيمةٌ واحدة في الفاتحة)، فلا يفصل الزرَّ
+      عمّا حوله إلا خطٌّ تباينُه ١٫٣٧ — وكانت الشاشةُ الوحيدةَ بين شاشات المحرّر على هذا: دروسُ المقرَّر
+      والبطاقاتُ على `.ed-tools` منذ b186 وb187. ⇒ لا وصفةَ جديدة: الصنفان معاً في الشيفرة، وهنا ما يخصّ هذا
+      الشريط وحده.
+   ⚠️ و‎display:flex‎ صريحةٌ لازمة: `.ed-tools` تصير شبكةً في الجوّال، وهذا الشريطُ له ترتيبُه (@media أسفله).
    🔴 ولا يلتفّ في الحاسوب: ارتفاعُه (--eqtb) هو ما يُبنى عليه التصاقُ
       عمود الأسئلة تحته، فالتفافُه يُطيله فيغطّي رأسَ العمود — قيس
       عند ١٠١٠px فكان ٩١ بدل ٤٩، والتغطية ٢٥px. والالتفاف يتبع طولَ
       **العنوان وعددَ الأزرار** لا عرضَ الشاشة وحده، فلا يُحسم بنقطة
       قطعٍ في @media. ⇒ يُمنع الالتفاف، ويُفسَح بالانكماش: العنوان
-      يُقصَّر بالنقاط، والرقائق تُمرَّر أفقيّاً. */
+      يُقصَّر بالنقاط، والرقائق تُمرَّر أفقيّاً.
+   📌 والظلُّ الصلب بلون الصفحة (‎0 -16px 0 0‎) يسدّ زاويتَي السطح العلويّتين حين يلتصق: لولاه لأطلّ ما يمرّ
+      تحته من مثلّثَي الاستدارة. وهو لونُ ما حوله، فلا يُرى قبل الالتصاق. */
 .eq-tb{position:sticky;top:var(--eqbar);z-index:16;
-  display:flex;align-items:center;gap:8px;flex-wrap:nowrap;
-  background:var(--page);border-bottom:1px solid var(--line);
-  padding:9px 0 10px;margin-bottom:13px}
+  display:flex;gap:8px;flex-wrap:nowrap;
+  box-shadow:var(--shadow),0 -16px 0 0 var(--page);
+  margin:12px 0 13px}
 
-/* 🆕 b96 · والقاعُ على الزرّ لا على نصّه: نصٌّ بحدٍّ أدنى داخل زرٍّ
-   بـ ‎min-width:0‎ لا يوقف انكماشَ الزرّ — بل يفيض منه، والزرُّ لا
-   ‎overflow‎ له. قيس فانكمش الزرّ إلى ٣٥px واسمُ الدرس خارجَه. */
-.eq-back{flex:0 1 auto;min-width:11rem;
-  display:flex;align-items:center;gap:7px;cursor:pointer;
-  background:var(--fill);border:1px solid var(--line);color:var(--text);
-  border-radius:10px;padding:7px 11px;
-  font-family:'Almarai';font-weight:700;font-size:var(--fs-meta)}
-.eq-back:hover{border-color:var(--accent);color:var(--accent)}
-.eq-back-a{flex:0 0 auto;opacity:.7}
+/* وعلى هذا الشريط: أزرارٌ أصغرُ درجةً من شقيقاتها، فسطرٌ واحدٌ يسع أكثر مما تسعه شقيقتاه —
+   والفأرةُ تصيب ٣٨px (حكمُ b211). والمجموعاتُ لا تنكمش: الانكماشُ للعنوان والرقائق وحدهما. */
+.eq-tb .ed-tg{flex:0 0 auto;flex-wrap:nowrap;gap:2px}
+.eq-tb .ed-tb{min-height:38px;padding:0 10px;gap:6px;font-size:var(--fs-meta)}
+.eq-tb .ed-tb .ic{width:17px;height:17px}
+/* 🆕 b214 · الدرجةُ الرابعة بعد طيّ الرقائق (`fitKinds` يقرّرها بالقياس): الأدواتُ أيقوناتٌ مربّعة، والاسمُ في
+   `title` (ومنه اسمُها لقارئ الشاشة حين يغيب نصُّها). وزرُّ النشر خارجها عمداً. */
+.eq-tb.icons .eq-acts .ed-tb{width:38px;padding:0;justify-content:center}
+.eq-tb.icons .eq-acts .ed-tb > span{display:none}
+
+/* «نشر الدرس أيضاً» — جملةُ `warn` بعينها: «انتبه، ما نُشر لا يصل بعد».
+   والحدُّ ظلٌّ داخليّ: `.ed-tb` بلا حدّ، وحدٌّ يُضاف يزيد ارتفاعَ هذا الزرّ وحده. */
+.ed-tb.warn,.ed-tb.warn:hover{background:var(--warn-fill);color:var(--warn-text);
+  box-shadow:inset 0 0 0 1px var(--warn-edge)}
+.ed-tb.warn .ic,.ed-tb.warn:hover .ic{color:var(--warn-text)}
+.ed-tb.warn:hover{filter:brightness(1.04)}
+/* ⚠️ والمعطَّلُ لا يعِد بفعلٍ لا يقع: مرورُ الفأرة لا يلوّنه. ولا pointer-events:none — فيبقى title
+   يشرح سببَ التعطيل. وبعد قواعد المرور عمداً، وخصوصيّتُها أعلى. */
+.ed-tb:disabled{opacity:.42;cursor:not-allowed;transform:none}
+.ed-tb:disabled:not(.pri):not(.warn):hover{background:none;color:var(--text)}
+.ed-tb:disabled:not(.pri):not(.warn):hover .ic{color:var(--text-muted)}
+.ed-tb.pri:disabled,.ed-tb.warn:disabled{filter:none}
+
+/* 🆕 b96 · والقاعُ على الحاوية لا على نصّها: نصٌّ بحدٍّ أدنى داخل حاويةٍ
+   بـ ‎min-width:0‎ لا يوقف انكماشَ الحاوية — بل يفيض منها، ولا
+   ‎overflow‎ لها. قيس فانكمش الزرّ إلى ٣٥px واسمُ الدرس خارجَه.
+   🆕 b214 · وكان هذا كلُّه زرَّ الرجوع يحمل اسمَ الدرس. فصار السهمُ زرّاً، والعنوانُ واسمُ الدرس
+   سطرين في هذا العمود: الأوّلُ يقول أين أنت، والثاني في أيّ درس. */
+.eq-back{color:var(--text)}
+.eq-id{flex:0 1 auto;min-width:11rem;display:flex;flex-direction:column;justify-content:center}
+.eq-ttl{font-size:var(--fs-read);line-height:1.35;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* ⚠️ واتّسع من ٢٦ إلى ٤٦ حرفاً حين حُذف وصفُ الترويسة: صار هذا
    الموضعَ الوحيد الذي يحمل اسمَ الدرس، فالقصُّ فيه يُفقده لا يختصره.
-   والانكماش يتكفّل بالضيّق — flex:0 1 auto على الزرّ، وقاعُه ١١rem
+   والانكماش يتكفّل بالضيّق — flex:0 1 auto على ‎.eq-id‎، وقاعُه ١١rem
    أعلاه: العنوان صار يتقاسم العجزَ مع الرقائق بعد أن كان لا يتحمّل
    منه شيئاً (انظر أسفله)، فلولا قاعٌ يقف عنده لتلاشى. */
-.eq-back-t{min-width:0;max-width:46ch;overflow:hidden;
-  text-overflow:ellipsis;white-space:nowrap}
+.eq-lsn{min-width:0;max-width:46ch;font-size:var(--fs-tag);line-height:1.5;color:var(--text-muted);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* رقائق الأنماط — عدٌّ وفلترةٌ في عنصرٍ واحد.
    🔴 b96 · وكانت ‎flex:1 1 0‎ ⇒ الرقائق **بقيّةٌ لا حصّة**: أساسُها
@@ -1419,6 +1460,10 @@ html.pv-lock{overflow:hidden}
 .eq-kinds{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:6px;
   flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
 .eq-kinds::-webkit-scrollbar{display:none}
+/* 🆕 b214 · وشارةُ العدد في شاشة تركيب النموذج شارةٌ واحدة لا تُطوى: لو انكمشت حاويتُها التفّ نصُّها سطرين
+   فطال الشريط — قيس ٦٩px بدل ٥٦ عند ١٠١٠px. فالعنوانُ وحده يتحمّل العجز هناك. */
+.eq-kinds:has(> .chip){flex-shrink:0}
+.eq-kinds > .chip{flex:0 0 auto;white-space:nowrap}
 
 /* ② الطيّ — والعددُ هو المعلومة، والتسميةُ شرحُها. فيسقط الشرح أوّلاً
    ويبقى ما لا يُستغنى عنه: الأيقونةُ تميّز، والرقمُ يُعدّ، و‎title‎
@@ -1439,6 +1484,8 @@ html.pv-lock{overflow:hidden}
   background:var(--fill-soft);border:1px solid var(--line);color:var(--text-muted);
   border-radius:9px;padding:5px 9px;font-family:inherit;font-size:var(--fs-tag)}
 .eq-kb:hover{border-color:var(--accent-edge);color:var(--accent)}
+/* ⚠️ والحدُّ إلى الداخل: ‎.eq-kinds‎ تقصّ فائضَها (‎overflow-x‎)، فالخارجُ يُقتطع */
+.eq-kb:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 .eq-kb.on{background:var(--accent-fill);border-color:var(--accent-edge);color:var(--accent)}
 .eq-kb i{font-style:normal;opacity:.75}
 .eq-kb b{font-family:'Almarai';font-weight:800;font-size:var(--fs-meta);color:var(--text)}
@@ -1449,33 +1496,15 @@ html.pv-lock{overflow:hidden}
 .eq-kb.lack b,.eq-kb.lack em{color:var(--warn)}
 .eq-kb.lack em{background:var(--warn-fill);border-color:var(--warn-edge)}
 
-/* حالة النشر — كلمةٌ صريحة لا لونٌ يُستنتج */
-.eq-state{flex:0 0 auto;margin-inline-start:auto;display:inline-flex;align-items:center;gap:7px;
+/* حالة النشر — كلمةٌ صريحة لا لونٌ يُستنتج.
+   🆕 b214 · وصارت تجاور زرَّها في طرف الشريط: كانت بين الرقائق والأدوات، وقارئُها يبحث عن فعلها في آخر الصفّ. */
+.eq-state{flex:0 0 auto;margin-inline-end:6px;display:inline-flex;align-items:center;gap:7px;
   font-family:'Almarai';font-weight:800;font-size:var(--fs-tag);white-space:nowrap;
   border:1px solid;border-radius:999px;padding:5px 13px}
 .eq-state::before{content:'';width:8px;height:8px;border-radius:50%;background:currentColor}
 .eq-state.draft{color:var(--text-muted);background:var(--fill);border-color:var(--line)}
 .eq-state.live{color:var(--ok);background:var(--ok-soft);border-color:var(--ok-line)}
 .eq-state.half{color:var(--warn);background:var(--warn-soft);border-color:var(--warn-line)}
-
-.eq-acts{flex:0 0 auto;display:flex;align-items:center;gap:7px;flex-wrap:nowrap}
-.eq-tbb{display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap;
-  background:var(--fill);border:1px solid var(--line);color:var(--text);
-  border-radius:10px;padding:8px 14px;
-  font-family:'Almarai';font-weight:700;font-size:var(--fs-meta);
-  transition:border-color .16s,color .16s,filter .16s}
-.eq-tbb .eq-i{font-size:1rem;line-height:1}
-.eq-tbb.go{background:var(--accent);border-color:var(--accent);
-  color:var(--on-accent);font-weight:800}
-.eq-tbb.warn{background:var(--warn-fill);border-color:var(--warn-edge);color:var(--warn-text)}
-/* ⚠️ و:not(:disabled) في كلّ hover — وإلا وعد المعطَّلُ بفعلٍ لا يقع */
-.eq-tbb:not(:disabled):hover{border-color:var(--accent);color:var(--accent)}
-.eq-tbb.go:not(:disabled):hover{filter:brightness(1.08);
-  color:var(--on-accent);border-color:var(--accent)}
-.eq-tbb.warn:not(:disabled):hover{filter:brightness(1.04);
-  color:var(--warn-text);border-color:var(--warn-edge)}
-/* ولا pointer-events:none — فيبقى title يشرح سببَ التعطيل */
-.eq-tbb:disabled{opacity:.42;cursor:not-allowed}
 
 /* العوائق — بعرض الصفحة: ما يمنع النشر لا يُقطَّع في عمودٍ ضيّق */
 .eq-warns{background:var(--warn-soft);border:1px solid var(--warn-line);
@@ -1718,7 +1747,10 @@ html.pv-lock{overflow:hidden}
   color:var(--text-muted);opacity:.55;cursor:not-allowed}
 
 @media(max-width:1000px){
-  .eq{grid-template-columns:1fr}
+  /* 🔴 b214 · و`minmax(0,1fr)` لا `1fr` (سابقةُ `.ed-tools` · b187): `1fr` لا تضيق دون أعرض محتوى عمودها،
+     فكان عمودُ السؤال يدفع الصفحةَ ٧٩px عند ٣٩٠ و٩٤px عند ٣٧٥ — قيس بإزالة الشريط فبقي الفيضُ كما هو،
+     فالعلّةُ هنا لا فيه. ولم يخرج عن العمود بعدها شيء. */
+  .eq{grid-template-columns:minmax(0,1fr)}
   .eq-list{position:static}
   .eq-dx,.eq-sp{flex:1 1 100%}
   /* وفي الضيّق يلتفّ ويُترك يلتفّ: لصوقُه هنا يأكل نصف الشاشة،
@@ -1727,14 +1759,21 @@ html.pv-lock{overflow:hidden}
         الانكماشَ ليثبت الارتفاع، ولو بقي في الجوّال لدفع الشريطُ
         الصفحةَ إلى تمريرٍ أفقيّ — قيس عند ٣٩٠px فكان العرض ٤٥٧. */
   .eq-tb{position:static;flex-wrap:wrap}
-  .eq-kinds{flex:0 1 auto;flex-wrap:wrap;overflow:visible}
-  .eq-acts{flex:1 1 auto;min-width:0;flex-wrap:wrap}
-  .eq-state{flex:0 1 auto;margin-inline-start:0}
+  /* 🆕 b214 · السهمُ والعنوانُ سطرٌ، والرقائقُ سطرٌ، والأدواتُ والنشرُ سطرٌ يلتفّ.
+     واسمُ الدرس يلتفّ ولا يُقطع: في الضيّق لا يُرى كاملاً إلا هكذا (حكمُ `.ed-lsn` · b200). */
+  .eq-id{flex:1 1 0;min-width:0}
+  .eq-ttl{white-space:normal}
+  .eq-lsn{max-width:none;white-space:normal;overflow-wrap:anywhere}
+  .eq-kinds{flex:1 1 100%;flex-wrap:wrap;overflow:visible}
+  .eq-tb .ed-tg{flex:0 1 auto;min-width:0;flex-wrap:wrap}
+  .eq-state{flex:0 1 auto;white-space:normal}
   /* 🆕 b96 · ودرجاتُ الطيّ تسقط هنا كلُّها: الالتفافُ يُغني عن الطيّ،
      ومع overflow:visible لا فيضَ يُقاس فلا أثرَ يُرسم. وتُبطَل
      صراحةً ولا تُترك لقياسٍ يتغيّر: صنفٌ بقي من عرضٍ أوسع يطوي
      تسمياتٍ لا شيءَ يضيّقها — وذاك اختفاءٌ بلا سبب. */
   .eq-kinds.tight .eq-kb > span{display:inline}
+  .eq-tb.icons .eq-acts .ed-tb{width:auto;padding:0 10px}
+  .eq-tb.icons .eq-acts .ed-tb > span{display:inline}
   .eq-kinds.m-s,.eq-kinds.m-e,.eq-kinds.m-s.m-e{
     -webkit-mask-image:none;mask-image:none}
   .eq-main{scroll-margin-top:var(--eqbar)}
@@ -2027,9 +2066,9 @@ html.pv-lock{overflow:hidden}
       حشو ‎6px 10px‎ لا ‎9px 0 10px‎ · ‎cursor:pointer‎ · ‎.76rem‎ —
       **ويتلوّن الشريط كلُّه بلون التمييز عند المرور عليه.**
    ⚠️ وثلاثةٌ تتقارب أسماؤها فتُفرَّق هنا مرّةً واحدة:
-        ‎.eq-tb‎    حاوية شريط الأوامر (سطر ٧٠٧)
-        ‎.eq-tbb‎   زرٌّ فيها — إعدادات · معاينة · نشر
-        ‎.eq-tool‎  زرٌّ في شريط أدوات السؤال — وهو هذا. */
+        ‎.eq-tb‎    حاوية شريط الأوامر
+        ‎.eq-tool‎  زرٌّ في شريط أدوات السؤال — وهو هذا.
+      🔓 b214 · وسقط ثالثُها ‎.eq-tbb‎: أزرارُ شريط الأوامر صارت ‎.ed-tb‎ كشقيقاتها في المحرّر. */
 .eq-tools{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:11px}
 .eq-tool{background:var(--fill);border:1px solid var(--line);color:var(--text);
   border-radius:8px;padding:6px 10px;cursor:pointer;font-family:inherit;font-size:.76rem}
