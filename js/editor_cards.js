@@ -29,6 +29,7 @@ import { openCourse, courseTags, toolBtn } from './editor.js';
 import { practiceLinkBox } from './practice_links.js';
 import { attachUpload } from './upload.js';
 import { cardVoice } from './card_voice.js';
+import { needVoice, deckVoices } from './voice_rows.js';
 
 let ctx = null;   // { course, lessons }
 let D   = [];     // المجموعات
@@ -45,6 +46,10 @@ let TG  = { lesson: '', strand: '' };
    كلُّ تحديدٍ ووسمٍ يُعيد الرسم، ومِصفاةٌ تُقرأ من DOM تضيع عند أوّل
    نقرة — فيبحث المراجعُ ثمّ يُحدّد فيضيع بحثُه بلا إنذار. */
 let F = { q: '', lesson: '', strand: '', flag: '', sort: 'pos' };
+
+/* 🆕 b217 · وتشغيلُ «توليد الأصوات» الجاري أو الأخير ({ state, stop, done } · `deckVoices`) — يسكن هنا لا في الرسم: الشاشةُ تُرسم من جديد
+   مع كلّ وسمٍ وتصفية، والتوليدُ يمضي عشرَ دقائق، فلوحتُه تُبنى من حاله أينما عاد المؤلّف إلى مجموعته. */
+let VR = null;
 
 
 /* ═══════════ رقائقُ الحال — عدٌّ ومِصفاةٌ في عنصرٍ واحد ═══════════
@@ -408,11 +413,17 @@ function renderCards(){
         ${toolBtn('tag', 'tag', TAG ? 'إنهاء الوسم' : 'إضافة بطاقات إلى درس', '',
                   `aria-pressed="${TAG}"`)}
       </div>
+      ${/* 🆕 b217 · ولا يظهر إلا لمجموعةٍ فيها ما لا صوت له — حكمُ `b89` على زرٍّ لا يُنتج إلا رفضاً */''}
+      ${needVoice(C).length || VR?.state.running ? `<div class="ed-tg">
+        ${toolBtn('vall', 'speak', 'توليد الأصوات', '', VR?.state.running ? 'disabled' : '')}
+      </div>` : ''}
       <div class="ed-tg ed-tend">
         ${toolBtn('pv', 'eye', 'معاينة بعين الطالب')}
         ${toolBtn('plink', 'link', 'رابط تدرّب')}
       </div>` : ''}
     </div>
+
+    ${VR?.state.deck === cur.id ? `<section class="vp" id="vrun" style="margin:0 0 14px" aria-label="أصوات المجموعة">${runHtml(VR.state)}</section>` : ''}
 
     ${TAG ? tagBar() : ''}
 
@@ -449,6 +460,10 @@ function renderCards(){
   const tg = document.getElementById('tag');
   if(tg) tg.onclick = () => { TAG = !TAG; SEL.clear(); renderCards(); };
 
+  const va = document.getElementById('vall');
+  if(va) va.onclick = voiceAll;
+  wireRun();
+
   const dd = document.getElementById('delDeck');
   if(dd) dd.onclick = async () => {
     if(!confirm('حذف المجموعة الفارغة؟')) return;
@@ -461,6 +476,47 @@ function renderCards(){
   wireTagBar();
   wireRows();
   scrollTop();
+}
+
+
+/* 🆕 b217 · «توليد الأصوات»: صوتُ كلّ بطاقةٍ عربيّةٍ بلا صوت، يُكتب فيها ساعةَ توليده فيسمعه الطالب — حكمُ المالك في الاعتماد: «اعتماد آليّ
+   فوري». والسؤالُ قبله يقول ذلك وعددَه، فنقرةٌ لا تُطلق عشرَ دقائق من الكلفة بلا علم. والتشغيلُ في المتصفّح بهويّة المؤلّف (حارسُ الدالّة
+   `card_voice_problem`)، وإغلاقُ الصفحة يوقفه فيكمل الزرُّ ما بقي: ما كُتب لا يُعاد. */
+function voiceAll(){
+  const n = needVoice(C).length;
+  if(!n) return toast('لكل بطاقة صوتها');
+  if(!confirm(`عدد البطاقات بلا صوت: ${AR(n)}. يُولَّد صوتها بصوت الراوي Iapetus، ويُكتب في كل بطاقة فيسمعه الطالب فوراً. المتابعة؟`)) return;
+  const deck = cur.id;
+  VR = deckVoices({ deck, cards: C, api, onChange: s => {
+    const box = document.getElementById('vrun');
+    if(box && cur?.id === s.deck){ box.innerHTML = runHtml(s); wireRun(); }
+  } });
+  renderCards();
+  /* وبعده تُقرأ البطاقاتُ ثانيةً: شارةُ «🔊 نُطق» ومن بقي بلا صوت — والمؤلّفُ ما زال في مجموعته */
+  VR.done.then(async () => {
+    if(cur?.id !== deck || !document.getElementById('cdList')) return;
+    const { data } = await api.deckCards(deck);
+    if(data && cur?.id === deck){ C = data; renderCards(); }
+  });
+}
+
+function runHtml(s){
+  const head = s.running ? `يُولَّد ${AR(s.done)} من ${AR(s.total)}…` : s.stopped ? 'أُوقف التوليد' : 'انتهى التوليد';
+  /* والفاصلُ بعد العدد فاصلةٌ لا «·»: النقطةُ بعد رقمٍ هنديٍّ تُقرأ صفراً («١ ·» ⇐ «١٠») — قِيس في اللقطة */
+  const tally = `الأصوات المكتوبة: ${AR(s.saved)}${s.failed.length ? `، وما تعذّر: ${AR(s.failed.length)}` : ''}`;
+  const after = s.running ? 'وإغلاق الصفحة يوقفه، فيكمل الزر ما بقي.'
+    : s.failed.length || s.stopped ? 'وما بقي بلا صوت يعيده الزر نفسه.' : 'ويُراجَع صوت كل بطاقة من نموذجها.';
+  const shown = s.running ? [] : s.failed.slice(0, 40);
+  return `<div class="vp-top"><b class="vp-h">أصوات المجموعة</b><span class="vp-sum">${head}</span></div>
+    <p class="vp-say">${tally}. ${after}</p>
+    ${s.running ? `<div class="vp-acts"><button type="button" class="mf-up" id="vstop"${s.stopped ? ' disabled' : ''}>إيقاف</button></div>` : ''}
+    ${shown.map(f => `<p class="vp-rn bad"><bdi>${esc(f.front)}</bdi> — ${esc(f.error)}</p>`).join('')}
+    ${s.failed.length > shown.length && !s.running ? `<p class="vp-rn">وغيرها ${AR(s.failed.length - shown.length)}.</p>` : ''}`;
+}
+
+function wireRun(){
+  const b = document.getElementById('vstop');
+  if(b) b.onclick = () => VR?.stop();
 }
 
 

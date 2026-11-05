@@ -251,6 +251,9 @@ export const generateVoices = (item, sentences, context = '') => invokeTts({ ite
 /* 🆕 b216 · وصوتُ وجه البطاقة من الدالّة نفسِها: { deck, sentences: [{ text, voice?, spoken? }], context: معناها } — الردُّ نفسُه بلا صفٍّ في
    القاعدة: مفتاحُ الصوت يعود إلى نموذج البطاقة، وحفظُها هو الاعتماد. والحارسُ `card_voice_problem` في الدالّة (`195`). */
 export const generateCardVoices = (deck, sentences, context = '') => invokeTts({ deck, sentences, context });
+/* 🆕 b217 · وأصواتُ المجموعة دفعةً تُكتب بها (`196`): [{ card, front, audio }] ⇒ { ok, written, ids } — في البطاقة التي لا صوت لها
+   ووجهُها هو الذي وُلّد له وحدها. */
+export const setCardVoices = (deck, rows) => db.rpc('set_card_voices', { p_deck: deck, p_rows: rows });
 /* والاعتمادُ وإلغاؤه لجملٍ ببصماتها (189 ⑤): ⇒ { ok, count, missing } — وإعادةُ التوليد تُسقطه في القاعدة */
 export const approveVoices = (id, shas, ok = true) => db.rpc('approve_voice', { p_item: id, p_shas: shas, p_ok: ok });
 

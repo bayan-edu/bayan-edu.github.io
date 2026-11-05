@@ -220,6 +220,39 @@ const rows = V.voiceRows(sents, clips);
      V.isCardVoice('r2:voice/cards/12/a1b2.rev.mp3') && !V.isCardVoice('r2:audio/c12-abc123.mp3') && !V.isCardVoice('r2:voice/603/a1b2.rev.mp3') && !V.isCardVoice(null)
      && readFileSync(join(ROOT, 'supabase/functions/tts/core.js'), 'utf8').includes('export const cardScope = deck => `cards/${deck}`;')
      && readFileSync(join(ROOT, 'sql/195_card_voice.sql'), 'utf8').includes("old.audio like 'r2:voice/cards/%'"), '');
+  {
+    /* 🆕 b217 · أصواتُ المجموعة دفعةً: ما يُولَّد له · بطاقةً بطاقةً بمعناها · الكتابةُ دفعاتٍ · وما يُردّ */
+    const cards = [
+      { id: 1, front: 'وَخِيم', back: 'سيّئ العاقبة', lang: 'ar' }, { id: 2, front: 'عَذْل', back: 'اللوم', lang: null },
+      { id: 3, front: 'الهَراء', back: 'كلام باطل', audio: 'r2:voice/cards/9/x.y.mp3' }, { id: 4, front: 'pride', back: 'فخر', lang: 'en' },
+      { id: 5, front: 'تُعرف {{ }} بالسياق', back: 'ج' }, { id: 6, front: '(- -)', back: 'ج' }, { id: 7, front: 'يردّه الخادم', back: 'ج' },
+      { id: 8, front: 'تغيّر وجهها', back: 'ج' }, { id: 9, front: 'الكَثِيب', back: 'التل' }
+    ];
+    ok('ما يُولَّد له: العربيّةُ بلا صوت، في وجهها حرفٌ وبلا فراغ', show(V.needVoice(cards).map(c => c.id)) === show([1, 2, 6, 7, 8, 9].filter(id => id !== 6)),
+       show(V.needVoice(cards).map(c => c.id)));
+    const calls = [], saves = [];
+    const api = {
+      generateCardVoices: async (deck, sentences, context) => {
+        calls.push({ deck, sentences, context });
+        const t = sentences[0].text;
+        return t === 'يردّه الخادم' ? { data: { results: [{ state: 'error', error: 'تعذّر توليد الصوت: 400' }] }, error: null }
+          : { data: { results: [{ state: 'ok', audio: `r2:voice/cards/${deck}/${'a'.repeat(16)}.r${calls.length}.mp3` }] }, error: null };
+      },
+      setCardVoices: async (deck, rows) => { saves.push(rows); return { data: { ok: true, written: 0, ids: rows.map(r => r.card).filter(id => id !== 8) }, error: null }; }
+    };
+    const run = V.deckVoices({ deck: 20, cards, api, width: 2, flush: 2 });
+    const s = await run.done;
+    ok('بطاقةً بطاقةً، بصوت الراوي، ومعناها سياقُها', calls.length === 5 && calls.every(c => c.deck === 20 && c.sentences.length === 1 && c.sentences[0].voice === 'iapetus')
+       && calls.find(c => c.sentences[0].text === 'وَخِيم')?.context === 'سيّئ العاقبة', show(calls));
+    ok('والكتابةُ دفعاتٍ، ولكلّ صوتٍ وجهُه الذي وُلّد له', saves.flat().length === 4 && saves.every(r => r.length <= 2)
+       && saves.flat().every(r => r.front === cards.find(c => c.id === r.card).front && r.audio.startsWith('r2:voice/cards/20/')), show(saves));
+    ok('والحالُ: خمسٌ مرّت · ثلاثٌ كُتبت · وما ردّته الدالّةُ أو القاعدةُ بسببه', s.done === 5 && s.saved === 3 && !s.running && !s.stopped
+       && show(s.failed.map(f => f.card).sort()) === show([7, 8]) && s.failed.find(f => f.card === 8)?.error.includes('تغيّر الوجه'), show(s));
+
+    const stopApi = { generateCardVoices: async () => ({ data: null, error: { message: 'لا صلاحية', status: 403 } }), setCardVoices: async () => ({ data: { ok: true, ids: [] } }) };
+    const st = await V.deckVoices({ deck: 20, cards, api: stopApi, width: 1 }).done;
+    ok('وما يردّ الطلباتِ كلَّها (٤٠٣) يوقفها بعد أوّلها', st.stopped && st.done === 1 && st.failed.length === 1, show(st));
+  }
   ok('والكتابُ يجمعها بالدالّة نفسِها، ويقرأ طولَ المعتمد', readFileSync(join(ROOT, 'js/media.js'), 'utf8').includes("import { proseSeq } from './voice_rows.js'")
      && readFileSync(join(ROOT, 'js/api.js'), 'utf8').includes("select('sentence, audio, ms')"), '');
 }

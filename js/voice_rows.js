@@ -29,6 +29,50 @@ export const NARRATOR = 'iapetus', CHARACTER = 'algenib', FEMALE = 'gacrux';
    يتبع نصَّ الوجه ويسقط إن تغيّر، والمرفوعُ ملفٌّ اختاره المعلّمُ بيده */
 export const isCardVoice = key => /^r2:voice\/cards\//.test(String(key ?? ''));
 
+/* 🆕 b217 · أصواتُ المجموعة دفعةً — حكمُ المالك بعد تجربته اليدويّة: «هل يمكنك توليد صوت جميع بطاقات مادة اللغة العربية»، والاعتمادُ
+   «آليّ فوري»: يُكتب الصوتُ في البطاقة ساعةَ توليده (`set_card_voices` · `196`).
+   ما يُولَّد له: بطاقةٌ عربيّةٌ بلا صوت، في وجهها حرف، وبلا فراغ («{{ }}» تمسكه الدالّةُ أصلاً — فلا يُدفع عنه طلب). */
+export const needVoice = cards => (cards || []).filter(c => (c.lang || 'ar') === 'ar' && !c.audio
+  && /\p{L}/u.test(String(c.front || '')) && !/\{\{\s*\}\}/.test(c.front));
+
+/* ثمّ يُولَّد بطاقةً بطاقة — **لا خمساً في الطلب:** سياقُ التشكيل واحدٌ للدفعة، ومعنى البطاقة سياقُ وجهها، فخمسةُ أوجهٍ بمعنى واحدٍ تُضلّل
+   أربعة. وأربعةٌ معاً (`width`) — سرعةُ Chirp لا حدَّ دقيقةٍ يحبسها، ويُعاد العابرُ في الدالّة. وما وُلّد يُكتب عشرةً عشرة (`flush`) وما بقي آخرَ
+   التشغيل. وما يردّ الطلباتِ كلَّها يوقفها (لا هويّة · لا صلاحية · سرٌّ لم يُضبط · Google لا يُبلَغ · انقطاع) كما في لوحة النصّ، وما يردّ بطاقةً
+   يُعدّ عليها وحدها. `api` النداءان (`generateCardVoices` · `setCardVoices`) ⇒ { state, stop(), done } — وحالُه تُرسم بـ`onChange`. */
+export function deckVoices({ deck, cards, api, width = 4, flush = 10, onChange = () => {} }){
+  const todo = needVoice(cards);
+  const state = { deck, total: todo.length, done: 0, saved: 0, failed: [], stopped: false, running: true };
+  const pending = [];
+  const fail = (c, error) => state.failed.push({ card: c.id ?? c.card, front: c.front, error });
+  async function save(all){
+    if(!pending.length || (!all && pending.length < flush)) return;
+    const rows = pending.splice(0);
+    const { data, error } = await api.setCardVoices(deck, rows);
+    if(error || data?.ok === false){ rows.forEach(r => fail(r, `تعذّر حفظ الصوت: ${error?.message || data?.error}`)); return; }
+    const put = new Set(data?.ids || []);
+    state.saved += put.size;
+    rows.filter(r => !put.has(r.card)).forEach(r => fail(r, 'تغيّر الوجه أو صار له صوت في أثناء التوليد، فلم يُكتب'));
+  }
+  async function one(c){
+    const { data, error } = await api.generateCardVoices(deck, [{ text: c.front, voice: NARRATOR }], String(c.back || ''));
+    const r = data?.results?.[0];
+    if(error){
+      fail(c, error.message);
+      if(!error.status || [401, 403, 500, 502].includes(error.status)) state.stopped = true;
+    } else if(r?.state === 'ok') pending.push({ card: c.id, front: c.front, audio: r.audio });
+    else fail(c, r?.reason || r?.error || 'لم يُولَّد الصوت');
+    state.done++;
+    await save(false);
+    onChange(state);
+  }
+  let k = 0;
+  const lane = async () => { while(!state.stopped && k < todo.length) await one(todo[k++]); };
+  const done = Promise.all(Array.from({ length: Math.max(1, width) }, lane))
+    .then(() => save(true))
+    .then(() => { state.running = false; onChange(state); return state; });
+  return { state, stop(){ state.stopped = true; onChange(state); }, done };
+}
+
 /* نبراتٌ جاهزةٌ يُختار منها بلمسة، والكتابةُ باقيةٌ لما سواها — حكمُ المالك بعد سماع النبرة: «النبرة معقولة، يمكن إضافة أكثر من نبرة:
    سعيدة، مثيرة، ضاحكة… إلخ». **وهي صفةُ النبرة لا القائل** («نبرةٌ حزينة»)، فتصلح للرجل والمرأة بلفظٍ واحد. وتُرسل كما تُرى (`tone`)،
    فلا معنى خفيٌّ وراء الكلمة. مرتّبةٌ أسراً: الحزنُ (وهو ما طلبه المالكُ أوّلَ مرّة) · الفرحُ · الدهشةُ والغضبُ والخوف · السخريةُ
