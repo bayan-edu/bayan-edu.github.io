@@ -19,6 +19,8 @@
       (`cardImg` في `ui.js`)، فلا يرى المؤلّف ما لا يراه الطالب.
       وسلسلةُ الصورة: `160` العمودُ والمخزن · `161` البوّابةُ وdeck_cards ·
       `162` وdue_cards — فبلغت الطالبَ، وقِيس ذلك على الحيّ لا بالظنّ.
+
+   🆕 b216 · وصوتُ الوجه العربيّ يُولَّد من النموذج نفسِه (`card_voice.js`): مفتاحُه يملأ حقلَ النطق، وحفظُ البطاقة هو الاعتماد.
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
 import { app, head, toast, esc, AR, errBox, nav, setWide, scrollTop, dirOf, backText, backMeta, shrinkFont, examples, pickExample, sayable, sayGroup, bindSay, cardImg, N } from './ui.js';
@@ -26,6 +28,7 @@ import { app, head, toast, esc, AR, errBox, nav, setWide, scrollTop, dirOf, back
 import { openCourse, courseTags, toolBtn } from './editor.js';
 import { practiceLinkBox } from './practice_links.js';
 import { attachUpload } from './upload.js';
+import { cardVoice } from './card_voice.js';
 
 let ctx = null;   // { course, lessons }
 let D   = [];     // المجموعات
@@ -684,8 +687,8 @@ function pasteBox(){
           <b>تصحيح لا تكرار</b>: ما تكرّر وجهُه يُحدَّث معناه.</div>
         <div class="ed-hint" style="opacity:.75">🔊 <b>واللغة تفتح النُّطق:</b>
           الإنجليزية يقرؤها جهاز الطالب آلياً حين لا يكون للبطاقة ملفّ
-          صوت. <b>والعربية لا زرَّ لها</b> — القراءة الآلية تُسقط الإعراب،
-          ونطقٌ خاطئ يُحفظ أسوأ من لا نطق.</div>
+          صوت. <b>والعربية صوتها ملفّ</b> يُولَّد أو يُرفع من نموذج البطاقة —
+          فقارئ الجهاز يُسقط الإعراب، ونطقٌ خاطئ يُحفظ أسوأ من لا نطق.</div>
       </div>
 
       <div class="card" style="flex:1">
@@ -814,8 +817,10 @@ function cardForm(c){
           سيُطلب من الطالب في الامتحان لا بما هو أسهل كتابة.</div>
         <div class="ed-hint" style="opacity:.75"><b>النُّطق:</b> زرُّ الرفع
           يملأ الحقل بمفتاحه، والرابطُ الخارجيُّ مقبولٌ أيضاً.
-          <b>ويُسمَع بعد الكشف لا قبله.</b> وفي العربية هو السبيلُ الوحيد —
-          فالقراءةُ الآلية تُسقط الإعراب، ونطقٌ خاطئ يُحفظ أسوأُ من لا نطق.</div>
+          <b>ويقف زرُّه بجوار الكلمة:</b> على الوجه إن كانت فيه، وعلى الظهر
+          إن كانت جوابَه. وفي العربية الملفُّ هو السبيلُ الوحيد، مولَّداً
+          أو مرفوعاً — فقارئ الجهاز يُسقط الإعراب، ونطقٌ خاطئ يُحفظ أسوأُ
+          من لا نطق.</div>
         <div class="ed-hint" style="opacity:.75"><b>الصورتان:</b> صورةُ
           <b>الوجه</b> تُعرض مع السؤال، وصورةُ <b>المعنى</b> بعد الكشف.
           والسؤال قبل إضافة أيّهما: أتصلح <b>بديلاً عن المعنى</b>؟
@@ -853,6 +858,7 @@ function cardForm(c){
                    placeholder="audio/x.mp3">
           </div>
         </div>
+        <div id="cvSlot"></div>
 
         ${/* 🆕 b135 · الصورتان صفّاً مستقلّاً: لكلٍّ زرُّ رفعٍ تحتها،
               فثلاثةُ حقولٍ بأزرارها في صفٍّ واحد تتزاحم. */''}
@@ -892,17 +898,24 @@ function cardForm(c){
   attachUpload('imf', 'c' + cur.id, 'image');
   attachUpload('im',  'c' + cur.id, 'image');
 
+  /* 🆕 b216 · صوتُ الوجه بعد زرّ الرفع: يملأ الحقلَ نفسَه، وما يُسمع قبل الحفظ لا يبلغ الطالب */
+  const voice = cardVoice({ fr: document.getElementById('fr'), back: document.getElementById('bk2'), lang: document.getElementById('lg'),
+                            key: document.getElementById('au'), deck: cur.id, card: c });
+  document.getElementById('cvSlot').replaceWith(voice.el);
+
   document.getElementById('sv').onclick = async () => {
     const front = document.getElementById('fr').value.trim();
     const back  = document.getElementById('bk2').value.trim();
     if(!front || !back) return toast('الوجه والمعنى لازمان', false);
+    /* صوتٌ وُلّد لوجهٍ تغيّر بعده لا يُحفظ معه — ويُقال، فلا يُظنّ أنّ البطاقة نطقت */
+    const stale = voice.stale();
 
     /* save_card بالهُويّة لا بمطابقة front — تعديل الصياغة لا يُنشئ
        صفّاً آخر. أمّا save_cards (اللصق الجماعي) فتبقى لغرضها هي. */
     const { data: id, error } = await api.saveCard({
       id: c?.id ?? null, deck: cur.id, front, back,
       note:  document.getElementById('nt').value.trim() || null,
-      audio: document.getElementById('au').value.trim() || null,
+      audio: stale ? null : document.getElementById('au').value.trim() || null,
       image: document.getElementById('im').value.trim() || null,
       front_image: document.getElementById('imf').value.trim() || null,
       lang:  document.getElementById('lg').value || 'ar' });
@@ -920,7 +933,7 @@ function cardForm(c){
       return toast('حُفظت البطاقة، وتعذّر الوسم: '
         + (r1.error || r2.error).message, false);
 
-    toast('حُفظت'); openDeck(cur);
+    toast(stale ? 'حُفظت، وسقط صوتها لأن الوجه تغيّر' : 'حُفظت'); openDeck(cur);
   };
   scrollTop();
 }

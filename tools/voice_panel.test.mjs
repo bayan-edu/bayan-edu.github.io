@@ -216,6 +216,10 @@ const rows = V.voiceRows(sents, clips);
   ok('وجزءٌ لم يُعتمد يُصمت الجملةَ كلَّها · والجملةُ بلا قوسين ملفُّها · والآيةُ المرقّمة ليست نثراً · والقوسان لا يتقابلان صمت',
      V.proseSeq(made, { text: S1, kind: 'p' }) === null && show(V.proseSeq(made, { text: 'نثر.', kind: 'p' })) === show({ keys: ['r2:p.mp3'], ms: 900 })
      && V.proseSeq(made, { text: 'نثر.', q: { block: 0 } }) === null && V.proseSeq(made, { text: 'يقول ﴿لا', kind: 'p' }) === null, '');
+  ok('🆕 b216 · وصوتُ وجه البطاقة يُعرف مولَّداً بمساره: ما يكتبه `clipKeys` في الدالّة، وبالنمط الذي يسأل به القادحُ في `195`',
+     V.isCardVoice('r2:voice/cards/12/a1b2.rev.mp3') && !V.isCardVoice('r2:audio/c12-abc123.mp3') && !V.isCardVoice('r2:voice/603/a1b2.rev.mp3') && !V.isCardVoice(null)
+     && readFileSync(join(ROOT, 'supabase/functions/tts/core.js'), 'utf8').includes('export const cardScope = deck => `cards/${deck}`;')
+     && readFileSync(join(ROOT, 'sql/195_card_voice.sql'), 'utf8').includes("old.audio like 'r2:voice/cards/%'"), '');
   ok('والكتابُ يجمعها بالدالّة نفسِها، ويقرأ طولَ المعتمد', readFileSync(join(ROOT, 'js/media.js'), 'utf8').includes("import { proseSeq } from './voice_rows.js'")
      && readFileSync(join(ROOT, 'js/api.js'), 'utf8').includes("select('sentence, audio, ms')"), '');
 }

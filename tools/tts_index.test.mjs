@@ -89,7 +89,7 @@ globalThis.__r2 = async (url, init, creds) => { log.r2.push({ url: String(url), 
 globalThis.__db = (url, key, opts) => ({
   rpc: async (fn, args) => {
     log.db.push({ fn, args }); log.dbAuth.push(opts?.global?.headers?.Authorization);
-    if(fn === 'voice_problem') return plan.denied ? { data: null, error: plan.denied } : { data: plan.problem, error: null };
+    if(fn === 'voice_problem' || fn === 'card_voice_problem') return plan.denied ? { data: null, error: plan.denied } : { data: plan.problem, error: null };
     if(fn === 'save_voice') return { data: plan.save ?? { ok: true, sha: 'x' }, error: null };
     return { data: null, error: { message: 'unexpected rpc ' + fn } };
   }
@@ -273,6 +273,51 @@ const ttsCalls = () => log.google.filter(c => c.url.includes('texttospeech')).ma
   const mix = await (await call({ item: 593, sentences: [{ text: 'يَقُولُ جَلَّ ذِكْرُهُ:' }, { text: Q1 }] })).json();
   ok('ونثرٌ وآيةٌ في دفعة: النثرُ وحده إلى Google، والآيةُ من المصحف', mix.results.every(x => x.state === 'ok') && ttsCalls().length === 1
      && mix.results[0].voice === 'iapetus' && mix.results[1].voice === 'husary', show(mix));
+}
+
+/* ⑦ وجهُ البطاقة (b216): حارسُها قبل الكلفة · ملفّاها في مجلّد المجموعة · ولا صفَّ في القاعدة · ومعناها سياقُ تشكيلها */
+{
+  reset({ problem: 'لا صلاحية لك على هذه المجموعة' });
+  const no = await call({ deck: 12, sentences: [{ text: 'وَخِيم' }] });
+  ok('حارسُ المجموعة يردّ ⇒ 403 برسالته، ولا كلفة', no.status === 403 && (await no.json()).error === 'لا صلاحية لك على هذه المجموعة'
+     && log.google.length === 0 && log.r2.length === 0, show(log.google));
+  ok('وسُئل حارسُها هي بهويّة المستدعي، لا حارسُ النصوص', log.db.length === 1 && log.db[0].fn === 'card_voice_problem' && log.db[0].args.p_deck === 12
+     && log.dbAuth[0] === 'Bearer user-jwt', show(log.db));
+
+  reset();
+  const front = 'الكَثِيب', r = await call({ deck: 12, context: 'التَّلُّ مِنَ الرِّمالِ.', sentences: [{ text: front, voice: 'iapetus' }] });
+  const j = await r.json(), tts = ttsCalls(), got = j.results?.[0];
+  const sha = await T.sentenceSha(front);
+  const tash = log.google.filter(c => c.url.includes('aiplatform'));
+  const sent = tash[0] && JSON.parse(JSON.parse(tash[0].body).contents[0].parts[0].text.split('\n\n').pop());
+  ok('وجهٌ جزئيُّ التشكيل ⇒ يكمله التشكيل، ومعناها سياقُه', r.status === 200 && got?.state === 'ok' && got.source === T.TASHKEEL_MODEL
+     && sent?.context === 'التَّلُّ مِنَ الرِّمالِ.' && sent?.sentences[0].text === front, show([j, sent]));
+  ok('فالصوتُ المختار بحرف الوجه موقوفاً عليه', tts.length === 1 && tts[0].voice.name === 'ar-XA-Chirp3-HD-Iapetus' && tts[0].input.text === front, show(tts));
+  ok('والملفّان في مجلّد المجموعة ببصمة الوجه', log.r2.length === 2 && log.r2.every(x => new RegExp(`/voice/cards/12/${sha}\\.[a-z0-9]{1,16}\\.(mp3|txt)$`).test(x.url)), show(log.r2.map(x => x.url)));
+  ok('والردُّ مفتاحا الصوت والمنطوق والنصّ', new RegExp(`^r2:voice/cards/12/${sha}\\.[a-z0-9]{1,16}\\.mp3$`).test(got?.audio) && got.spoken === got.audio.slice(0, -4) + '.txt'
+     && got.text === front && got.ms === 2400 && got.voice === 'iapetus', show(got));
+  ok('ولا صفَّ في القاعدة: الحفظُ للنموذج', !log.db.some(x => x.fn === 'save_voice'), show(log.db));
+
+  reset();
+  const paren = 'الخَنْسَاء (تُمَاضِرُ بِنْتُ عَمْرو)', fixed = await (await call({ deck: 12, sentences: [
+    { text: paren, voice: 'charon' }, { text: 'يَنْتَصِفُ', spoken: 'يَنْتَصِفْ' }, { text: 'وجه فيه {{ }} فراغ' }, { text: '(- -)' } ] })).json();
+  const said = ttsCalls().map(x => x.input.text);
+  ok('وما بين القوسين يُقرأ بوقفٍ قبله، بصوت المختار', said.includes('الخَنْسَاء، تُمَاضِرُ بِنْتُ عَمْرو')
+     && ttsCalls().some(x => x.voice.name === 'Charon' && x.input.prompt === T.TTS.prompt), show(said));
+  ok('وبصمةُ الملفّ من الوجه كما كُتب لا كما قُرئ', fixed.results[0].sha === await T.sentenceSha(paren), show(fixed.results[0]));
+  ok('وتصحيحُ المعلّم بحرفه', said.includes('يَنْتَصِفْ') && fixed.results[1].source === 'المعلّم', show(said));
+  ok('والفراغُ وما لا كلمةَ فيه يُمسكان بسببهما بلا كلفة', fixed.results[2].state === 'held' && fixed.results[2].reason === T.CARD_GAP
+     && fixed.results[3].state === 'held' && fixed.results[3].reason === T.CARD_EMPTY && ttsCalls().length === 2, show(fixed.results));
+
+  reset(); ENV = { ...BASE_ENV, GOOGLE_SA_JSON: undefined };
+  const verse = '﴿كُنتُمْ خَيْرَ أُمَّةٍ أُخْرِجَتْ لِلنَّاسِ﴾', v = await (await call({ deck: 12, sentences: [{ text: verse }] })).json();
+  ok('ووجهٌ كلُّه آية ⇒ من تلاوة الحصري بلا Google، في مجلّد المجموعة', v.results[0].state === 'ok' && v.results[0].voice === 'husary' && log.google.length === 0
+     && log.r2.every(x => x.url.includes('/voice/cards/12/')) && !log.db.some(x => x.fn === 'save_voice'), show(v));
+  ENV = { ...BASE_ENV };
+
+  reset();
+  const both = await call({ item: 603, deck: 12, sentences: [{ text: 'جملة.' }] });
+  ok('وطلبٌ لنصٍّ ومجموعةٍ معاً يُردّ قبل الحارس', both.status === 400 && log.db.length === 0, show(log.db));
 }
 
 console.log(`\n${n - bad}/${n}${bad ? ' — فشل' : ''}`);

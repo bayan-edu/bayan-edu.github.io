@@ -11,6 +11,8 @@
       وما ليس آيةً يُقرأ بلا قوسيه كسائر النثر، وما بينهما يُمسَك بسببه (`core.js` · «الآيةُ المقتبسة في النثر»).
       خمسُ جملٍ على الأكثر، والردُّ قبل ١٥٠ ثانية (حدُّ Supabase): ما لم يتمّ في وقته يعود بسببه ويُطلب ثانية، وما تمّ محفوظ.
       و`text` المنطوقُ نفسُه — تعرضه اللوحةُ ساعةَ التوليد، ومكانُه الدائم `spoken` في R2 بجوار صوته (189 ②).
+      🆕 b216 · **وصوتُ وجه البطاقة:** `{ deck, sentences: [{ text, voice?, spoken? }], context? }` — الردُّ نفسُه بلا صفٍّ في القاعدة: مفتاحُ الصوت
+      يعود إلى نموذج البطاقة، وحفظُها هو الاعتماد (`195`).
 
    🔑 الأسرارُ في Supabase (Edge Functions ← Secrets) لا في المستودع:
         GOOGLE_SA_JSON — مفتاحُ حساب الخدمة بنصّه (JSON): يضعه المالكُ بيده، ولا يُطبع منه شيء
@@ -18,6 +20,7 @@
    🔒 الحارس: `voice_problem(item)` بهويّة المستدعي (ممنوحٌ لـ`authenticated` في `190`) — بعد فحص شكل الطلب، وقبل الأسرار وأيِّ
       نداءٍ لـGoogle: فلا يُدفع عن طالبٍ ولا زائر، والزائرُ تردّه القاعدةُ قبل أن يُسأل. و`save_voice` يسأله ثانيةً عند الحفظ.
       (وكما في `r2-sign`: `verify_jwt` لا يكفي وحده — المفتاحُ العامّ يبلغ الكود بدور `anon`.)
+      🆕 b216 · ولمجموعة البطاقات حارسُها `card_voice_problem(deck)` (`195`) في الموضع نفسِه.
    ══════════════════════════════════════════════════════════ */
 // deno-lint-ignore-file no-explicit-any
 import { AwsClient } from 'npm:aws4fetch@1.0.20';
@@ -132,14 +135,19 @@ Deno.serve(async (req) => {
     global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } },
     auth:   { persistSession: false, autoRefreshToken: false },
   });
-  const { data: problem, error: denied } = await db.rpc('voice_problem', { p_item: c.item });
+  const { data: problem, error: denied } = c.deck
+    ? await db.rpc('card_voice_problem', { p_deck: c.deck })
+    : await db.rpc('voice_problem', { p_item: c.item });
   if (denied) return reply(req, 403, { error: 'تعذّر التحقّق من الصلاحية', code: denied.code });
   if (problem) return reply(req, 403, { error: problem });
 
-  /* الجملُ بترتيبها: بصمتُها · ما يُمسَك منها · من أين تشكيلُها. والمكرَّرةُ في الدفعة تُولَّد مرّةً وتأخذ أختُها نتيجتَها */
-  const rows: any[] = await Promise.all(c.sentences.map(async (s: any) =>
-    ({ s, say: s, sha: await T.sentenceSha(s.text), held: T.held(s), quote: T.isQuote(s.text), source: T.tashkeelSource(s),
-       voweled: null, error: null })));
+  /* الجملُ بترتيبها: بصمتُها · ما يُمسَك منها · من أين تشكيلُها. والمكرَّرةُ في الدفعة تُولَّد مرّةً وتأخذ أختُها نتيجتَها.
+     🆕 b216 · ووجهُ البطاقة يُقرأ بلا ما لا يُنطق (`cardText`)، وبصمتُه من الوجه كما كُتب */
+  const rows: any[] = await Promise.all(c.sentences.map(async (s: any) => {
+    const say = c.deck ? { ...s, text: T.cardText(s.text) } : s;
+    return { s, say, sha: await T.sentenceSha(s.text), held: c.deck ? T.cardHeld(s) : T.held(s), quote: T.isQuote(say.text),
+             source: T.tashkeelSource(say), voweled: null, error: null };
+  }));
   const first = new Map<string, any>();
   for (const r of rows) { if (first.has(r.s.text)) r.twin = first.get(r.s.text); else first.set(r.s.text, r); }
   const work = rows.filter(r => !r.held && !r.twin);
@@ -209,15 +217,17 @@ Deno.serve(async (req) => {
       headers: { 'Content-Type': type, 'Cache-Control': 'public, max-age=31536000, immutable', 'If-None-Match': '*' } });
     /* والآيةُ المقصوصة كذلك: منطوقُها ما تُلي بحرفه من المصحف، واسمُ صوتها مرجعُها (`quoteLabel`) */
     await Promise.all(work.filter(r => r.bytes && !r.error).map(async (r: any) => {
-      const k = T.clipKeys(c.item, r.sha, rev);
+      const k = T.clipKeys(c.deck ? T.cardScope(c.deck) : c.item, r.sha, rev);
       try {
         const [a, t] = await Promise.all([put(k.audioPath, r.bytes, 'audio/mpeg'),
                                           put(k.spokenPath, new TextEncoder().encode(r.spoken), 'text/plain; charset=utf-8')]);
         if (!ok(a.status) || !ok(t.status)) { r.error = `تعذّر حفظ الملف في R2 (${ok(a.status) ? t.status : a.status})`; return; }
       } catch { r.error = 'تعذّر الوصول إلى R2'; return; }
-      const { data, error } = await db.rpc('save_voice', { p_item: c.item, p_sentence: r.s.text, p_audio: k.audio, p_ms: r.ms,
-                                                           p_voice: r.quran ? r.voice.label : T.voiceLabel(r.source, r.voice.label) });
-      if (error || !data?.ok) { r.error = error ? `تعذّر حفظ الصوت: ${error.message}` : data.error; return; }
+      if (c.item) {
+        const { data, error } = await db.rpc('save_voice', { p_item: c.item, p_sentence: r.s.text, p_audio: k.audio, p_ms: r.ms,
+                                                             p_voice: r.quran ? r.voice.label : T.voiceLabel(r.source, r.voice.label) });
+        if (error || !data?.ok) { r.error = error ? `تعذّر حفظ الصوت: ${error.message}` : data.error; return; }
+      }
       Object.assign(r, { audio: k.audio, spokenKey: k.spoken });
     }));
   }

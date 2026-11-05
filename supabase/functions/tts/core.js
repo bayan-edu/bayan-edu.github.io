@@ -68,12 +68,18 @@ const TASHKEEL_PROMPT = `شكّل الجمل العربيّة في «sentences»
    cover (عنوانُ النصّ) · h (عنوانٌ فرعيّ) · p (نثر — وهو الأصل) · v (بيت) · `spoken` نصٌّ منطوقٌ صحّحه المعلّم فيُتخطّى به
    التشكيلُ والوقف (`spokenFor`) · `voice` صوتٌ من اللوحة (`VOICES`) اختاره المؤلّف، وإلّا فالمقترح (`recommend`) · `lead` الجملةُ قبلها في النصّ — بها يُعرف
    قائلُ الحوار ونبرتُه (`femaleLead` · `voiceFor`) · `tone` نبرةٌ كتبها المؤلّف تغلب ما استُنبط · `context` ما قبل الدفعة من النصّ.
-   والحدودُ حدودُ القاعدة: الجملةُ ١–٢٠٠٠ بلا مسافةٍ في طرفيها، ولا «۝» (189 ④) — يُردّ الطلبُ هنا قبل أن يُدفع فيه شيء. */
+   والحدودُ حدودُ القاعدة: الجملةُ ١–٢٠٠٠ بلا مسافةٍ في طرفيها، ولا «۝» (189 ④) — يُردّ الطلبُ هنا قبل أن يُدفع فيه شيء.
+   🆕 b216 · **أو `deck` مكان `item`:** مجموعةُ بطاقاتٍ وجملُها أوجهُها (`cardText` · `cardHeld`) — حكمُ المالك (٥ نوفمبر): «يمكن بناء إضافة
+   الصوت لشاشة تحرير البطاقات»، وخمسةٌ في الدفعة كالنصوص فتصلح للتوليد الجماعيّ بعد حكمه. والحارسُ `card_voice_problem` (`195`)، ولا صفَّ هنا:
+   مفتاحُ الصوت يعود إلى نموذج البطاقة، وحفظُها هو الاعتماد. و`context` حينئذٍ معناها، يُفهم به الوجهُ عند تشكيله. */
 const KINDS = new Set(['cover', 'h', 'p', 'v']);
 const fail = (error, status = 400) => ({ error, status });
 export function checkRequest(body){
-  const item = Number(body?.item);
-  if(!Number.isSafeInteger(item) || item < 1) return fail('رقم النص غير صالح');
+  if(body?.item != null && body?.deck != null) return fail('الطلب لنص أو لمجموعة بطاقات، لا لهما معاً');
+  const deck = body?.deck == null ? null : Number(body.deck);
+  const item = deck === null ? Number(body?.item) : null;
+  if(deck !== null && (!Number.isSafeInteger(deck) || deck < 1)) return fail('رقم مجموعة البطاقات غير صالح');
+  if(deck === null && (!Number.isSafeInteger(item) || item < 1)) return fail('رقم النص غير صالح');
   const list = body?.sentences;
   if(!Array.isArray(list) || !list.length) return fail('لا جمل في الطلب');
   if(list.length > LIMITS.sentences) return fail('الدفعة خمس جمل على الأكثر');
@@ -98,7 +104,7 @@ export function checkRequest(body){
     sentences.push({ text, kind, spoken, voice, lead, tone });
   }
   const context = typeof body?.context === 'string' ? body.context.slice(0, LIMITS.chars) : '';
-  return { item, sentences, context };
+  return { item, deck, sentences, context };
 }
 export const isTitle = s => s.kind === 'cover' || s.kind === 'h';
 
@@ -112,6 +118,30 @@ export const QUOTE_UNPAIRED = 'قوسا الآية «﴿ ﴾» غير متقاب
 export const isQuote = text => /^﴿[^﴿﴾]+﴾$/.test(String(text ?? '').trim());
 const paired = text => /^[^﴿﴾]*(?:﴿[^﴿﴾]+﴾[^﴿﴾]*)*$/.test(text);
 export const held = s => isQuote(s.text) || !/[﴿﴾]/.test(s.text) ? null : paired(s.text) ? QUOTE_HELD : QUOTE_UNPAIRED;
+
+/* 🆕 b216 · وجهُ البطاقة منطوقاً — قِيست القاعدةُ على أوجه مادّة العربية الستّة والثلاثين ذات الأقواس (٥ نوفمبر):
+   · ما بين قوسين لا كلمةَ فيه لا يُقرأ: علامةٌ («الفَاصِلَة (،)» · «الشَّرْطَتَان (- -)») أو حرفٌ مفرد («التَّاءُ المَرْبُوطَة (ـة / ة)»)
+   · وفيه كلمة ⇒ يُقرأ بلا قوسيه: وصلاً في وسط الوجه («هَمْزَةُ (أَلْ) التَّعْرِيفِيَّةِ») وبعد كلمةٍ حملت حركةَ إعرابها («عَلَى وَزْنِ (فُعَل)» ·
+     «حَرْفُ العَطْفِ (ثُمَّ)») — وبوقفٍ قبله في آخر الوجه بعد كلمةٍ بلا حركة آخر («الخَنْسَاء (تُمَاضِرُ بِنْتُ عَمْرو)»)
+   · والتطويلُ والتنصيصُ يسقطان: «بِـ«أَنْ»» ⇐ «بِأَنْ»
+   والمعروضُ لا يُمسّ (حكمُ `sayable` في ui.js: «والمحتوى لا يُشوَّه لأجل أداةٍ تقرؤه»)، وما أخطأته القاعدةُ يصحّحه المعلّم بمربّع النطق. */
+const MARKED_END = /[ً-ِ]ّ?$|ّ[ً-ِ]$/;
+export function cardText(front){
+  const t = String(front ?? '');
+  return t.replace(/\s*[([]([^)\]]*)[)\]]\s*/g, (all, x, at) => {
+    if(!/\p{L}\p{M}*\p{L}/u.test(x.replace(/ـ/g, ''))) return ' ';
+    const pause = at + all.length >= t.length && !MARKED_END.test(t.slice(0, at));
+    return `${pause ? '، ' : ' '}${x.trim()} `;
+  }).replace(/[ـ«»"“”]/g, '').replace(/\s+/g, ' ').trim();
+}
+/* وما لا صوتَ له: وجهٌ فيه فراغٌ («{{ }}») يُقرأ ناقصاً · وما لا كلمةَ فيه — إلا أن يكتب المعلّمُ نطقه · وقوسا آيةٍ بحكمهما في النصّ (`held`) */
+export const CARD_GAP = 'الوجه فيه فراغ، فلا يُولَّد له صوت';
+export const CARD_EMPTY = 'لا كلمة في الوجه تُقرأ';
+export function cardHeld(s){
+  if(/\{\{\s*\}\}/.test(s.text)) return CARD_GAP;
+  const t = cardText(s.text);
+  return !/\p{L}/u.test(t) && !s.spoken ? CARD_EMPTY : held({ text: t });
+}
 
 /* ── ما شكّله المؤلّف ─────────────────────────────────────
    النصوصُ المشكولة أصلاً لا تُرسل إلى التشكيل: تشكيلُ الكتاب هو الحكم — والنموذجُ أخطأ في قياسه ما أصاب فيه الكتاب
@@ -498,6 +528,8 @@ export function clipKeys(item, sha, rev){
   const base = `voice/${item}/${sha}.${rev}`;
   return { audioPath: `${base}.mp3`, spokenPath: `${base}.txt`, audio: `r2:${base}.mp3`, spoken: `r2:${base}.txt` };
 }
+/* 🆕 b216 · وصوتُ وجه البطاقة في مجلّد مجموعتها — وبهذا المسار يُعرف مولَّداً (`isCardVoice` في voice_rows.js · والقادحُ في `195`) */
+export const cardScope = deck => `cards/${deck}`;
 export const r2Url = (env, path) => `https://${env.accountId}.r2.cloudflarestorage.com/${env.bucket}/${path}`;
 
 /* ── رمزُ Google بحساب الخدمة ──────────────────────────────

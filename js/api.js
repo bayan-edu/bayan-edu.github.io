@@ -240,13 +240,17 @@ export const approvedVoices = id =>
 /* التوليدُ دفعةً من خمس جملٍ على الأكثر: { item, sentences: [{ text, kind, voice?, spoken? }], context }
    ⇒ { data: { results: [{ sha, state: 'ok'|'held'|'error', … }] }, error } — والردُّ بالعربيّة في جسمه يُقرأ كما هو
    (كـ`uploadR2`). والحارسُ في الدالّة (`voice_problem` بهويّة المستدعي) لا هنا. */
-export async function generateVoices(item, sentences, context = ''){
-  const { data, error } = await db.functions.invoke('tts', { body: { item, sentences, context } });
+async function invokeTts(body){
+  const { data, error } = await db.functions.invoke('tts', { body });
   if(!error) return { data, error: null };
   let message = error.message, status = error.context?.status;
   try { const j = await error.context?.json?.(); if(j?.error) message = j.error; } catch(e){}
   return { data: null, error: { message, status } };
 }
+export const generateVoices = (item, sentences, context = '') => invokeTts({ item, sentences, context });
+/* 🆕 b216 · وصوتُ وجه البطاقة من الدالّة نفسِها: { deck, sentences: [{ text, voice?, spoken? }], context: معناها } — الردُّ نفسُه بلا صفٍّ في
+   القاعدة: مفتاحُ الصوت يعود إلى نموذج البطاقة، وحفظُها هو الاعتماد. والحارسُ `card_voice_problem` في الدالّة (`195`). */
+export const generateCardVoices = (deck, sentences, context = '') => invokeTts({ deck, sentences, context });
 /* والاعتمادُ وإلغاؤه لجملٍ ببصماتها (189 ⑤): ⇒ { ok, count, missing } — وإعادةُ التوليد تُسقطه في القاعدة */
 export const approveVoices = (id, shas, ok = true) => db.rpc('approve_voice', { p_item: id, p_shas: shas, p_ok: ok });
 

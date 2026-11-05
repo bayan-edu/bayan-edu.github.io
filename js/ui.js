@@ -13,7 +13,7 @@ import { renderMark, whenReady as avatarReady } from './avatar.js';
    والدمجُ مرّ بلا تعارضٍ **لأنّ الجانبين كتبا السطرَ نفسَه حرفاً** — وهو
    أخبثُ ما في التصادم: لا يشتكي. ⇒ هذه ترفعه، **فالختمُ يجيب «أيُّ شيفرةٍ
    يشغّلها المتصفّح»، وجوابان لسؤالٍ واحدٍ لا جواب.** */
-export const BUILD = "b215";
+export const BUILD = "b216";
 
 /* ── مراسي الصفحة ── */
 export const app = document.getElementById("app");
@@ -189,7 +189,11 @@ export function pickExample(note){
         كتبه المؤلّف. فالقارئ الآليّ ينطق القوسَ حرفاً، **والمحتوى لا
         يُشوَّه لأجل أداةٍ تقرؤه.** */
 export function sayable(c){
-  if(!c || (c.lang || 'ar') === 'ar') return null;
+  if(!c) return null;
+  /* 🆕 b216 · والعربيةُ صوتُها ملفٌّ لا قارئُ الجهاز — عقدُ `101` في media.js: «ملفٌّ مرفوع ⇒ يُسمَع · لا ملفّ · عربية ⇒ لا زرّ». وكان هذا السطرُ
+     يُسكتها **ولو حملت ملفّاً**، ولم يظهر لأنّ البطاقات كلَّها كانت بلا صوت (قِيس: ٠ من ٥٨١٢). وملفُّها صوتُ وجهها (`cardText` · `195`) ⇒ زرُّه
+     على الوجه، ولا يكشف جواباً: المطلوبُ تذكُّرُ المعنى لا النطق (②). */
+  if((c.lang || 'ar') === 'ar') return c.audio ? { text: String(c.front || ''), side: 'front' } : null;
 
   const clean = t => {
     const raw = String(t || '').replace(/\{\{\s*\}\}/g, ' ');
