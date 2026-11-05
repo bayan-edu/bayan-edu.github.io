@@ -1963,10 +1963,19 @@ html.pv-lock{overflow:hidden}
 .eq-bar.add{cursor:pointer;border-style:dashed;color:var(--text-muted);
   font-family:'Almarai';font-weight:700;font-size:.78rem;transition:color .16s,border-color .16s}
 .eq-bar.add:hover{color:var(--accent);border-color:var(--accent-edge)}
-.eq-bar.sec{background:var(--warn-soft);border-color:var(--warn-line);
-  display:flex;align-items:center;gap:9px}
+/* 🔴 b213 · ‎.sec‎ لونٌ لا تخطيط، كأختها ‎.pg‎. كانت تحمل ‎display:flex‎ لأجل شريط القسم وحده، فلمّا استعارت
+      لونَها لوحةُ الخانة صارت صفوفُها أعمدةً متجاورة — العنوان والأزرار ثمّ كلُّ نسخةٍ ثمّ الحكم — فانضغط النصّ
+      وتمدّدت البطاقة: قيس بنسختين عند ١٥٣٠px فكان النصّ ٧١px في خمسة أسطر والبطاقة ١٥٤، وصارا ٥١٦ في سطرٍ و٩٨.
+      وأصاب العطلُ نفسُه كلَّ ‎.sec‎ ذات صفوف: حكمَ المقارنة وصفوفَ الاقتران. ⇒ الصفّ ‎.eq-brow‎ في كلّها، وشريطُ
+      القسم صفٌّ منها. */
+.eq-bar.sec{background:var(--warn-soft);border-color:var(--warn-line)}
 .eq-bar.pg{background:var(--accent-soft);border-color:var(--accent-line)}
 .eq-brow{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+/* ما يملأ الصفّ له أساسٌ حقيقيّ: ‎flex:1‎ أساسُه صفر، فلا يطلب سطراً جديداً أبداً ويرضى بما فضل وإن كان كلمة —
+   وهذا هو العطل الثاني تحت الأوّل: يعود في الضيّق ولو تراكبت الصفوف. وبأساسٍ له ينزل جارُه إلى سطرٍ تحته. */
+.eq-fill{flex:1 1 14rem;min-width:0}
+.eq-cut{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.eq-vt{display:flex;flex-wrap:wrap;gap:5px;min-width:0}
 .eq-bt{font-family:'Almarai';font-weight:800;font-size:.83rem}
 .eq-bar.sec .eq-bt{color:var(--warn)}
 .eq-bar.pg  .eq-bt{color:var(--accent)}

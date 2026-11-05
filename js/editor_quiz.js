@@ -585,11 +585,11 @@ function sectionBar(q, locked){
   const r = range(cur, 'section');
   if(!q.section) return locked ? '' :
     `<button class="eq-bar add" id="addsec">＋ عنوان قسم يشمل هذا السؤال وما بعده</button>`;
-  return `<div class="eq-bar sec">
+  return `<div class="eq-bar sec"><div class="eq-brow">
     <span class="eq-bt" dir="auto">${esc(q.section)}</span>
     <span class="eq-bs">${span(r)}</span>
     ${locked ? '' : `<button class="it-b" id="edsec">✏️</button>
-                     <button class="it-b" id="rmsec">✕</button>`}</div>`;
+                     <button class="it-b" id="rmsec">✕</button>`}</div></div>`;
 }
 
 /* ═══════════ منتقي الهدف — ما يقيسه هذا السؤال ═══════════
@@ -796,6 +796,9 @@ const fp = q => [...new Set((q.options || [])
 const partners = q => !q.variant_key ? []
   : (Z.questions || []).filter(x => x.variant_key === q.variant_key && x.id !== q.id);
 
+/* عددُ نسخ الخانة بعبارته — كان «٢ نسخ» في أربعة مواضع: المثنّى لا يُكتب رقماً وجمعاً. */
+const copies = n => N(n, 'نسخة', 'نسختان', 'نسخ', 'نسخة');
+
 const dxName = code => ((S.tree?.dx) || []).find(d => d.code === code)?.name || code;
 
 function variantBar(q, locked){
@@ -818,10 +821,13 @@ function variantBar(q, locked){
   const traps = p => (p.options || []).filter(o => o.dx)
     .map(o => `<span class="chip">${esc(dxName(o.dx))}</span>`).join('');
 
+  /* 🆕 b213 · صفٌّ لكلّ نسخة، وسطرٌ واحدٌ لنصّها (كاملاً عند الوقوف) — والحكمُ حين يكون ✅ كلمتان
+     بجانب العدد: لا صفَّ له، فلا شيءَ يُعمل فيه. وما يحتاج قراءةً يبقى تحته بعرض البطاقة. */
   return `<div class="eq-bar sec">
     <div class="eq-brow">
       <span class="eq-bt">⇄ خانة ${esc(q.variant_key)}</span>
-      <span class="eq-bs">${AR(ps.length + 1)} نسخ في الخانة</span>
+      <span class="eq-bs">${copies(ps.length + 1)} في الخانة${
+        v.cls === 'ok' ? ' · ✅ متّسقة فيما يُفحص آلياً' : ''}</span>
       <button class="it-b" id="cmpv">⇄ قارِن النسخ</button>
       <button class="it-b" id="addvar">＋ نسخة قائمة</button>
       <button class="it-b" id="rmvar">✕ فكّ</button>
@@ -829,13 +835,11 @@ function variantBar(q, locked){
 
     ${ps.map(p => `<div class="eq-brow" style="margin-top:8px">
         <span class="eq-bs">سؤال ${AR(p.position)}</span>
-        <span class="eq-bt" dir="auto" style="flex:1;min-width:0">
-          ${esc((p.body || '').slice(0, 60))}</span>
-        <span style="display:flex;gap:5px;flex-wrap:wrap">${traps(p)}</span>
+        <span class="eq-bt eq-fill eq-cut" dir="auto" title="${esc(p.body || '')}">${rowText(p)}</span>
+        <span class="eq-vt">${traps(p)}</span>
       </div>`).join('')}
 
-    ${v.cls === 'ok'
-      ? `<div class="eq-bs" style="margin-top:8px">✅ متّسقة فيما يُفحص آلياً</div>`
+    ${v.cls === 'ok' ? ''
       : `<div class="${v.cls === 'none' ? 'eq-bs' : 'warnbox'}" style="margin-top:10px">
           ${v.icon} ${(v.fails || []).map(f => esc(f)).join('<br>')}
           ${v.cls === 'warn' && !v.manual
@@ -887,7 +891,7 @@ function pairPassage(q){
         return `<button class="eq-bar ${m === n ? 'pg' : 'sec'}" data-pg="${p.id}"
                   style="cursor:pointer;text-align:start">
           <div class="eq-brow">
-            <span class="eq-bt" dir="auto" style="flex:1;min-width:0">📖 ${esc(p.title || 'نصّ مشترك')}</span>
+            <span class="eq-bt eq-fill" dir="auto">📖 ${esc(p.title || 'نصّ مشترك')}</span>
             <span class="eq-bs">${AR(m)} أسئلة</span>
             <span class="eq-bs">${m === n ? '✅ عدد مطابق'
               : '❌ العدد مختلف — الكتلتان غير متوازيتين'}</span>
@@ -941,9 +945,9 @@ function pairBlock(back, pidA, pidB){
         <div class="eq-bar ${r.v.startsWith('✅') ? 'pg' : 'sec'}">
           <div class="eq-brow">
             <span class="eq-bs">${AR(i + 1)}</span>
-            <span class="eq-bt" dir="auto" style="flex:1;min-width:0">
+            <span class="eq-bt eq-fill" dir="auto">
               ${AR(r.a.position)}. ${esc((r.a.body || '').slice(0, 40))}</span>
-            <span class="eq-bt" dir="auto" style="flex:1;min-width:0">
+            <span class="eq-bt eq-fill" dir="auto">
               ${AR(r.b.position)}. ${esc((r.b.body || '').slice(0, 40))}</span>
             <span class="eq-bs">${esc(r.v)}</span>
           </div>
@@ -1059,10 +1063,10 @@ function pairForm(q){
     return `<button class="eq-bar ${same ? 'pg' : 'sec'}" data-pair="${x.id}"
               style="cursor:pointer;text-align:start">
       <div class="eq-brow">
-        <span class="eq-bt" dir="auto" style="flex:1;min-width:0">
+        <span class="eq-bt eq-fill" dir="auto">
           ${AR(x.position)}. ${esc((x.body || '').slice(0, 55))}</span>
         ${x.variant_key ? `<span class="chip g">⇄ ينضمّ إلى ${esc(x.variant_key)}
-          · ${AR(partners(x).length + 2)} نسخ</span>` : ''}
+          · ${copies(partners(x).length + 2)}</span>` : ''}
         <span class="eq-bs">${
           noFp ? '⬜ لا فحص آليّ — والاثنان يُقرآن'
         : dif.length ? '⚠️ يختلف في: ' + esc(dif.join(' · '))
@@ -1126,7 +1130,7 @@ function pairForm(q){
     const v = await api.setVariant(ids);
     if(v.error){ toast(v.error.message); return; }
     if(!v.data?.ok){ toast(v.data?.error || "تعذّر الاقتران"); return; }
-    toast(`خانة ${v.data.key} — ${AR(v.data.size ?? ids.length)} نسخ`);
+    toast(`خانة ${v.data.key} — ${copies(v.data.size ?? ids.length)}`);
     reload(q.id);
   });
   scrollTop();
@@ -3707,7 +3711,7 @@ function listBody(){
     return `<div class="eq-var ${here?'on':''}">
       <div class="eq-vh" data-v="${esc(n.key)}">
         <span class="eq-ar">${open?'▾':'▸'}</span>
-        <span class="eq-vk" title="خانة ${esc(n.key)} · ${N(ms.length,'نسخة','نسختان','نسخ','نسخة')}">⇄ ${AR(ms.length)}</span>
+        <span class="eq-vk" title="خانة ${esc(n.key)} · ${copies(ms.length)}">⇄ ${AR(ms.length)}</span>
         <span class="eq-vb" dir="auto">${rowText(first)}</span>
         <span class="eq-flag ${v.cls}" data-cmp="${esc(n.key)}"
               title="قارِن نسخ الخانة" style="cursor:pointer">${v.icon}</span>
@@ -4063,7 +4067,7 @@ function compareVariant(key){
 
   document.getElementById("main").innerHTML = `
     <div class="card">
-      <div class="qnum">⇄ خانة ${esc(key)} · ${AR(ms.length)} نسخ</div>
+      <div class="qnum">⇄ خانة ${esc(key)} · ${copies(ms.length)}</div>
       <div class="eq-bar ${v.cls==='ok'?'pg':'sec'}">
         <div class="eq-brow"><span class="eq-bt">${v.icon} ${
           v.cls==='ok' ? 'متّسقة فيما يُفحص آلياً'
