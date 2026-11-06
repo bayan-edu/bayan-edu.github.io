@@ -46,6 +46,12 @@ ok('fromRows: سطرٌ حُجب نصُّه عن الطالب ⇒ text null (198 
 const sql198 = readFileSync(join(ROOT, 'sql/198_audio_reveal.sql'), 'utf8');
 ok('REVEAL مفاتيحُ قيد 198 بحرفها، والأوّلُ افتراضُه', eq(Object.keys(L.REVEAL), ['never', 'after', 'open'])
    && sql198.includes("check (reveal in ('never', 'after', 'open'))") && sql198.includes("reveal text not null default 'never'"));
+/* 🆕 b220 · ونصُّ الاستماع في الاختبار خيارُ الاختبار (200 ①)، والفحصُ نسخةٌ واحدة صارت في `write_track_lines` (200 ③) */
+const sql200 = readFileSync(join(ROOT, 'sql/200_quiz_transcript.sql'), 'utf8');
+ok('TRANSCRIPT مفاتيحُ قيد 200 بحرفها، والأوّلُ افتراضُه', eq(Object.keys(L.TRANSCRIPT), ['never', 'after'])
+   && sql200.includes("check (transcript in ('never', 'after'))") && sql200.includes("transcript text not null default 'never'"));
+ok('200: save_item_lines تنادي الكتابة الواحدة، وsave_passage_lines كذلك',
+   (sql200.match(/return write_track_lines\(v_key, v_subject, v_lang, p_lines\);/g) || []).length === 2);
 ok('payload بأسماء القاعدة', eq(L.payload([{ speaker: ' A ', text: ' hi ', start: 5, end: null }]), [{ speaker: 'A', text: 'hi', start_ms: 5, end_ms: null }]));
 ok('payload: بلا قائل ⇒ null', L.payload([{ speaker: '', text: 'x' }])[0].speaker === null);
 
@@ -65,9 +71,12 @@ for(const [name, lines, tpl, at] of cases){
   const want = tpl.replace('%s', AR(at));
   ok(`المانع: ${name}`, L.problem(lines) === want, L.problem(lines));
   ok(`…ورسالتُه في 197 بحرفها: ${name}`, sql.includes(`'${tpl}'`));
+  ok(`…وفي write_track_lines (200) بحرفها: ${name}`, sql200.includes(`'${tpl}'`));
 }
 ok('المانع: ٤٠١ سطر', L.problem(Array.from({ length: 401 }, (_, k) => ({ text: 'L' + k }))) === 'السطور أكثر من ٤٠٠ سطر');
 ok('…ورسالتُه في 197', sql.includes(`'السطور أكثر من ٤٠٠ سطر'`));
+ok('…وفي 200', sql200.includes(`'السطور أكثر من ٤٠٠ سطر'`) && sql200.includes('v_n > 400')
+   && sql200.includes('between 1 and 1000') && sql200.includes('> 40') && sql200.includes('3600000'));
 ok('المانع: سطورٌ سليمة ⇒ null — ومنها ما لم يُوقَّت', L.problem([{ text: 'A', start: 0 }, { text: 'B' }, { text: 'C', start: 900, end: 1200 }]) === null);
 ok('المانع: المحرفُ بالمحارف لا بوحدات UTF-16', L.problem([{ text: '😀'.repeat(1000) }]) === null);
 ok('الحدودُ حدودُ 197', sql.includes('n between 1 and 400') && sql.includes('between 1 and 1000') && sql.includes('between 1 and 40')

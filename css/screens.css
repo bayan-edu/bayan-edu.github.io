@@ -2187,6 +2187,9 @@ html.pv-lock{overflow:hidden}
 .al-pl:not([data-show]) .al-t{display:none}
 .al-pl[data-show] .al-gap{display:none}
 .al-gap{color:var(--text-muted)}
+/* 🆕 b220 · نصُّ الاستماع في مراجعة الاختبار (quiz.js · 200 ②): مشغّلُ الدرس نفسُه في بطاقة كلّ نصٍّ صوتيّ */
+.al-rvw .aud{margin:0}
+.al-rvw .psg-t{margin-bottom:10px}
 
 /* ══ المحاكاة التفاعلية داخل الدرس (b57) ══
    .sim.full تُحرّك نفس عنصر DOM إلى ملء الشاشة بـCSS وحده — لا يُعاد

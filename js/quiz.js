@@ -971,6 +971,7 @@ function renderResult(){
     </div>
     <div class="nav"><button class="btn primary" id="again">إعادة الاختبار</button></div>
     <h2 class="sec">المراجعة التشخيصية</h2>${objective}${recur}
+    <div id="lsn"></div>
     <h2 class="sec">الأسئلة المقالية — بانتظار تصحيح معلمك</h2>${ess}`;
 
   document.getElementById("again").onclick = ()=>startQuiz({ id:S.quiz.id, item_id:S.itemId });
@@ -978,4 +979,30 @@ function renderResult(){
     if(S.subj) loadLessons(S.subj); else loadList();
   };
   scrollTop();
+  listenText(r);
+}
+
+/* 🆕 b220 · نصُّ الاستماع بعد التسليم (200 ② · مختبر الصوتيّات ٣) — خيارُ المعلّم في إعدادات الاختبار، والافتراضُ «لا يُكشف»
+   (حكمُ المالك: «كشف النص في أسئلة وتمارين الاستماع … خيار يحدده المعلم في الاعدادات وليس افتراضيا»).
+   🔑 **والحكمُ في القاعدة لا هنا:** `attempt_lines` تردّ نصوصَ ما قُدّم في هذه المحاولة بعينها إن أذن الخيار، وإلّا لا شيء —
+      فيُسأل عنها حيث في الاختبار نصٌّ صوتيّ وحده، ولا يُرسم شيءٌ لم يصل. والمشغّلُ مشغّلُ الدرس (`lines_player.js`): ⟲ السطر،
+      والنصُّ مطويٌّ حتى «كشف النص» — الاستماعُ ثانيةً أوّلاً. وتعذُّرُ الطلب صامتٌ: المراجعةُ قائمةٌ بدونه. */
+async function listenText(r){
+  const slot = document.getElementById('lsn');
+  const audio = Object.values(S.passages || {}).some(p => p.media && p.kind !== 'video' && p.kind !== 'image');
+  if(!slot || !r?.attempt_id || !audio) return;
+  const { data, error } = await api.attemptLines(r.attempt_id).then(x => x, e => ({ error: e }));
+  if(error || !data?.ok || !data.passages?.length || !slot.isConnected) return;
+  slot.innerHTML = `<h2 class="sec">نص الاستماع</h2>${data.passages.map((p, k) => `
+    <div class="card al-rvw" data-k="${k}">
+      ${p.title ? `<div class="psg-t" dir="auto">${esc(p.title)}</div>` : ''}
+      <div class="aud"><audio class="aud-p" controls preload="metadata" src="${esc(srcOf(p.media) || '')}"></audio></div>
+    </div>`).join('')}`;
+  const m = await import('./lines_player.js').catch(() => null);
+  if(!m) return;
+  slot.querySelectorAll('.al-rvw').forEach(c => {
+    const p = data.passages[+c.dataset.k];
+    m.attachLines(c.querySelector('.aud'), c.querySelector('audio'), null,
+      { data: { ok: true, script: p.id, lang: p.lang, reveal: 'open', text: true, lines: p.lines || [] } });
+  });
 }

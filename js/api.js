@@ -278,6 +278,17 @@ export const dialogueDraft     = lesson          => db.rpc('dialogue_draft',    
 export const saveDialogueDraft = (lesson, draft) => db.rpc('save_dialogue_draft', { p_lesson: lesson, p_draft: draft });
 export const trackDraft        = item            => db.rpc('track_draft',         { p_item: item });
 
+/* 🆕 b220 · نصُّ الاستماع في الاختبار (200 · مختبر الصوتيّات ٣): سطورُ النصّ الصوتيّ لمحرّر الاختبار وحده — بنصّها ووصفة الحوار
+   ⇒ { data: { ok, script, lang, reveal, text, draft, lines }, error } · والكتابةُ كأختها في المصدر (الفحصُ واحد: `write_track_lines`) */
+export const passageLines     = passage          => db.rpc('passage_lines',      { p_passage: passage });
+export const savePassageLines = (passage, lines) => db.rpc('save_passage_lines', { p_passage: passage, p_lines: lines });
+/* خيارُ الاختبار: never · after (200 ①، والأوّلُ الافتراض) ⇒ { ok, transcript } أو { ok: false, error } */
+export const setQuizTranscript = (quiz, mode) => db.rpc('set_quiz_transcript', { p_quiz: quiz, p_mode: mode });
+/* بعد التسليم: نصوصُ ما قُدّم في المحاولة إن أذن الخيار ⇒ { data: { ok, transcript, passages: [{ id, title, media, lang, lines }] } } */
+export const attemptLines = attempt => db.rpc('attempt_lines', { p_attempt: attempt });
+/* أين يُستعمل الملفّ أيضاً (200 ④) ⇒ { ok, reveal, items: [{ id, lesson, published }], passages: [{ id, quiz, transcript }] } */
+export const trackUses = key => db.rpc('track_uses', { p_track: key });
+
 /* 🆕 b164 · القراءة الجهرية (sql/174) — أيُطلب في هذا النصّ؟ ومعه قراءاتي السابقة.
    والشرطُ في القاعدة وحدها (`reading_aloud_subject`): يقرؤه `my_reading` ليظهر
    الزرّ، و`start_reading` ليُصدر المسار — فلا زرٌّ يُردّ طلبُه. */

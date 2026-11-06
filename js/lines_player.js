@@ -20,10 +20,12 @@ import * as L from './audio_lines.js';
 
 const HINT = { open: 'الاستماع أولاً، والنص بعده', wait: 'يُكشف النص بعد الاستماع كاملاً', now: 'اكتمل الاستماع، والنص متاح الآن' };
 
-/* box حاوية المشغّل (.aud) · au عنصرُ الصوت · item المصدر ({ id, url }) ⇒ { el, lines } أو null بلا سطور */
-export async function attachLines(box, au, item, { api = realApi } = {}){
-  if(!box || !au || !item?.id) return null;
-  let d = await fetchLines(api, item.id);
+/* box حاوية المشغّل (.aud) · au عنصرُ الصوت · item المصدر ({ id, url }) ⇒ { el, lines } أو null بلا سطور
+   🆕 b220 · أو `data` جاهزةٌ بصيغة `item_lines` مكانَ المصدر: نصُّ الاستماع في مراجعة الاختبار (`attempt_lines` · 200 ②) —
+   فلا يُسأل عنها ثانيةً، والنصُّ مطويٌّ حتى «كشف النص» كما في الدرس: الاستماعُ أوّلاً */
+export async function attachLines(box, au, item, { api = realApi, data = null } = {}){
+  if(!box || !au || (!item?.id && !data)) return null;
+  let d = data ? (data.ok && data.lines?.length ? data : null) : await fetchLines(api, item.id);
   if(!d || !box.isConnected) return null;
 
   const el = document.createElement('div');
@@ -74,7 +76,7 @@ export async function attachLines(box, au, item, { api = realApi } = {}){
 
   /* «بعد الاستماع كاملاً»: علامةُ الإتمام يكتبها المشغّل عند `ended` بنداءٍ لا ينتظره هذا الملفّ — فيُسأل مرّتين */
   au.addEventListener('ended', () => {
-    if(d.text || d.reveal !== 'after') return;
+    if(d.text || d.reveal !== 'after' || !item?.id) return;
     const ask = async () => {
       const nd = await fetchLines(api, item.id);
       if(nd?.text){ d = nd; draw(HINT.now); return true; }

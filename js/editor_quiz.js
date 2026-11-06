@@ -52,6 +52,7 @@ import { questionText, questionBody, KIND_LABEL, kindLabel, paperIsEnglish,
 import { wireMatching } from './match_dnd.js';
 import { practiceLinkBox } from './practice_links.js';
 import { openBanks, openForm } from './editor_banks.js';
+import { TRANSCRIPT } from './audio_lines.js';
 
 let Z    = null;   // الاختبار المحمَّل
 let cur  = 0;      // فهرس السؤال المعروض
@@ -350,6 +351,13 @@ export function quizSettings(){
         <option value="never" ${Z.reveal==='never'?'selected':''}>لا يُعرض شيء — لمحطّات القياس</option>
       </select>
 
+      ${/* 🆕 b220 · نصُّ الاستماع خيارُ المعلّم لا الافتراض (200 ① · حكمُ المالك: «خيار يحدده المعلم في الاعدادات وليس
+            افتراضيا»): سطورُ النصّ الصوتيّ بنصّها في المراجعة بعد التسليم — وتتبعها، فلا نصَّ حيث لا يُعرض شيء */ ''}
+      <label class="fl" style="margin-top:12px" for="qs_tr">نص الاستماع</label>
+      <select id="qs_tr">${Object.entries(TRANSCRIPT).map(([v, t]) =>
+        `<option value="${v}" ${(Z.transcript || 'never') === v ? 'selected' : ''}>${t}</option>`).join('')}</select>
+      <div class="eq-hint" id="qs_trh"></div>
+
       ${/* 🆕 b196 · والنموذجُ بترتيب سطوره دائماً (185 ③) — فخيارُ الخلط فيه وعدٌ لا يقع */
         Z.role === 'form' ? `<div class="eq-hint" style="margin-top:14px">والنموذج بترتيب سطوره دائماً — لا يُخلط.</div>` : `
       <label class="eq-ck" style="display:flex;gap:9px;margin-top:14px;align-items:flex-start">
@@ -384,6 +392,15 @@ export function quizSettings(){
   const $ = id => box.querySelector('#' + id);
   $('qs_pl').onchange = e => $('qs_pw').style.display = e.target.value ? '' : 'none';
   $('qs_x').onclick = () => box.remove();
+  /* نصُّ الاستماع يتبع المراجعة: حيث لا يُعرض شيءٌ بعد التسليم يُعطَّل ويقول لماذا (والقاعدةُ تحكم به كذلك · `attempt_lines`) */
+  const syncTr = () => {
+    const off = $('qs_r').value === 'never';
+    $('qs_tr').disabled = off;
+    $('qs_trh').textContent = off ? 'لا يُعرض شيء بعد التسليم، فلا نص كذلك.'
+      : 'سطور المقطع بنصها لمن سلّم المحاولة، وتُكتب في النص الصوتي. ولا يرى الطالب منها شيئاً قبل التسليم.';
+  };
+  $('qs_r').onchange = syncTr;
+  syncTr();
 
   $('qs_ok').onclick = async e => {
     const b = e.currentTarget; if(b.disabled) return;
@@ -403,6 +420,15 @@ export function quizSettings(){
     if(error || !data.ok){
       b.disabled = false; b.textContent = "حفظ";
       toast(error?.message || data.error); return;
+    }
+    /* 🆕 b220 · وخيارُ نصّ الاستماع بابُه `set_quiz_transcript` لا `save_quiz` (200 ①) — فيُكتب بعده إن خالف المحفوظ */
+    const tr = $('qs_tr').value;
+    if(tr !== (Z.transcript || 'never')){
+      const t = await api.setQuizTranscript(Z.id, tr);
+      if(t.error || !t.data?.ok){
+        b.disabled = false; b.textContent = "حفظ";
+        toast('حُفظت الإعدادات إلا «نص الاستماع»: ' + (t.error?.message || t.data?.error || '')); return;
+      }
     }
     box.remove(); toast("حُفظت الإعدادات");
     reopen();
@@ -3166,7 +3192,9 @@ function passageForm(p, draft){
      ولذلك يقول نصّه ذلك. وهو مخفيّ (hidden) حتى يُختار نوع الوسيط،
      فالزرّ يظهر معه. */
   attachUpload('pfMedia', 'q' + (Z?.id ?? ''));
-   
+  /* 🆕 b220 · وتحت حقل الصوت سطورُه وحوارٌ يُولَّد (200 · مختبر الصوتيّات ٣) — كما في نموذج «مقطع صوتي» */
+  if(pk === 'audio') attachPassageLines(main.querySelector('#pfMedia'), p);
+
   main.querySelectorAll("[data-pk]").forEach(el => el.onclick = () => {
     const keep = { title: main.querySelector("#pfTitle").value,
                    body:  main.querySelector("#pfBody").value,
@@ -3210,6 +3238,27 @@ function passageForm(p, draft){
     if(isNew){ await applyPassage(data.id); toast("أُضيف النصّ ورُبط"); return; }
     toast("حُفظ النصّ"); reload();
   };
+}
+
+/* 🆕 b220 · سطورُ النصّ الصوتيّ وحوارٌ يُولَّد (`lines_panel.js` · `dialogue_panel.js` · 200): تحت حقل الصوت وزرِّ رفعه، كما
+   في نموذج «مقطع صوتي» (`attachLines` في editor_items.js). وتعذُّرُ تحميلهما لا يمسّ النصَّ ولا حفظَه.
+   🔑 **والسطورُ لملفٍّ حُفظ:** تُقرأ من المحفوظ في الاختبار (`Z.passages`) لا من `p` — فتبديلُ نوع الوسيط يُعيد رسمَ الصندوق
+      بما في الحقول، وما في الحقل لم يُحفظ بعد. ونصٌّ صار صوتاً ولم يُحفظ ⇒ «تُكتب السطور بعد حفظ النص المشترك».
+   🔑 **والحوارُ يُبنى في درس الاختبار** (`dialogue_problem(lesson)` · 199 ①): ملفّاتُه في مجلّد الدرس — فالمحطّةُ والبنكُ بلا لوحته. */
+function attachPassageLines(inp, p){
+  const saved = p?.id ? (Z?.passages || []).find(x => String(x.id) === String(p.id)) : null;
+  const pass = saved?.kind === 'audio' && saved.media ? { id: saved.id, media: saved.media, lang: saved.lang } : { id: null };
+  const lesson = ctx?.course?.station === true || ctx?.bank ? null : (ctx?.lesson?.id ?? null);
+  Promise.all([import('./lines_panel.js'), lesson ? import('./dialogue_panel.js') : null]).then(([m, dm]) => {
+    if(!inp?.isConnected) return;                    // غادر المؤلّفُ قبل التحميل
+    const lp = m.linesPanel({ field: inp, passage: pass });
+    const up = inp.nextElementSibling?.classList.contains('mf') ? inp.nextElementSibling : inp;
+    up.insertAdjacentElement('afterend', lp.el);
+    if(!dm) return;
+    const dp = dm.dialoguePanel({ field: inp, lesson, host: 'النص المشترك',
+      loadRecipe: pass.id ? () => api.passageLines(pass.id).then(r => !r.error && r.data?.ok ? r.data.draft ?? null : null) : null });
+    lp.el.insertAdjacentElement('afterend', dp.el);
+  }).catch(e => console.error(e));
 }
 
 /* 🆕 b190 · «إدراجٌ من نصّ الكتاب» — المقتطفُ يولد من نصّ الدرس حرفاً بدل أن يُنسخ باليد، ثمّ هو نصٌّ

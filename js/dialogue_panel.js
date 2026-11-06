@@ -26,14 +26,16 @@ const secs = ms => AR(String((ms / 1000).toFixed(1))).replace('.', '٫') + ' ث'
 const blank = () => ({ scene: '', base: null, cast: [], lines: [] });
 const TRACK_RX = lesson => new RegExp(`^r2:voice/dialogues/l${lesson}/track\\.[a-z0-9]{1,16}\\.mp3$`);
 
-/* field حقلُ الرابط · item المصدرُ المحفوظ أو null · lesson رقمُ الدرس · api النداءاتُ (للقياس) ⇒ { el } */
-export function dialoguePanel({ field = null, item = null, lesson, api = realApi } = {}){
+/* field حقلُ الرابط · item المصدرُ المحفوظ أو null · lesson رقمُ الدرس · api النداءاتُ (للقياس) ⇒ { el }
+   🆕 b220 · وفي النصّ الصوتيّ بمحرّر الاختبار (200): `loadRecipe` يُرجع وصفةَ الحوار الذي في الحقل (`passage_lines`) مكانَ
+   `track_draft` المصدر، و`host` اسمُ ما يُحفظ فيصل الحوارُ إلى الطالب («النص المشترك») */
+export function dialoguePanel({ field = null, item = null, lesson, loadRecipe = null, host = 'المصدر', api = realApi } = {}){
   const el = document.createElement('section');
   el.className = 'vp dg';
   el.setAttribute('aria-label', 'حوار يُولَّد');
   el.innerHTML = `<div class="vp-top"><b class="vp-h">حوار يُولَّد بأصوات Google</b><span class="vp-sum"></span>
       <button type="button" class="mf-up dg-open" data-act="open">بناء حوار</button></div>
-    <p class="vp-say">مشهدٌ ومتحدثون بأصواتهم ونص الحوار سطراً سطراً. يُولَّد كل سطر ويُسمع ويُعاد وحده، ثم يُجمَّع الحوار ملفاً واحداً يملأ حقل الرابط، ويصل إلى الطالب بحفظ المصدر.</p>
+    <p class="vp-say">مشهدٌ ومتحدثون بأصواتهم ونص الحوار سطراً سطراً. يُولَّد كل سطر ويُسمع ويُعاد وحده، ثم يُجمَّع الحوار ملفاً واحداً يملأ حقل الرابط، ويصل إلى الطالب بحفظ ${host}.</p>
     <p class="vp-note" aria-live="polite"></p>
     <div class="dg-body" hidden>
       <label class="vp-fixl" for="dgScene">المشهد: المكان والعلاقة والموقف</label>
@@ -168,7 +170,7 @@ export function dialoguePanel({ field = null, item = null, lesson, api = realApi
     d.base = data.track;
     await saveDraft();
     if(field){ field.value = data.track; field.dispatchEvent(new Event('input', { bubbles: true })); field.dispatchEvent(new Event('change', { bubbles: true })); }
-    tell(`جُمّع الحوار (${secs(data.ms)}) وصار مفتاحه في حقل الرابط. يصل إلى الطالب بحفظ المصدر، وتظهر سطوره في «سطور المقطع» بعد الحفظ.`);
+    tell(`جُمّع الحوار (${secs(data.ms)}) وصار مفتاحه في حقل الرابط. يصل إلى الطالب بحفظ ${host}، وتظهر سطوره في «سطور المقطع» بعد الحفظ.`);
     draw();
   }
 
@@ -250,7 +252,8 @@ export function dialoguePanel({ field = null, item = null, lesson, api = realApi
     const r1 = await api.dialogueDraft(lesson);
     if(r1.error || !r1.data?.ok){ tell('تعذّر جلب المسوّدة: ' + (r1.error?.message || r1.data?.error || ''), 'bad'); return; }
     mine = r1.data.draft;
-    if(item?.id && TRACK_RX(lesson).test(url)){
+    if(TRACK_RX(lesson).test(url) && loadRecipe) recipe = await Promise.resolve().then(loadRecipe).catch(() => null);
+    else if(item?.id && TRACK_RX(lesson).test(url)){
       const r2 = await api.trackDraft(item.id);
       if(!r2.error && r2.data?.ok) recipe = r2.data.draft;
     }
@@ -263,7 +266,7 @@ export function dialoguePanel({ field = null, item = null, lesson, api = realApi
       d.lines.forEach((l, k) => { const saved = (src.lines || [])[k]?.sig; l.sig = saved && saved === hex16(sigOf(k)) ? sigOf(k) : (l.clip ? 'x' : null); });
       scene.value = d.scene; tx.value = L.scriptText(d.lines);
       body.hidden = false; btn('open').textContent = 'طيّ';
-      tell(recipe && src !== mine ? 'هذه وصفة الحوار الذي في المصدر: يُعاد منها سطرٌ ثم يُجمَّع ملفاً جديداً.' : mine && src === mine ? 'هذه مسوّدتك المحفوظة لهذا الدرس.' : '');
+      tell(recipe && src !== mine ? `هذه وصفة الحوار الذي في ${host}: يُعاد منها سطرٌ ثم يُجمَّع ملفاً جديداً.` : mine && src === mine ? 'هذه مسوّدتك المحفوظة لهذا الدرس.' : '');
     }
     drawCast(); draw();
   })();
