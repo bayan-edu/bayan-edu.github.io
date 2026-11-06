@@ -1738,6 +1738,12 @@ function toggleAudio(i){
     au.playbackRate = RATES[r];
     e.target.textContent = "السرعة " + AR(String(RATES[r].toFixed(2))).replace(".","٫") + "×";
   };
+
+  /* 🆕 b218 · سطورُ المقطع بأسماء قائليها و«⟲ السطر»، والنصُّ بخيار المعلّم (`lines_player.js` · 197 · 198) — إن كُتبت له
+     سطور. يُحمَّل بعد المشغّل فلا يؤخّره، وتعذُّرُه يترك المشغّلَ كما كان */
+  if(isManaged(i.url)) import('./lines_player.js')
+    .then(m => m.attachLines(slot.querySelector('.aud'), au, i))
+    .catch(e => console.warn('[lines]', e));
 }
 
 /* ═══════════ ⑤ ملاحظات المعلم ═══════════ */

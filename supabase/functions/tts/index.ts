@@ -13,6 +13,10 @@
       و`text` المنطوقُ نفسُه — تعرضه اللوحةُ ساعةَ التوليد، ومكانُه الدائم `spoken` في R2 بجوار صوته (189 ②).
       🆕 b216 · **وصوتُ وجه البطاقة:** `{ deck, sentences: [{ text, voice?, spoken? }], context? }` — الردُّ نفسُه بلا صفٍّ في القاعدة: مفتاحُ الصوت
       يعود إلى نموذج البطاقة، وحفظُها هو الاعتماد (`195`).
+      🆕 b219 · **والحوارُ الإنجليزيّ** (مختبر الصوتيّات ٢ · `199` · حكمُ المالك ٦ نوفمبر: «وسّع»): طريقٌ مستقلّ (`dialogue` أدناه) —
+        { dialogue: الدرس, scene?, lines: [{ key, speaker?, text, voice, accent, tone?, prev? }] }   ⇒ { results: [{ key, state, clip, ms, voice }] }
+        { dialogue: الدرس, assemble: { lines: [{ clip, gap?, speaker?, text }], draft? } }          ⇒ { track, ms, lines }
+      وحارسُه `dialogue_problem(lesson)` بهويّة المستدعي قبل الأسرار وأيّ كلفة، ولا تشكيلَ فيه ولا وقف.
 
    🔑 الأسرارُ في Supabase (Edge Functions ← Secrets) لا في المستودع:
         GOOGLE_SA_JSON — مفتاحُ حساب الخدمة بنصّه (JSON): يضعه المالكُ بيده، ولا يُطبع منه شيء
@@ -119,6 +123,74 @@ async function recite(q: any, r: any) {
                      spoken: spans.map((x: any) => x.words).join(' '), voice: { id: 'husary', label: T.quoteLabel(spans) } });
 }
 
+/* 🆕 b219 · الحوارُ الإنجليزيّ (مختبر الصوتيّات ٢ · 199): سطورٌ تُولَّد بأصوات قائليها إلى مجلّد الدرس، أو تُوصل ملفّاً واحداً
+   (`joinClips`) ويُكتب نصُّه بمواضعه ووصفته (`save_track_lines`). والحارسُ قبل الأسرار وقبل أيّ كلفة، كأخيه في النصوص. */
+async function dialogue(req: Request, body: unknown, deadline: number) {
+  const c: any = T.checkDialogue(body);
+  if ('error' in c) return reply(req, c.status, { error: c.error });
+
+  const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, {
+    global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } },
+    auth:   { persistSession: false, autoRefreshToken: false },
+  });
+  const { data: problem, error: denied } = await db.rpc('dialogue_problem', { p_lesson: c.dialogue });
+  if (denied) return reply(req, 403, { error: 'تعذّر التحقّق من الصلاحية', code: denied.code });
+  if (problem) return reply(req, 403, { error: problem });
+
+  const r2 = { accountId: Deno.env.get('R2_ACCOUNT_ID'), accessKeyId: Deno.env.get('R2_ACCESS_KEY_ID'),
+               secretAccessKey: Deno.env.get('R2_SECRET_ACCESS_KEY'), bucket: Deno.env.get('R2_BUCKET') || 'bayan-media' };
+  if (!r2.accountId || !r2.accessKeyId || !r2.secretAccessKey) return reply(req, 500, { error: 'أسرارُ R2 لم تُضبط في الدالّة' });
+  const aws = new AwsClient({ accessKeyId: r2.accessKeyId, secretAccessKey: r2.secretAccessKey, service: 's3', region: 'auto' });
+  const rev = T.revision();
+  const put = (path: string, data: Uint8Array) => aws.fetch(T.r2Url(r2, path), { method: 'PUT', body: data,
+    headers: { 'Content-Type': 'audio/mpeg', 'Cache-Control': 'public, max-age=31536000, immutable', 'If-None-Match': '*' } });
+
+  /* ── الوصل: ملفّاتُ السطور من المخزن بعنوانه العامّ (ولّدتها هذه الدالّة في مجلّد الدرس) ⇐ ملفٌّ واحد ⇐ نصُّه ── */
+  if (c.assemble) {
+    let files: Uint8Array[];
+    try { files = await Promise.all(c.assemble.lines.map((l: any) => media(l.clip.slice(3)))); }
+    catch (e) { return reply(req, 502, { error: `تعذّر جلب ملفّ سطرٍ من المخزن (${(e as Error).message})` }); }
+    const j: any = T.joinClips(c.assemble.lines.map((l: any, k: number) => ({ bytes: files[k], gap: l.gap })));
+    if (j.error) return reply(req, 422, { error: j.error });
+    const tk = T.trackKeys(c.dialogue, rev);
+    try {
+      const res = await put(tk.path, j.bytes);
+      if (!ok(res.status)) return reply(req, 502, { error: `تعذّر حفظ الملفّ الموصول في R2 (${res.status})` });
+    } catch { return reply(req, 502, { error: 'تعذّر الوصول إلى R2' }); }
+    const lines = c.assemble.lines.map((l: any, k: number) =>
+      ({ speaker: l.speaker, text: l.text, start_ms: j.spans[k].start, end_ms: j.spans[k].end }));
+    const { data, error } = await db.rpc('save_track_lines', { p_lesson: c.dialogue, p_track: tk.key, p_lines: lines, p_draft: c.assemble.draft });
+    if (error || !data?.ok) return reply(req, 422, { error: error ? `تعذّر حفظ نصّ الملفّ: ${error.message}` : data.error, track: tk.key });
+    return reply(req, 200, { track: tk.key, ms: j.ms, lines });
+  }
+
+  /* ── التوليد: كلُّ سطرٍ بصوت قائله ولهجته، والمشهدُ والسابقُ توجيه — اثنان معاً (حصّةُ Gemini نحو عشرةٍ في الدقيقة) ── */
+  const sa = T.readServiceAccount(Deno.env.get('GOOGLE_SA_JSON') ?? '');
+  if (!sa) return reply(req, 500, { error: 'مفتاحُ Google لم يُضبط في الدالّة (GOOGLE_SA_JSON)' });
+  let token: string;
+  try { token = await googleToken(sa); }
+  catch (e) { return reply(req, 502, { error: `تعذّر الدخول إلى Google: ${(e as Error).message}` }); }
+  const rows: any[] = await Promise.all(c.lines.map(async (l: any, k: number) => ({ l, k, sha: await T.lineSha(l, c.scene) })));
+  const speak = async (r: any) => {
+    const res = await call(T.TTS.endpoint, token, JSON.stringify(T.dialogueRequest(r.l, c.scene)), deadline);
+    if (res.error) { r.error = res.error; return; }
+    if (!ok(res.status)) { r.error = `تعذّر توليد الصوت: ${T.googleError(res.status, res.json)}`; return; }
+    const a: any = T.readTts(res.json);
+    if ('error' in a) { r.error = a.error; return; }
+    /* الإصدارُ بموضع السطر في الدفعة: سطران متطابقان فيها لا يتنازعان اسماً واحداً (`If-None-Match`) */
+    const key = T.dialogueKeys(c.dialogue, r.sha, rev + r.k.toString(36));
+    try {
+      const p = await put(key.path, a.bytes);
+      if (!ok(p.status)) { r.error = `تعذّر حفظ الملف في R2 (${p.status})`; return; }
+    } catch { r.error = 'تعذّر الوصول إلى R2'; return; }
+    Object.assign(r, { clip: key.key, ms: a.ms });
+  };
+  for (let k = 0; k < rows.length; k += 2) await Promise.all(rows.slice(k, k + 2).map(speak));
+  return reply(req, 200, { results: rows.map((r: any) => r.clip
+    ? { key: r.l.key, state: 'ok', clip: r.clip, ms: r.ms, voice: T.dialogueLabel(r.l) }
+    : { key: r.l.key, state: 'error', error: r.error ?? 'لم يُولَّد الصوت' }) });
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(req) });
   if (req.method !== 'POST') return reply(req, 405, { error: 'POST وحده' });
@@ -127,6 +199,8 @@ Deno.serve(async (req) => {
   /* شكلُ الطلب أوّلاً — لا سرَّ فيه — لأنّ الحارسَ يسأل عن النصّ بعينه */
   let body: unknown;
   try { body = await req.json(); } catch { return reply(req, 400, { error: 'جسمُ الطلب ليس JSON' }); }
+  /* 🆕 b219 · والحوارُ طريقُه وحده (أعلاه) */
+  if ((body as any)?.dialogue != null) return dialogue(req, body, deadline);
   const c: any = T.checkRequest(body);
   if ('error' in c) return reply(req, c.status, { error: c.error });
 

@@ -257,6 +257,27 @@ export const setCardVoices = (deck, rows) => db.rpc('set_card_voices', { p_deck:
 /* والاعتمادُ وإلغاؤه لجملٍ ببصماتها (189 ⑤): ⇒ { ok, count, missing } — وإعادةُ التوليد تُسقطه في القاعدة */
 export const approveVoices = (id, shas, ok = true) => db.rpc('approve_voice', { p_item: id, p_shas: shas, p_ok: ok });
 
+/* 🆕 b218 · سطورُ المقطع الصوتيّ (197 · مختبر الصوتيّات ١): النصُّ بمفتاح ملفّه لا بموضعه، واللوحةُ ومشغّلُ الطالب نداءٌ
+   واحد بالمصدر (198 ②): البنيةُ لمن يقرأ المقطع، والنصُّ بخيار المعلّم وللمعلّمين دائماً — والقراءةُ المباشرة مغلقة، فلا يصل
+   نصٌّ لم يُؤذن به ⇒ { data: { ok, script, lang, reveal, text, lines: [{ n, speaker, start_ms, end_ms, text? }] }, error }.
+   و`lang` يعطي صفَّ السطور اتّجاهَه: الإنجليزيُّ يُقرأ من اليسار — القائلُ ثمّ كلامُه — كما يجري شريطُ المشغّل. */
+export const itemLines = item => db.rpc('item_lines', { p_item: item });
+/* [{ speaker, text, start_ms, end_ms }] بترتيبها — تُستبدل كلُّها، والفراغُ يمحو النصّ (197 ③) ⇒ { ok, lines } أو { ok: false, error } */
+export const saveItemLines = (item, lines) => db.rpc('save_item_lines', { p_item: item, p_lines: lines });
+/* كشفُ النصّ للطالب — never · after · open (198 ③، والأوّلُ الافتراض) ⇒ { ok, reveal } أو { ok: false, error } */
+export const setAudioReveal = (item, reveal) => db.rpc('set_audio_reveal', { p_item: item, p_reveal: reveal });
+
+/* 🆕 b219 · الحوارُ المولَّد (199 · مختبر الصوتيّات ٢): السطورُ تُولَّد في الدالّة tts بأصوات قائليها إلى مجلّد الدرس، ثمّ تُوصل
+   ملفّاً واحداً يُكتب نصُّه بوصفته — والحارسُ `dialogue_problem(lesson)` في الدالّة قبل أيّ كلفة.
+   ⇒ { data: { results: [{ key, state: 'ok'|'error', clip?, ms?, voice?, error? }] }, error } */
+export const dialogueVoices = (lesson, scene, lines) => invokeTts({ dialogue: lesson, scene, lines });
+/* ⇒ { data: { track, ms, lines: [{ speaker, text, start_ms, end_ms }] }, error } */
+export const assembleDialogue = (lesson, lines, draft) => invokeTts({ dialogue: lesson, assemble: { lines, draft } });
+/* مسوّدةُ الحوار لكلّ مؤلّفٍ في كلّ درس (199 ②)، ووصفةُ الحوار الذي في المصدر (199 ③) */
+export const dialogueDraft     = lesson          => db.rpc('dialogue_draft',      { p_lesson: lesson });
+export const saveDialogueDraft = (lesson, draft) => db.rpc('save_dialogue_draft', { p_lesson: lesson, p_draft: draft });
+export const trackDraft        = item            => db.rpc('track_draft',         { p_item: item });
+
 /* 🆕 b164 · القراءة الجهرية (sql/174) — أيُطلب في هذا النصّ؟ ومعه قراءاتي السابقة.
    والشرطُ في القاعدة وحدها (`reading_aloud_subject`): يقرؤه `my_reading` ليظهر
    الزرّ، و`start_reading` ليُصدر المسار — فلا زرٌّ يُردّ طلبُه. */

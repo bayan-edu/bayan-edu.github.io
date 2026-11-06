@@ -65,6 +65,9 @@ globalThis.fetch = async (url, init) => {
   if(url.startsWith(MEDIA)){
     const path = url.slice(MEDIA.length);
     log.media.push(path);
+    /* 🆕 b219 · ملفّاتُ سطور الحوار: ما وُلّد في القياس (`__clips`) أو ملفٌّ مصنوع، وما سُمّي «missing» غائب */
+    if(path.startsWith('voice/dialogues/')) return path.includes('missing') ? new Response('nope', { status: 404 })
+      : new Response(globalThis.__clips?.[path] ?? mp3, { status: 200 });
     if(plan.noData && path.startsWith('quran/tanzil/')) return new Response('missing', { status: 404 });
     if(path === 'quran/tanzil/quran-uthmani.txt') return new Response(FX.tanzil.join('\n'), { status: 200 });
     if(path === 'quran/align/Husary_64kbps.json') return json(FX.timing);
@@ -91,6 +94,8 @@ globalThis.__db = (url, key, opts) => ({
     log.db.push({ fn, args }); log.dbAuth.push(opts?.global?.headers?.Authorization);
     if(fn === 'voice_problem' || fn === 'card_voice_problem') return plan.denied ? { data: null, error: plan.denied } : { data: plan.problem, error: null };
     if(fn === 'save_voice') return { data: plan.save ?? { ok: true, sha: 'x' }, error: null };
+    if(fn === 'dialogue_problem') return plan.denied ? { data: null, error: plan.denied } : { data: plan.problem, error: null };
+    if(fn === 'save_track_lines') return { data: plan.track ?? { ok: true, script: 9 }, error: null };
     return { data: null, error: { message: 'unexpected rpc ' + fn } };
   }
 });
@@ -318,6 +323,67 @@ const ttsCalls = () => log.google.filter(c => c.url.includes('texttospeech')).ma
   reset();
   const both = await call({ item: 603, deck: 12, sentences: [{ text: 'جملة.' }] });
   ok('وطلبٌ لنصٍّ ومجموعةٍ معاً يُردّ قبل الحارس', both.status === 400 && log.db.length === 0, show(log.db));
+}
+
+/* ⑧ 🆕 b219 · الحوارُ الإنجليزيّ (مختبر الصوتيّات ٢ · 199): الحارسُ قبل الكلفة · التوليدُ إلى مجلّد الدرس · والوصلُ ونصُّه */
+{
+  const L1 = { key: 'r1', speaker: 'Sara', text: 'Hi Tom!', voice: 'leda', accent: 'en-GB', tone: 'cheerful' };
+  const L2 = { key: 'r2', speaker: 'Tom', text: 'Hey!', voice: 'puck', accent: 'en-US', prev: 'Hi Tom!' };
+
+  reset();
+  const bad1 = await call({ dialogue: 10, lines: [{ ...L1, voice: 'iapetus' }] });
+  ok('الحوار: صوتٌ مجهول يُردّ قبل الحارس وبلا كلفة', bad1.status === 400 && log.db.length === 0 && log.google.length === 0, show(log));
+
+  reset({ problem: 'لا صلاحية لك على هذه المادة' });
+  const denied = await call({ dialogue: 10, lines: [L1] });
+  ok('الحوار: الحارسُ بهويّة المستدعي يردّ قبل Google وR2', denied.status === 403 && (await denied.json()).error === 'لا صلاحية لك على هذه المادة'
+     && log.db[0].fn === 'dialogue_problem' && log.db[0].args.p_lesson === 10 && log.dbAuth[0] === 'Bearer user-jwt'
+     && log.google.length === 0 && log.r2.length === 0, show(log.db));
+
+  reset();
+  const gen = await (await call({ dialogue: 10, scene: 'Two friends at a café', lines: [L1, L2, { ...L1, key: 'r3' }] })).json();
+  const said = ttsCalls();
+  ok('الحوار: ثلاثةُ سطورٍ بثلاثة طلباتٍ بأصواتها ولهجاتها، والنصُّ وحده يُقرأ', said.length === 3
+     && said[0].voice.name === 'Leda' && said[0].voice.languageCode === 'en-GB' && said[1].voice.name === 'Puck' && said[1].voice.languageCode === 'en-US'
+     && said.every(x => x.voice.model_name === T.EN.model && x.audioConfig.sampleRateHertz === 24000)
+     && said[0].input.text === 'Hi Tom!' && said[0].input.prompt.includes('Scene: Two friends at a café') && said[1].input.prompt.includes('"Hi Tom!"'), show(said));
+  ok('الحوار: الملفّاتُ في مجلّد الدرس بلا طمس، والسطران المتطابقان لا يتنازعان اسماً',
+     log.r2.length === 3 && log.r2.every(x => x.url.includes('/voice/dialogues/l10/') && x.init.headers['If-None-Match'] === '*')
+     && new Set(log.r2.map(x => x.url)).size === 3, show(log.r2.map(x => x.url)));
+  ok('الحوار: النتائجُ بمفاتيح السطور ومدّتها، ولا صفَّ في القاعدة', gen.results.map(r => r.key).join() === 'r1,r2,r3'
+     && gen.results.every(r => r.state === 'ok' && /^r2:voice\/dialogues\/l10\/[0-9a-f]{16}\.[a-z0-9]{1,16}\.mp3$/.test(r.clip) && r.ms === 2400)
+     && gen.results[0].voice === 'gemini-2.5-flash-tts · en-GB · Leda' && !log.db.some(x => x.fn === 'save_voice' || x.fn === 'save_track_lines'), show(gen));
+
+  reset({ tts429: 1 });
+  const retry = await (await call({ dialogue: 10, lines: [L1] })).json();
+  ok('الحوار: ردُّ الحصّة (429) يُعاد', retry.results[0].state === 'ok' && ttsCalls().length === 2, show(retry));
+
+  /* الوصل: ملفّا السطرين كما وُلّدا (مئةُ إطارٍ لكلٍّ ⇒ ٢٤٠٠) ووقفةُ ٤٠٠ ⇐ ١٧ إطاراً صامتاً (٤٠٨) */
+  reset();
+  globalThis.__clips = {};
+  const asm = await (await call({ dialogue: 10, assemble: { lines: [
+    { clip: gen.results[0].clip, text: 'Hi Tom!', speaker: 'Sara' }, { clip: gen.results[1].clip, gap: 400, text: 'Hey!', speaker: 'Tom' } ],
+    draft: { scene: 'Two friends at a café', base: null, cast: [], lines: [] } } })).json();
+  ok('الوصل: الملفّان من المخزن بعنوانه العامّ، والملفُّ الموصول في مجلّد الدرس', log.media.length === 2 && log.media.every(p => p.startsWith('voice/dialogues/l10/'))
+     && log.r2.length === 1 && /\/voice\/dialogues\/l10\/track\.[a-z0-9]+\.mp3$/.test(log.r2[0].url) && asm.track === 'r2:' + log.r2[0].url.split('/bayan-media/')[1], show(asm));
+  ok('الوصل: المواضعُ بالإطارات والطولُ مجموعُها', show(asm.lines.map(l => [l.start_ms, l.end_ms])) === show([[0, 2400], [2808, 5208]]) && asm.ms === 5208, show(asm));
+  const st = log.db.find(x => x.fn === 'save_track_lines');
+  ok('الوصل: نصُّه بوصفته بهويّة المستدعي', st && st.args.p_lesson === 10 && st.args.p_track === asm.track && st.args.p_lines.length === 2
+     && st.args.p_draft.scene === 'Two friends at a café' && log.dbAuth.every(a => a === 'Bearer user-jwt'), show(st));
+  ok('الوصل: لا Google ولا سرّه', log.google.length === 0);
+
+  reset();
+  const miss = await call({ dialogue: 10, assemble: { lines: [{ clip: 'r2:voice/dialogues/l10/0123456789abcdef.missing.mp3', text: 'A' }] } });
+  ok('الوصل: ملفُّ سطرٍ غائب يُقال ولا يُرفع شيء', miss.status === 502 && log.r2.length === 0, show(await miss.json()));
+
+  reset({ track: { ok: false, error: 'لهذا الملف نصٌّ من قبل، والملف لا يُطمس' } });
+  const dup = await call({ dialogue: 10, assemble: { lines: [{ clip: gen.results[0].clip, text: 'A' }] } });
+  const dj = await dup.json();
+  ok('الوصل: ردُّ القاعدة يعود بسببه ومعه مفتاحُ الملفّ', dup.status === 422 && dj.error === 'لهذا الملف نصٌّ من قبل، والملف لا يُطمس' && /^r2:voice\/dialogues\/l10\/track\./.test(dj.track), show(dj));
+
+  reset();
+  const other = await call({ dialogue: 10, assemble: { lines: [{ clip: 'r2:voice/dialogues/l11/0123456789abcdef.x.mp3', text: 'A' }] } });
+  ok('الوصل: ملفُّ درسٍ آخر يُردّ قبل الحارس', other.status === 400 && log.db.length === 0 && log.media.length === 0);
 }
 
 console.log(`\n${n - bad}/${n}${bad ? ' — فشل' : ''}`);

@@ -264,6 +264,8 @@ function form(item, official, ro){
     if(!ro) attachTidy('bo');
     /* 🆕 b203 · صوتُ النصّ تحت محدِّد السور (`attachVoice`) — لمن يحرّر، والحارسُ في الدالّة لا هنا */
     if(!ro && k.needs === 'body') attachVoice('bo', item, ayat);
+    /* 🆕 b218 · سطورُ المقطع الصوتيّ تحت حقل رابطه (`attachLines` · 197) — لمن يحرّر، والحارسُ في القاعدة لا هنا */
+    if(!ro && k.code === 'audio') attachLines('ur', item);
     app.querySelectorAll("[data-k]").forEach(el => el.onclick = () => {
       if(!isNew) return;                    // النمط لا يتغيّر بعد الإنشاء
       k = kind(el.dataset.k); draw();
@@ -436,6 +438,21 @@ function attachVoice(id, item, ayat){
     if(near === lastTool(inp) && near.nextElementSibling?.classList.contains("tp")) near = near.nextElementSibling;
     near.insertAdjacentElement("afterend", vp.el);
   })).catch(e => console.error(e));
+}
+
+/* 🆕 b218 · سطورُ المقطع الصوتيّ (`lines_panel.js` · مختبر الصوتيّات، الخطوة ١): تحت حقل الرابط وزرِّ رفعه، كما توضع لوحةُ
+   صوت النصّ تحت مربّعه. **وتعذُّرُ تحميلها لا يمسّ المقطعَ ولا حفظَه:** اللوحةُ لا تكتب في الحقل، والسطورُ في جدولها (197). */
+function attachLines(id, item){
+  const inp = document.getElementById(id);
+  /* 🆕 b219 · ومعها «حوار يُولَّد» (`dialogue_panel.js` · 199): يُبنى في الدرس ولو لم يُحفظ المصدرُ بعد — والتجميعُ يملأ هذا الحقل */
+  Promise.all([import('./lines_panel.js'), import('./dialogue_panel.js')]).then(([m, dm]) => {
+    if(!inp?.isConnected) return;                    // غادر المعلّمُ قبل التحميل
+    const lp = m.linesPanel({ field: inp, item });
+    const dp = dm.dialoguePanel({ field: inp, item, lesson: ctx.lesson?.id });
+    const up = inp.nextElementSibling?.classList.contains('mf') ? inp.nextElementSibling : inp;
+    up.insertAdjacentElement('afterend', lp.el);
+    lp.el.insertAdjacentElement('afterend', dp.el);
+  }).catch(e => console.error(e));
 }
 
 /* 🆕 b191 · والكتابُ نفسُه يخدم شاشةَ الاستيراد (معاينةُ كلّ نصٍّ في خطّة «نصوص القراءة») —

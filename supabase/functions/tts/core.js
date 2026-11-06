@@ -571,3 +571,130 @@ export function backoffMs(attempt, retryAfter){
 export const googleError = (status, json, text = '') =>
   `${status} ${json?.error?.status || ''} ${json?.error?.message || String(text).slice(0, 200)}`
     .replace(/https?:\/\/\S+/g, '').replace(/\s+/g, ' ').trim();
+
+/* ══ الحوار الإنجليزيّ — مختبر الصوتيّات، الخطوة ٢ (🆕 b219 · 199) ══════════════════════════════
+   حكمُ المالك (٦ نوفمبر): «وسّع» — الغرضُ الرابع للدوالّ الطرفيّة يشمل سطورَ الاستماع الإنجليزيّة للمؤلّفين (AGENTS §٠).
+   🔑 **سطراً سطراً لا طلباً واحداً:** طلبُ Google الواحد يتّسع لمتحدّثَين اثنين (قُرئت صفحتُه ٦ نوفمبر)، والحوارُ يكون بثلاثة.
+      فكلُّ سطرٍ بصوت قائله ونبرته، والمشهدُ والسطرُ قبله توجيهٌ له لا كلامٌ يُقرأ (`input.prompt`) — فيُعاد سطرٌ وحده بنبرةٍ أخرى.
+   🔑 **ثمّ تُوصل السطورُ ملفّاً واحداً بإطاراتها كما هي** (`joinClips`) وصمتٌ محسوبٌ بينها: قِيست مقاطعُ Gemini وChirp في R2
+      (٦ نوفمبر) فإذا هي صيغةٌ واحدة — MPEG-2 · ٢٤ ك.هرتز · قناةٌ واحدة · ٣٢ ك.ب/ث ثابتة · بلا Xing — والصمتُ إطاراتٌ بترويستها
+      نفسِها (`silentFrame`)، فيبقى الملفُّ الموصولُ ثابتَ المعدّل: يعرف المتصفّحُ طولَه ويقفز إلى السطر بدقّة. ولا إعادةَ ترميز.
+   🔑 **ولا تشكيلَ ولا وقف** — ذاك للعربيّة. والأصواتُ أصواتُ Gemini الجاهزة باللهجة المختارة، ويختارها المعلّمُ بأذنه في اللوحة
+      (`DIALOGUE_VOICES` في audio_lines.js نسختُها للعرض، والقياسُ يفحص أنّهما واحد).
+   📁 والملفّاتُ في مجلّد الدرس (`voice/dialogues/l{الدرس}/`): لا يكتب فيه متصفّح (`r2-sign` يوقّع `audio/` و`img/` وحدهما) — فما فيه
+      ولّدته هذه الدالّة. والحارسُ `dialogue_problem(lesson)` (199) قبل أيّ كلفة. */
+export const EN = Object.freeze({
+  model: 'gemini-2.5-flash-tts',
+  sampleRate: 24000,
+  accents: Object.freeze(['en-US', 'en-GB', 'en-IN', 'en-AU']),
+  voices: Object.freeze({ kore: 'Kore', leda: 'Leda', aoede: 'Aoede', sulafat: 'Sulafat',
+                          puck: 'Puck', charon: 'Charon', fenrir: 'Fenrir', achird: 'Achird' }),
+  limits: Object.freeze({ lines: 5, text: 1000, speaker: 40, scene: 600, tone: 200, clips: 60, gap: 5000, key: 40 })
+});
+export const dialogueScope = lesson => `voice/dialogues/l${lesson}`;
+const CLIP_RX = /^r2:voice\/dialogues\/l(\d+)\/[0-9a-f]{16}\.[a-z0-9]{1,16}\.mp3$/;
+const oneLine = (v, max) => { const s = String(v ?? '').replace(/\s+/g, ' ').trim(); return s && [...s].length <= max ? s : null; };
+
+/* { dialogue: الدرس, scene?, lines: [{ key, speaker?, text, voice, accent, tone?, prev? }] }   ⇐ توليدُ خمسة سطورٍ على الأكثر
+   { dialogue: الدرس, assemble: { lines: [{ clip, gap?, speaker?, text }], draft? } }          ⇐ وصلُ الحوار ملفّاً واحداً
+   ⇒ الطلبُ منقّى، أو { error, status } */
+export function checkDialogue(body){
+  const lesson = Number(body?.dialogue);
+  if(!Number.isSafeInteger(lesson) || lesson < 1) return fail('رقم الدرس غير صالح');
+  const L = EN.limits;
+  if(body.assemble != null){
+    const list = body.assemble?.lines;
+    if(!Array.isArray(list) || !list.length) return fail('لا سطور للتجميع');
+    if(list.length > L.clips) return fail('الحوار ستون سطراً على الأكثر');
+    const lines = [];
+    for(const l of list){
+      const clip = String(l?.clip ?? ''), m = clip.match(CLIP_RX);
+      if(!m || Number(m[1]) !== lesson) return fail('ملف سطرٍ ليس في مجلد هذا الدرس، أو لم يُولَّد بعد');
+      const gap = l?.gap == null ? 0 : Number(l.gap);
+      if(!Number.isInteger(gap) || gap < 0 || gap > L.gap) return fail('الوقفة قبل السطر غير صالحة');
+      const text = oneLine(l?.text, L.text);
+      if(!text) return fail('سطرٌ بلا نص، أو أطول من ١٠٠٠ حرف');
+      const speaker = l?.speaker == null || l.speaker === '' ? null : oneLine(l.speaker, L.speaker);
+      if(l?.speaker && !speaker) return fail('اسم المتحدث أطول من ٤٠ حرفاً');
+      lines.push({ clip, gap, speaker, text });
+    }
+    const draft = body.assemble.draft && typeof body.assemble.draft === 'object' ? body.assemble.draft : null;
+    return { dialogue: lesson, assemble: { lines, draft } };
+  }
+  const list = body?.lines;
+  if(!Array.isArray(list) || !list.length) return fail('لا سطور في الطلب');
+  if(list.length > L.lines) return fail('الدفعة خمسة سطور على الأكثر');
+  const scene = body?.scene == null || body.scene === '' ? '' : oneLine(body.scene, L.scene);
+  if(scene === null) return fail('المشهد أطول من ٦٠٠ حرف');
+  const lines = [];
+  for(const l of list){
+    const key = oneLine(l?.key, L.key);
+    if(!key) return fail('مفتاح السطر غائب');
+    const text = oneLine(l?.text, L.text);
+    if(!text) return fail('سطرٌ بلا نص، أو أطول من ١٠٠٠ حرف');
+    if(!Object.hasOwn(EN.voices, String(l?.voice))) return fail('الصوت غير معروف');
+    if(!EN.accents.includes(l?.accent)) return fail('اللهجة غير معروفة');
+    const speaker = l?.speaker == null || l.speaker === '' ? null : oneLine(l.speaker, L.speaker);
+    if(l?.speaker && !speaker) return fail('اسم المتحدث أطول من ٤٠ حرفاً');
+    const tone = l?.tone == null || l.tone === '' ? null : oneLine(l.tone, L.tone);
+    if(l?.tone && !tone) return fail('النبرة أطول من ٢٠٠ حرف');
+    const prev = l?.prev == null || l.prev === '' ? null : String(l.prev).replace(/\s+/g, ' ').trim().slice(-300) || null;
+    lines.push({ key, speaker, text, voice: l.voice, accent: l.accent, tone, prev });
+  }
+  return { dialogue: lesson, scene, lines };
+}
+
+/* التوجيهُ: ما يُقرأ هو `text` وحده بحرفه، والتوجيهُ قصير — فالتوجيهُ الطويل أكثرُ ما يُزيغ الصوت (صفحةُ Google) */
+export function dialoguePrompt(l, scene = ''){
+  return ['Read the text aloud exactly as written, as natural spoken English in a short listening dialogue for school students.',
+          scene ? `Scene: ${scene}` : '', l.speaker ? `You are ${l.speaker}.` : '', l.prev ? `You are replying to: "${l.prev}"` : '',
+          l.tone ? `Delivery: ${l.tone}.` : 'Delivery: natural conversational pace.'].filter(Boolean).join(' ');
+}
+export const dialogueRequest = (l, scene = '') => ({
+  input: { prompt: dialoguePrompt(l, scene), text: l.text },
+  voice: { languageCode: l.accent, name: EN.voices[l.voice], model_name: EN.model },
+  audioConfig: { audioEncoding: 'MP3', sampleRateHertz: EN.sampleRate }
+});
+export const dialogueLabel = l => `${EN.model} · ${l.accent} · ${EN.voices[l.voice]}`;
+/* بصمةُ السطر بما يغيّر صوتَه — واسمُ ملفّه بها وبالإصدار، فالمعادُ ملفٌّ جديدٌ لا يُطمس به قائم */
+export const lineSha = (l, scene = '') => sentenceSha(JSON.stringify([l.text, l.speaker, l.voice, l.accent, l.tone, l.prev, scene]));
+export function dialogueKeys(lesson, sha, rev){
+  const path = `${dialogueScope(lesson)}/${sha}.${rev}.mp3`;
+  return { path, key: `r2:${path}` };
+}
+export function trackKeys(lesson, rev){
+  const path = `${dialogueScope(lesson)}/track.${rev}.mp3`;
+  return { path, key: `r2:${path}` };
+}
+
+/* إطارُ صمتٍ بصيغة إطارٍ مرجع: الترويسةُ نفسُها (الإصدار · المعدّل · التردّد · القناة) بلا CRC ولا حشو، والمعلوماتُ الجانبيّة أصفار —
+   `part2_3_length = 0` فلا بيانات طيفيّة ⇒ يُفكّ أصفاراً. ⇒ { bytes, dur } */
+export function silentFrame(h){
+  const ver = (h[1] >> 3) & 3, bri = h[2] >> 4, sri = (h[2] >> 2) & 3;
+  const sr = RATES[ver][sri], spf = ver === 3 ? 1152 : 576;
+  const f = new Uint8Array(Math.floor(spf / 8 * KBPS[ver === 3 ? 1 : 2][bri] * 1000 / sr));
+  f[0] = 0xFF; f[1] = h[1] | 1; f[2] = (bri << 4) | (sri << 2); f[3] = h[3] & 0xC0;
+  return { bytes: f, dur: spf * 1000 / sr };
+}
+/* السطورُ ملفٌّ واحد: [{ bytes, gap }] — والوقفةُ قبل السطر لا بعده، ولا وقفةَ قبل الأوّل ⇒ { bytes, ms, spans: [{ start, end }] }
+   أو { error } لملفٍّ بلا إطارات أو بصيغةٍ تخالف الأوّل (فالوصلُ يُفسد ما بعده) */
+export function joinClips(list){
+  const parts = list.map(c => ({ c, f: mp3Frames(c.bytes) }));
+  if(!parts.length || parts.some(p => !p.f.length)) return { error: 'ملف سطرٍ بلا إطارات صوت' };
+  const head = p => p.c.bytes.subarray(p.f[0].off, p.f[0].off + 4);
+  const ref = head(parts[0]), fmt = h => [(h[1] >> 3) & 3, h[2] >> 4, (h[2] >> 2) & 3, (h[3] >> 6) & 3].join();
+  if(parts.some(p => fmt(head(p)) !== fmt(ref))) return { error: 'السطور بصيغ صوتٍ مختلفة فلا تُوصل' };
+  const sil = silentFrame(ref), chunks = [], spans = [];
+  let t = 0;
+  parts.forEach((p, k) => {
+    const n = k ? Math.round((p.c.gap || 0) / sil.dur) : 0;
+    for(let j = 0; j < n; j++){ chunks.push(sil.bytes); t += sil.dur; }
+    const start = t;
+    for(const x of p.f){ chunks.push(p.c.bytes.subarray(x.off, Math.min(x.off + x.len, p.c.bytes.length))); t += x.dur; }
+    spans.push({ start: Math.round(start), end: Math.round(t) });
+  });
+  const bytes = new Uint8Array(chunks.reduce((n, c) => n + c.length, 0));
+  let at = 0;
+  for(const c of chunks){ bytes.set(c, at); at += c.length; }
+  return { bytes, ms: Math.round(t), spans };
+}

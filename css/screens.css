@@ -1319,6 +1319,34 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
 .vp-grp{margin:0 0 6px;color:var(--text-muted);line-height:1.9}
 .vp-part{padding-inline-start:12px;border-inline-start:2px solid var(--line)}
 .vp-ref{margin:0 0 6px;color:var(--text-muted)}
+/* 🆕 b218 · سطورُ المقطع الصوتيّ (lines_panel.js · 197): لوحةٌ على هيئة لوحة صوت النصّ (.vp) تحت حقل الرابط. والسطرُ الجاري
+   بلون «المضغوط» نفسِه (.vp-tn[aria-pressed]) — لا لونَ جديد. وزرُّ النقرة أعرضُ الأزرار: يُضغط وهو يُسمع، والعينُ على النصّ */
+.al-tx{min-height:110px}
+.al-au{width:100%;height:40px;display:block;margin:8px 0 2px;color-scheme:light dark}
+.al-how{margin-top:6px}
+.al-mk{padding:9px 24px;font-weight:700}
+.al-rows{list-style:none;margin:6px 0 2px;padding:0}
+.al-row{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 10px;padding:7px 8px;border-top:1px solid var(--line);border-radius:8px}
+.al-row.on{background:var(--accent-fill);box-shadow:inset 0 0 0 1px var(--accent-edge)}
+.al-n{min-width:1.6em;color:var(--text-muted);font-variant-numeric:tabular-nums}
+.al-who{font-family:'Almarai';font-weight:700}
+.al-t{flex:1 1 220px;min-width:0;line-height:1.8;overflow-wrap:anywhere}
+.al-at{color:var(--text-muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.al-ctl{display:flex;gap:4px;flex-wrap:wrap}
+.al-ctl .vp-tn{padding:3px 10px}
+/* خيارُ كشف النصّ للطالب (198) — سطرٌ أخيرٌ في اللوحة: يُختار بعد حفظ السطور */
+.al-rv{margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+.al-rv .vp-fixl{margin:0}
+/* 🆕 b219 · حوارٌ يُولَّد (dialogue_panel.js · 199): هيئةُ لوحة السطور نفسُها — المتحدّثون صفوفٌ (اسمٌ · صوتٌ · لهجة)، ولكلّ سطرٍ نبرتُه
+   ووقفتُه قبله وحالُه. والرأسُ يحمل زرَّ البناء في طرفه: اللوحةُ مطويّةٌ ما لم تكن مسوّدةٌ أو وصفة */
+.dg-open{margin-inline-start:auto}
+.dg-body{margin-top:6px}
+.dg-c{margin:4px 0}
+.dg-c .dg-name{width:auto;flex:1 1 140px;margin:0}
+.dg-row .al-ctl{align-items:center}
+.dg-row .dg-tone{width:9.5em;margin:0;padding:3px 8px}
+.dg-row .dg-gap{flex:none;width:auto;min-width:0;padding:3px 6px}
+.dg-row .vp-rn{flex-basis:100%;margin:2px 0 0}
 /* 🆕 b189 · معاينةُ النصّ كما يراه الطالب (`openPreview`) — شاشةٌ كاملةٌ بلون الصفحة: الكتابُ
    يقيس الشاشةَ ليملأها. وتحت الإشعار (٥٩ < ٦٠) ليُرى ما يقوله الكتابُ فوقها. */
 html.pv-lock{overflow:hidden}
@@ -2141,6 +2169,24 @@ html.pv-lock{overflow:hidden}
 .aud-b:hover{border-color:var(--accent);color:var(--accent)}
 .aud-note{font-size:var(--fs-meta);color:var(--text-muted)}
 .aud-err{font-size:var(--fs-meta);color:var(--danger-text)}
+/* 🆕 b218 · نصُّ المقطع تحت المشغّل (lines_player.js · 197): أسماءُ القائلين ظاهرةٌ والنصُّ مطويٌّ حتى يُكشف — الاستماعُ
+   أوّلاً. والسطرُ الجاري بلون «المضغوط» نفسِه كلوحة المعلّم، وزرُّ السطر دائرةٌ تكفي الإبهام */
+.al-pl{margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
+.al-plh{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;margin-bottom:6px}
+.al-plt{font-family:'Almarai';font-weight:800}
+.al-hint{flex:1 1 auto;font-size:var(--fs-meta);color:var(--text-muted)}
+.al-pls{list-style:none;margin:0;padding:0}
+.al-pli{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:9px}
+.al-pli.on{background:var(--accent-fill);box-shadow:inset 0 0 0 1px var(--accent-edge)}
+.al-plb{flex:none;width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--surface);
+ color:var(--text);font-size:.8rem;line-height:1;cursor:pointer}
+.al-plb:hover{border-color:var(--accent);color:var(--accent)}
+.al-plb:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.al-plb.off{border-style:dashed;background:none;cursor:default}
+.al-pl .al-t{flex:1 1 auto;min-width:0;line-height:1.8;overflow-wrap:anywhere}
+.al-pl:not([data-show]) .al-t{display:none}
+.al-pl[data-show] .al-gap{display:none}
+.al-gap{color:var(--text-muted)}
 
 /* ══ المحاكاة التفاعلية داخل الدرس (b57) ══
    .sim.full تُحرّك نفس عنصر DOM إلى ملء الشاشة بـCSS وحده — لا يُعاد
