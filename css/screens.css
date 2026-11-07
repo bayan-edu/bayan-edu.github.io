@@ -1075,6 +1075,13 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
 .ed-row{display:flex;align-items:center;gap:12px;cursor:pointer;
   background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);
   border-radius:12px;padding:13px 15px;margin-bottom:8px;transition:border-color .18s}
+/* 🆕 b224 · «هنا توقّفت» — آخرُ بطاقةٍ فُتح نموذجُها (`LAST` · editor_cards.js).
+   🔑 **ولا عائلةَ معنى:** الصفُّ لا يقول «اخترتَ» ولا حكماً — هو وسمُ تنقّل، والوسومُ محايدة (الهويّة البصريّة ①).
+      ⇒ حبرُ النصّ الخافت إطاراً: **٧٫٦٣ على السطح في الفاتحة و٦٫٠٠ في الداكنة**، والحدُّ المعتاد ١٫٤٩ و١٫٤٦ —
+      فيُرى بلمحة ولا يلبس لوناً. والشارةُ في الصفّ تقول معناه، فالإطارُ لا يحمله وحده.
+   📌 وقبل `:hover` عمداً: المرورُ يبقى أزرقَ التفاعل عليه كغيره. و`.on` (المحدَّد في الوسم) بعدهما يغلب —
+      التحديدُ عملٌ جارٍ، والعلامةُ ذكرى. */
+.ed-row.last{border-color:var(--text-muted)}
 .ed-row:hover{border-color:var(--accent)}
 /* صفٌّ لا يُفتح — كبطاقة «مصادر فقط»: حدٌّ متقطّع يقول «مرئيٌّ لا مملوك» */
 .ed-row.ro{cursor:default;border-style:dashed;border-color:var(--line-strong)}
@@ -1211,6 +1218,21 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
 .ed-fstat{flex:0 0 auto;white-space:nowrap;
   font-size:var(--fs-tag);color:var(--text-muted)}
 .ed-filter .it-b:disabled{opacity:.45;cursor:default}
+
+/* 🆕 b225 · صفحاتُ البطاقات (`pager()` · editor_cards.js).
+   🔑 **ولا لونَ جديد:** الأزرارُ `.it-b` المحايدة، والصفحةُ الحاضرة وصفةُ `.it-k.on` بعينها — `accent` «اخترتَ»:
+      هي اختيارُ المؤلّف. والمدى («١–٢٠ من ٣٩٧») بخطّ `.ed-fstat` الخافت: معلومةٌ لا أمر.
+   📌 والترويسةُ صفٌّ يلتفّ: اسمُ المجموعة في صدره والشريطُ في طرفه، فلا يزيد الشاشةَ سطراً حيث يتّسع لهما —
+      وارتفاعُ نافذة المالك ٥٧٤px. و`scroll-margin-top` يُنزل إليها تحت الشريط العلويّ اللاصق لا خلفَه. */
+.cd-head{display:flex;align-items:center;justify-content:space-between;gap:10px 16px;flex-wrap:wrap;
+  margin:4px 0 12px;scroll-margin-top:calc(var(--barh) + 14px)}
+.cd-head .grp{margin:0}
+.cd-pg{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+#pgBot .cd-pg{justify-content:center;margin-top:16px}
+.cd-pg .it-b{min-width:36px}
+.cd-pg .it-b[aria-current="page"]{border-color:var(--accent);background:var(--accent-fill);color:var(--accent)}
+.cd-gap{color:var(--text-muted);padding:0 2px}
+.cd-rng{font-size:var(--fs-tag);color:var(--text-muted);white-space:nowrap;margin-inline-start:6px}
 
 /* 🆕 b129 · مُنتقٍ متعدّد في المحرّر — مربّعاتٌ لا قائمةُ اختيارٍ
    متعدّدة: تلك تحتاج Ctrl للنقر، ونقرةٌ واحدةٌ خاطئة تمحو الاختيار

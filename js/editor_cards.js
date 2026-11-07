@@ -51,6 +51,28 @@ let F = { q: '', lesson: '', strand: '', flag: '', sort: 'pos' };
    مع كلّ وسمٍ وتصفية، والتوليدُ يمضي عشرَ دقائق، فلوحتُه تُبنى من حاله أينما عاد المؤلّف إلى مجموعته. */
 let VR = null;
 
+/* 🆕 b224 · وموضعُ المؤلّف في القائمة يسكن هنا للعلّة نفسِها — طلبُ المالك (٧ نوفمبر) بلقطةٍ من ٣٩٧ بطاقة.
+   🔴 **وكانت كلُّ عودةٍ تمرّ بـ`openDeck`:** تُفرغ المِصفاةَ والبحثَ والترتيب، وتصعد إلى أوّل القائمة. فمراجعةُ
+      ٣٩٧ صوتاً من نماذجها (لوحةُ «أصوات المجموعة» تطلبها) بحثٌ عن الموضع ٣٩٧ مرّة — **قِيس قبل التعديل:** مِصفاةُ
+      ٤٤ بطاقة ⇐ ٣٩٧ بلا مِصفاة، والبطاقةُ على بعد ٢٤٨٠٠px من أعلى الشاشة. ومثلُه كان في كلّ تحديدٍ بالوسم.
+   ⇒ `LAST` آخرُ بطاقةٍ فُتح نموذجُها، وصفُّها يقول «هنا توقّفت». و`SPOT` موضعُ صفّها في النافذة لحظةَ فتحه
+     وجارُه التالي في الظاهر (`keepSpot`) — والعودةُ تُعيده إلى موضعه بعينه (`backToList`).
+   🔑 **والجارُ لبطاقةٍ أخرجها التعديلُ من المِصفاة** (أُضيفت صورةٌ في «بلا صورة»): يقوم مقامَها في موضعها،
+      فتصير المِصفاةُ قائمةَ عملٍ تقصر مع كلّ إصلاح — ويُقال للمؤلّف إنّها خرجت، فلا يظنّها ضاعت. */
+let LAST = null;
+let SPOT = null;   // { id, top, next, y }
+
+/* 🆕 b225 · والصفحات — طلبُ المالك (٧ نوفمبر): «عرضها على صفحات كلُّ صفحةٍ تحتوي على عددٍ معيّنٍ يمكن تحديده
+   (10-20-30-100) لسهولة التحرير والتعديل».
+   🔑 **والصفحةُ شريحةٌ من الظاهر لا مِصفاةٌ ثانية:** `visible()` تبقى حكمَ ما يُرى، والصفحةُ تقطعه — فالعدّادُ
+      والرقائقُ ورابطُ التدرّب والمعاينةُ تعدّ ما طابق كلَّه، لا ما في الصفحة.
+   📌 والعددُ يُحفظ في المتصفّح لا في القاعدة: راحةُ ناظرٍ لا حالُ مجموعة. والصفحةُ حالُ الجلسة كالمِصفاة —
+      وفتحُ المجموعة من جديد يبدأ من الأولى. */
+const SIZES = [10, 20, 30, 100];
+const SIZE_KEY = 'ed-cards-page';
+let PG = { size: 20, page: 1 };
+try{ const v = +localStorage.getItem(SIZE_KEY); if(SIZES.includes(v)) PG.size = v; }catch(e){}
+
 
 /* ═══════════ رقائقُ الحال — عدٌّ ومِصفاةٌ في عنصرٍ واحد ═══════════
 
@@ -105,6 +127,17 @@ function visible(){
   if(F.sort === 'new') out.sort((a, b) => b.id - a.id);
   return out;                 /* 'pos' — ترتيبُ المؤلّف كما ردّته القاعدة */
 }
+
+/* 🆕 b225 · الصفحاتُ من الظاهر. والصفحةُ تُحصر في مداها عند كلّ قراءة: حذفٌ أو مِصفاةٌ تُقصّر القائمة
+   فلا تبقى صفحةٌ فارغةٌ يُسأل عمّا فيها. */
+const pages    = () => Math.max(1, Math.ceil(visible().length / PG.size));
+const clampPg  = () => { PG.page = Math.min(Math.max(1, PG.page), pages()); };
+const pageRows = () => { clampPg(); return visible().slice((PG.page - 1) * PG.size, PG.page * PG.size); };
+const pageOf   = id => {
+  if(id == null) return null;
+  const i = visible().findIndex(c => String(c.id) === String(id));
+  return i < 0 ? null : Math.floor(i / PG.size) + 1;
+};
 
 
 /* ═══════════ الدخول ═══════════ */
@@ -215,7 +248,7 @@ function deckForm(d){
 /* ═══════════ ③ بطاقات المجموعة ═══════════ */
 
 async function openDeck(d, lessonId){
-  cur = d; TAG = false; SEL.clear();
+  cur = d; TAG = false; SEL.clear(); LAST = SPOT = null; PG.page = 1;
   /* والدرسُ نصٌّ لا رقم: المقارنةُ في `pass()` و`sel()` كلتاهما
      `String(id) === F.lesson` — فرقمٌ هنا يُسقط المصفاة صامتاً. */
   F = { q: '', lesson: lessonId ? String(lessonId) : '',
@@ -226,6 +259,60 @@ async function openDeck(d, lessonId){
   if(error){ app.innerHTML = errBox(error, 'بطاقات المجموعة'); return; }
   C = data || [];
   renderCards();
+  scrollTop();
+}
+
+/* 🆕 b224 · يُحفظ الموضعُ قبل مغادرة القائمة إلى شاشةٍ من شاشاتها: نموذجُ البطاقة (`id` بطاقتُه، ولا `id` لجديدة)
+   واللصقُ والمعاينةُ ورابطُ التدرّب. ويُقاس الصفُّ في النافذة لا الصفحةُ وحدها: ما فوقه قد يطول وهو غائب
+   (لوحةُ الأصوات تُكمل توليدها)، فموضعُه من أعلى الشاشة أصدقُ من رقم التمرير. */
+function keepSpot(id = null){
+  const rows = visible(), i = rows.findIndex(c => c.id === id);
+  const el = id == null ? null : document.querySelector(`#cdList .ed-row[data-c="${id}"]`);
+  SPOT = { id, y: window.scrollY,
+           top:  el ? el.getBoundingClientRect().top : null,
+           next: i < 0 ? null : (rows[i + 1] || rows[i - 1] || {}).id ?? null };
+}
+
+/* 🔴 ونزولُ هذه الشاشات إلى أعلاها فوريٌّ لا انسيابيّ (`scrollTop`). الانسيابُ يجري بعد رسمها نصفَ ثانية، ومن عاد
+   قبل تمامه (نقرةٌ خاطئةٌ على ✏️ ثمّ «عودة») طُبّقت بقيّتُه فوق العودة — **قِيس في Edge:** عودةٌ بعد ١٥٠ms أنزلت
+   البطاقةَ ١٠٤–١٣٣px عن موضعها، وبعد ٦٠٠ms وقعت فيه بعينه. والشاشةُ تُستبدل كلُّها، فلا يُفقد بالفوريّ شيء. */
+const toTop = () => window.scrollTo(0, 0);
+
+/* والعودةُ إلى القائمة كما تُركت: المِصفاةُ والترتيبُ ووضعُ الوسم وتحديدُه على حالها، والبطاقةُ في موضعها من الشاشة.
+   والقراءةُ من القاعدة لا من الذاكرة (حكمُ الوسم أدناه): ما حُفظ في النموذج يُرى في صفّه كما حُفظ.
+   📌 و`made` بطاقةٌ جديدة حُفظت — لا موضعَ لها قبل الحفظ، فتُنزَل إليها في وسط الشاشة. */
+async function backToList(made){
+  const s = SPOT; SPOT = null;
+  const id = s?.id ?? made ?? null;
+  if(id != null) LAST = id;
+  app.innerHTML = `<div class="status">جار التحميل…</div>`;
+  const { data, error } = await api.deckCards(cur.id);
+  if(error){ app.innerHTML = errBox(error, 'بطاقات المجموعة'); return; }
+  C = data || [];
+  /* 🆕 b225 · وصفحتُها قبل الرسم: صفحةُ البطاقة، أو صفحةُ جارِها إن خرجت من المِصفاة — وإلّا فالتي تُركت */
+  PG.page = pageOf(id) ?? pageOf(s?.next) ?? PG.page;
+  renderCards();
+  if(!s) return;
+
+  const row = k => k == null ? null : document.querySelector(`#cdList .ed-row[data-c="${k}"]`);
+  const at  = (el, top) => window.scrollTo(0, window.scrollY + el.getBoundingClientRect().top - top);
+  const el = row(id), nx = row(s.next);
+  if(el && s.top != null) at(el, s.top);
+  else if(el) el.scrollIntoView({ block: 'center' });
+  else if(nx && s.top != null) at(nx, s.top);
+  else window.scrollTo(0, s.y);
+  /* والتركيزُ إلى زرّ تحريرها — أو جارِها إن خرجت: من يتنقّل بلوحة المفاتيح يكمل من موضعه، لا من أوّل الصفحة */
+  if(id != null) (el || nx)?.querySelector('[data-ed]')?.focus({ preventScroll: true });
+}
+
+/* إعادةُ القراءة في موضعها — بعد حذفٍ من القائمة نفسِها: الصفُّ يغيب، وما تحته يصعد إلى مكانه */
+async function reload(){
+  const y = window.scrollY;
+  const { data, error } = await api.deckCards(cur.id);
+  if(error) return toast(error.message, false);
+  C = data || [];
+  renderCards();
+  window.scrollTo(0, y);
 }
 
 /* شريطُ الفرز والمِصفاة — فوق القائمة، لا داخلَ صفوفها */
@@ -261,6 +348,12 @@ function filterBar(){
         <option value="abc"${F.sort === 'abc' ? ' selected' : ''}>أبجديٌّ بالوجه</option>
         <option value="new"${F.sort === 'new' ? ' selected' : ''}>الأحدثُ إدخالاً</option>
       </select>
+      ${/* 🆕 b225 · عددُ الصفحة بجوار الترتيب: كلاهما يقول كيف تُعرض القائمة لا ما فيها. ولا يظهر لمجموعةٍ
+            لا تملأ أصغرَ صفحة — منتقٍ لا يغيّر شيئاً أثاثٌ لا أداة (حكمُ الشريط نفسِه على المجموعة الفارغة). */''}
+      ${C.length > SIZES[0] ? `<select id="f_size" class="eq-obj" style="max-width:150px;margin:0"
+              aria-label="عدد البطاقات في الصفحة">
+        ${SIZES.map(n => `<option value="${n}"${n === PG.size ? ' selected' : ''}>${AR(n)} في الصفحة</option>`).join('')}
+      </select>` : ''}
     </div>
     <div class="eq-brow" style="margin-top:10px">
       ${Object.keys(FLAGS).map(kb).join('')}
@@ -288,31 +381,101 @@ const statText = n => sifted()
 function redrawList(){
   const box = document.getElementById('cdList');
   if(!box) return renderCards();
-  const rows = visible();
+  const rows = pageRows();
   box.innerHTML = rows.length ? rows.map(cardRow).join('') : emptyNote();
   const st = document.getElementById('cdStat');
-  if(st) st.textContent = statText(rows.length);
+  if(st) st.textContent = statText(visible().length);
   app.querySelectorAll('[data-fl]').forEach(b =>
     b.classList.toggle('on', b.dataset.fl === F.flag));
   const clr = document.getElementById('f_clr');
   if(clr) clr.disabled = !sifted();
+  /* 🆕 b225 · والصفحاتُ تُرسم مع القائمة — وشريطُ الوسم معها إن كان مفتوحاً: عدّا زرَّي التحديد يتبعان الظاهر.
+     🔴 وكان «تحديدُ الظاهر (٣٩٧)» يبقى بعدده بعد أن ترشّح المِصفاةُ ٤٤ (`redrawList` لم تكن ترسمه) — يحدّد
+        الصحيحَ ويقول غيرَه. والمنتقيان فيه لا يضيعان: وجهتُهما في `TG` خارج الرسم. */
+  drawPagers();
+  if(TAG){ const tb = app.querySelector('.ed-tagbar'); if(tb){ tb.outerHTML = tagBar(); wireTagBar(); } }
   wireRows();
+}
+
+/* ═══════════ صفحاتُ القائمة (🆕 b225) ═══════════
+   شريطان بنصٍّ واحد: فوق القائمة بجوار اسم المجموعة (فلا يزيد الشاشةَ سطراً)، وتحتها حيث تنتهي الصفحة —
+   فمن راجع عشرين بطاقةً وجد «التالية» عند يده. ولا شريطَ لصفحةٍ واحدة: أزرارٌ لا تنقل إلى شيءٍ تكذب.
+   📌 والأرقامُ الأولى والأخيرة وما حول الحاضرة، والنقاطُ لما بينها — فأربعون صفحةً لا تصير أربعين زرّاً.
+   ⚠️ والصفحةُ الحاضرة `aria-current` وصبغةُ `accent` («اخترتَ» · كـ`.it-k.on`): هي اختيارُ المؤلّف، بخلاف
+      «هنا توقّفت» المحايدة — تلك ذكرى لا اختيار. */
+const pageList = (p, last) => {
+  if(last <= 7) return Array.from({ length: last }, (_, i) => i + 1);
+  let lo = Math.max(2, Math.min(p - 1, last - 4)), hi = Math.min(last - 1, Math.max(p + 1, 5));
+  if(lo === 3) lo = 2;                 // نقاطٌ تُخفي صفحةً واحدةً أطولُ من رقمها
+  if(hi === last - 2) hi = last - 1;
+  const mid = [];
+  for(let k = lo; k <= hi; k++) mid.push(k);
+  return [1, ...(lo > 2 ? ['…'] : []), ...mid, ...(hi < last - 1 ? ['…'] : []), last];
+};
+
+function pager(label){
+  const n = visible().length, last = pages();
+  if(last < 2) return '';
+  clampPg();
+  const p = PG.page, from = (p - 1) * PG.size + 1, to = Math.min(n, p * PG.size);
+  const num = k => k === '…' ? '<span class="cd-gap" aria-hidden="true">…</span>'
+    : `<button type="button" class="it-b" data-pg="${k}" aria-label="الصفحة ${AR(k)}"${
+        k === p ? ' aria-current="page"' : ''}>${AR(k)}</button>`;
+  return `<nav class="cd-pg" aria-label="${label}">
+    <button type="button" class="it-b" data-pg="${p - 1}" aria-label="الصفحة السابقة"${p > 1 ? '' : ' disabled'}>السابقة</button>
+    ${pageList(p, last).map(num).join('')}
+    <button type="button" class="it-b" data-pg="${p + 1}" aria-label="الصفحة التالية"${p < last ? '' : ' disabled'}>التالية</button>
+    <span class="cd-rng">${from === to ? AR(from) : `${AR(from)}–${AR(to)}`} من ${AR(n)}</span>
+  </nav>`;
+}
+
+const PG_TOP = 'صفحات البطاقات', PG_BOT = 'صفحات البطاقات، أسفل القائمة';
+const wirePager = () => app.querySelectorAll('[data-pg]').forEach(x => x.onclick = () => goPage(+x.dataset.pg));
+
+function drawPagers(){
+  const t = document.getElementById('pgTop'), b = document.getElementById('pgBot');
+  if(t) t.innerHTML = pager(PG_TOP);
+  if(b) b.innerHTML = pager(PG_BOT);
+  wirePager();
+}
+
+/* الانتقال: القائمةُ وحدها تُرسم والمِصفاةُ في مكانها. ورأسُ القائمة يُنزَل إليه إن كان تحت الشريط العلويّ —
+   فمن نقر «التالية» أسفلَ الصفحة يبدأ من أوّل التالية لا من وسطها. والتركيزُ إلى أوّل بطاقة: هناك يُكمَل العمل. */
+function goPage(p){
+  PG.page = p; redrawList();
+  const h = document.getElementById('cdHead'), bar = document.getElementById('bar');
+  if(h && h.getBoundingClientRect().top < (bar ? bar.getBoundingClientRect().bottom : 0))
+    h.scrollIntoView({ block: 'start' });
+  document.querySelector('#cdList [data-ed]')?.focus({ preventScroll: true });
 }
 
 function wireFilterBar(){
   const $ = id => document.getElementById(id);
+  /* 🆕 b225 · وكلُّ تغييرٍ فيما يُعرض يبدأ من الصفحة الأولى: الصفحةُ الثالثة من قائمةٍ أخرى رقمٌ لا معنى له */
   const q = $('f_q');
-  if(q) q.oninput = () => { F.q = q.value; redrawList(); };
+  if(q) q.oninput = () => { F.q = q.value; PG.page = 1; redrawList(); };
 
   app.querySelectorAll('[data-fk]').forEach(s =>
-    s.onchange = () => { F[s.dataset.fk] = s.value; redrawList(); });
+    s.onchange = () => { F[s.dataset.fk] = s.value; PG.page = 1; redrawList(); });
 
   const so = $('f_sort');
-  if(so) so.onchange = () => { F.sort = so.value; redrawList(); };
+  if(so) so.onchange = () => { F.sort = so.value; PG.page = 1; redrawList(); };
+
+  /* …إلّا عددَ الصفحة: أوّلُ بطاقةٍ في الصفحة الحاضرة تبقى ظاهرةً بعد التبديل — فالثانيةُ من مئة (١٠١–٢٠٠)
+     تصير الحاديةَ عشرةَ من عشرة (١٠١–١١٠)، لا الأولى. */
+  const sz = $('f_size');
+  if(sz) sz.onchange = () => {
+    const first = (PG.page - 1) * PG.size;
+    PG.size = +sz.value;
+    PG.page = Math.floor(first / PG.size) + 1;
+    try{ localStorage.setItem(SIZE_KEY, String(PG.size)); }catch(e){}
+    redrawList();
+  };
 
   /* الرقيقةُ تُبدّل حالها: نقرةٌ تُظهرها وحدها، ونقرةٌ تُعيد الكلّ */
   app.querySelectorAll('[data-fl]').forEach(b => b.onclick = () => {
     F.flag = F.flag === b.dataset.fl ? '' : b.dataset.fl;
+    PG.page = 1;
     redrawList();
   });
 
@@ -321,6 +484,7 @@ function wireFilterBar(){
     clr.disabled = !sifted();
     clr.onclick  = () => {
       F.q = F.lesson = F.strand = F.flag = '';
+      PG.page = 1;
       renderCards();          /* ترفع المِصفاةَ وتُعيد حقولَ الشريط معها */
     };
   }
@@ -353,15 +517,22 @@ function tags(c){
        + ss.map(s => `<span class="chip g" dir="auto">${esc(s.name)}</span>`).join('');
 }
 
-/* 🆕 b134 · والصفُّ خرج من جوف الرسم لأنّ `redrawList` تُنادِيه وحدَها */
+/* 🆕 b224 · آخرُ بطاقةٍ فُتح نموذجُها (`LAST`) — والتعليلُ عند تعريفه أعلى الملفّ */
+const isLast = c => LAST != null && String(c.id) === String(LAST);
+
+/* 🆕 b134 · والصفُّ خرج من جوف الرسم لأنّ `redrawList` تُنادِيه وحدَها
+   🆕 b224 · و«هنا توقّفت» شارةٌ تُقرأ لا لونٌ يُخمَّن: الإطارُ وحده لا يقول لِمَ اختلف الصفّ.
+      والعبارةُ اسمُ المنصّة القائم للاستئناف («من حيث توقّفت» في `quiz.js`)، وماضيها يصحّ للمؤلّف والمؤلّفة
+      بلا تشكيل (الهويّة اللغويّة §٤ · الدرجة ③). والشارةُ أوّلُ سطرها: إليها تقع العينُ قبل سواها. */
 const cardRow = c => `
-    <div class="ed-row${SEL.has(c.id) ? ' on' : ''}" data-c="${c.id}">
+    <div class="ed-row${SEL.has(c.id) ? ' on' : ''}${isLast(c) ? ' last' : ''}" data-c="${c.id}">
       ${TAG ? `<label class="pick-c" title="حدّد">
         <input type="checkbox" data-sel="${c.id}" ${SEL.has(c.id) ? 'checked' : ''}>
       </label>` : ''}
       <div style="flex:0 0 34%;min-width:0">
         <div class="ed-t" dir="${dirOf(c.front)}">${esc(c.front)}</div>
         <div class="ed-m">
+          ${isLast(c) ? '<span class="chip">هنا توقّفت</span>' : ''}
           ${(c.lang || 'ar') !== 'ar'
             ? `<span class="chip g">${esc(String(c.lang).toUpperCase())}</span>` : ''}
           ${c.audio ? '<span class="chip">🔊 نُطق</span>' : ''}
@@ -383,7 +554,7 @@ const cardRow = c => `
 
 
 function renderCards(){
-  const rows = visible();
+  const rows = pageRows();
 
   app.innerHTML = `
     <div class="crumb" id="bk">→ عودة لدروس المقرَّر</div>
@@ -434,8 +605,13 @@ function renderCards(){
       ${/* 🆕 b172 · وترويسةُ المجموعة كترويسة الوحدة في `editor.js`:
             اسمُ المادّة قد يكون لاتينيّاً (`English`)، والعدّادُ أرقامٌ
             هنديّةٌ لا تَحكم الاتجاه. */''}
-      <div class="grp" dir="auto">${esc(cur.title)} <span class="chip">${AR(C.length)}</span></div>
+      ${/* 🆕 b225 · والترويسةُ صفٌّ يحمل شريطَ الصفحات في طرفه (`.cd-head`) — والتعليلُ عند `pager()` */''}
+      <div class="cd-head" id="cdHead">
+        <div class="grp" dir="auto">${esc(cur.title)} <span class="chip">${AR(C.length)}</span></div>
+        <div id="pgTop">${pager(PG_TOP)}</div>
+      </div>
       <div id="cdList">${rows.length ? rows.map(cardRow).join("") : emptyNote()}</div>
+      <div id="pgBot">${pager(PG_BOT)}</div>
     </div>
 
     ${/* 🆕 b134 · وظيفتان نزلتا من الشاشة الوسطى إلى حيث يُرى سببُهما */''}
@@ -475,7 +651,10 @@ function renderCards(){
   wireFilterBar();
   wireTagBar();
   wireRows();
-  scrollTop();
+  wirePager();
+  /* 🔴 b224 · ولا تمريرَ في الرسم. الرسمُ يُعاد مع كلّ تحديدٍ في الوسم وكلّ وسمٍ وانتهاءِ توليد الأصوات،
+     و`scrollTop()` هنا كان يصعد بالمؤلّف إلى أوّل القائمة في كلٍّ منها — **قِيس:** تحديدُ بطاقةٍ على بعد
+     ١٦٨٠٠px نادى الصعود. ⇒ الصعودُ للفتح وحده (`openDeck`)، والعودةُ إلى موضعها (`backToList`). */
 }
 
 
@@ -530,9 +709,13 @@ function wireRows(){
   app.querySelectorAll('[data-rm]').forEach(b => b.onclick = async e => {
     e.stopPropagation();
     if(!confirm('حذف البطاقة؟')) return;
-    const { error } = await api.deleteCard(+b.dataset.rm);
+    const id = +b.dataset.rm;
+    const { error } = await api.deleteCard(id);
     if(error) return toast(error.message, false);   // 🔒 تُرفض إن كان يراجعها طلاب
-    toast('حُذفت'); openDeck(cur);
+    /* 🆕 b224 · والحذفُ في موضعه لا فتحٌ جديد: `openDeck` كانت تُفرغ المِصفاةَ وتصعد إلى أوّل القائمة.
+       وما يتعلّق بالبطاقة الغائبة يغيب معها — تحديدُها في الوسم، وعلامةُ «هنا توقّفت». */
+    SEL.delete(id); if(String(LAST) === String(id)) LAST = null;
+    toast('حُذفت'); reload();
   });
   if(!TAG) return;
 
@@ -569,6 +752,10 @@ function wireRows(){
 
 function tagBar(){
   const n = SEL.size;
+  /* 🆕 b225 · «الظاهرُ» صار اثنين حين تكون الصفحاتُ أكثرَ من واحدة: ما في الصفحة، وما طابق المِصفاةَ في صفحاتها كلّها.
+     ⇒ زرّان يقول كلٌّ منهما ما يحدّده وعدده — فلا زرَّ يحدّد ما لا يُرى وهو يوهم أنّه ما يُرى (العلّةُ أدناه في `wireTagBar`).
+     📌 وصفحةٌ واحدة ⇒ الزرُّ الواحد كما كان: الصفحةُ هي الظاهرُ كلُّه. */
+  const all = visible().length, here = pageRows().length;
   const sel = (k, rows, label, head) => `
     <select id="tg_${k}" data-tgk="${k}" class="eq-obj" style="max-width:260px">
       <option value="">— ${head} —</option>
@@ -582,7 +769,10 @@ function tagBar(){
       <span class="chip${n ? ' g' : ''}">${n ? N(n,'بطاقة','بطاقتان','بطاقات','بطاقة')
                                              : 'لم تُحدّد بعد'}</span>
       <span class="eq-strip-g"></span>
-      <button class="it-b" id="selall">تحديدُ الظاهر (${AR(visible().length)})</button>
+      ${here < all
+        ? `<button class="it-b" id="selpage">تحديد هذه الصفحة (${AR(here)})</button>
+           <button class="it-b" id="selall">تحديد الصفحات كلّها (${AR(all)})</button>`
+        : `<button class="it-b" id="selall">تحديدُ الظاهر (${AR(all)})</button>`}
       <button class="it-b" id="selnone">إلغاء التحديد</button>
     </div>
 
@@ -616,8 +806,9 @@ function wireTagBar(){
      رشّحته المِصفاةُ لا على المجموعة كلِّها. فرقيقةُ «بلا درس» ⇒
      تحديدُ الظاهر ⇒ وسمٌ واحد — **والمِصفاةُ تُطفئ بعينها الرقيقةَ
      التي أظهرتها.** وبدونه يكون الزرُّ فخّاً: يُحدّد ما لا يُرى. */
-  const all = $('selall'), none = $('selnone');
+  const all = $('selall'), none = $('selnone'), page = $('selpage');
   if(all)  all.onclick  = () => { visible().forEach(c => SEL.add(c.id)); renderCards(); };
+  if(page) page.onclick = () => { pageRows().forEach(c => SEL.add(c.id)); renderCards(); };
   if(none) none.onclick = () => { SEL.clear(); renderCards(); };
 
   app.querySelectorAll('[data-tg]').forEach(b => b.onclick = async () => {
@@ -664,6 +855,7 @@ function wireTagBar(){
       يعتذر عند الضغط — ويُعلّم أنّ الأزرار تكذب. */
 
 function linkPicker(){
+  keepSpot();
   const byLesson = new Map(), byStrand = new Map();
   C.forEach(c => {
     (c.lessons || []).forEach(l => byLesson.set(l.id, (byLesson.get(l.id) || 0) + 1));
@@ -702,10 +894,10 @@ function linkPicker(){
         <span class="chip">${AR(C.length)}</span></button>
     </div>`;
 
-  document.getElementById('bk').onclick = () => openDeck(cur);
+  document.getElementById('bk').onclick = () => backToList();
   app.querySelectorAll('[data-k]').forEach(b => b.onclick = () =>
     practiceLinkBox({ kind: b.dataset.k, source: +b.dataset.s, title: b.dataset.t }));
-  scrollTop();
+  toTop();
 }
 
 
@@ -725,6 +917,7 @@ function parse(text){
 }
 
 function pasteBox(){
+  keepSpot();
   app.innerHTML = `
     <div class="crumb" id="bk">→ عودة للبطاقات</div>
     <div class="ed-form">
@@ -785,7 +978,7 @@ function pasteBox(){
       </div>
     </div>`;
 
-  document.getElementById('bk').onclick = () => openDeck(cur);
+  document.getElementById('bk').onclick = () => backToList();
 
   let ready = [];
 
@@ -840,9 +1033,11 @@ function pasteBox(){
 
     toast(`أُضيفت ${AR(data.added)} · صُحّحت ${AR(data.updated)}${note}`,
           !note);
+    /* 🔑 b224 · وحفظُ الدفعة فتحٌ جديد لا عودة (`backToList`): دفعةٌ تُضاف قد تخفيها المِصفاةُ القائمة،
+       فيَعِد العددُ في الرسالة بما لا يُرى. */
     openDeck(cur);
   };
-  scrollTop();
+  toTop();
 }
 
 
@@ -865,6 +1060,7 @@ const picked = id => [...document.querySelectorAll(`#${id} input:checked`)]
                        .map(x => +x.value);
 
 function cardForm(c){
+  keepSpot(c?.id ?? null);
   app.innerHTML = `
     <div class="crumb" id="bk">→ عودة للبطاقات</div>
     <div class="ed-form">
@@ -945,7 +1141,7 @@ function cardForm(c){
       </div>
     </div>`;
 
-  document.getElementById('bk').onclick = () => openDeck(cur);
+  document.getElementById('bk').onclick = () => backToList();
 
   /* 🆕 b135 · أزرارُ الرفع تلتصق بالحقول القائمة ولا تستبدلها — عقدُ
      `upload.js` منذ كُتب. والنطاقُ `c<المجموعة>`: وسمٌ للقراءة البشرية
@@ -989,9 +1185,12 @@ function cardForm(c){
       return toast('حُفظت البطاقة، وتعذّر الوسم: '
         + (r1.error || r2.error).message, false);
 
-    toast(stale ? 'حُفظت، وسقط صوتها لأن الوجه تغيّر' : 'حُفظت'); openDeck(cur);
+    await backToList(id);
+    /* 🆕 b224 · وبطاقةٌ لا تطابق المِصفاةَ بعد حفظها يُقال ذلك فيها — وإلّا ظُنّت ضاعت، والمِصفاةُ هي التي تخفيها */
+    const hid = !visible().some(x => String(x.id) === String(id));
+    toast('حُفظت' + (stale ? '، وسقط صوتها لأن الوجه تغيّر' : '') + (hid ? '، والمِصفاة تخفيها' : ''));
   };
-  scrollTop();
+  toTop();
 }
 
 
@@ -1009,6 +1208,7 @@ function cardForm(c){
 */
 
 function preview(){
+  keepSpot();
   let i = 0, fitters = [], resizeT;
 
   /* 🔊 ولا نسخةَ ثانية من الزرّ: sayGroup و bindSay في ui.js تخدمان
@@ -1078,7 +1278,7 @@ function preview(){
 
   document.getElementById('bk').onclick = () => {
     window.removeEventListener('resize', onResize);   // لا تتراكم المستمعات عبر فتحاتٍ متكرّرة
-    openDeck(cur);
+    backToList();
   };
 
   function paint(){
@@ -1201,5 +1401,5 @@ function preview(){
     setTimeout(go, 400);
   }
 
-  paint(); scrollTop();
+  paint(); toTop();
 }
