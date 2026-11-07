@@ -1244,6 +1244,13 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
 .ed-row .bf-say{color:var(--text-muted)}
 .ed-row .bf-say:hover{color:var(--accent)}
 
+/* 🆕 b227 · أمثلةُ البطاقة تحت معناها في صفّ القائمة (`exHtml` · editor_cards.js).
+   🔑 **بلغة مثال الطالب** (`.bf-ex`): مِسطرةٌ في صدر السطر بحبر `--line-strong` ونصٌّ خافتٌ بخطّ الحاشية — فالمثالُ يُعرف
+      بشكله أينما وقع. وبلا صندوقها: عشرون صندوقاً في صفحةٍ أثاث. ولا عائلةَ معنى: المثالُ لا يقول حكماً.
+   📐 والمِسطرةُ `border-inline-start` تنتقل وحدَها إلى الطرف الآخر في المثال الإنجليزيّ (`dir` على السطر) — كما في `.bf-ex`. */
+.cd-ex{list-style:none;margin:6px 0 0;padding:0;font-size:var(--fs-meta);line-height:1.7;color:var(--text-muted)}
+.cd-ex li{padding-inline-start:10px;border-inline-start:3px solid var(--line-strong);margin-top:4px;overflow-wrap:anywhere}
+
 /* 🆕 b129 · مُنتقٍ متعدّد في المحرّر — مربّعاتٌ لا قائمةُ اختيارٍ
    متعدّدة: تلك تحتاج Ctrl للنقر، ونقرةٌ واحدةٌ خاطئة تمحو الاختيار
    كلَّه بلا إنذار. والمربّعاتُ تُقرأ بلمحة وتُلمَس بإصبع.

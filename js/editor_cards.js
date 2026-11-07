@@ -23,7 +23,7 @@
    🆕 b216 · وصوتُ الوجه العربيّ يُولَّد من النموذج نفسِه (`card_voice.js`): مفتاحُه يملأ حقلَ النطق، وحفظُ البطاقة هو الاعتماد.
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
-import { app, head, toast, esc, AR, errBox, nav, setWide, scrollTop, dirOf, backText, backMeta, shrinkFont, examples, pickExample, sayable, sayGroup, bindSay, cardImg, N } from './ui.js';
+import { app, head, toast, esc, escA, AR, errBox, nav, setWide, scrollTop, dirOf, backText, backMeta, shrinkFont, examples, pickExample, sayable, sayGroup, bindSay, cardImg, N } from './ui.js';
 
 import { openCourse, courseTags, toolBtn } from './editor.js';
 import { practiceLinkBox } from './practice_links.js';
@@ -521,6 +521,18 @@ function tags(c){
 const isLast = c => LAST != null && String(c.id) === String(LAST);
 const LAST_CHIP = '<span class="chip cd-last">هنا توقّفت</span>';
 
+/* 🆕 b227 · الأمثلةُ في الصفّ — طلبُ المالك (٧ نوفمبر): «عرض الأمثلة أيضاً على البطاقة من الخارج لسهولة المراجعة، بحيث
+   يتمّ الضغط على تحرير للتعديل عند ملاحظة خطأ».
+   🔑 **كما يقرؤها الطالب** (`examples()` — مصدرُ البطاقة واللعبة والمعاينة)، سطراً لكلّ مثالٍ باتّجاه نصّه. والطالبُ يلقى
+      واحداً منها في كلّ ظهور (`pickExample`)، والمراجعُ يراها كلَّها — فهو يحكم على ما قد يُعرض، لا على ما عُرض مرّة.
+   ⚠️ **وخارج `.ed-bk` لا داخلها:** تلك `white-space:pre-line`، فكلُّ سطرٍ جديدٍ بين وسوم قائمةٍ فيها يصير سطراً فارغاً يُرى.
+   📌 ومعاينةُ اللصق تناديها أيضاً: «معاينةٌ تخالف ما سيُرسم بعد الحفظ تكذب على صاحبها» (`pasteBox`). */
+const exHtml = note => {
+  const xs = examples(note);
+  return xs.length ? `<ul class="cd-ex" aria-label="الأمثلة">${
+    xs.map(x => `<li dir="${dirOf(x)}">${esc(x)}</li>`).join('')}</ul>` : '';
+};
+
 /* 🆕 b226 · والعلامةُ تنتقل في مكانها عند الاستماع (`wireRows`) بلا رسمٍ جديد: الرسمُ يهدم الزرَّ الذي في يد المؤلّف
    فيضيع تركيزُه، ويعيد بناءَ عشرين صفّاً لأجل صفّين. */
 function markLast(id){
@@ -560,16 +572,19 @@ const cardRow = c => {
                 «وجه» و«معنى» موضعان مختلفان في عين الطالب. */''}
           ${c.front_image ? '<span class="chip">🖼 وجه</span>' : ''}
           ${c.image ? '<span class="chip">🖼 معنى</span>' : ''}
-          ${examples(c.note).length > 1
-            ? `<span class="chip">${AR(examples(c.note).length)} أمثلة</span>` : ''}
+          ${/* 🔓 b227 · وسقطت شارةُ «٣ أمثلة»: الأمثلةُ نفسُها تحت المعنى (`exHtml`)، وعدُّها يُرى بلمحة —
+                وكانت تقول «٢ أمثلة» حيث الصوابُ «مثالان» (الهويّة اللغويّة §١١). ورقيقةُ «أمثلتها أقلُّ من ثلاثة» باقية. */''}
         </div>
         <div class="ed-m" style="margin-top:4px">${tags(c)}</div>
       </div>
-      <div class="ed-bk" style="flex:1;min-width:0;color:var(--text-muted);
-                  font-size:var(--fs-meta);line-height:1.6"
-           dir="${dirOf(c.back)}">${esc(backText(c.back))}${sayAt('back')}</div>
-      <button class="it-b wide" data-ed="${c.id}">✏️</button>
-      <button class="it-b" data-rm="${c.id}">🗑</button>
+      <div style="flex:1;min-width:0">
+        <div class="ed-bk" style="color:var(--text-muted);font-size:var(--fs-meta);line-height:1.6"
+             dir="${dirOf(c.back)}">${esc(backText(c.back))}${sayAt('back')}</div>${exHtml(c.note)}
+      </div>
+      ${/* 🆕 b227 · وللزرّين اسمان: «تحرير» اسمُ المالك له، وقارئُ الشاشة يسمع الوصفَ وحده — فوجهُ البطاقة فيه
+            (حكمُ «إزالة مقابل البند ٣»). وكانا رسمين بلا اسم: «قلم» و«سلّة». */''}
+      <button class="it-b wide" data-ed="${c.id}" title="تحرير" aria-label="${escA(`تحرير: ${c.front}`)}">✏️</button>
+      <button class="it-b" data-rm="${c.id}" title="حذف" aria-label="${escA(`حذف: ${c.front}`)}">🗑</button>
     </div>`;
 };
 
@@ -1031,8 +1046,8 @@ function pasteBox(){
         ${ready.slice(0, 6).map(r => `<div class="ed-row">
             <div style="flex:0 0 34%"><div class="ed-t"
               dir="${dirOf(r.front)}">${esc(r.front)}</div></div>
-            <div class="ed-bk" style="flex:1;color:var(--text-muted);font-size:var(--fs-meta)"
-              dir="${dirOf(r.back)}">${esc(backText(r.back))}</div></div>`).join("")}
+            <div style="flex:1;min-width:0"><div class="ed-bk" style="color:var(--text-muted);font-size:var(--fs-meta)"
+              dir="${dirOf(r.back)}">${esc(backText(r.back))}</div>${exHtml(r.note)}</div></div>`).join("")}
         ${ready.length > 6 ? `<div class="ed-empty">…و${AR(ready.length-6)} غيرها</div>` : ''}`
       : '<div class="warnbox">لا سطر صالح.</div>'}`;
 
