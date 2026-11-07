@@ -204,15 +204,26 @@ export const imageKey = (scope, file) =>
       الحركات، ونطقٌ خاطئ يُحفظ أسوأ من لا نطق.
    ─────────────────────────────────────────────────────────── */
 
-/** يشغّل مفتاحاً مخزَّناً. يعيد false إن تعذّر بناء الرابط. */
+/* 🆕 b226 · وصوتٌ واحدٌ في الوقت الواحد — حكمُ `speak()` أدناه بعينه («نداءٌ فوق نداءٍ يتداخل صوتُهما»).
+   صار للبطاقة زرُّ نطقٍ في كلّ صفٍّ من قائمة المؤلّف، و`new Audio()` لكلّ نقرةٍ بلا إيقافٍ لما قبلها
+   كان يُسمع صفّين متتاليين معاً. والإيقافُ يخدم معها البطاقةَ عند الطالب وكلماتِ الكتاب.
+   📌 ويعود بالعنصر لا بـtrue (وهو حقٌّ عند من يسأل «أنجح؟»): فيسمع المنادي تعذُّرَ الملفّ نفسِه
+      (`bindSay`) — رابطٌ يُبنى ثمّ لا يُحمَّل كان صمتاً يُظنّ سماعةً معطّلة. */
+let NOW = null;
+
+/** يشغّل مفتاحاً مخزَّناً. يعيد false إن تعذّر بناء الرابط، وإلّا عنصرَ الصوت. */
 export function playAudio(key){
   const url = mediaUrl(key);
   if(!url) return false;
   try{
+    /* `gone`: ما أُوقف لغيره لا يُعلن تعذُّرَه فوق الصوت الذي خلفه */
+    if(NOW){ NOW.pause(); NOW.dataset.gone = '1'; }
+    try{ window.speechSynthesis?.cancel(); }catch(err){}
+    NOW = new Audio(url);
     /* catch على الوعد لازمة: المتصفّح يرفض التشغيل بلا إيماءةٍ من
        المستخدم، ورفضٌ غيرُ ملتقَط يظهر خطأً أحمر في الطرفية. */
-    new Audio(url).play().catch(() => {});
-    return true;
+    NOW.play().catch(() => {});
+    return NOW;
   }catch(err){ return false; }
 }
 
@@ -293,6 +304,7 @@ export function speak(text, lang = 'en'){
   if(!t || typeof window === 'undefined' || !window.speechSynthesis) return false;
   try{
     window.speechSynthesis.cancel();      // نداءٌ فوق نداءٍ يتداخل صوتُهما
+    if(NOW){ NOW.pause(); NOW.dataset.gone = '1'; }   // 🆕 b226 · والملفُّ الجاري كذلك (`playAudio`)
     const u = new SpeechSynthesisUtterance(t);
     const v = bestVoice(lang);
     /* 🔑 وتُضبط u.lang ولو لم يوجد صوتٌ مطابق: المحرّك يختار بها عند

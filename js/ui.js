@@ -13,7 +13,7 @@ import { renderMark, whenReady as avatarReady } from './avatar.js';
    والدمجُ مرّ بلا تعارضٍ **لأنّ الجانبين كتبا السطرَ نفسَه حرفاً** — وهو
    أخبثُ ما في التصادم: لا يشتكي. ⇒ هذه ترفعه، **فالختمُ يجيب «أيُّ شيفرةٍ
    يشغّلها المتصفّح»، وجوابان لسؤالٍ واحدٍ لا جواب.** */
-export const BUILD = "b225";
+export const BUILD = "b226";
 
 /* ── مراسي الصفحة ── */
 export const app = document.getElementById("app");
@@ -220,10 +220,14 @@ export function sayable(c){
       الإنجليزيّ ltr. فلولا dir على السطر لوقع الزرُّ **يسار** الكلمة
       — أي قبلها في ترتيب القراءة. */
 
-export function sayGroup(c){
+/* 🆕 b226 · و`name` حيث يتكرّر الزرّ (صفوفُ قائمة المؤلّف): قارئُ الشاشة يسمع الوصفَ وحده، وعشرون «نُطق» في صفحةٍ
+   لا يُفرَّق بينها — حكمُ «إزالة مقابل البند ٣» (الهويّة اللغويّة §١٣ ④). والبطاقةُ الواحدة لا تحتاجه فلا تمرّره.
+   ⚠️ و`escA` لا `esc`: الاسمُ نصُّ مؤلّفٍ يسكن سمة، وتنصيصٌ فيه يُغلقها. */
+export function sayGroup(c, name){
   if(!c) return '';
+  const lab = t => name ? `${t}: ${name}` : t;
   const btn = (code, label, aria) =>
-    `<button class="bf-say" data-say="${code}" title="${esc(aria)}" aria-label="${esc(aria)}"
+    `<button class="bf-say" data-say="${code}" title="${escA(lab(aria))}" aria-label="${escA(lab(aria))}"
       >${svg('speak')}${label ? `<span class="bf-say-t">${esc(label)}</span>` : ''}</button>`;
   const wrap = s => `<span class="bf-say-grp">${s}</span>`;
 
@@ -246,6 +250,9 @@ export function bindSay(root, c, say){
     const code = b.dataset.say;
     const ok = code === 'audio' ? playAudio(c.audio) : speak(say.text, code);
     if(!ok) toast('تعذّر النطق على هذا الجهاز');
+    /* 🆕 b226 · وملفٌّ لا يُحمَّل يُقال (`playAudio` تعيد عنصرَه): صوتٌ لا يُسمع بلا كلمةٍ يُظنّ سماعةً معطّلة */
+    else if(ok instanceof HTMLMediaElement)
+      ok.addEventListener('error', () => { if(!ok.dataset.gone) toast('تعذّر تشغيل الصوت'); }, { once: true });
   });
 }
 

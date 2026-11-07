@@ -519,23 +519,43 @@ function tags(c){
 
 /* 🆕 b224 · آخرُ بطاقةٍ فُتح نموذجُها (`LAST`) — والتعليلُ عند تعريفه أعلى الملفّ */
 const isLast = c => LAST != null && String(c.id) === String(LAST);
+const LAST_CHIP = '<span class="chip cd-last">هنا توقّفت</span>';
+
+/* 🆕 b226 · والعلامةُ تنتقل في مكانها عند الاستماع (`wireRows`) بلا رسمٍ جديد: الرسمُ يهدم الزرَّ الذي في يد المؤلّف
+   فيضيع تركيزُه، ويعيد بناءَ عشرين صفّاً لأجل صفّين. */
+function markLast(id){
+  LAST = id;
+  app.querySelectorAll('#cdList .ed-row.last').forEach(r => { r.classList.remove('last'); r.querySelector('.cd-last')?.remove(); });
+  const r = app.querySelector(`#cdList .ed-row[data-c="${id}"]`);
+  if(!r) return;
+  r.classList.add('last');
+  r.querySelector('.ed-m')?.insertAdjacentHTML('afterbegin', LAST_CHIP);
+}
 
 /* 🆕 b134 · والصفُّ خرج من جوف الرسم لأنّ `redrawList` تُنادِيه وحدَها
    🆕 b224 · و«هنا توقّفت» شارةٌ تُقرأ لا لونٌ يُخمَّن: الإطارُ وحده لا يقول لِمَ اختلف الصفّ.
       والعبارةُ اسمُ المنصّة القائم للاستئناف («من حيث توقّفت» في `quiz.js`)، وماضيها يصحّ للمؤلّف والمؤلّفة
-      بلا تشكيل (الهويّة اللغويّة §٤ · الدرجة ③). والشارةُ أوّلُ سطرها: إليها تقع العينُ قبل سواها. */
-const cardRow = c => `
+      بلا تشكيل (الهويّة اللغويّة §٤ · الدرجة ③). والشارةُ أوّلُ سطرها: إليها تقع العينُ قبل سواها.
+   🆕 b226 · وزرُّ النطق في الصفّ — طلبُ المالك (٧ نوفمبر): «زرّ الاستماع على البطاقة من الخارج حتى يمكن الاستماع للكلمة
+      دون الدخول إلى التحرير». **وهو زرُّ الطالب بعينه** (`sayable` · `sayGroup` · `bindSay` في ui.js — ثابت ⑨): ملفٌّ ⇐ «نُطق»،
+      وإنجليزيّةٌ بلا ملفّ ⇐ قراءةُ الجهاز بلهجتيها، وعربيّةٌ بلا ملفّ ⇐ لا زرّ — فيسمع المؤلّفُ ما سيسمعه الطالب لا تقريباً له.
+      ويقف بجوار المنطوق (الوجه أو المعنى) كما يقف في البطاقة. **وسقطت شارةُ «🔊 نُطق»:** الزرُّ يقولها ويُسمعها —
+      إلّا لملفٍّ لا يجد له `sayable` موضعاً (لا لاتينيَّ فيه)، فتبقى الشارةُ خبراً كما كانت. */
+const cardRow = c => {
+  const say = sayable(c);
+  const sayAt = side => say && say.side === side ? sayGroup(c, say.text) : '';
+  return `
     <div class="ed-row${SEL.has(c.id) ? ' on' : ''}${isLast(c) ? ' last' : ''}" data-c="${c.id}">
       ${TAG ? `<label class="pick-c" title="حدّد">
         <input type="checkbox" data-sel="${c.id}" ${SEL.has(c.id) ? 'checked' : ''}>
       </label>` : ''}
       <div style="flex:0 0 34%;min-width:0">
-        <div class="ed-t" dir="${dirOf(c.front)}">${esc(c.front)}</div>
+        <div class="cd-fr" dir="${dirOf(c.front)}"><div class="ed-t">${esc(c.front)}</div>${sayAt('front')}</div>
         <div class="ed-m">
-          ${isLast(c) ? '<span class="chip">هنا توقّفت</span>' : ''}
+          ${isLast(c) ? LAST_CHIP : ''}
           ${(c.lang || 'ar') !== 'ar'
             ? `<span class="chip g">${esc(String(c.lang).toUpperCase())}</span>` : ''}
-          ${c.audio ? '<span class="chip">🔊 نُطق</span>' : ''}
+          ${c.audio && !say ? '<span class="chip">🔊 نُطق</span>' : ''}
           ${/* 🆕 b135 · وشارةٌ تقول أيَّ صورةٍ تحمل، لا أنّها تحمل صورة:
                 «وجه» و«معنى» موضعان مختلفان في عين الطالب. */''}
           ${c.front_image ? '<span class="chip">🖼 وجه</span>' : ''}
@@ -547,10 +567,11 @@ const cardRow = c => `
       </div>
       <div class="ed-bk" style="flex:1;min-width:0;color:var(--text-muted);
                   font-size:var(--fs-meta);line-height:1.6"
-           dir="${dirOf(c.back)}">${esc(backText(c.back))}</div>
+           dir="${dirOf(c.back)}">${esc(backText(c.back))}${sayAt('back')}</div>
       <button class="it-b wide" data-ed="${c.id}">✏️</button>
       <button class="it-b" data-rm="${c.id}">🗑</button>
     </div>`;
+};
 
 
 function renderCards(){
@@ -716,6 +737,16 @@ function wireRows(){
        وما يتعلّق بالبطاقة الغائبة يغيب معها — تحديدُها في الوسم، وعلامةُ «هنا توقّفت». */
     SEL.delete(id); if(String(LAST) === String(id)) LAST = null;
     toast('حُذفت'); reload();
+  });
+
+  /* 🆕 b226 · زرُّ النطق في الصفّ — `bindSay` نفسُها (توقفُ النقرة عند الزرّ فلا تُحدّد الصفَّ في الوسم).
+     🔑 **والاستماعُ فحص:** يحمل الصفُّ بعده «هنا توقّفت» كمن فتح البطاقة — «آخر بطاقةٍ تمّ تعديلها أو فحصها» بنصّ
+        طلب المالك الأوّل. فمن راجع الأصوات صفّاً صفّاً ثمّ ابتعد في القائمة أو خرج إلى المعاينة وجد آخرَ ما سمعه معلَّماً. */
+  app.querySelectorAll('#cdList .ed-row[data-c]').forEach(r => {
+    const c = C.find(x => String(x.id) === r.dataset.c), say = sayable(c);
+    if(!say) return;
+    bindSay(r, c, say);
+    r.querySelectorAll('[data-say]').forEach(b => b.addEventListener('click', () => markLast(c.id)));
   });
   if(!TAG) return;
 

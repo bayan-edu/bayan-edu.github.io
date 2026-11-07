@@ -1234,6 +1234,16 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
 .cd-gap{color:var(--text-muted);padding:0 2px}
 .cd-rng{font-size:var(--fs-tag);color:var(--text-muted);white-space:nowrap;margin-inline-start:6px}
 
+/* 🆕 b226 · زرُّ النطق في صفّ البطاقة — وصفةُ `.bf-say` نفسُها (البطاقةُ عند الطالب والمعاينة)، فلا زرَّ ثانياً.
+   📌 والوجهُ سطرٌ مرنٌ يأخذ اتّجاهَ نصّه (`dir` من `dirOf`): الزرُّ بعد الكلمة في ترتيب قراءتها، لاتينيّةً كانت أو عربيّة.
+      و`min-width:0` لازمةٌ ليبقى قطعُ الوجه الطويل بالنقاط (`.ed-t`) داخل سطرٍ مرن.
+   ⚠️ والهامشُ السالب لئلّا يطول الصفّ: الزرُّ ٣٢px حدَّ لمس، والسطرُ دونه — فيقع الزرُّ عليه ولا يدفعه. */
+.cd-fr{display:flex;align-items:center;gap:4px;min-width:0}
+.cd-fr .ed-t{min-width:0}
+.ed-row .bf-say-grp{margin-block:-6px}
+.ed-row .bf-say{color:var(--text-muted)}
+.ed-row .bf-say:hover{color:var(--accent)}
+
 /* 🆕 b129 · مُنتقٍ متعدّد في المحرّر — مربّعاتٌ لا قائمةُ اختيارٍ
    متعدّدة: تلك تحتاج Ctrl للنقر، ونقرةٌ واحدةٌ خاطئة تمحو الاختيار
    كلَّه بلا إنذار. والمربّعاتُ تُقرأ بلمحة وتُلمَس بإصبع.
