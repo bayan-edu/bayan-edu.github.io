@@ -69,6 +69,8 @@ for(const k of ['denied', 'nomic', 'micfail']){
 ok('lines_practice.js لا يستورد api.js ولا يرفع ولا يخزّن',
    !/from '\.\/api\.js'|uploadMedia|uploadRecording|localStorage|indexedDB|sessionStorage/.test(lp));
 ok('والميكروفونُ يُغلق: track.stop في وحدة التدرّب', /getTracks\(\)\.forEach\(\s*\w+\s*=>\s*\{?\s*try\s*\{\s*\w+\.stop\(\)/.test(lp));
+/* 🆕 b223 · والنداءُ الوحيدُ إلى الشبكة قراءةُ الأصل لخطّ التنغيم: GET بلا اعتماد — لا method ولا body */
+ok('fetch واحد، قراءةٌ لا كتابة', (lp.match(/fetch\(/g) || []).length === 1 && !/method\s*:|body\s*:/.test(lp) && /credentials:\s*'omit'/.test(lp));
 
 console.log(`\n${bad ? '❌' : '✅'} ${n - bad} / ${n}`);
 process.exit(bad ? 1 : 0);

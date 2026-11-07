@@ -16,6 +16,7 @@
 import { esc, AR } from './ui.js';
 import * as L from './audio_lines.js';
 import * as P from './audio_practice.js';
+import * as PI from './audio_pitch.js';
 import { pickMime, baseMime, micError } from './recorder.js';
 
 const T = Object.freeze({
@@ -45,7 +46,12 @@ const T = Object.freeze({
   listen: k => `يُسمع السطر ${AR(k + 1)}`,
   their: s => s ? `دور <bdi>${esc(s)}</bdi>` : 'يُسمع الأصل',
   lineMic: k => `التدرّب على السطر ${AR(k + 1)}`,
-  lineMine: k => `سماع صوتك في السطر ${AR(k + 1)}`
+  lineMine: k => `سماع صوتك في السطر ${AR(k + 1)}`,
+  /* 🆕 b223 · خطُّ التنغيم (مختبر الصوتيّات ٦) */
+  pitchOf: k => `نبرة السطر ${AR(k + 1)}`,
+  pitchHint: 'ارتفاع الخط ارتفاع الصوت، وكل خط بمدى صوت صاحبه.',
+  pitchNoOrig: 'تعذّرت قراءة الأصل، فيظهر خط صوتك وحده.',
+  pitchShort: 'لا يكفي الصوت المسجّل لرسم الخط.'
 });
 /* رسائلُ الميكروفون رسائلُ القراءة الجهريّة بحرفها (`readAr` في student.js) — والقياسُ يفحص أنّهما واحد */
 const MIC = Object.freeze({
@@ -69,14 +75,26 @@ function silence(){
   return URL.createObjectURL(new Blob([b], { type: 'audio/wav' }));
 }
 
+/* 🆕 b223 · الصوتُ أرقاماً لخطّ التنغيم: يُفكّ بثمانية آلاف عيّنةٍ وقناةٍ واحدة — تكفي من ٩٠ إلى ٣٠٠ هـ بدقّة ١٪ (قيس في
+   `audio_pitch.test.mjs`)، وملفٌّ من عشر دقائق نحو ١٩ م.ب في الذاكرة لا ٣٨ */
+const PITCH_RATE = 8000;
+async function pcm(buf){
+  const ctx = new OfflineAudioContext(1, 1, PITCH_RATE);
+  const ab = await ctx.decodeAudioData(buf);
+  const n = ab.length, ch = ab.numberOfChannels, mono = new Float32Array(n);
+  for(let c = 0; c < ch; c++){ const d = ab.getChannelData(c); for(let i = 0; i < n; i++) mono[i] += d[i] / ch; }
+  return { data: mono, rate: ab.sampleRate };
+}
+
 /* host لوحةُ التدرّب (`.al-pr`) · ctx من المشغّل: { el, au, lines(), text(), halt() } ⇒ { show, hide, redraw } */
 export function mountPractice(host, ctx){
   const { el, au } = ctx;
-  const S = { mode: 'echo', role: null, phase: 'idle', msg: '', err: '' };   // phase: idle · wait · turn · play · back · mix · done
-  const echoT = new Map(), roleT = new Map();                               // رقمُ السطر ⇒ { url, ms } — في الذاكرة وحدها
+  const S = { mode: 'echo', role: null, phase: 'idle', msg: '', err: '', chart: null };   // phase: idle · wait · turn · play · back · mix · done
+  const echoT = new Map(), roleT = new Map();                               // رقمُ السطر ⇒ { url, ms, blob } — في الذاكرة وحدها
+  const pitch = new Map();                                                  // رقمُ السطر ⇒ { me, og } منحنيا التنغيم
   const me = new Audio();
   me.preload = 'auto';
-  let run = null, stopTurn = null, hush = null, meOpen = false;
+  let run = null, stopTurn = null, hush = null, meOpen = false, orig = null;
 
   const lines = () => ctx.lines();
   const durMs = () => Number.isFinite(au.duration) ? au.duration * 1000 : Infinity;
@@ -109,8 +127,62 @@ export function mountPractice(host, ctx){
         <button type="button" class="aud-b primary" data-p="go"${S.role == null ? ' disabled' : ''}>${T.go}</button></div>`;
     host.innerHTML = `<p class="al-pr-note">${T.privacy}</p>
       ${rs.length ? `<div class="al-pr-tabs" role="group" aria-label="${T.name}">${tab('echo', T.echo)}${tab('role', T.role)}</div>` : ''}
-      ${body}<div class="al-pr-st" aria-live="polite">${status()}</div>`;
+      ${body}<div class="al-pr-st" aria-live="polite">${status()}</div>${chart()}`;
     decorate();
+  }
+
+  /* 🆕 b223 · خطُّ التنغيم للسطر الأخير سطراً سطراً: الأصلُ عريضٌ محايد، وصوتُ الطالب رفيعٌ بلون التفاعل فوقه — فيُفرَّق
+     بينهما باللون والعرض معاً (عمى الألوان · الرماديّ). ولا لونَ حكم: الخطّان لا يقولان «أصبت» ولا «أخطأت» */
+  function chart(){
+    const k = S.chart, p = k != null && S.mode === 'echo' ? pitch.get(k) : null;
+    if(!p) return '';
+    const o = { w: 300, h: 90, rtl: el.querySelector('.al-pls')?.dir === 'rtl' };
+    const og = p.og?.span ? PI.path(p.og, o) : '', mine = p.me?.span ? PI.path(p.me, o) : '';
+    const note = !mine ? T.pitchShort : p.og == null ? T.pitchNoOrig : T.pitchHint;
+    return `<figure class="al-pc"><figcaption><b>${T.pitchOf(k)}</b>${og ? `<span class="al-pc-k o">${T.orig}</span>` : ''}${
+        mine ? `<span class="al-pc-k m">${T.yours}</span>` : ''}</figcaption>
+      <svg class="al-pc-g" viewBox="0 0 300 90" preserveAspectRatio="none" role="img" aria-label="${T.pitchOf(k)}">
+        <line class="al-pc-mid" x1="0" y1="45" x2="300" y2="45"/>${og ? `<path class="al-pc-o" d="${og}"/>` : ''}${mine ? `<path class="al-pc-m" d="${mine}"/>` : ''}</svg>
+      <p class="al-pc-n">${note}</p></figure>`;
+  }
+
+  /* الأصلُ يُقرأ مرّةً لكلّ مشغّل — ويقتضي أن يأذن المخزنُ للموقع بالقراءة (CORS · ق٢). وتعذُّرُه يُقال، وخطُّ الطالب يبقى.
+     🔴 **وبسؤالٍ يتخطّى الذاكرة المؤقّتة** (`?cors=…`): Cloudflare يحفظ ردَّ الرابط المجرّد ولا يفرّق بالأصل (`Vary: Origin`
+        لا يُعمل به) — ويملؤها المشغّلُ نفسُه وهو لا يرسل أصلاً، فيعود الردُّ المحفوظ بلا الترويسة لكلّ صفحة (قِيس بعد حفظ القاعدة:
+        `HIT` بلا `Access-Control-Allow-Origin`، والرابطُ بسؤالٍ فريدٍ يبلغ R2 فيردّ بأصل السائل). ومسحُ الذاكرة لا يدوم: يملؤها
+        التشغيلُ التالي كما ملأها. والثمنُ تنزيلٌ ثانٍ للملفّ في كلّ تدرّب، وR2 لا يتقاضى على التنزيل */
+  function original(){
+    if(!orig) orig = (async () => {
+      try {
+        const src = au.currentSrc || au.src;
+        const url = /^https?:/.test(src) ? src + (src.includes('?') ? '&' : '?') + 'cors=' + Date.now().toString(36) : src;
+        const r = await fetch(url, { mode: 'cors', credentials: 'omit' });
+        if(!r.ok) throw new Error('HTTP ' + r.status);
+        return await pcm(await r.arrayBuffer());
+      } catch(e){ console.warn('[pitch] تعذّرت قراءة الأصل:', e); return null; }
+    })();
+    return orig;
+  }
+
+  /* منحنيا السطر k: صوتُ الطالب من تسجيله، والأصلُ من حدَّي السطر في الملفّ — ويُرسمان إن بقي السطرُ هو المعروض */
+  async function analyze(k){
+    const t = echoT.get(k), sp = L.span(lines(), k, durMs());
+    if(!t || !sp) return;
+    S.chart = k;
+    try {
+      const mine = await pcm(await t.blob.arrayBuffer());
+      const meC = PI.contour(mine.data, mine.rate);
+      const o = await original();
+      let ogC = null;
+      if(o){
+        const a = Math.max(0, Math.floor(sp.start / 1000 * o.rate));
+        const b = Math.min(o.data.length, Math.ceil((sp.end ?? durMs()) / 1000 * o.rate));
+        if(b > a) ogC = PI.contour(o.data.subarray(a, b), o.rate);
+      }
+      if(echoT.get(k) !== t) return;                         // سُجّل السطرُ ثانيةً أثناء الحساب
+      pitch.set(k, { me: meC, og: ogC });
+      if(S.chart === k) draw();
+    } catch(e){ console.warn('[pitch]', e); }
   }
 
   /* السطور: زرُّ التسجيل لكلّ سطرٍ موقَّتٍ سطراً سطراً، و«صوتك» لما سُجّل منها · وسطورُ الدور المختار مُعلَّمة */
@@ -307,7 +379,8 @@ export function mountPractice(host, ctx){
 
   const keep = (map, k, take) => {
     if(map.has(k)) URL.revokeObjectURL(map.get(k).url);
-    map.set(k, { url: URL.createObjectURL(take.blob), ms: take.ms });
+    map.set(k, { url: URL.createObjectURL(take.blob), ms: take.ms, blob: take.blob });
+    if(map === echoT) pitch.delete(k);
   };
   const clear = map => { map.forEach(t => URL.revokeObjectURL(t.url)); map.clear(); };
 
@@ -330,13 +403,16 @@ export function mountPractice(host, ctx){
       set('back', T.orig);
       await playSeg(sp.start, sp.end, sig);
       finish();
+      analyze(k);                                            // 🆕 b223 · ثمّ خطّا التنغيم بعد المقارنة: يسمع ثمّ يرى
     } catch(e){ fail(e); }
   }
 
-  /* صوتُ الطالب في سطرٍ سجّله — وحده */
+  /* صوتُ الطالب في سطرٍ سجّله — وحده، وخطُّه يعود معه */
   async function solo(k){
     const t = echoT.get(k);
     if(!t) return;
+    S.chart = k;
+    if(!pitch.has(k)) analyze(k);
     const { sig, primed } = begin();
     try { await primed; mark(k); set('back', T.yours); await playTake(t.url, sig); finish(); }
     catch(e){ fail(e); }
@@ -408,7 +484,7 @@ export function mountPractice(host, ctx){
     clearInterval(dog);
     if(run){ const r = run; run = null; r.abort(); }
     stopTurn = null;
-    clear(echoT); clear(roleT);
+    clear(echoT); clear(roleT); pitch.clear(); orig = null;
     el.removeEventListener('click', onClick);
     try { me.pause(); me.removeAttribute('src'); me.load(); } catch(e){}
     if(hush){ URL.revokeObjectURL(hush); hush = null; }

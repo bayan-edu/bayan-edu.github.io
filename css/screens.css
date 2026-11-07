@@ -2227,6 +2227,22 @@ html.pv-lock{overflow:hidden}
 .al-pli.mine{border-inline-start:3px solid var(--accent);padding-inline-start:5px}
 .al-pl[data-busy] .al-plb[data-a="play"],.al-pl[data-busy] [data-a="line"]{opacity:.5;cursor:default}
 @media (prefers-reduced-motion:reduce){ .al-pr-dot{animation:none} }
+/* 🆕 b223 · خطُّ التنغيم (audio_pitch.js · مختبر الصوتيّات ٦) — بمهارة الهويّة البصريّة: الخطّان لا يقولان جملةَ حكم، فلا
+   `ok` ولا `danger`. صوتُ الطالب ما أنتجه هو، كالخيار المختار قبل التصحيح ⇒ `accent` رفيعاً فوق · والأصلُ مرجعٌ محايد ⇒
+   `--text-muted` عريضاً شفيفاً تحته. واللونُ والعرضُ معاً: يُفرَّق بينهما عند عمى الألوان وفي الرماديّ. ولا لونَ جديد.
+   والمخطّطُ يمتدّ عرضاً (`preserveAspectRatio="none"`) والخطُّ لا يتمدّد معه (`non-scaling-stroke`) */
+.al-pc{margin:10px 0 0}
+.al-pc figcaption{display:flex;align-items:center;flex-wrap:wrap;gap:4px 12px;font-size:var(--fs-meta);margin-bottom:6px}
+.al-pc-k{display:inline-flex;align-items:center;gap:6px;color:var(--text-muted)}
+.al-pc-k::before{content:"";width:20px;border-radius:3px}
+.al-pc-k.o::before{border-top:6px solid var(--text-muted);opacity:.45}
+.al-pc-k.m::before{border-top:2.5px solid var(--accent)}
+.al-pc-g{display:block;width:100%;height:96px;background:var(--fill-soft);border:1px solid var(--line);border-radius:9px}
+.al-pc-mid{stroke:var(--line);stroke-width:1;stroke-dasharray:3 4;vector-effect:non-scaling-stroke}
+.al-pc-o,.al-pc-m{fill:none;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.al-pc-o{stroke:var(--text-muted);stroke-width:7;opacity:.45}
+.al-pc-m{stroke:var(--accent);stroke-width:2.5}
+.al-pc-n{margin:6px 0 0;font-size:var(--fs-meta);color:var(--text-muted)}
 
 /* ══ المحاكاة التفاعلية داخل الدرس (b57) ══
    .sim.full تُحرّك نفس عنصر DOM إلى ملء الشاشة بـCSS وحده — لا يُعاد
