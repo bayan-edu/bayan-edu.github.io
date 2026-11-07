@@ -48,12 +48,22 @@
 
    ⚠️ وهذا الصندوق **لا يُغني عن القديم**: ذاك يُضيف أسئلةً إلى اختبارٍ
    قائم، وهذا يُنشئ الاختبارَ وبندَه من الصفر.
+
+   🎧 b221 · **وفي بوّابتَي الاختبار والبنك: الصوتُ يُسحب مع الملفّ** (مختبر الصوتيّات، الخطوة ٤ · `audio_import.js`):
+      `"media": "dialogue1.mp3"` اسمُ ملفٍّ يُسحب معه، و`"transcript"` نصُّه سطراً سطراً. **والحرفُ الأوّل للقاعدة كما كان:**
+      الجافّةُ تمرّ بالمفاتيح التي سيُرفع إليها الصوت (من بصمة كلّ ملفّ — فلا تتغيّر بين الجافّة والاعتماد) ولا يُرفع شيء،
+      **والاعتمادُ يرفع أوّلاً** فلا يُكتب في القاعدة مفتاحٌ بلا ملفّ، **ثمّ الدفعةُ، ثمّ السطورُ بنداءٍ ثانٍ** (`save_passage_lines`
+      · 200) — مواضعُها من وقفات الصوت حين لا يحملها الملفّ، ويراجعها المعلّم في «سطور المقطع». ولا تُطمس سطورُ ملفٍّ قائمة.
    ═══════════════════════════════════════════════════════════════════ */
 
 import * as api from './api.js';
 import { app, head, toast, esc, escA, AR, errBox, nav, setWide, scrollTop, N } from './ui.js';
 import { openCourse } from './editor.js';
 import { previewText } from './editor_items.js';
+import { AUDIO_EXT, AUDIO_MAX_MB, audioKey } from './media.js';
+import * as LN from './audio_lines.js';
+import { planAudio, withKeys, hashName, envelope, findPauses, timedLines } from './audio_import.js';
+import { clock } from './recorder.js';
 
 const MAX = 2 * 1024 * 1024;          // حدُّ الملفّ — كما في صندوق الاختبار
 
@@ -446,6 +456,116 @@ async function previewFromPlan(e, course, parsed){
   });
 }
 
+/* ═══════════ 🎧 b221 · الصوتُ المسحوب مع الملفّ ═══════════ */
+/* والمثالُ قطعٌ قصيرةٌ لا تنكسر (`.imp-help code`): قطعةٌ طويلةٌ تنكسر وسطَ السطر العربيّ فيتبعثر ترتيبُها — كشفته لقطة */
+const AUDIO_HELP = `<span class="imp-help"><b>وللاستماع:</b> اسم الملف الصوتي في <code dir="ltr">"media": "dialogue1.mp3"</code>،
+      ويُسحب الملف مع ملف JSON. ونص المقطع في <code dir="ltr">"transcript"</code> سطراً سطراً:
+      <code dir="ltr">["Tom: Hi!", "Sara: Hello."]</code> — تُقترح مواضع سطوره من وقفات الصوت، وتُراجع في «سطور المقطع».</span>`;
+/* الحجمُ بوحدته: ملفٌّ دون الميجابايت بالكيلوبايت — فلا يُقرأ «٠٫٠ م.ب» لملفٍّ فيه صوت */
+const SZ = n => n < 1048576 ? `${AR(Math.max(1, Math.round(n / 1024)))} ك.ب`
+                            : `${AR((n / 1048576).toFixed(1)).replace('.', '٫')} م.ب`;
+/* المدّةُ دون الدقيقة بالكلمة: «٠:١٠ · ٣٠٦» تُقرأ رقماً واحداً — الصفرُ الهنديّ والفاصلُ نقطتان متشابهتان (كشفته لقطة) */
+const dur = ms => ms < 60000 ? N(Math.max(1, Math.round(ms / 1000)), 'ثانية', 'ثانيتان', 'ثوان', 'ثانية') : clock(ms / 1000, AR);
+const isJson  = f => /\.(json|txt)$/i.test(f.name) || /json|text\/plain/.test(f.type || '');
+const isAudio = f => AUDIO_EXT.includes((f.name.split('.').pop() || '').toLowerCase());
+
+/* المفتاحُ من بصمة الملفّ (`hashName`) في صيغة `audioKey` نفسِها — وبها يُفحص الامتدادُ والحجمُ كما في زرّ الرفع */
+async function contentKey(file){
+  const base = audioKey('i', file);
+  if(base.error) return base;
+  const sha = new Uint8Array(await crypto.subtle.digest('SHA-256', await file.arrayBuffer()));
+  const hex = [...sha].map(b => b.toString(16).padStart(2, '0')).join('');
+  return { key: base.key.replace(/[a-z0-9]+-[a-z0-9]{6}(\.[a-z0-9]{2,4})$/, hashName(hex) + '$1'), error: null };
+}
+
+/* الصوتُ يُفكّ في المتصفّح بثمانية آلاف عيّنةٍ في الثانية: تكفي للطاقة، وملفٌّ من عشر دقائق نحو ٢٠ م.ب في الذاكرة.
+   وتعذُّرُ الفكّ لا يردّ شيئاً: تُكتب السطورُ بلا مواضع، وتُضبط بالنقر في «سطور المقطع» */
+async function pausesOf(file){
+  try{
+    const ctx = new OfflineAudioContext(1, 1, 8000);
+    const ab = await ctx.decodeAudioData(await file.arrayBuffer());
+    const len = ab.length, ch = ab.numberOfChannels, mono = new Float32Array(len);
+    for(let c = 0; c < ch; c++){ const d = ab.getChannelData(c); for(let i = 0; i < len; i++) mono[i] += d[i] / ch; }
+    return { ms: Math.round(ab.duration * 1000), found: findPauses(envelope(mono, ab.sampleRate)) };
+  }catch(e){
+    console.warn('[import] تعذّر فكّ الصوت:', file.name, e);
+    return { ms: null, found: null };
+  }
+}
+
+/* الرفعُ عند الاعتماد وقبل الدفعة: فلا يُكتب في القاعدة مفتاحٌ بلا ملفّ. و`412` على مفتاحٍ من البصمة هو الملفُّ نفسُه
+   رُفع من قبل — فيُعدّ مرفوعاً، والاعتمادُ المعادُ بعد تعثّرٍ لا يرفع شيئاً مرّتين */
+async function uploadAll(A, aud, say){
+  for(const [i, k] of A.files.entries()){
+    const v = aud.get(k);
+    say(`جار رفع الصوت… ${AR(i + 1)} من ${AR(A.files.length)}: ${v.file.name}`);
+    const { error } = await api.uploadMedia(v.key, v.file);
+    if(error && error.status !== 412)
+      return { error: { name: v.file.name, why: error.status === 403 ? 'لا صلاحية رفع لهذا الحساب' : error.message || 'سبب غير معروف' } };
+  }
+  return { error: null };
+}
+
+/* السطورُ بنداءٍ ثانٍ بعد الاعتماد: النصُّ يُعرف بمفتاح ملفّه في الاختبار (أو البنك) الذي كُتب للتوّ. ولا تُطمس سطورٌ
+   قائمة — السطورُ تتبع الملفّ أينما استُعمل (197 ①)، فملفٌّ له سطورٌ من قبل يبقى عليها */
+async function writeLines(qid, A, aud, say){
+  const res = { written: [], kept: [], failed: [] };
+  const q = await api.quizForEdit(qid).then(x => x, e => ({ error: e }));
+  const byKey = new Map(((q.data?.ok && q.data.passages) || []).map(p => [p.media, p]));
+  for(const [i, u] of A.uses.entries()){
+    say(`جار كتابة سطور المقاطع… ${AR(i + 1)} من ${AR(A.uses.length)}`);
+    const key = u.key ?? aud.get(u.name)?.key, name = useName(u, aud), p = byKey.get(key);
+    if(!p){ res.failed.push({ name, why: 'لم يُعرف نصّه المشترك بعد الاعتماد' }); continue; }
+    const cur = await api.passageLines(p.id);
+    if(cur.error || !cur.data?.ok){ res.failed.push({ name, why: cur.error?.message || cur.data?.error || '' }); continue; }
+    if(cur.data.lines?.length){ res.kept.push(name); continue; }
+    const w = await api.savePassageLines(p.id, LN.payload(u.lines));
+    if(w.error || !w.data?.ok){ res.failed.push({ name, why: w.error?.message || w.data?.error || '' }); continue; }
+    res.written.push(name);
+  }
+  return res;
+}
+const useName = (u, aud) => u.name ? aud.get(u.name)?.file.name ?? u.name : u.key;
+
+/* ما بقي من السطور وما تعذّر — والاسمُ لاتينيٌّ في جملةٍ عربيّة فيُعزل (`bdi`)، وإلا انقلب ما حوله */
+const linesWarn = lw => [
+  ...(lw?.kept || []).map(n => `سطور <bdi dir="ltr">${esc(n)}</bdi> قائمة من قبل، فبقيت ولم تُكتب من الملف`),
+  ...(lw?.failed || []).map(f => `تعذّرت كتابة سطور <bdi dir="ltr">${esc(f.name)}</bdi>${f.why ? ` (${esc(f.why)})` : ''}
+      — وتُكتب من «سطور المقطع» في النص المشترك`)];
+
+/* قسمُ الصوت في الخطّة: ما يُرفع، ولأيّ نصّ، وسطورُه ومواضعُها — والجافّةُ لم ترفع شيئاً. و`head` بعد الاعتماد ما وقع */
+function audioBox(A, aud, head){
+  if(!A || (!A.files.length && !A.uses.length)) return '';
+  const byName = new Map(A.uses.filter(u => u.name).map(u => [u.name, u]));
+  const row = (title, sub) => `<div class="imp-au"><b dir="ltr"><bdi>${esc(title)}</bdi></b><span>${sub}</span></div>`;
+  const linesOf = u => {
+    const n = u.lines.length, t = u.lines.filter(l => l.start != null).length, all = N(n, 'سطر', 'سطران', 'سطور', 'سطراً');
+    if(u.timed) return `${all} ${n === 1 ? 'بموضعه' : 'بمواضعها'} من الملف`;
+    if(t === n) return `${all} ${n === 1 ? 'بموضعه' : 'بمواضعها'} من وقفات الصوت`;
+    if(t) return `${all}، وُقّت منها ${AR(t)} من وقفات الصوت`;
+    return `${all} ${n === 1 ? 'بلا موضع' : 'بلا مواضع'}`;
+  };
+  /* أين يُستعمل الملفّ: الحمولةُ قبل البصمة تحمل اسمَه بحروفٍ صغيرة (`planAudio`) — فيُسمّى النصُّ والسؤالُ بعينهما */
+  const ps = Array.isArray(A.payload?.passages) ? A.payload.passages : [];
+  const qs = Array.isArray(A.payload?.questions) ? A.payload.questions : [];
+  const where = k => [
+    ...ps.map((p, i) => p?.media === k ? `النص ${esc(p.ref ?? p.id ?? '#' + AR(i + 1))}` : null),
+    ...qs.map((q, i) => q?.audio === k ? `صوت السؤال ${AR(i + 1)}` : null)].filter(Boolean);
+  const files = A.files.map(k => {
+    const v = aud.get(k), u = byName.get(k), w = where(k);
+    const bare = !u && w.some(x => x.startsWith('النص'));
+    return row(v.file.name, [v.ms ? dur(v.ms) : null, SZ(v.file.size), ...w,
+                             u ? linesOf(u) : bare ? 'بلا نص مقطع' : null].filter(Boolean).join(' · '));
+  });
+  const keys = A.uses.filter(u => u.key).map(u => row(u.key, `النص ${esc(u.ref)} · ${linesOf(u)} — تُكتب إن لم تكن له سطور`));
+  const nf = A.files.length, nu = A.uses.length;
+  const lead = nf ? `يُرفع ${N(nf, 'ملف', 'ملفان', 'ملفات', 'ملفاً')} عند الاعتماد` +
+                    (nu ? `، وتُكتب بعده سطور ${N(nu, 'مقطع', 'مقطعين', 'مقاطع', 'مقطعاً')}` : '')
+                  : `تُكتب سطور ${N(nu, 'مقطع', 'مقطعين', 'مقاطع', 'مقطعاً')} بعد الاعتماد`;
+  return `<div class="line" style="margin:12px 0 6px"><b>الصوت</b> · ${head || lead}</div>
+    ${files.join('')}${keys.join('')}`;
+}
+
 /* ═══════════ جدولُ البوّابات — وهو كلُّ الفرق بينها ═══════════
    🔑 ما اختلف بُيّن هنا، وما اتّفق بقي أسفلُ مرّةً واحدة. وزيادةُ
    بوّابةٍ ثالثةٍ يوماً سطرٌ في هذا الجدول، لا ملفٌّ ثالث. */
@@ -457,9 +577,11 @@ const K = {
       (<code dir="ltr">lesson_key</code>) لا برقمه، والهدف بكوده،
       وكلّ مشتّت خاطئ بكود تشخيصه.<br>
       ويُنشئ الاختبار وبنده في الدرس. ولإضافة أسئلة إلى اختبار قائم
-      فبابها شاشة الاختبار نفسها.`,
+      فبابها شاشة الاختبار نفسها.<br>
+      ${AUDIO_HELP}`,
     ph: '{ "lesson_key": "U1L2.DISC", "quiz": { … }, "questions": [ … ] }',
     sample: SAMPLE,
+    audio: true,
     call: (course, payload, dry) => api.importQuiz(course.id, payload, dry),
     plan: planBox,
     count: pl => N(pl?.['أسئلة'] || 0, 'سؤال', 'سؤالين', 'أسئلة', 'سؤالاً'),
@@ -587,9 +709,11 @@ const K = {
       السؤال فرعه ويزنه النموذج — وكلّ مشتّت خاطئ بكود تشخيصه.<br>
       والصيغ تُقرن داخل الملفّ (<code dir="ltr">variant</code>)، والنصوص البديلة لنصّ واحد
       مجموعة (<code dir="ltr">group</code>).<br>
-      <b>ويُضيف ولا يستبدل:</b> والملفّ نفسه يُعاد فيُقال «لا جديد».`,
+      <b>ويُضيف ولا يستبدل:</b> والملفّ نفسه يُعاد فيُقال «لا جديد».<br>
+      ${AUDIO_HELP}`,
     ph: '{ "bank": "بنك الاستيعاب المقروء", "passages": [ … ], "questions": [ … ] }',
     sample: SAMPLE_BANK,
+    audio: true,
     call: (course, payload, dry) => api.importBank(course.id, payload, dry),
     plan: planBank,
     same: d => `البنك «<bdi>${esc(d.bank || '')}</bdi>»`,
@@ -616,6 +740,9 @@ async function openImport(course, kind, back){
   let parsed = null;                 // الحمولةُ بعد التحليل المحليّ
   let plan   = null;                 // خطّةُ الجافّة كما ردّتها القاعدة
   let perm   = {};                   // الأذونُ المشتعلة — بأسمائها في `C.perms`
+  /* 🎧 b221 · ما سُحب من صوت: الاسمُ بحروفٍ صغيرة ⇒ { file, key, ms, found } — والمفتاحُ والوقفاتُ تُحسب مرّةً لكلّ ملفّ */
+  const aud = new Map();
+  let A = null;                      // مطابقةُ الصوت للدفعة (`planAudio`) — تُعاد مع كلّ جافّة
 
   /* 🔑 المربّعُ يُرسم حين تطلبه القاعدة (عبارتُه في المصدر الذي يُقرأ منه)
      أو حين يكون مشتعلاً وهو لاصق — ولا يُرسم لبوّابةٍ لا أذونَ لها.
@@ -638,6 +765,24 @@ async function openImport(course, kind, back){
     cb.onchange = () => { perm = { ...perm, [cb.dataset.perm]: cb.checked }; run('', true); };
   });
 
+  /* خطّةٌ عُرضت ثمّ تغيّر ما فُحص ⇒ تبطل ويغيب زرُّ الاعتماد (`why` ما تغيّر) */
+  const stale = why => {
+    if(!plan) return;
+    plan = null; parsed = null;
+    const out = document.getElementById("out");
+    if(out) out.innerHTML = `<div class="warnbox" style="margin-top:14px">${esc(why)} — أعِد التجربة الجافّة قبل الاعتماد.</div>`;
+  };
+  /* 🎧 قائمةُ الصوت المسحوب بحجم كلّ ملفّ، ولكلٍّ زرُّ إزالة */
+  const drawAud = () => {
+    const box = document.getElementById("aud");
+    if(!box) return;
+    box.innerHTML = [...aud.entries()].map(([k, v]) => `<span class="chip imp-f"><bdi dir="ltr">${esc(v.file.name)}</bdi>
+      <span>${SZ(v.file.size)}</span>
+      <button type="button" class="imp-x" data-rm="${escA(k)}" aria-label="إزالة ${escA(v.file.name)}">✕</button></span>`).join('');
+    box.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => {
+      aud.delete(b.dataset.rm); drawAud(); stale('تغيّر الصوت المسحوب'); });
+  };
+
   const draw = () => {
     app.innerHTML = `
       <div class="crumb" id="bk">→ ${esc(B.label)}</div>
@@ -650,12 +795,18 @@ async function openImport(course, kind, back){
 
         <div class="drop" id="dz">
           <div class="drop-i">⇪</div>
-          <div>بسحب ملف JSON هنا · أو <span class="drop-a" id="pick">باختيار ملفّ</span>
+          ${C.audio ? `<div>بسحب ملف JSON هنا ومعه ملفات الصوت · أو <span class="drop-a" id="pick">باختيار الملفات</span>
+            · أو بلصقه أدناه</div>
+          <div class="drop-s">الملف يُقرأ في متصفحك، والصوت لا يُرفع إلا عند الاعتماد
+            · JSON حتى ٢ ميجابايت · والصوت حتى ${AR(AUDIO_MAX_MB)} ميجابايت للملف</div>
+          <input type="file" id="file" accept=".json,.txt,application/json,audio/*" multiple hidden>`
+          : `<div>بسحب ملف JSON هنا · أو <span class="drop-a" id="pick">باختيار ملفّ</span>
             · أو بلصقه أدناه</div>
           <div class="drop-s">الملف يُقرأ في متصفحك — ولا يُرفع إلى أيّ خادم
             · حتى ٢ ميجابايت</div>
-          <input type="file" id="file" accept=".json,.txt,application/json" hidden>
+          <input type="file" id="file" accept=".json,.txt,application/json" hidden>`}
         </div>
+        ${C.audio ? '<div class="imp-files" id="aud" aria-live="polite"></div>' : ''}
         <textarea id="js" class="eq-wide" dir="ltr"
           style="min-height:220px;font-family:monospace;font-size:.78rem"
           placeholder='${C.ph}'
@@ -682,26 +833,31 @@ async function openImport(course, kind, back){
       if(!f) return;
       if(f.size > MAX){ toast('الملفّ أكبر من ٢ ميجابايت'); return; }
       const r = new FileReader();
-      r.onload = () => { ta.value = String(r.result || ''); };
+      r.onload = () => { ta.value = String(r.result || ''); stale('تغيّر النصّ'); };
       r.readAsText(f);
     };
-    pk.onchange = e => readFile(e.target.files?.[0]);
+    /* 🎧 b221 · وفي بوّابتَي الصوت تُسحب الملفّاتُ معاً: JSON إلى المربّع، والصوتُ إلى قائمته — ويُقال ما ليس هذا ولا ذاك */
+    const readFiles = list => {
+      const fs = [...(list || [])];
+      if(!C.audio) return readFile(fs[0]);
+      fs.filter(f => !isJson(f) && !isAudio(f)).forEach(f => toast(`«${f.name}» ليس JSON ولا ملفاً صوتياً`));
+      const js = fs.find(isJson), au = fs.filter(isAudio);
+      if(js) readFile(js);
+      au.forEach(f => aud.set(f.name.toLowerCase(), { file: f }));
+      if(au.length){ drawAud(); stale('تغيّر الصوت المسحوب'); }
+    };
+    pk.onchange = e => { readFiles(e.target.files); pk.value = ''; };
     ['dragenter','dragover'].forEach(ev => dz.addEventListener(ev, e => {
       e.preventDefault(); dz.classList.add('on'); }));
     ['dragleave','drop'].forEach(ev => dz.addEventListener(ev, e => {
       e.preventDefault(); dz.classList.remove('on'); }));
-    dz.addEventListener('drop', e => readFile(e.dataTransfer?.files?.[0]));
+    dz.addEventListener('drop', e => readFiles(e.dataTransfer?.files));
 
     /* 🔒 الحارس: «الاعتمادُ يشترط فرقاً مرئيّاً **لنفس النصّ**».
        فتعديلُ حرفٍ بعد عرض الفرق يُبطل الخطّةَ ويُخفي زرَّ الاعتماد —
-       فلا يُعتمد نصٌّ لم تمرّ عليه الجافّة. */
-    ta.oninput = () => {
-      if(!plan) return;
-      plan = null; parsed = null;
-      document.getElementById("out").innerHTML =
-        `<div class="warnbox" style="margin-top:14px">تغيّر النصّ —
-           أعِد التجربة الجافّة قبل الاعتماد.</div>`;
-    };
+       فلا يُعتمد نصٌّ لم تمرّ عليه الجافّة. 🎧 والصوتُ المسحوب كذلك: ملفٌّ يُضاف أو يُزال بعد الجافّة يُبطلها */
+    ta.oninput = () => stale('تغيّر النصّ');
+    drawAud();
 
     document.getElementById("dry").onclick = () => run(ta.value || '', true);
     /* 📖 b191 · `#out` يبقى والخطّةُ تُكتب فيه مرّةً بعد مرّة ⇒ مستمعٌ واحدٌ هنا يخدم كلَّ رسم.
@@ -727,7 +883,53 @@ async function openImport(course, kind, back){
       }
     }
 
-    const { data, error } = await C.call(course, parsed, dry, perm);
+    /* 🎧 b221 · الصوتُ المسحوب قبل أيّ نداء: يُطابَق ويُبصم ويُفكّ — وما لم يُطابَق يُقال ولا يُرسل شيء.
+       والحمولةُ بمفاتيح البصمة نفسِها في الجافّة والاعتماد، فما فُحص هو ما يُعتمد */
+    let payload = parsed;
+    if(C.audio){
+      const say = t => { out.innerHTML = `<div class="status" style="margin-top:14px">${esc(t)}</div>`; };
+      A = planAudio(parsed, [...aud.values()].map(v => v.file.name), AUDIO_EXT);
+      const bad = [...A.errors];
+      for(const k of A.files){
+        const v = aud.get(k);
+        if(!v.key){
+          say(`جار تحليل الصوت… ${v.file.name}`);
+          const r = await contentKey(v.file);
+          if(r.error){ bad.push(`«${v.file.name}»: ${r.error}`); continue; }
+          v.key = r.key;
+        }
+        if(v.found === undefined && A.uses.some(u => u.name === k && !u.timed)){
+          say(`جار تحليل الصوت… ${v.file.name}`);
+          Object.assign(v, await pausesOf(v.file));
+        }
+      }
+      if(bad.length){
+        out.innerHTML = `<div class="eq-ready" style="margin-top:14px">
+          ${bad.slice(0, 20).map(x => `<div class="eq-iss">⚠️ ${esc(x)}</div>`).join('')}
+          ${bad.length > 20 ? `<div class="eq-iss">… و${AR(bad.length - 20)} غيرها</div>` : ''}
+          <div class="line" style="margin-top:8px">ولم يُرسل شيء إلى القاعدة.</div></div>`;
+        return;
+      }
+      for(const u of A.uses) if(u.name && !u.timed) u.lines = timedLines(u.lines, aud.get(u.name).found);
+      payload = withKeys(A.payload, Object.fromEntries(A.files.map(k => [k, aud.get(k).key])));
+      /* والاعتمادُ يرفع أوّلاً: تعثّرُ الرفع يوقفه قبل أن يُكتب في القاعدة حرف */
+      if(!dry && A.files.length){
+        const up = await uploadAll(A, aud, say);
+        if(up.error){
+          /* والخطّةُ باقيةٌ لم يتغيّر ما فُحص — فالإعادةُ زرٌّ هنا، لا جافّةٌ من جديد */
+          /* والاسمُ والسببُ معزولان (`bdi`): «name»: R2 500 بلا عزلٍ صار تتابعاً لاتينيّاً واحداً انقلبت فيه العلامتان (كشفته لقطة) */
+          out.innerHTML = `<div class="err" style="margin-top:14px"><b>توقّف الاعتماد</b>تعذّر رفع
+            <bdi dir="ltr">${esc(up.error.name)}</bdi> (<bdi>${esc(up.error.why)}</bdi>)
+            — ولم يُكتب في القاعدة شيء، وما رُفع قبله لا يُرفع ثانيةً عند الإعادة.</div>
+            <div class="nav" style="margin-top:12px"><button class="btn primary" id="go">إعادة الاعتماد</button></div>`;
+          document.getElementById("go").onclick = () => run('', false);
+          return;
+        }
+        say('جار الاعتماد…');
+      }
+    }
+
+    const { data, error } = await C.call(course, payload, dry, perm);
     if(error){ out.innerHTML = errBox(error, 'الاستيراد'); return; }
 
     plan = C.pickPlan ? C.pickPlan(data) : (data?.['الخطّة'] || null);
@@ -739,7 +941,9 @@ async function openImport(course, kind, back){
       out.innerHTML = `<div class="eq-ready ok" style="margin-top:14px">
         <div class="eq-ok">لا جديد — هذه الدفعة بعينها مستوردة من قبل</div>
         <div class="line">${C.same ? C.same(data) : `الاختبار <b dir="ltr">${esc(data.quiz_code || '')}</b> ·
-          ${N(data.questions || 0, 'سؤال', 'سؤالان', 'أسئلة', 'سؤالاً')}`}</div></div>
+          ${N(data.questions || 0, 'سؤال', 'سؤالان', 'أسئلة', 'سؤالاً')}`}</div>
+        ${A?.uses.length ? `<div class="line" style="margin-top:6px">وسطور المقاطع لا تُكتب بإعادة الملف، وتُعدَّل من
+          «سطور المقطع» في النص المشترك.</div>` : ''}</div>
         <div class="nav" style="margin-top:12px">
           <button class="btn ghost" id="bk2">→ ${esc(B.label)}</button></div>`;
       document.getElementById("bk2").onclick = B.go;
@@ -772,14 +976,27 @@ async function openImport(course, kind, back){
 
     /* ── مرّت ── */
     if(!dry){
+      /* 🎧 والسطورُ بنداءٍ ثانٍ بعد الدفعة — وتعذُّرُها لا يردّ ما اعتُمد: يُقال، وتُكتب من «سطور المقطع» */
+      let lw = null, head = '';
+      if(A?.uses.length){
+        const qid = data.quiz_id ?? data.bank_id;
+        lw = qid ? await writeLines(qid, A, aud, t => { out.innerHTML = `<div class="status" style="margin-top:14px">${esc(t)}</div>`; })
+                 : { written: [], kept: [], failed: A.uses.map(u => ({ name: useName(u, aud), why: 'لم يُعرف الاختبار بعد الاعتماد' })) };
+      }
+      if(A && (A.files.length || A.uses.length))
+        head = [A.files.length ? `رُفع ${N(A.files.length, 'ملف', 'ملفان', 'ملفات', 'ملفاً')}` : '',
+                lw?.written.length ? `${A.files.length ? 'و' : ''}كُتبت سطور ${N(lw.written.length, 'مقطع', 'مقطعين', 'مقاطع', 'مقطعاً')}` : '']
+               .filter(Boolean).join('، ') || 'لم تُكتب سطور';
+      const lwarn = linesWarn(lw);
       toast(C.done(data));
       out.innerHTML = `
         <div class="eq-ready ok" style="margin-top:14px">
           <div class="eq-ok">${esc(C.okline)}</div>
           ${C.plan(plan)}
+          ${audioBox(A, aud, head)}
         </div>
-        ${warns.length ? `<div class="warnbox" style="margin-top:10px">
-          ${warns.map(x => `<div>⚠️ ${esc(x)}</div>`).join('')}</div>` : ''}
+        ${warns.length || lwarn.length ? `<div class="warnbox" style="margin-top:10px">
+          ${[...warns.map(esc), ...lwarn].map(x => `<div>⚠️ ${x}</div>`).join('')}</div>` : ''}
         <div class="nav" style="margin-top:12px">
           <button class="btn primary" id="bk3">→ ${esc(B.label)}</button></div>`;
       document.getElementById("bk3").onclick = B.go;
@@ -788,9 +1005,12 @@ async function openImport(course, kind, back){
 
     out.innerHTML = `
       <div class="eq-ready ok" style="margin-top:14px">
-        <div class="eq-ok">الجافّة مرّت — ولم يُكتب شيء</div>
+        <div class="eq-ok">الجافّة مرّت — ولم يُكتب شيء${A?.files.length ? ' ولم يُرفع شيء' : ''}</div>
         ${C.plan(plan)}
+        ${audioBox(A, aud)}
       </div>
+      ${A?.warns.length ? `<div class="warnbox" style="margin-top:10px">
+        ${A.warns.map(x => `<div>⚠️ ${esc(x)}</div>`).join('')}</div>` : ''}
       ${warns.length ? `<div class="warnbox" style="margin-top:10px">
         ${warns.map(x => `<div>⚠️ ${esc(x)}</div>`).join('')}
         <div style="margin-top:7px;opacity:.85">تحذير يُرى ولا يمنع — والاعتماد ممكن.</div>
@@ -803,7 +1023,7 @@ async function openImport(course, kind, back){
     bindPerms();
     document.getElementById("go").onclick    = () => run('', false);
     document.getElementById("again").onclick = () => {
-      parsed = null; plan = null; perm = {}; draw(); };
+      parsed = null; plan = null; perm = {}; A = null; aud.clear(); draw(); };
   }
 
   draw();

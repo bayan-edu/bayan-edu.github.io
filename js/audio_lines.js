@@ -16,7 +16,8 @@ export const LIMITS = Object.freeze({ lines: 400, text: 1000, speaker: 40, ms: 3
    السطرُ المُعاد من وسط كلمته الأولى. والتقديمُ والتأخيرُ بعدها بيد المعلّم (`nudge`). */
 export const LEAD_MS = 150;
 
-const ARD = s => String(s).replace(/[0-9]/g, d => '٠١٢٣٤٥٦٧٨٩'[+d]);
+/* الأرقامُ هنديّةً في الرسائل — ويستعملها audio_import.js (b221) فلا تُنسخ: الوحدتان نقيّتان لا تستوردان ui.js */
+export const ARD = s => String(s).replace(/[0-9]/g, d => '٠١٢٣٤٥٦٧٨٩'[+d]);
 const len = s => [...String(s ?? '')].length;            // بالمحارف لا بوحدات UTF-16 — كـ char_length في القاعدة
 
 /* ═══════════ من النصّ إلى السطور ═══════════ */

@@ -2156,6 +2156,18 @@ html.pv-lock{overflow:hidden}
 .drop-a{color:var(--accent);cursor:pointer;text-decoration:underline;
   font-family:'Almarai';font-weight:700}
 .drop-s{font-size:var(--fs-tag);opacity:.65;margin-top:7px}
+/* 🆕 b221 · الصوتُ المسحوب مع ملفّ الاستيراد (editor_import.js · مختبر الصوتيّات ٤): قائمةٌ بأسماء الملفّات وأحجامها
+   وزرِّ إزالة · وفي الخطّة سطرٌ لكلّ ملفّ: اسمُه ثمّ ما يُرفع له وما يُكتب من سطوره */
+.imp-files{display:flex;flex-wrap:wrap;gap:6px;margin:-4px 0 12px}
+.imp-files:empty{display:none}
+.imp-f{display:inline-flex;align-items:center;gap:6px;max-width:100%}
+.imp-f bdi{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.imp-x{border:0;background:none;color:inherit;cursor:pointer;padding:0 2px;font:inherit;opacity:.7}
+.imp-x:hover,.imp-x:focus-visible{opacity:1;color:var(--danger-text)}
+.imp-au{display:flex;flex-wrap:wrap;gap:2px 10px;align-items:baseline;padding:5px 0;border-top:1px solid var(--line)}
+.imp-au b{font-weight:700;overflow-wrap:anywhere}
+.imp-au span{font-size:var(--fs-meta);color:var(--text-muted)}
+.imp-help code{white-space:nowrap}
 
 /* ══ مشغّل الصوت داخل الدرس (b30) ══
    color-scheme يجعل المتصفح يرسم أزرار المشغّل الأصلية
