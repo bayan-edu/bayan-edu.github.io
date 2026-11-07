@@ -2202,6 +2202,31 @@ html.pv-lock{overflow:hidden}
 /* 🆕 b220 · نصُّ الاستماع في مراجعة الاختبار (quiz.js · 200 ②): مشغّلُ الدرس نفسُه في بطاقة كلّ نصٍّ صوتيّ */
 .al-rvw .aud{margin:0}
 .al-rvw .psg-t{margin-bottom:10px}
+/* 🆕 b222 · التدرّبُ بصوت الطالب (lines_practice.js · مختبر الصوتيّات ٥): لوحةٌ بين رأس السطور وسطورها بألوانٍ قائمة —
+   المختارُ بلون «المضغوط» كالسطر الجاري، ونقطةُ التسجيل بلون نقطة القراءة الجهريّة (`.ra-dot` في book.css، ولا يُحمَّل
+   هنا)، وسطورُ الدور المختار بخطٍّ في أوّلها: يرى الطالبُ سطورَه قبل أن يبدأ */
+.al-pr{margin:2px 0 10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.al-pr[hidden]{display:none}
+.al-pr p{margin:0 0 8px}
+.al-pr-note{font-size:var(--fs-meta);color:var(--text-muted)}
+.al-pr-hint{font-size:var(--fs-meta);line-height:1.7}
+.al-pr-tabs,.al-pr-who{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.al-pr .aud-b[aria-pressed="true"],.al-plh .aud-b[aria-pressed="true"]{background:var(--accent-fill);border-color:var(--accent-edge);color:var(--accent)}
+.al-pr .aud-b.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.al-pr .aud-b:disabled{opacity:.5;cursor:default}
+.al-pr .aud-b:disabled:hover{border-color:var(--line);color:var(--text)}
+.al-pr-st{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px}
+.al-pr-st:empty{display:none}
+.al-pr-msg{font-weight:700}
+.al-pr-err{color:var(--warn-text)}
+.al-pr-dot{width:10px;height:10px;border-radius:50%;background:var(--accent);flex:none;animation:pulse 1.2s ease-in-out infinite}
+.al-pr-bar{flex:1 1 90px;height:4px;border-radius:2px;background:var(--line);overflow:hidden}
+.al-pr-bar i{display:block;height:100%;width:0;background:var(--accent)}
+.al-mic svg{display:block;margin:auto}
+.al-mine{flex:none;margin-inline-start:auto}
+.al-pli.mine{border-inline-start:3px solid var(--accent);padding-inline-start:5px}
+.al-pl[data-busy] .al-plb[data-a="play"],.al-pl[data-busy] [data-a="line"]{opacity:.5;cursor:default}
+@media (prefers-reduced-motion:reduce){ .al-pr-dot{animation:none} }
 
 /* ══ المحاكاة التفاعلية داخل الدرس (b57) ══
    .sim.full تُحرّك نفس عنصر DOM إلى ملء الشاشة بـCSS وحده — لا يُعاد

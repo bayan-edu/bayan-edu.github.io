@@ -13,10 +13,15 @@
    🔑 **ولا يُسجَّل استماعٌ بسطر:** السطرُ الأخير يقف قبيل آخر الملفّ، فلا يطلق `ended` — و«فتحَ» ليست «سمعَ».
    🎨 **وصفُّ السطور باتّجاه لغة النصّ:** الإنجليزيُّ من اليسار — زرُّ السطر فقائلُه فكلامُه — وكان في الصفّ العربيّ يقع الكلامُ
       في الطرف الآخر بعيداً عن قائله، فتقفز العين (رُئي في لقطة ١٤١٢). والرأسُ عربيٌّ كما هو.
+   🆕 b222 · **و«التدرّب بصوتك»** (`lines_practice.js` · مختبر الصوتيّات ٥): سطراً سطراً وتبادلُ الأدوار، والتسجيلُ على الجهاز.
+      في الدرس وحده (`item`) لا في مراجعة الاختبار، وحيث يسجّل المتصفّح (`canRecord`)، ولسطرٍ موقَّتٍ واحدٍ على الأقلّ. ويُحمَّل
+      عند أوّل ضغطة. 🔑 **واللوحةُ موضعٌ ثابت بين الرأس والسطور:** الرسمُ يعيد الرأسَ والسطورَ وحدهما (بعد الاستماع كاملاً
+      مثلاً)، فلا يُمحى تدرّبٌ قائم. وما دام التدرّبُ قائماً (`data-busy`) فالمقطعُ له: لا «⟲ السطر» ولا ▶ ولا تلوينَ هنا.
    ══════════════════════════════════════════════════════════ */
 import * as realApi from './api.js';
 import { esc, AR } from './ui.js';
 import * as L from './audio_lines.js';
+import { canRecord } from './recorder.js';
 
 const HINT = { open: 'الاستماع أولاً، والنص بعده', wait: 'يُكشف النص بعد الاستماع كاملاً', now: 'اكتمل الاستماع، والنص متاح الآن' };
 
@@ -30,28 +35,33 @@ export async function attachLines(box, au, item, { api = realApi, data = null } 
 
   const el = document.createElement('div');
   el.className = 'al-pl';
+  el.innerHTML = '<div class="al-plh"></div><div class="al-pr" hidden></div><ol class="al-pls"></ol>';
   box.appendChild(el);
+  const head = el.querySelector('.al-plh'), prac = el.querySelector('.al-pr'), list = el.querySelector('.al-pls');
 
-  let lines = [], stopAt = null, last = -1, shown = false;
+  let lines = [], stopAt = null, last = -1, shown = false, P = null;
+  const busy = () => el.hasAttribute('data-busy');
   function draw(hint){
     lines = L.fromRows(d.lines);
     const hasText = d.text === true, timed = lines.some(l => l.start != null);
     el.toggleAttribute('data-show', hasText && shown);
-    el.innerHTML = `<div class="al-plh">
-        <b class="al-plt">سطور المقطع</b>
+    head.innerHTML = `<b class="al-plt">سطور المقطع</b>
         <span class="al-hint">${hint || (hasText ? HINT.open : d.reveal === 'after' ? HINT.wait : '')}</span>
         ${timed ? '<button type="button" class="aud-b" data-a="line">⟲ السطر</button>' : ''}
         ${hasText ? `<button type="button" class="aud-b" data-a="txt" aria-pressed="${shown}">${shown ? 'إخفاء النص' : 'كشف النص'}</button>` : ''}
-      </div>
-      <ol class="al-pls" dir="${d.lang === 'ar' ? 'rtl' : 'ltr'}">${lines.map((l, k) => `<li class="al-pli" data-k="${k}">${
+        ${timed && item?.id && canRecord() ? `<button type="button" class="aud-b" data-a="prac" aria-pressed="${!prac.hidden}">التدرّب بصوتك</button>` : ''}`;
+    list.dir = d.lang === 'ar' ? 'rtl' : 'ltr';
+    list.innerHTML = lines.map((l, k) => `<li class="al-pli" data-k="${k}">${
         l.start != null ? `<button type="button" class="al-plb" data-a="play" aria-label="سماع السطر ${AR(k + 1)}">▶</button>`
                         : '<span class="al-plb off" aria-hidden="true"></span>'}${
         l.speaker ? `<b class="al-who" dir="auto">${esc(l.speaker)}</b>` : ''}${
-        l.text != null ? `<span class="al-t" dir="auto">${esc(l.text)}</span>` : ''}<span class="al-gap" aria-hidden="true">…</span></li>`).join('')}</ol>`;
+        l.text != null ? `<span class="al-t" dir="auto">${esc(l.text)}</span>` : ''}<span class="al-gap" aria-hidden="true">…</span></li>`).join('');
     paint();
+    P?.redraw();
   }
 
   const paint = () => {
+    if(busy()) return;
     const k = L.lineAt(lines, au.currentTime * 1000);
     el.querySelectorAll('.al-pli').forEach(r => r.classList.toggle('on', +r.dataset.k === k));
   };
@@ -85,7 +95,7 @@ export async function attachLines(box, au, item, { api = realApi, data = null } 
     setTimeout(async () => { if(!(await ask())) setTimeout(ask, 3000); }, 1200);
   });
 
-  el.addEventListener('click', e => {
+  el.addEventListener('click', async e => {
     const b = e.target.closest('button[data-a]');
     if(!b) return;
     if(b.dataset.a === 'txt'){
@@ -95,6 +105,8 @@ export async function attachLines(box, au, item, { api = realApi, data = null } 
       b.textContent = shown ? 'إخفاء النص' : 'كشف النص';
       return;
     }
+    if(b.dataset.a === 'prac') return togglePractice(b);
+    if(busy()) return;
     if(b.dataset.a === 'line'){
       const k = L.lineAt(lines, au.currentTime * 1000);
       playLine(k >= 0 ? k : last >= 0 ? last : lines.findIndex(l => l.start != null));
@@ -102,6 +114,21 @@ export async function attachLines(box, au, item, { api = realApi, data = null } 
     }
     if(b.dataset.a === 'play') playLine(+b.closest('.al-pli').dataset.k);
   });
+
+  /* 🆕 b222 · اللوحةُ تُحمَّل عند أوّل ضغطة، والإخفاءُ يوقف ما يجري فيها */
+  async function togglePractice(b){
+    const on = prac.hidden;
+    b.setAttribute('aria-pressed', String(on));
+    if(!on){ P?.hide(); prac.hidden = true; return; }
+    prac.hidden = false;
+    if(!P){
+      prac.innerHTML = '<p class="al-pr-note">…</p>';
+      const m = await import('./lines_practice.js').catch(err => { console.warn('[practice]', err); return null; });
+      if(!m || !el.isConnected){ prac.hidden = true; b.setAttribute('aria-pressed', 'false'); return; }
+      P = m.mountPractice(prac, { el, au, lines: () => lines, text: () => d.text === true, halt: () => { stopAt = null; } });
+    }
+    P.show();
+  }
 
   draw();
   return { el, lines };
