@@ -21,7 +21,10 @@ let ctx = null;   // { course, lesson }
 let D   = null;   // { ok, curate, items }
 
 
-export async function openItems(course, lesson){
+/* 🆕 b228 · و`open` يفتح نموذجَ مصدرٍ بعينه بعد التحميل — أيقونةُ المقطع الصوتيّ في «دروس المقرَّر» (`editor.js`).
+   وبحكم القائمة نفسِه: من يعدّله يحرّره، ومن لا يعدّله يعاينه (`canEdit`) · والرجوعُ منه إلى مصادر الدرس كما لو فُتح
+   من قائمتها. ومصدرٌ لم يُوجد (حُذف من نافذةٍ أخرى) ⇒ القائمةُ نفسُها، لا نموذجٌ فارغ */
+export async function openItems(course, lesson, { open = null } = {}){
   ctx = { course, lesson };
   nav('editor'); setWide(true);
   head("مصادر الدرس", lesson.title);
@@ -31,6 +34,8 @@ export async function openItems(course, lesson){
   if(error){ app.innerHTML = errBox(error, 'مصادر الدرس'); return; }
   if(!data.ok){ app.innerHTML = errBox({ message: data.error }, 'مصادر الدرس'); return; }
   D = data;
+  const it = open != null ? (D.items || []).find(x => String(x.id) === String(open)) : null;
+  if(it && it.kind !== 'quiz'){ form(it, undefined, !canEdit(it)); scrollTop(); return; }
   render();
 }
 

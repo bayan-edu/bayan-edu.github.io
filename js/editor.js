@@ -14,6 +14,7 @@ import { app, head, toast, esc, escA, AR, errBox, nav, setWide, scrollTop, N,
          ICONS, KINDS, icon, gradesText } from './ui.js';
 import { openQuiz } from './editor_quiz.js';
 import { openItems } from './editor_items.js';
+import { mediaUrl } from './media.js';
 import { openCards } from './editor_cards.js';
 import { openStrands, strandsOf, strandSelect, clearStrands } from './editor_strands.js';
 import { openObjectives } from './editor_objectives.js';
@@ -790,7 +791,14 @@ export async function openCourse(course){
     /* 🆕 b195 · ومصدرُ الدرس المستعار يُفتح ليُقرأ، وما يُحرَّر منه (الاختبارُ وما بلا رابط) في بيته */
     if(l.borrowed && (i.kind === 'quiz' || !i.url)) return toast(HOME_ONLY);
     if(i.kind === 'quiz') return openQuiz(course, l);
-    if(i.url) return window.open(i.url, '_blank', 'noopener');
+    /* 🆕 b228 · والمقطعُ الصوتيّ يفتح نموذجَه لا ملفَّه — طلبُ المالك (٧ نوفمبر): «تفتح تبويب برابط الملف على r2 وليس شاشة
+       تحرير الصوت (وهو المفترض)». ففي نموذجه سطورُه وكشفُها وحوارُه المولَّد (مختبر الصوتيّات)، والملفُّ يُسمع من مشغّله.
+       وكان فتحُ الرابط حكمَ b150 يومَ لم يكن للمقطع ما يُحرَّر غيرُ رابطه. والمستعارُ على حكمه: ملفُّه يُسمع، ونموذجُه في بيته */
+    if(i.kind === 'audio' && !l.borrowed) return openItems(course, l, { open: i.id });
+    /* 🔴 b228 · وملفُّ الصوت يُفتح برابطه لا بمفتاحه: `r2:audio/…` ليس عنواناً يعرفه المتصفّح — كان التبويبُ يُفتح على ما لا
+       يُحمَّل (قِيس في التجربة: مقطعُ الدرس المستعار). **والصوتُ وحده:** رابطُ المحاكاة مسارٌ في الموقع (`sims/…`) يُفتح كما هو،
+       و`mediaUrl` تقرؤه مفتاحاً في المخزن فتكسره · ورابطُ المعلّم الخارجيّ كما هو — و`srcOf` حارسُ التضمين لا الفتح، يردّه */
+    if(i.url) return window.open(i.kind === 'audio' ? (mediaUrl(i.url) || i.url) : i.url, '_blank', 'noopener');
     openItems(course, l);
   });
 
