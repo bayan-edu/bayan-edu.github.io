@@ -24,7 +24,7 @@ const T = Object.freeze({
   privacy: 'التسجيل يبقى على جهازك، ولا يُرسل ولا يُحفظ.',
   echo: 'سطراً سطراً',
   role: 'تبادل الأدوار',
-  echoHint: 'لكل سطر زر تسجيل: يُسمع السطر، ثم صوتك، ثم الأصل للمقارنة.',
+  echoHint: 'لكل سطر زر تسجيل يبدأ فوراً، ثم يُسمع صوتك والأصل للمقارنة.',
   roleHint: 'تُسمع أدوار الآخرين، ويُسجَّل صوتك في دورك، ثم يُسمع الحوار بصوتك.',
   noText: 'والنص غير متاح، فيُقال السطر كما سُمع.',
   pick: 'دورك في الحوار:',
@@ -43,7 +43,6 @@ const T = Object.freeze({
   stopped: 'توقّف التدرّب.',
   silent: 'لم يُلتقط صوت.',
   fail: 'تعذّر تشغيل الملف.',
-  listen: k => `يُسمع السطر ${AR(k + 1)}`,
   their: s => s ? `دور <bdi>${esc(s)}</bdi>` : 'يُسمع الأصل',
   lineMic: k => `التدرّب على السطر ${AR(k + 1)}`,
   lineMine: k => `سماع صوتك في السطر ${AR(k + 1)}`,
@@ -384,7 +383,10 @@ export function mountPractice(host, ctx){
   };
   const clear = map => { map.forEach(t => URL.revokeObjectURL(t.url)); map.clear(); };
 
-  /* ① سطراً سطراً: الأصلُ ⇐ صوتُ الطالب ⇐ صوتُه ثمّ الأصلُ للمقارنة */
+  /* ① سطراً سطراً: صوتُ الطالب ⇐ صوتُه ثمّ الأصلُ للمقارنة.
+     🆕 b229 · **والتسجيلُ يبدأ بالضغطة** — طلبُ المالك (٧ نوفمبر): «عند الضغط على ايقونة الميكروفون ان يبدأ التسجيل مباشرة،
+     والزر الاخر مخصص لتشغيل الصوت الاصلي فما الداعي لاعادته قبل التسجيل». فلكلّ زرٍّ فعلُه: ▶ يُسمع الأصل متى شاء الطالب،
+     والميكروفونُ يسجّل. وكان الأصلُ يُعاد قبل التسجيل (بحرف الخطّة: «يسمع الأصل، ثمّ يسجّل»)، فيُعاد سطرٌ طويلٌ سمعه للتوّ */
   async function echo(k){
     const { sig, primed } = begin();
     try {
@@ -392,8 +394,6 @@ export function mountPractice(host, ctx){
       const sp = L.span(lines(), k, durMs());
       if(!sp) return finish();
       mark(k);
-      set('play', T.listen(k));
-      await playSeg(sp.start, sp.end, sig);
       set('wait');
       const take = await record(P.turnMs((sp.end ?? durMs()) - sp.start, au.playbackRate), sig);
       if(!take) return finish(T.silent);
