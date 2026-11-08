@@ -227,6 +227,94 @@ const guideOf = (k, isNew, ro) => {
     ? '<br>أو يُبنى حوار بأصوات Google في إطاره تحت النموذج، فيملأ الحقل بعد تجميعه.' : ''}</div>`;
 };
 
+/* ═══ 🆕 b234 · سؤالُ الفكرة العامة — إطارُه في نموذج المقطع الصوتيّ (202) ═══
+   حكمُ المالك: سؤالٌ واحدٌ بأربعة خيارات يوجّه الاستماعَ الأوّل، يُختار أثناء الاستماع ويُسلَّم بعد انتهاء المقطع، ولا يُسجَّل.
+   🔑 **ويُحفظ بزرّ «حفظ» نفسِه** بعد المصدر — كسور الآيات في النصّ (`saveAyat`): فيعمل في المقطع الجديد، ولا زرَّ ثانياً يُنسى.
+      والسؤالُ الناقص يوقف الحفظَ كلَّه قبل أن يبدأ (`gistError`) — فلا يُحفظ مقطعٌ وسؤالُه نصفُه.
+   🔑 **واتّجاهُ الحقول ولغةُ الحروف تتبع «اللغة» في التفاصيل** — سؤالُ مقطعٍ إنجليزيٍّ يُكتب ويُرى من اليسار.
+   ⚠️ **وحكمُ الشكل صدى `gist_problem` في 202** — تغيّر أحدهما ⇒ يُغيَّر الآخر. والقاعدةُ هي الحارس، وهذا راحةٌ تقول الناقصَ قبل الإرسال. */
+const GL = { ar: ['أ', 'ب', 'ج', 'د'], en: ['A', 'B', 'C', 'D'] };
+const GQ_PH = { ar: 'مثلاً: عمّ يدور الحوار؟', en: 'e.g. What is the conversation mainly about?' };
+const blankGist = () => ({ q: '', choices: ['', '', '', ''], key: null, why: ['', '', '', ''] });
+
+const gistHtml = (g, lang, dis, hidden) => {
+  const L = GL[lang] || GL.ar, dir = lang === 'en' ? 'ltr' : 'rtl';
+  return `<section class="rk-gq" id="rkGq" aria-labelledby="rkGqH"${hidden ? ' hidden' : ''}>
+    <div class="rk-gq-top">
+      <span class="rk-gq-ic" aria-hidden="true">${ICONS.quiz || ''}</span>
+      <div class="rk-hd">
+        <h2 class="rk-gq-h" id="rkGqH">سؤال الفكرة العامة</h2>
+        <p class="rk-say">يظهر للطالب قبل الاستماع، ويُسلَّم بعد انتهاء المقطع، ولا تُسجَّل إجابته. وهو اختياري.</p>
+      </div>
+    </div>
+    <label class="fl" for="gq">السؤال</label>
+    <input type="text" id="gq" dir="${dir}" maxlength="300" value="${esc(g.q)}" placeholder="${esc(GQ_PH[lang] || GQ_PH.ar)}"${dis}>
+    <fieldset class="rk-gq-opts">
+      <legend class="fl">الخيارات، وتُعلَّم الصحيحة منها</legend>
+      ${[0, 1, 2, 3].map(i => `<div class="rk-gq-o${g.key === i ? ' on' : ''}" dir="${dir}">
+        <span class="rk-gq-l" aria-hidden="true">${L[i]}</span>
+        <input type="text" class="rk-gq-c" id="gc${i}" dir="${dir}" maxlength="200" value="${esc(g.choices[i] || '')}"
+               aria-label="الخيار ${L[i]}"${dis}>
+        <label class="rk-gq-k"><input type="radio" name="gk" value="${i}"${g.key === i ? ' checked' : ''}${dis}>
+          <span>الصحيحة</span></label>
+        <input type="text" class="rk-gq-w" id="gw${i}" dir="${dir}" maxlength="300" value="${esc(g.why[i] || '')}"
+               placeholder="لماذا؟ يراه الطالب بعد التسليم (اختياري)" aria-label="لماذا الخيار ${L[i]}"${dis}>
+      </div>`).join('')}
+    </fieldset>
+    <p class="rk-gq-tip">أقوى الخيارات الخاطئة تفصيلةٌ صحيحة وردت في المقطع، لكنها ليست الفكرة العامة.</p>
+  </section>`;
+};
+
+/* السؤالُ كما في الإطار الآن ⇒ { q, choices, key, why } — و`null` إن لم يكن في الشاشة إطار */
+function readGist(){
+  if(!document.getElementById('rkGq')) return null;
+  const v = id => (document.getElementById(id)?.value || '').trim();
+  const k = document.querySelector('#rkGq input[name="gk"]:checked');
+  return { q: v('gq'), choices: [0, 1, 2, 3].map(i => v('gc' + i)), key: k ? +k.value : null,
+           why: [0, 1, 2, 3].map(i => v('gw' + i)) };
+}
+const gistEmpty = g => !g || (!g.q && g.choices.every(c => !c) && g.key == null && g.why.every(w => !w));
+/* أوّلُ ما ينقص السؤالَ، أو null — بألفاظ `gist_problem` */
+function gistError(g){
+  if(gistEmpty(g)) return null;
+  if(!g.q) return 'السؤال فارغ';
+  const i = g.choices.findIndex(c => !c);
+  if(i >= 0) return `الخيار ${i + 1} فارغ`;
+  const low = g.choices.map(c => c.toLowerCase());
+  const d = low.findIndex((c, j) => low.indexOf(c) !== j);
+  if(d >= 0) return `الخيار ${d + 1} مكرر`;
+  if(g.key == null) return 'لم تُحدَّد الإجابة الصحيحة';
+  return null;
+}
+const gistKey = g => JSON.stringify(gistEmpty(g) ? null : g);
+
+/* اللغةُ تتبدّل ⇒ اتّجاهُ الحقول وحروفُ الخيارات ومثالُ السؤال معها، بلا إعادة رسم (فلا يضيع ما كُتب) */
+function gistLang(lang){
+  const box = document.getElementById('rkGq');
+  if(!box) return;
+  const L = GL[lang] || GL.ar, dir = lang === 'en' ? 'ltr' : 'rtl';
+  /* والصفُّ كلُّه باتّجاه لغته: حرفُ A في يسار خيارٍ إنجليزيّ كما سيراه الطالب، لا في يمينه */
+  box.querySelectorAll('#gq, .rk-gq-o, .rk-gq-c, .rk-gq-w').forEach(el => el.dir = dir);
+  box.querySelectorAll('.rk-gq-l').forEach((el, i) => el.textContent = L[i]);
+  box.querySelectorAll('.rk-gq-c').forEach((el, i) => el.setAttribute('aria-label', 'الخيار ' + L[i]));
+  box.querySelector('#gq').placeholder = GQ_PH[lang] || GQ_PH.ar;
+}
+
+function fillGist(g){
+  const box = document.getElementById('rkGq');
+  if(!box || !g) return;
+  const set = (id, v) => { const el = document.getElementById(id); if(el) el.value = v || ''; };
+  set('gq', g.q);
+  [0, 1, 2, 3].forEach(i => { set('gc' + i, g.choices?.[i]); set('gw' + i, g.why?.[i]); });
+  box.querySelectorAll('input[name="gk"]').forEach(r => r.checked = +r.value === g.key);
+  markKey();
+}
+/* الصحيحةُ صفُّها بلونها — والوسمُ «الصحيحة» بجوار زرّها هو الحامل لا اللون */
+function markKey(){
+  document.querySelectorAll('#rkGq .rk-gq-o').forEach((o, i) =>
+    o.classList.toggle('on', !!o.querySelector('input[name="gk"]')?.checked));
+}
+
 function form(item, official, ro){
   const isNew = !item;
   const off   = isNew ? official : item.official;
@@ -241,7 +329,11 @@ function form(item, official, ro){
       const el = document.getElementById(id);
       if(el) keep[id] = el.value;
     }
+    const g = readGist();                     // 🆕 b234 · وسؤالُ الفكرة العامة كما كُتب
+    if(g) keep.gist = g;
   };
+  /* 🆕 b234 · السؤالُ المحفوظ كما قُرئ (`gistKey`) — فلا يُرسل الحفظُ نداءً لم يتغيّر فيه شيء. ومقطعٌ جديدٌ لا سؤالَ له */
+  const gst = { saved: isNew ? gistKey(null) : undefined };
   const val = (id, saved) => keep[id] ?? saved;
 
   const draw = () => {
@@ -334,6 +426,8 @@ function form(item, official, ro){
             </div>
           </section>`}
         </div>
+        ${/* 🆕 b234 · سؤالُ الفكرة العامة إطارُه بعد النموذج وقبل الحوار — وفي المعاينة مخفيٌّ حتى يُعرف أنّ للمقطع سؤالاً */''}
+        ${k.code === 'audio' ? gistHtml(keep.gist || blankGist(), lang, dis, ro) : ''}
         ${/* 🆕 b232 · الحوارُ المولَّد إطارُه وحده تحت النموذج — يُملأ حين تُحمَّل لوحتُه (`attachLines`)، ومخفيٌّ حتى تُحمَّل
               فلا يومض إطارٌ فارغ */''}
         ${!ro && k.code === 'audio' ? '<section class="rk-gen" id="rkGen" hidden></section>' : ''}
@@ -364,6 +458,21 @@ function form(item, official, ro){
     if(!ro && k.needs === 'body') attachVoice('bo', item, ayat);
     /* 🆕 b218 · سطورُ المقطع الصوتيّ تحت حقل رابطه (`attachLines` · 197) — لمن يحرّر، والحارسُ في القاعدة لا هنا */
     if(!ro && k.code === 'audio') attachLines('ur', item);
+    /* 🆕 b234 · سؤالُ الفكرة العامة: الصحيحةُ تُعلَّم، واللغةُ تقلب الاتّجاه، والمحفوظُ يُقرأ مرّةً للمقطع القائم */
+    if(k.code === 'audio'){
+      app.querySelectorAll('#rkGq input[name="gk"]').forEach(r => r.onchange = markKey);
+      const ln = document.getElementById('ln');
+      if(ln) ln.addEventListener('change', () => gistLang(ln.value));
+      if(item?.id && gst.saved === undefined){
+        api.itemGist(item.id).then(({ data, error }) => {
+          if(error || !data?.ok){ gst.saved = null; toast('تعذّر جلب سؤال الفكرة العامة'); return; }
+          gst.saved = gistKey(data.gist);
+          if(!document.getElementById('rkGq')) return;           // تبدّل النوعُ قبل الوصول
+          if(data.gist && gistEmpty(readGist())) fillGist(data.gist);
+          if(ro && data.gist) document.getElementById('rkGq').hidden = false;
+        }, () => { gst.saved = null; });
+      }
+    }
     app.querySelectorAll("[data-k]").forEach(el => el.onclick = () => {
       if(!isNew || el.dataset.k === k.code) return;    // النمط لا يتغيّر بعد الإنشاء
       grab();
@@ -371,7 +480,7 @@ function form(item, official, ro){
       app.querySelector(`[data-k="${CSS.escape(k.code)}"]`)?.focus();   // ولوحةُ المفاتيح تبقى على الزرّ الذي ضُغط
     });
     const sv = document.getElementById("sv");
-    if(sv) sv.onclick = () => save(item, off, k, ayat);
+    if(sv) sv.onclick = () => save(item, off, k, ayat, gst);
   };
   draw();
 }
@@ -699,12 +808,16 @@ function attachTidy(id){
   }
 }
 
-async function save(item, official, k, ayat){
+async function save(item, official, k, ayat, gst = {}){
   const v = id => (document.getElementById(id)?.value || '').trim();
   const ti = v("ti");
   if(!ti){ toast("العنوان مطلوب"); return; }
   if(k.needs === 'url'  && !v("ur")){ toast(k.label + " يحتاج رابطاً"); return; }
   if(k.needs === 'body' && !v("bo")){ toast(k.label + " يحتاج نصاً"); return; }
+  /* 🆕 b234 · سؤالُ الفكرة العامة يُحكم قبل الحفظ كلِّه — فلا يُحفظ مقطعٌ وسؤالُه نصفُه */
+  const gist = k.code === 'audio' ? readGist() : null;
+  const gErr = gist && gistError(gist);
+  if(gErr){ toast("سؤال الفكرة العامة: " + gErr); document.getElementById('gq')?.focus(); return; }
   /* 🆕 b165 · صورةٌ مصدرُها غير مأذون تسقط عند الطالب صامتة (حارسُ srcOf) —
      فالإنذارُ هنا، للمعلّم قبل الحفظ، لا فجوةٌ يكتشفها طالبٌ في قراءته. */
   if(k.needs === 'body'){
@@ -753,6 +866,14 @@ async function save(item, official, k, ayat){
   /* 🆕 b199 · وسورُ الآيات بعد النصّ — دالّتُها لا وسيطٌ في `save_item` (188 ②)، والنصُّ محفوظٌ مهما جرى هنا */
   const ay = ayat && await ayat;
   const said = ay ? await saveAyat(item?.id ?? data.id, ay.result(), item?.quran_refs) : null;
+  /* 🆕 b234 · وسؤالُ الفكرة العامة بعد المصدر — دالّتُه لا وسيطٌ في `save_item`، والمصدرُ محفوظٌ مهما جرى هنا.
+     ⚠️ ولا يُرسل ما لم يتغيّر، **ولا يُمحى سؤالٌ لم يصل بعد**: إطارٌ فارغٌ قبل أن يُقرأ المحفوظ (`saved` لم يُعرف) لا يُرسل شيئاً */
+  let gSaid = null;
+  if(gist && gistKey(gist) !== gst.saved && !(gst.saved === undefined && gistEmpty(gist))){
+    const r = await api.saveItemGist(item?.id ?? data.id, gistEmpty(gist) ? null : gist).then(x => x, e => ({ error: e }));
+    const err = r.error ? r.error.message : r.data?.ok ? null : r.data?.error;
+    if(err) gSaid = "حُفظ المقطع، وتعذّر حفظ سؤال الفكرة العامة: " + err;
+  }
 
   /* وتدريبٌ بلا أسئلة لا معنى له — فشاشةُ الأسئلة تُفتح في الحال،
      ولا يُترك المعلّم يبحث عن بابها في قائمةٍ رجع إليها. */
@@ -761,7 +882,7 @@ async function save(item, official, k, ayat){
     openQuiz(ctx.course, { ...ctx.lesson, quiz_id: quizId, has_quiz: true });
     return;
   }
-  toast(said || (item ? "حُفظ المصدر" : "أُضيف المصدر"));
+  toast(gSaid || said || (item ? "حُفظ المصدر" : "أُضيف المصدر"));
   openItems(ctx.course, ctx.lesson);
 }
 

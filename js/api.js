@@ -264,6 +264,11 @@ export const approveVoices = (id, shas, ok = true) => db.rpc('approve_voice', { 
 export const itemLines = item => db.rpc('item_lines', { p_item: item });
 /* [{ speaker, text, start_ms, end_ms }] بترتيبها — تُستبدل كلُّها، والفراغُ يمحو النصّ (197 ③) ⇒ { ok, lines } أو { ok: false, error } */
 export const saveItemLines = (item, lines) => db.rpc('save_item_lines', { p_item: item, p_lines: lines });
+/* 🆕 b234 · سؤالُ الفكرة العامة للمقطع (202): يوجّه الاستماعَ الأوّل ولا يُسجَّل جوابُه.
+   ⇒ { data: { ok, gist: { q, choices[4], key, why[4] } | null, lang }, error } */
+export const itemGist = item => db.rpc('item_gist', { p_item: item });
+/* null أو سؤالٌ فارغ يمحوه ⇒ { ok, gist } أو { ok: false, error } — والحارسُ حارسُ السطور (`audio_lines_problem`) */
+export const saveItemGist = (item, gist) => db.rpc('save_item_gist', { p_item: item, p_gist: gist });
 /* كشفُ النصّ للطالب — never · after · open (198 ③، والأوّلُ الافتراض) ⇒ { ok, reveal } أو { ok: false, error } */
 export const setAudioReveal = (item, reveal) => db.rpc('set_audio_reveal', { p_item: item, p_reveal: reveal });
 

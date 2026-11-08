@@ -1744,6 +1744,11 @@ function toggleAudio(i){
   if(isManaged(i.url)) import('./lines_player.js')
     .then(m => m.attachLines(slot.querySelector('.aud'), au, i))
     .catch(e => console.warn('[lines]', e));
+  /* 🆕 b234 · سؤالُ الفكرة العامة في صدر المشغّل (`gist.js` · 202) — لكلّ مقطعٍ يُشغَّل هنا، مرفوعاً أو رابطاً مباشراً؛
+     يوجّه الاستماعَ الأوّل ولا يُسجَّل. وتعذُّرُه يترك المشغّلَ كما كان */
+  import('./gist.js')
+    .then(m => m.attachGist(slot.querySelector('.aud'), au, i))
+    .catch(e => console.warn('[gist]', e));
 }
 
 /* ═══════════ ⑤ ملاحظات المعلم ═══════════ */
