@@ -11,7 +11,7 @@
 import * as api from './api.js';
 import { S } from './state.js';
 import { app, head, toast, esc, AR, N, errBox, nav, setWide, scrollTop, srcOf, SAFE_HOSTS,
-         videoOf, VIDEO_HOSTS } from './ui.js';
+         videoOf, VIDEO_HOSTS, ICONS } from './ui.js';
 import { attachUpload, insertLine } from './upload.js';
 import { openCourse, courseTags } from './editor.js';
 import { bookLook, bookEnd } from './student.js';
@@ -167,94 +167,181 @@ function render(){
 
 /* ═══════════ النموذج ═══════════ */
 
+/* 🆕 b231 · النموذجُ على هيئة نمطه — طلبُ المالك (٨ نوفمبر ٢٠٢٦، بلقطةٍ من هذا النموذج): «أقترح أولاً فصل جزء نوع المصدر
+   في إطار منفصل عن باقي الصفحة. باقي الصفحة يجب أن يتناسب تنسيقه وترتيبه مع نوع المصدر الذي تم اختياره … هذه شاشة المعلم
+   وليس الطالب فهناك مرونة في استخدام الألوان بما يخدم أهداف التنسيق».
+   ⇒ إطاران: **النمطُ إطارُه وحده** (للمصدر الجديد — والقائمُ نمطُه ثابت فلا منتقي له)، و**النموذجُ بعده برأسٍ بلون النمط**
+      وأيقونته يقول كيف يصل الطالبَ، ثمّ «المحتوى» حقلُه باسم النمط ومثالِه، ثمّ «تفاصيل إضافية». والإرشادُ في العمود الجانبيّ
+      إرشادُ النمط وحده — وكان سطرين للصوت ولـ«غيره» تحت كلّ نمط.
+   🔑 **والأنماطُ تبقى من القاعدة** (`item_kinds` عبر `author_tree`) — فهذا الجدولُ **هيئةٌ لا قائمة**: اسمُ الحقل ومثالُه، وكيف
+      يصل الطالبَ إن خالف «رابطٌ يُفتح في تبويب». ونمطٌ جديدٌ في القاعدة بلا سطرٍ هنا يأخذ هيئةَ متطلَّبه (`needs`) ولوناً محايداً
+      (screens.css) — يعمل ولا يكسر.
+   📌 وكلُّ «كيف يصل» هنا قُرئ من شاشة الطالب لا من الذاكرة (`openItem` في student.js): الصوتُ يُشغَّل في الدرس إن كان مفتاحاً
+      في المخزن أو ملفاً صوتياً مباشراً (`canEmbed`) · والمحاكاةُ في إطارٍ داخله (`isSim`) · والنصُّ كتابٌ · وما سواها `window.open`. */
+const LOOK = {
+  pdf:         { field: 'رابط الملف',        ph: 'https://drive.google.com/file/d/…' },
+  video:       { field: 'رابط المقطع',       ph: 'https://youtu.be/…' },
+  audio:       { field: 'الملف الصوتي',      ph: 'r2:audio/…  أو  https://…/clip.mp3', say: 'مقطع يسمعه الطالب داخل الدرس' },
+  image:       { field: 'رابط الصورة',       ph: 'https://…' },
+  link:        { field: 'رابط المرجع',       ph: 'https://…' },
+  mindmap:     { field: 'رابط الخريطة',      ph: 'https://…' },
+  infographic: { field: 'رابط الإنفوجرافيك', ph: 'https://…' },
+  slides:      { field: 'رابط العرض',        ph: 'https://docs.google.com/presentation/d/…' },
+  worksheet:   { field: 'رابط الورقة',       ph: 'https://drive.google.com/file/d/…' },
+  simulation:  { field: 'مسار المحاكاة',     ph: 'sims/الاسم.html  أو  https://…', say: 'تجربة تفاعلية تُعرض داخل الدرس' }
+};
+/* ⚠️ ومثالُ المحاكاة بصيغتيه لا بمساره وحده: الفحصُ ③ في tools/build.mjs يقرأ كلَّ مسارٍ محصورٍ بين علامتي تنصيص
+   (`'sims/…html'`) طلباً يُحلّ على عنوان الصفحة — فأفشل البناءَ على مثالٍ لا يُطلب. والصيغتان أصدقُ للمعلّم أيضاً:
+   الإرشادُ يقبل المسارَ النسبيّ والرابطَ الكامل، و`siteUrl` تُسند الأوّلَ إلى جذر الموقع عند الطالب. */
+const lookOf  = k => LOOK[k.code] || {};
+const fieldOf = k => lookOf(k).field || 'الرابط';
+const sayOf   = (k, off) =>
+    k.needs === 'quiz' ? (off ? 'اختبار الدرس، واجتيازه شرط لإتمامه' : 'تدريب لا يُحتسب في البوّابة ولا يحجب الانتقال')
+  : k.needs === 'body' ? 'كتاب منسّق يقلّبه الطالب داخل الدرس'
+  : lookOf(k).say || 'رابط يفتحه الطالب في تبويب جديد';
+/* أيقونةُ النمط المجسَّمة (`ICONS` في ui.js) — وما لا مجسَّمَ له يبقى رمزَه المكتوب في القاعدة */
+const kindIcon = k => ICONS[k.code] || `<span class="it-k-em" aria-hidden="true">${esc(k.icon || '•')}</span>`;
+
+/* إرشادُ النمط في العمود الجانبيّ — بلونه (`.rk-guide`). وكان سطرَين ثابتين تحت كلّ رابط: «الصوت: …» و«غيره: …»،
+   وزرُّ رفعٍ صوتيّ تحت «ملف للقراءة» و«صورة» معاً — وسطرٌ يقول «تجاهله هنا» تحت المحاكاة. والرفعُ اليوم للصوت وحده.
+   🔑 ولا مصدرَ قائماً غيرَ صوتيّ يحمل مفتاحاً في المخزن — قِيس على القاعدة الحيّة قبل أن يسقط الزرّ (٨ نوفمبر: صفر) */
+const GUIDE = {
+  audio: `<b>الملف:</b> يُرفع بالزر فيُكتب مفتاحه في الحقل (<code dir="ltr">r2:audio/…</code>)، ويُشغَّل داخل الدرس.
+    ورابط ملف صوتي مباشر (mp3) يُشغَّل كذلك، وغيره يُفتح في تبويب جديد.`,
+  video: `<b>رابط المقطع:</b> من YouTube أو Google Drive، ويُفتح للطالب في تبويب جديد.
+    فيلزم أن يكون متاحاً لمن معه الرابط.`,
+  simulation: `<b>المسار:</b> ملف مستقل في مستودع الموقع، يُكتب مساره النسبي (مثلاً <code dir="ltr">sims/الاسم.html</code>)
+    أو رابطه الكامل. ويُعرض داخل الدرس في إطار مستقل، لا في تبويب.`
+};
+/* ⚠️ و`dir="ltr"` على المسار والمفتاح لازمة: سطرٌ عربيٌّ يقلب ما فيه — «sims/الاسم.html» كان يُرى «html.الاسم/sims»
+   و«r2:audio/…» يُرى «…/r2:audio» (قِيس بلقطةٍ مكبَّرة، وكان كذلك في الإرشاد القديم أيضاً) */
+const guideOf = (k, isNew, ro) => {
+  if(k.needs === 'body') return ro ? '' : textRules(isNew && matchMedia('(min-width: 901px)').matches)
+    + `<div class="rk-guide"><b>الصورة والفيديو في النص:</b> الزرّان يضعان السطر حيث المؤشّر، ويُكتب التعليق قبل «]».
+        وأنفع تعليق سؤال يوجّه النظر إلى ما في النص.<br>
+        <b>وموضع الفيديو قبل النص أو بعده لا وسطه:</b> مقطع يحكي مضمون النص يُشاهَد بدل أن يُقرأ، فيقيس الاختبار
+        الاستماع لا القراءة.</div>`;
+  if(k.needs !== 'url') return '';
+  return `<div class="rk-guide">${GUIDE[k.code] || `<b>${esc(fieldOf(k))}:</b> يُفتح للطالب في تبويب جديد،
+    فيلزم أن يكون متاحاً لمن معه الرابط بلا تسجيل دخول.`}</div>`;
+};
+
 function form(item, official, ro){
   const isNew = !item;
   const off   = isNew ? official : item.official;
   let k = kind(item?.kind || 'pdf');
   const dis = ro ? ' disabled' : '';     // الحقول تُقرأ ولا تُكتب
+  /* 🆕 b231 · وما كُتب يبقى حين يتبدّل النمط: كان التبديلُ يرسم النموذجَ من جديد فارغاً، فيضيع عنوانٌ كُتب قبل اختيار
+     النمط — والإطارُ المنفصل يدعو إلى الاختيار بعد الكتابة كما يدعو إليه قبلها. ويُحفظ كلُّ حقلٍ رُئي ولو غاب عن النمط
+     الجديد: نصٌّ كُتب ثمّ جُرّب «ملف للقراءة» يعود بالرجوع إلى «نصّ». */
+  let keep = {};
+  const grab = () => {
+    for(const id of ['ti', 'ur', 'bo', 'de', 'du', 'rq', 'ln']){
+      const el = document.getElementById(id);
+      if(el) keep[id] = el.value;
+    }
+  };
+  const val = (id, saved) => keep[id] ?? saved;
 
   const draw = () => {
+    const kl = kLabel(k.label, k.needs, off) || k.code;
+    /* الاختبارُ المعتمد لا يُنشأ هنا (بابُه زرُّ «الاختبار» في قائمة الدروس) — فلا تفاصيلَ تُكتب ولا زرَّ حفظٍ معطَّلاً يُرى:
+       النموذجُ لافتةٌ تدلّ على البابين */
+    const gate = k.needs === 'quiz' && off;
+    const lang = val('ln', item?.lang === 'en' ? 'en' : 'ar');
+    const req  = val('rq', item?.required ? '1' : '0');
     app.innerHTML = `
       <div class="crumb" id="bk">→ مصادر الدرس</div>
-      <div class="ed-form">
+      ${isNew ? `<section class="rk-pick" aria-labelledby="rkPickH">
+        <div class="rk-pick-top">
+          <h2 class="rk-pick-h" id="rkPickH">نوع المصدر</h2>
+          <span class="rk-pick-say">يحدّد حقول النموذج، ولا يتغيّر بعد الإضافة</span>
+        </div>
+        <div class="it-kinds">
+          ${kinds().map(x => `<button type="button" class="it-k${x.code === k.code ? ' on' : ''}" data-k="${esc(x.code)}"
+              aria-pressed="${x.code === k.code}">${kindIcon(x)}<span>${esc(kLabel(x.label, x.needs, off))}</span></button>`).join("")}
+        </div>
+      </section>` : ''}
+
+      <div class="ed-form rk" data-kd="${esc(k.code)}">
         <div class="ed-side">
           <div class="ed-hint">${off
             ? '📦 <b>مصدر معتمد</b> — جزء من المنهج، ويمكن أن يكون شرط انتقال.'
             : '➕ <b>مصدر إضافي باسمك</b> — إثراء لا يحجب ولا يدخل البوّابة.'}</div>
           ${ro ? `<div class="warnbox">🔒 <b>معاينة</b> — هذا المصدر ${off
             ? 'يعدّله فريق الإشراف' : 'من تأليف زميلٍ لك'}، فيُقرأ هنا ولا يُحفظ.</div>` : ''}
-          ${k.needs === 'url' ? `<div class="ed-hint" style="opacity:.75">
-            <b>الصوت:</b> يُرفع بالزرّ فيُكتب مفتاحه في الحقل — <code>r2:audio/l1-k3j9fq.mp3</code>
-            — فيُشغَّل داخل الدرس.<br>
-            ${k.code === 'simulation'
-              ? '<b>المحاكاة:</b> ملفّ مستقلّ في مستودع الموقع نفسه — الصق مساره النسبي (مثلاً <code>sims/الاسم.html</code>) أو رابطه الكامل. يُضمَّن داخل الدرس، لا يُفتح في تبويب. زرّ الرفع أعلاه للصوت وحده — تجاهله هنا.'
-              : '<b>غيره:</b> رابط يُفتح في تبويب جديد. تأكّد أنه متاح للطلاب.'}</div>` : ''}
-          ${k.needs === 'body' && !ro ? textRules(isNew && matchMedia('(min-width: 901px)').matches) : ''}
+          ${guideOf(k, isNew, ro)}
         </div>
 
-        <div class="card" style="flex:1">
-          <label class="fl">نوع المصدر</label>
-          <div class="it-kinds">
-            ${kinds().map(x => `<button class="it-k ${x.code===k.code?'on':''}"
-                data-k="${x.code}"${dis}>${x.icon}<span>${esc(
-                  kLabel(x.label, x.needs, off))}</span></button>`).join("")}
+        <div class="card rk-card">
+          <div class="rk-head">
+            <span class="rk-ico">${kindIcon(k)}</span>
+            <div class="rk-hd">
+              <h2 class="rk-name">${esc(kl)}</h2>
+              <p class="rk-say">${esc(sayOf(k, off))}</p>
+            </div>
+            ${isNew ? '' : '<span class="chip rk-fix">النوع ثابت بعد الإضافة</span>'}
           </div>
 
-          <label class="fl" style="margin-top:18px">العنوان *</label>
-          <input type="text" id="ti" value="${esc(item?.title || '')}"${dis}
-                 placeholder="مثال: ${esc(kLabel(k.label, k.needs, off))} — الغلاف المائي">
+          <section class="rk-sec" aria-labelledby="rkSec1">
+            <h3 class="rk-sec-h" id="rkSec1">المحتوى</h3>
+            <label class="fl" for="ti">العنوان *</label>
+            <input type="text" id="ti" value="${esc(val('ti', item?.title || ''))}"${dis}
+                   placeholder="مثال: ${esc(kl)} — الغلاف المائي">
 
-          ${k.needs === 'url' ? `
-            <label class="fl" style="margin-top:16px">الرابط *</label>
-            <input type="text" id="ur" dir="ltr" value="${esc(item?.url || '')}"${dis}
-                     placeholder="r2:audio/l1-a1.mp3  أو  https://…">` : ''}
-          ${k.needs === 'body' ? `
-            <label class="fl" style="margin-top:16px">النصّ *</label>
-            <textarea id="bo" dir="auto" style="min-height:150px"${dis}>${esc(item?.body || '')}</textarea>
-            ${ro ? '' : `<p class="hint" style="margin-top:6px">صورةٌ أو فيديو في النصّ: الزرّان يضعان
-              السطرَ حيث المؤشّر، ويُكتب التعليقُ قبل «]». وأنفعُ تعليقٍ سؤالٌ يوجّه النظر إلى ما في النصّ.
-              <b>وموضعُ الفيديو قبل النصّ أو بعده لا وسطه:</b> مقطعٌ يحكي مضمونَ النصّ يُشاهَد بدل أن يُقرأ،
-              فيقيس الاختبارُ الاستماعَ لا القراءة.</p>`}` : ''}
-          ${k.needs === 'quiz' ? (off ? `
-            <div class="warnbox" style="margin-top:16px">اختبار الدرس يُنشأ من زرّ
-              «الاختبار» في قائمة الدروس — فيُربط ويصير شرط الانتقال تلقائياً.</div>` : `
-            <div class="warnbox" style="margin-top:16px">تدريبٌ باسمك — لا يُحتسب في
-              البوّابة ولا يحجب الانتقال، ونتائجه تُسجَّل في سجلّ الطالب.<br>
-              ${isNew ? 'يُنشأ بالعنوان أعلاه، ثمّ تُفتح شاشةُ الأسئلة مباشرةً.'
-                      : 'وأسئلته تُحرَّر من زرّ «تحرير الأسئلة» في قائمة المصادر.'}</div>`) : ''}
+            ${k.needs === 'url' ? `
+              <label class="fl" for="ur">${esc(fieldOf(k))} *</label>
+              <input type="text" id="ur" dir="ltr" value="${esc(val('ur', item?.url || ''))}"${dis}
+                     placeholder="${esc(lookOf(k).ph || 'https://…')}">` : ''}
+            ${k.needs === 'body' ? `
+              <label class="fl" for="bo">النصّ *</label>
+              <div class="rk-body">
+                <textarea id="bo" dir="auto"${dis}>${esc(val('bo', item?.body || ''))}</textarea>
+              </div>` : ''}
+            ${k.needs === 'quiz' ? (off ? `
+              <div class="warnbox">اختبار الدرس يُنشأ من زرّ «الاختبار» في قائمة الدروس — فيُربط ويصير شرط
+                الانتقال تلقائياً.</div>` : `
+              <div class="warnbox">تدريبٌ باسمك — لا يُحتسب في البوّابة ولا يحجب الانتقال، ونتائجه تُسجَّل في سجلّ
+                الطالب.<br>${isNew ? 'يُنشأ بالعنوان أعلاه، ثمّ تُفتح شاشةُ الأسئلة مباشرةً.'
+                                   : 'وأسئلته تُحرَّر من زرّ «تحرير الأسئلة» في قائمة المصادر.'}</div>`) : ''}
+          </section>
 
-          <label class="fl" style="margin-top:16px">وصف موجز <span style="opacity:.6">(اختياري)</span></label>
-          <input type="text" id="de" value="${esc(item?.description || '')}"${dis}>
+          ${gate ? '' : `<section class="rk-sec" aria-labelledby="rkSec2">
+            <h3 class="rk-sec-h" id="rkSec2">تفاصيل إضافية</h3>
+            <label class="fl" for="de">وصف موجز <span class="rk-opt">(اختياري)</span></label>
+            <input type="text" id="de" value="${esc(val('de', item?.description || ''))}"${dis}>
 
-          <div class="ed-3">
-            <div>
-              <label class="fl">المدّة (دقيقة)</label>
-              <input type="text" id="du" inputmode="numeric" value="${item?.duration ?? ''}"${dis}>
+            <div class="ed-3">
+              <div>
+                <label class="fl" for="du">المدّة (دقيقة)</label>
+                <input type="text" id="du" inputmode="numeric" value="${esc(val('du', item?.duration ?? ''))}"${dis}>
+              </div>
+              ${off ? `<div>
+                <label class="fl" for="rq">إلزامي</label>
+                <select id="rq"${dis}>
+                  <option value="0" ${req === '1' ? '' : 'selected'}>اختياري</option>
+                  <option value="1" ${req === '1' ? 'selected' : ''}>شرط لإتمام الدرس</option>
+                </select></div>` : ''}
+              <div>
+                <label class="fl" for="ln">اللغة</label>
+                <select id="ln"${dis}>
+                  <option value="ar" ${lang !== 'en' ? 'selected' : ''}>العربية</option>
+                  <option value="en" ${lang === 'en' ? 'selected' : ''}>English</option>
+                </select>
+              </div>
             </div>
-            ${off ? `<div>
-              <label class="fl">إلزامي</label>
-              <select id="rq"${dis}>
-                <option value="0" ${item?.required?'':'selected'}>اختياري</option>
-                <option value="1" ${item?.required?'selected':''}>شرط لإتمام الدرس</option>
-              </select></div>` : ''}
-            <div>
-              <label class="fl">اللغة</label>
-              <select id="ln"${dis}>
-                <option value="ar" ${item?.lang!=='en'?'selected':''}>العربية</option>
-                <option value="en" ${item?.lang==='en'?'selected':''}>English</option>
-              </select>
-            </div>
-          </div>
+          </section>`}
         </div>
       </div>
-      ${ro ? '' : `<div class="nav" style="margin-top:16px">
-        <button class="btn primary" id="sv" ${k.needs==='quiz' && off ?'disabled':''}>
-          ${isNew ? 'إضافة' : 'حفظ'}</button>
+      ${ro || gate ? '' : `<div class="nav" style="margin-top:16px">
+        <button class="btn primary" id="sv">${isNew ? 'إضافة' : 'حفظ'}</button>
       </div>`}`;
 
     document.getElementById("bk").onclick = () => render();
       // ctx.lesson لا S.lesson
-    if(!ro) attachUpload('ur', 'l' + (ctx.lesson?.id ?? ''));
+    /* 🆕 b231 · زرُّ الرفع للصوت وحده — كان يُركَّب تحت كلّ رابط («رفع ملفّ صوتيّ» تحت «ملف للقراءة»)، ومفتاحُ صوتٍ في
+       مصدرٍ غيرِ صوتيّ يُفتح للطالب تبويباً لا يُحمَّل (`siteUrl` لا تعرف `r2:`) */
+    if(!ro && k.code === 'audio') attachUpload('ur', 'l' + (ctx.lesson?.id ?? ''));
     /* 🆕 b165 · صورةٌ داخل نصّ «الكتاب» — تُرفع وتُدرَج سطراً حيث المؤشّر.
        وكلمةُ السطر بلغة النصّ (`image` للإنجليزي): سطرٌ عربيٌّ وسط نصٍّ لاتينيّ
        يقلب اتجاهَ الأسطر في مربّع المعلّم. */
@@ -272,8 +359,10 @@ function form(item, official, ro){
     /* 🆕 b218 · سطورُ المقطع الصوتيّ تحت حقل رابطه (`attachLines` · 197) — لمن يحرّر، والحارسُ في القاعدة لا هنا */
     if(!ro && k.code === 'audio') attachLines('ur', item);
     app.querySelectorAll("[data-k]").forEach(el => el.onclick = () => {
-      if(!isNew) return;                    // النمط لا يتغيّر بعد الإنشاء
+      if(!isNew || el.dataset.k === k.code) return;    // النمط لا يتغيّر بعد الإنشاء
+      grab();
       k = kind(el.dataset.k); draw();
+      app.querySelector(`[data-k="${CSS.escape(k.code)}"]`)?.focus();   // ولوحةُ المفاتيح تبقى على الزرّ الذي ضُغط
     });
     const sv = document.getElementById("sv");
     if(sv) sv.onclick = () => save(item, off, k, ayat);
