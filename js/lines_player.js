@@ -23,7 +23,10 @@ import { esc, AR } from './ui.js';
 import * as L from './audio_lines.js';
 import { canRecord } from './recorder.js';
 
-const HINT = { open: 'الاستماع أولاً، والنص بعده', wait: 'يُكشف النص بعد الاستماع كاملاً', now: 'اكتمل الاستماع، والنص متاح الآن' };
+/* 🆕 b233 · وسقط عنوانُ «سطور المقطع» وسطرُ «الاستماع أولاً، والنص بعده» — قرارُ المالك بلقطة: «لا داعي لهذه التعليمات».
+   فالزرّان يقولان ما يُفعل، والاسمُ لقارئ الشاشة وحده (`aria-label`). ويبقى السطران اللذان يخبران بحالٍ لا بتعليمة:
+   «يُكشف النص بعد الاستماع كاملاً» و«اكتمل الاستماع» */
+const HINT = { wait: 'يُكشف النص بعد الاستماع كاملاً', now: 'اكتمل الاستماع، والنص متاح الآن' };
 
 /* box حاوية المشغّل (.aud) · au عنصرُ الصوت · item المصدر ({ id, url }) ⇒ { el, lines } أو null بلا سطور
    🆕 b220 · أو `data` جاهزةٌ بصيغة `item_lines` مكانَ المصدر: نصُّ الاستماع في مراجعة الاختبار (`attempt_lines` · 200 ②) —
@@ -35,6 +38,8 @@ export async function attachLines(box, au, item, { api = realApi, data = null } 
 
   const el = document.createElement('div');
   el.className = 'al-pl';
+  el.setAttribute('role', 'group');
+  el.setAttribute('aria-label', 'سطور المقطع');
   el.innerHTML = '<div class="al-plh"></div><div class="al-pr" hidden></div><ol class="al-pls"></ol>';
   box.appendChild(el);
   const head = el.querySelector('.al-plh'), prac = el.querySelector('.al-pr'), list = el.querySelector('.al-pls');
@@ -45,8 +50,8 @@ export async function attachLines(box, au, item, { api = realApi, data = null } 
     lines = L.fromRows(d.lines);
     const hasText = d.text === true, timed = lines.some(l => l.start != null);
     el.toggleAttribute('data-show', hasText && shown);
-    head.innerHTML = `<b class="al-plt">سطور المقطع</b>
-        <span class="al-hint">${hint || (hasText ? HINT.open : d.reveal === 'after' ? HINT.wait : '')}</span>
+    const say = hint || (!hasText && d.reveal === 'after' ? HINT.wait : '');
+    head.innerHTML = `${say ? `<span class="al-hint">${say}</span>` : ''}
         ${timed ? '<button type="button" class="aud-b" data-a="line">⟲ السطر</button>' : ''}
         ${hasText ? `<button type="button" class="aud-b" data-a="txt" aria-pressed="${shown}">${shown ? 'إخفاء النص' : 'كشف النص'}</button>` : ''}
         ${timed && item?.id && canRecord() ? `<button type="button" class="aud-b" data-a="prac" aria-pressed="${!prac.hidden}">التدرّب بصوتك</button>` : ''}`;
