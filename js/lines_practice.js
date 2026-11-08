@@ -13,7 +13,8 @@
    📱 **وiOS لا يشغّل عنصرَ صوتٍ من الشيفرة قبل أن يُشغَّل بنقرة:** فأوّلُ نقرةٍ في كلّ تدرّبٍ تفتح العنصرين (`prime`) —
       الأصلَ بصوتٍ مكتوم، وصوتَ الطالب بصمتٍ قصير — ثمّ يتتابعان بلا نقر. ⚠️ **ولم يُجرَّب على iPhone حقيقيّ بعد.**
    ══════════════════════════════════════════════════════════ */
-import { esc, AR, N } from './ui.js';
+import { esc, AR, N, G } from './ui.js';
+import { S as ST } from './state.js';
 import * as L from './audio_lines.js';
 import * as P from './audio_practice.js';
 import * as PI from './audio_pitch.js';
@@ -27,10 +28,15 @@ const T = Object.freeze({
      §٤)، والخانةُ الرابعة لمن لم يُسأل عن صيغته مصادرُ محايدة لا أمرٌ مذكّر.
      🆕 b235 · **وانتقل السطرُ إلى شريط «التدرّب بصوتك»** (`GO.steps` في lines_player.js) ليُقرأ قبل الضغط لا بعده —
      فاللوحةُ تبدأ بأنماطها، والشريطُ فوقها رأسُها */
-  echo: 'سطراً سطراً',
+  /* 🆕 b235 · بطلب المالك (لقطةٌ شُطب فيها سطرُ الإرشاد): «احذف العبارة المشطوبة، وبدلا من "سطرا سطرا" اكتب "الحوار كاملا"».
+     فسقط `roleHint` — ومعه `noText` («والنص غير متاح…»): كان ذيلاً يُلحق به ويبدأ بالواو، فلا يقوم وحده.
+     والشرحُ صار تلميحاً عند المؤشّر (`data-tip`) بنصّ المالك: «تسجل جميع الأدوار بصوتك» · «تختار دورا من الحوار لتسجله بصوتك».
+     وهما مضارعٌ مخاطب ⇒ `G()` بثلاث صيغ (bayan-language-identity §٤)، والمحايدةُ مصدر */
+  echo: 'الحوار كاملاً',
   role: 'تبادل الأدوار',
-  roleHint: 'تُسمع أدوار الآخرين، ويُسجَّل صوتك في دورك، ثم يُسمع الحوار بصوتك.',
-  noText: 'والنص غير متاح، فيُقال السطر كما سُمع.',
+  echoTip: () => G(ST.prof?.gram_gender, 'تسجّل جميع الأدوار بصوتك', 'تسجّلين جميع الأدوار بصوتك', 'تسجيل جميع الأدوار بصوتك'),
+  roleTip: () => G(ST.prof?.gram_gender, 'تختار دوراً من الحوار لتسجّله بصوتك', 'تختارين دوراً من الحوار لتسجّليه بصوتك',
+    'اختيار دور من الحوار لتسجيله بصوتك'),
   pick: 'دورك في الحوار:',
   go: 'البدء',
   next: 'التالي',
@@ -109,7 +115,9 @@ export function mountPractice(host, ctx){
 
   /* ═══════════ الرسم ═══════════ */
   const btn = (p, label, cls = '') => `<button type="button" class="aud-b${cls}" data-p="${p}">${label}</button>`;
-  const tab = (m, label) => `<button type="button" class="aud-b" data-p="mode" data-m="${m}" aria-pressed="${S.mode === m}">${label}</button>`;
+  /* 🆕 b235 · ولكلّ نمطٍ تلميحُه — يظهر بالمؤشّر وبالتركيز، ويسمعه قارئُ الشاشة وصفاً (`aria-description`) */
+  const tab = (m, label, tip) => `<button type="button" class="aud-b al-tip" data-p="mode" data-m="${m}" aria-pressed="${S.mode === m}"
+    data-tip="${esc(tip)}" aria-description="${esc(tip)}">${label}</button>`;
 
   function status(){
     switch(S.phase){
@@ -129,11 +137,10 @@ export function mountPractice(host, ctx){
     if(S.role != null && !rs.includes(S.role)) S.role = null;
     let body = '';
     if(S.mode === 'echo') body = '';
-    else if(!run && S.phase !== 'done') body = `<p class="al-pr-hint">${T.roleHint}${ctx.text() ? '' : ' ' + T.noText}</p>
-      <div class="al-pr-who"><span>${T.pick}</span>${rs.map((r, i) =>
+    else if(!run && S.phase !== 'done') body = `<div class="al-pr-who"><span>${T.pick}</span>${rs.map((r, i) =>
         `<button type="button" class="aud-b" data-p="role" data-r="${i}" aria-pressed="${S.role === r}"><bdi>${esc(r)}</bdi></button>`).join('')}
         <button type="button" class="aud-b primary" data-p="go"${S.role == null ? ' disabled' : ''}>${T.go}</button></div>`;
-    host.innerHTML = `${rs.length ? `<div class="al-pr-tabs" role="group" aria-label="${T.name}">${tab('echo', T.echo)}${tab('role', T.role)}</div>` : ''}
+    host.innerHTML = `${rs.length ? `<div class="al-pr-tabs" role="group" aria-label="${T.name}">${tab('echo', T.echo, T.echoTip())}${tab('role', T.role, T.roleTip())}</div>` : ''}
       ${body}<div class="al-pr-st" aria-live="polite">${status()}</div>${chart()}`;
     decorate();
   }

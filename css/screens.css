@@ -2487,7 +2487,16 @@ html.pv-lock{overflow:hidden}
 @media (prefers-reduced-motion:reduce){ .al-go,.al-go-i{transition:none} }
 .al-pr p{margin:0 0 8px}
 .al-pr-note{font-size:var(--fs-meta);color:var(--text-muted)}
-.al-pr-hint{font-size:var(--fs-meta);line-height:1.7}
+/* 🆕 b235 · سقط سطرُ الإرشاد (`.al-pr-hint`) وصار تلميحاً عند المؤشّر على النمطين — بشكل تلميح أيقونات الدرس (`.kic::after`)
+   لا بـ`title`: ذاك يتأخّر ويرسمه النظامُ خارج الهويّة، وهذا يظهر بالتركيز أيضاً (♿). تحت الزرّ، ومُسنَدٌ إلى بدايته فلا
+   يخرج عن اللوحة. ويلتفّ إن ضاق (`max-content` حتى ٢٤٠) فلا يُقصّ آخرُه كما يُقصّ اسمُ الدرس */
+.al-tip{position:relative}
+.al-tip::after{content:attr(data-tip);position:absolute;top:calc(100% + 8px);inset-inline-start:0;transform:translateY(-4px);
+  width:max-content;max-width:240px;background:var(--text);color:var(--page);font-size:var(--fs-tag);font-weight:700;
+  line-height:1.6;text-align:start;white-space:normal;padding:5px 10px;border-radius:9px;pointer-events:none;
+  opacity:0;visibility:hidden;transition:opacity .16s ease,transform .16s ease;z-index:9}
+.al-tip:hover::after,.al-tip:focus-visible::after{opacity:1;visibility:visible;transform:translateY(0)}
+@media (prefers-reduced-motion:reduce){ .al-tip::after{transition:none} }
 .al-pr-tabs,.al-pr-who{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:8px}
 .al-pr .aud-b[aria-pressed="true"],.al-plh .aud-b[aria-pressed="true"]{background:var(--accent-fill);border-color:var(--accent-edge);color:var(--accent)}
 .al-pr .aud-b.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
