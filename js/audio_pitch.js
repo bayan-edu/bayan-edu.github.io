@@ -17,7 +17,11 @@
 /* `range` مدى الرسم بأنصاف النغمات حول الوسيط: ±٦ — صعودُ السؤال وهبوطُ الخبر في الإنجليزيّة بين ثلاثٍ وثماني نغمات،
    فيملآن أكثرَ المخطّط، ورجفةُ نغمةٍ أو اثنتين تبقى صغيرة. ⚠️ لا مدى يُحسب من الخطّين: يُكبّر رجفةَ الصوت الرتيب فيبدو صعوداً
    (وكان ±١٠ أوّلاً: هبوطُ ٥٫٨ نغمات ملأ ربعَ الارتفاع — رُئي في لقطة) */
-export const PITCH = Object.freeze({ rate: 16000, winMs: 25, hopMs: 10, fmin: 70, fmax: 450, thresh: 0.15, gateDb: -20, minRunMs: 30, range: 6 });
+/* 🆕 b230 · و`tailMs` نافذةُ الرسم: السطرُ الأطولُ من ستّ ثوانٍ يُرسم آخرُه وحده — قرارُ المالك (٨ نوفمبر): «عرض آخر 8 ثوان أو
+   الطول الموصى به». والموصى به ستّ: الجملةُ في الحوار بين ثانيتين وأربع، وصعودُ السؤال وهبوطُ الخبر في آخر ثانيةٍ منها — وثماني
+   ثوانٍ في عرض الهاتف (نحو ثلاثمئة نقطة) ثلاثُ قراءاتٍ للنقطة، فيعود الخطُّ شرائط (رُئي في لقطة المالك لسطرٍ من عشرين ثانية) */
+export const PITCH = Object.freeze({ rate: 16000, winMs: 25, hopMs: 10, fmin: 70, fmax: 450, thresh: 0.15, gateDb: -20, minRunMs: 30, range: 6,
+                                     tailMs: 6000 });
 
 /* إطارٌ واحد: الترددُ بالهرتز أو null بلا دورٍ واضح. d · dp مخزنان يُعاد استعمالُهما */
 function yin(x, off, W, tauMin, tauMax, rate, thresh, dp){
@@ -142,8 +146,90 @@ export function ending(c, { part = 0.35, slope = 4 } = {}){
   return k > slope ? 'rise' : k < -slope ? 'fall' : 'level';
 }
 
+/* 🆕 b230 · آخرُ `ms` من المجهور ⇒ منحنًى بالشكل نفسِه ومعه `trimmed`، **ويُعاد توسيطُه على وسيط النافذة**: وسيطُ السطر كلِّه
+   يُزيح آخرَه عن الوسط إن كان أعلى أوّلِه أو أخفض. وما لم يطُل عن النافذة يعود كما هو (`trimmed: false`) */
+export function tail(c, ms = PITCH.tailMs){
+  if(!c?.span || !(ms > 0) || c.span[1] - c.span[0] <= ms) return c?.span ? { ...c, trimmed: false } : c;
+  const from = c.span[1] - ms;
+  const pts = c.points.filter(p => p.t >= from);
+  const v = pts.filter(p => p.st != null).map(p => p.st);
+  if(v.length < 3) return { ...c, trimmed: false };
+  const m = median(v);
+  const out = pts.map(p => ({ t: p.t, st: p.st != null ? p.st - m : null }));
+  const voiced = out.filter(p => p.st != null);
+  return { points: out, med: c.med != null ? c.med * Math.pow(2, m / 12) : null,
+           span: [voiced[0].t, voiced[voiced.length - 1].t], trimmed: true };
+}
+
+/* 🆕 b230 · ونافذةُ الخطّين معاً، **والأصلُ مرجعُها**: إن طال عن `ms` قُصّ إلى آخره، وقُصّ صوتُ الطالب **بالنسبة نفسِها** من
+   آخره — فيُقابَل آخرُ الجملة بآخرها ولو اختلف الإيقاع · وما لم يطُل الأصلُ يُرسم الخطّان كاملين: قصُّ أحدهما وحده يُقابل آخرَ
+   جملةٍ بجملةٍ كاملة (أصلٌ من خمس ثوانٍ وطالبٌ تمهّل فبلغ سبعاً) · وبلا أصلٍ يُقصّ صوتُ الطالب بالنافذة نفسِها */
+export function pair(og, me, ms = PITCH.tailMs){
+  if(og?.span){
+    const o = tail(og, ms);
+    if(!o.trimmed) return { og: o, me: me?.span ? { ...me, trimmed: false } : me, trimmed: false };
+    const m = me?.span ? tail(me, (me.span[1] - me.span[0]) * ms / (og.span[1] - og.span[0])) : me;
+    return { og: o, me: m, trimmed: true };
+  }
+  const m = tail(me, ms);
+  return { og, me: m, trimmed: !!m?.trimmed };
+}
+
+/* 🆕 b230 · تنعيمٌ للرسم وحده: متوسّطٌ متحرّكٌ (±k إطاراً) داخل كلّ مقطعٍ مجهور، ولا يعبر الوقفة — فرجفةُ الإطار لا تُرسم سنّاً */
+export function smooth(points, k = 2){
+  const pts = points || [];
+  const out = pts.map(p => ({ t: p.t, st: p.st }));
+  for(let i = 0; i < pts.length;){
+    if(pts[i].st == null){ i++; continue; }
+    let j = i;
+    while(j < pts.length && pts[j].st != null) j++;
+    for(let a = i; a < j; a++){
+      let s = 0, n = 0;
+      for(let b = Math.max(i, a - k); b <= Math.min(j - 1, a + k); b++){ s += pts[b].st; n++; }
+      out[a].st = s / n;
+    }
+    i = j;
+  }
+  return out;
+}
+
+/* 🆕 b230 · هندسةُ الرسم الجديد ⇒ { d, end, segs }: كلُّ مقطعٍ مجهورٍ منحنًى ناعم (Catmull-Rom ⇐ Bézier) لا خطوطٌ مكسورة، وما
+   قصُر عن `minMs` يسقط (نُقطٌ تشوّش ولا تحمل لحناً)، و`end` آخرُ نقطةٍ مرسومة — علامةُ آخر الجملة حيث يُقرأ التنغيم.
+   والإحداثيّاتُ كـ`path` (الزمنُ عرضاً، وأنصافُ النغمات ارتفاعاً، والعربيُّ من اليمين)، ونقطةُ التحكّم لا تخرج عن المخطّط.
+   و`padY` حاشيةُ الأعلى والأسفل وحدهما (فيهما «أعلى» و«أخفض» في المخطّط) — وبلا ذكرٍ هي `pad` */
+export function geometry(c, { w = 300, h = 90, pad = 6, padY = pad, range = PITCH.range, hopMs = PITCH.hopMs, rtl = false, minMs = 60, step = 2 } = {}){
+  if(!c?.span) return { d: '', end: null, segs: 0 };
+  const [t0, t1] = c.span, dt = Math.max(1, t1 - t0);
+  const X = t => { const x = pad + (t - t0) / dt * (w - 2 * pad); return rtl ? w - x : x; };
+  const Y = st => h / 2 - Math.max(-range, Math.min(range, st)) / range * (h / 2 - padY);
+  const f = v => Math.round(v * 10) / 10;
+  const cy = v => Math.max(0, Math.min(h, v));
+  const runs = [];
+  let cur = null, prev = null;
+  for(const p of c.points || []){
+    if(p.st == null || p.t < t0 || p.t > t1){ cur = null; prev = null; continue; }
+    if(!cur || p.t - prev > hopMs * 3){ cur = []; runs.push(cur); }
+    cur.push(p); prev = p.t;
+  }
+  const kept = runs.filter(r => r[r.length - 1].t - r[0].t >= minMs);
+  let d = '', end = null;
+  for(const r of kept){
+    const s = r.filter((_, i) => i % step === 0 || i === r.length - 1).map(p => [X(p.t), Y(p.st)]);
+    let seg = `M${f(s[0][0])} ${f(s[0][1])}`;
+    for(let i = 0; i < s.length - 1; i++){
+      const p0 = s[i - 1] || s[i], p1 = s[i], p2 = s[i + 1], p3 = s[i + 2] || p2;
+      seg += ` C${f(p1[0] + (p2[0] - p0[0]) / 6)} ${f(cy(p1[1] + (p2[1] - p0[1]) / 6))} ${f(p2[0] - (p3[0] - p1[0]) / 6)} ${
+        f(cy(p2[1] - (p3[1] - p1[1]) / 6))} ${f(p2[0])} ${f(p2[1])}`;
+    }
+    d += (d ? ' ' : '') + seg;
+    end = s[s.length - 1];
+  }
+  return { d, end: end ? [f(end[0]), f(end[1])] : null, segs: kept.length };
+}
+
 /* مسارُ SVG: الزمنُ من أوّل المجهور إلى آخره عرضاً، وأنصافُ النغمات ارتفاعاً (±range حول الوسط) — والفجوةُ تقطع الخطّ
-   (إطارٌ غيرُ مجهور، أو بُعدٌ بين نقطتين فوق ثلاثة إطارات). و`rtl` يعكس الزمن لنصٍّ عربيّ */
+   (إطارٌ غيرُ مجهور، أو بُعدٌ بين نقطتين فوق ثلاثة إطارات). و`rtl` يعكس الزمن لنصٍّ عربيّ.
+   📌 b230 · الرسمُ صار بـ`geometry`، وهذا خطٌّ بكلّ إطار بلا تنعيم — يبقى للقياس: نقاطُه الإطاراتُ نفسُها فتُقرأ في الاختبار */
 export function path(c, { w = 300, h = 90, pad = 4, range = PITCH.range, hopMs = PITCH.hopMs, rtl = false } = {}){
   if(!c?.span) return '';
   const [t0, t1] = c.span, dt = Math.max(1, t1 - t0);

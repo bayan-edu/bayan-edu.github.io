@@ -2269,19 +2269,45 @@ html.pv-lock{overflow:hidden}
 /* 🆕 b223 · خطُّ التنغيم (audio_pitch.js · مختبر الصوتيّات ٦) — بمهارة الهويّة البصريّة: الخطّان لا يقولان جملةَ حكم، فلا
    `ok` ولا `danger`. صوتُ الطالب ما أنتجه هو، كالخيار المختار قبل التصحيح ⇒ `accent` رفيعاً فوق · والأصلُ مرجعٌ محايد ⇒
    `--text-muted` عريضاً شفيفاً تحته. واللونُ والعرضُ معاً: يُفرَّق بينهما عند عمى الألوان وفي الرماديّ. ولا لونَ جديد.
-   والمخطّطُ يمتدّ عرضاً (`preserveAspectRatio="none"`) والخطُّ لا يتمدّد معه (`non-scaling-stroke`) */
-.al-pc{margin:10px 0 0}
-.al-pc figcaption{display:flex;align-items:center;flex-wrap:wrap;gap:4px 12px;font-size:var(--fs-meta);margin-bottom:6px}
+   🆕 b230 · والرسمُ الجديد على القانون نفسِه (`lines_practice.js` · `chart`):
+   ① **الخلفيّةُ `--surface` صلبةً** لا `--fill-soft` (شفيفةٌ في الداكنة) — فحاشيةُ خطّ الطالب بلونها نفسِه، ولو اختلفا ظهرت
+      الحاشيةُ حدّاً حول الخطّ · والحاشيةُ (٦٫٥) أضيقُ من شريط الأصل (١١): إن طابقه بقي من الشريط حدّان على جانبيه.
+   ② **يُرسم بعرض اللوحة** فلا تمدّد عند الرسم، و`non-scaling-stroke` لما بعده (تدويرُ الهاتف): يتمدّد الشكلُ ولا تغلظ الخطوط ·
+      والنقطتان عنصران بالنسب لا دوائرُ في الرسم — فتبقيان مستديرتين.
+   ③ **المسحُ** (`.in`) قصٌّ يتّسع مع الزمن من جانب البدء، والنقطتان بعده — وللعربيّ من اليمين · ولا حركةَ لمن طلب تقليلها */
+.al-pc{margin:12px 0 0}
+.al-pc figcaption{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;font-size:var(--fs-meta);margin-bottom:8px}
+.al-pc-t{font-size:var(--fs-tag);color:var(--text-muted);background:var(--fill);border-radius:999px;padding:2px 9px}
+.al-pc-lg{display:inline-flex;flex-wrap:wrap;gap:4px 14px;margin-inline-start:auto}
 .al-pc-k{display:inline-flex;align-items:center;gap:6px;color:var(--text-muted)}
-.al-pc-k::before{content:"";width:20px;border-radius:3px}
-.al-pc-k.o::before{border-top:6px solid var(--text-muted);opacity:.45}
-.al-pc-k.m::before{border-top:2.5px solid var(--accent)}
-.al-pc-g{display:block;width:100%;height:96px;background:var(--fill-soft);border:1px solid var(--line);border-radius:9px}
-.al-pc-mid{stroke:var(--line);stroke-width:1;stroke-dasharray:3 4;vector-effect:non-scaling-stroke}
-.al-pc-o,.al-pc-m{fill:none;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
-.al-pc-o{stroke:var(--text-muted);stroke-width:7;opacity:.45}
-.al-pc-m{stroke:var(--accent);stroke-width:2.5}
-.al-pc-n{margin:6px 0 0;font-size:var(--fs-meta);color:var(--text-muted)}
+.al-pc-k::before{content:"";width:22px;border-radius:6px}
+.al-pc-k.o::before{height:10px;background:var(--text-muted);opacity:.3}
+.al-pc-k.m::before{height:3px;background:var(--accent)}
+.al-pc-g{position:relative;overflow:hidden;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.al-pc-s,.al-pc-w{position:absolute;inset:0;width:100%;height:100%}
+.al-pc-s{display:block;overflow:visible}
+.al-pc-mid,.al-pc-q,.al-pc-o,.al-pc-mh,.al-pc-m{fill:none;vector-effect:non-scaling-stroke}
+.al-pc-mid{stroke:var(--line-strong);stroke-width:1}
+.al-pc-q{stroke:var(--line);stroke-width:1;stroke-dasharray:2 5}
+.al-pc-o,.al-pc-mh,.al-pc-m{stroke-linecap:round;stroke-linejoin:round}
+.al-pc-o{stroke:var(--text-muted);stroke-width:11;opacity:.26}
+.al-pc-mh{stroke:var(--surface);stroke-width:6.5}
+.al-pc-m{stroke:var(--accent);stroke-width:2.75}
+.al-pc-e{position:absolute;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none}
+.al-pc-e.o{width:14px;height:14px;background:var(--text-muted);opacity:.4}
+.al-pc-e.m{width:9px;height:9px;background:var(--accent);box-shadow:0 0 0 2.5px var(--surface)}
+.al-pc-y{position:absolute;left:9px;font-size:var(--fs-tag);line-height:1;color:var(--text-muted);pointer-events:none}
+.al-pc-g.rtl .al-pc-y{left:auto;right:9px}
+.al-pc-y.hi{top:5px}
+.al-pc-y.lo{bottom:5px}
+.al-pc-g.in .al-pc-w{animation:al-pc-wipe .9s cubic-bezier(.3,.6,.35,1) both}
+.al-pc-g.in.rtl .al-pc-w{animation-name:al-pc-wipe-r}
+.al-pc-g.in .al-pc-e{animation:al-pc-pop .3s ease-out .8s both}
+@keyframes al-pc-wipe{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+@keyframes al-pc-wipe-r{from{clip-path:inset(0 0 0 100%)}to{clip-path:inset(0 0 0 0)}}
+@keyframes al-pc-pop{from{opacity:0;transform:translate(-50%,-50%) scale(.3)}}
+@media (prefers-reduced-motion:reduce){ .al-pc-g.in .al-pc-w,.al-pc-g.in .al-pc-e{animation:none} }
+.al-pc-n{margin:8px 0 0;font-size:var(--fs-meta);color:var(--text-muted);line-height:1.7}
 
 /* ══ المحاكاة التفاعلية داخل الدرس (b57) ══
    .sim.full تُحرّك نفس عنصر DOM إلى ملء الشاشة بـCSS وحده — لا يُعاد

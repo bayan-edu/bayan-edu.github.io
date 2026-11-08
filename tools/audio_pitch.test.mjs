@@ -106,6 +106,53 @@ ok('وفي العربيّ يبدأ الزمنُ من اليمين', pr[0][0] ===
 const big = P.path({ span: [0, 100], points: [{ t: 0, st: 30 }, { t: 10, st: -30 }] }, { w: 300, h: 90, pad: 4, range: 10 });
 ok('ما جاوز المدى يُقصّ عند الحافّة', big === 'M4 4 L33.2 86', big);
 
+/* ⑧ب 🆕 b230 · النافذةُ والتنعيمُ والرسمُ الجديد */
+/* والصعودُ الأخير ٨٫٤ نغمات في ثانيةٍ ونصف — فوق حدّ `ending` (أربعٌ في الثانية). وكان أوّلاً ١٧٠⇐٢٤٠ في ثانيتين ونصف (٢٫٤ في
+   الثانية) فقِيس «مستوياً» قبل القصّ وبعده: خطأ الاختبار لا الدالّة */
+const longC = P.contour(signal([['t', 3000, 150, 150], ['s', 300], ['t', 4000, 260, 160], ['s', 300], ['t', 1500, 160, 260]], [1, 0.5, 0.25]));
+const tl = P.tail(longC, 6000);
+ok('سطرٌ من عشر ثوانٍ ⇒ آخرُ ستّ وحدها', tl.trimmed === true && tl.span[1] === longC.span[1] && tl.span[1] - tl.span[0] <= 6000
+   && tl.span[1] - tl.span[0] > 5500, JSON.stringify([longC.span, tl.span]));
+const tv = tl.points.filter(p => p.st != null).map(p => p.st).sort((a, b) => a - b);
+ok('…ومعادٌ توسيطُه على وسيط نافذته', Math.abs(tv[tv.length >> 1]) < 0.01, String(tv[tv.length >> 1]));
+ok('…والصاعدُ في آخره صاعدٌ بعد القصّ', P.ending(tl) === 'rise');
+ok('سطرٌ قصير ⇒ كما هو بلا قصّ', P.tail(up, 6000).trimmed === false && P.tail(up, 6000).points === up.points);
+ok('ولا منحنى ⇒ لا شيء', P.tail(sil, 6000) === sil);
+const jag = Array.from({ length: 40 }, (_, i) => ({ t: i * 10, st: i === 20 ? null : (i % 2 ? 1 : -1) }));
+const sm = P.smooth(jag);
+const varOf = a => { const v = a.filter(p => p.st != null).map(p => p.st); const m = v.reduce((x, y) => x + y, 0) / v.length; return v.reduce((x, y) => x + (y - m) ** 2, 0) / v.length; };
+ok('التنعيمُ يُسكّن الرجفة', varOf(sm) < varOf(jag) / 4, `${varOf(jag)} ⇒ ${varOf(sm)}`);
+ok('…ولا يعبر الوقفة', sm[20].st === null && sm.filter(p => p.st != null).length === 39);
+const gm = P.geometry({ span: [0, 1000], points: [
+  ...Array.from({ length: 30 }, (_, i) => ({ t: i * 10, st: i / 10 })),           // ٣٠٠ م.ث صاعدة
+  ...Array.from({ length: 10 }, (_, i) => ({ t: 300 + i * 10, st: null })),
+  ...Array.from({ length: 4 }, (_, i) => ({ t: 400 + i * 10, st: 5 })),           // ٣٠ م.ث — تسقط
+  ...Array.from({ length: 10 }, (_, i) => ({ t: 440 + i * 10, st: null })),
+  ...Array.from({ length: 51 }, (_, i) => ({ t: 540 + i * 10, st: -i / 10 }))]},    // ٥٠٠ م.ث هابطة إلى آخر المخطّط
+  { w: 600, h: 120, pad: 6 });
+ok('الرسمُ منحنياتٌ لا خطوط (C)', /C/.test(gm.d) && !/L/.test(gm.d));
+ok('…ومقطعُ ثلاثين م.ث يسقط: مقطعان لا ثلاثة', gm.segs === 2 && (gm.d.match(/M/g) || []).length === 2, String(gm.segs));
+ok('…وآخرُ نقطةٍ علامةُ آخر الجملة (الحافّة اليمنى، أخفض الوسط)', gm.end[0] === 594 && gm.end[1] > 60, JSON.stringify(gm.end));
+ok('…وفي العربيّ آخرُ الجملة في الحافّة اليسرى', P.geometry({ span: [0, 1000], points: Array.from({ length: 101 }, (_, i) => ({ t: i * 10, st: 0 })) },
+   { w: 600, h: 120, pad: 6, rtl: true }).end[0] === 6);
+ok('…ونقاطُ التحكّم لا تخرج عن المخطّط', (gm.d.match(/-?[\d.]+/g) || []).map(Number).filter((_, i) => i % 2 === 1).every(y => y >= 0 && y <= 120));
+ok('…ولا منحنى ⇒ لا رسم', P.geometry(sil).d === '' && P.geometry(sil).end === null);
+const gy = P.geometry({ span: [0, 100], points: Array.from({ length: 11 }, (_, i) => ({ t: i * 10, st: 9 })) }, { w: 600, h: 120, pad: 6, padY: 18 });
+ok('…و`padY` حاشيةُ الأعلى وحدها: أعلى المدى عند ١٨ والعرضُ بحاشية ٦', gy.end[1] === 18 && gy.end[0] === 594, JSON.stringify(gy.end));
+
+/* ⑧ج 🆕 b230 · نافذةُ الخطّين معاً — والأصلُ مرجعُها */
+const meLong = P.contour(signal([['t', 2500, 120], ['s', 300], ['t', 4000, 200, 130], ['s', 300], ['t', 1800, 130, 210]], [1, 0.5, 0.25]));
+const pw = P.pair(longC, meLong);
+const spanOf = c => c.span[1] - c.span[0];
+ok('أصلٌ طويل ⇒ يُقصّ الخطّان', pw.trimmed && pw.og.trimmed && pw.me.trimmed);
+ok('…وصوتُ الطالب بالنسبة نفسِها من آخره', within(spanOf(pw.me) / spanOf(meLong), 6000 / spanOf(longC), 0.06),
+   `${(spanOf(pw.me) / spanOf(meLong)).toFixed(3)} ≈ ${(6000 / spanOf(longC)).toFixed(3)}`);
+const ps = P.pair(up, meLong);
+ok('أصلٌ قصير وطالبٌ أطال ⇒ الخطّان كاملان', !ps.trimmed && ps.me.trimmed === false && ps.me.points === meLong.points && ps.og.points === up.points);
+const pn = P.pair(null, meLong);
+ok('بلا أصل ⇒ صوتُ الطالب بالنافذة نفسِها', pn.trimmed && pn.og === null && spanOf(pn.me) <= 6000 && spanOf(pn.me) > 5500, String(spanOf(pn.me)));
+ok('ولا صوتَ ولا أصل ⇒ لا شيء', P.pair(null, sil).trimmed === false && P.pair(null, sil).me === sil);
+
 /* ⑨ وبثمانية آلاف عيّنة — ما يفكّ به المتصفّحُ الأصلَ كلَّه (نصفُ الذاكرة) */
 function signalAt(rate, ms, f0, f1 = f0, harm = [1, 0.5, 0.25]){
   const out = [], m = Math.round(rate * ms / 1000); let ph = 0;

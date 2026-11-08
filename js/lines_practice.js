@@ -13,7 +13,7 @@
    📱 **وiOS لا يشغّل عنصرَ صوتٍ من الشيفرة قبل أن يُشغَّل بنقرة:** فأوّلُ نقرةٍ في كلّ تدرّبٍ تفتح العنصرين (`prime`) —
       الأصلَ بصوتٍ مكتوم، وصوتَ الطالب بصمتٍ قصير — ثمّ يتتابعان بلا نقر. ⚠️ **ولم يُجرَّب على iPhone حقيقيّ بعد.**
    ══════════════════════════════════════════════════════════ */
-import { esc, AR } from './ui.js';
+import { esc, AR, N } from './ui.js';
 import * as L from './audio_lines.js';
 import * as P from './audio_practice.js';
 import * as PI from './audio_pitch.js';
@@ -50,7 +50,12 @@ const T = Object.freeze({
   pitchOf: k => `نبرة السطر ${AR(k + 1)}`,
   pitchHint: 'ارتفاع الخط ارتفاع الصوت، وكل خط بمدى صوت صاحبه.',
   pitchNoOrig: 'تعذّرت قراءة الأصل، فيظهر خط صوتك وحده.',
-  pitchShort: 'لا يكفي الصوت المسجّل لرسم الخط.'
+  pitchShort: 'لا يكفي الصوت المسجّل لرسم الخط.',
+  /* 🆕 b230 · نافذةُ السطر الطويل ومحورُ الارتفاع */
+  pitchTail: 'والسطر طويل، فيُرسم آخره، وفيه تظهر نبرة الجملة.',
+  last: s => `آخر ${N(s, 'ثانية', 'ثانيتين', 'ثوان', 'ثانية')}`,
+  hi: 'أعلى',
+  lo: 'أخفض'
 });
 /* رسائلُ الميكروفون رسائلُ القراءة الجهريّة بحرفها (`readAr` في student.js) — والقياسُ يفحص أنّهما واحد */
 const MIC = Object.freeze({
@@ -88,7 +93,7 @@ async function pcm(buf){
 /* host لوحةُ التدرّب (`.al-pr`) · ctx من المشغّل: { el, au, lines(), text(), halt() } ⇒ { show, hide, redraw } */
 export function mountPractice(host, ctx){
   const { el, au } = ctx;
-  const S = { mode: 'echo', role: null, phase: 'idle', msg: '', err: '', chart: null };   // phase: idle · wait · turn · play · back · mix · done
+  const S = { mode: 'echo', role: null, phase: 'idle', msg: '', err: '', chart: null, fresh: null };   // phase: idle · wait · turn · play · back · mix · done
   const echoT = new Map(), roleT = new Map();                               // رقمُ السطر ⇒ { url, ms, blob } — في الذاكرة وحدها
   const pitch = new Map();                                                  // رقمُ السطر ⇒ { me, og } منحنيا التنغيم
   const me = new Audio();
@@ -131,17 +136,46 @@ export function mountPractice(host, ctx){
   }
 
   /* 🆕 b223 · خطُّ التنغيم للسطر الأخير سطراً سطراً: الأصلُ عريضٌ محايد، وصوتُ الطالب رفيعٌ بلون التفاعل فوقه — فيُفرَّق
-     بينهما باللون والعرض معاً (عمى الألوان · الرماديّ). ولا لونَ حكم: الخطّان لا يقولان «أصبت» ولا «أخطأت» */
+     بينهما باللون والعرض معاً (عمى الألوان · الرماديّ). ولا لونَ حكم: الخطّان لا يقولان «أصبت» ولا «أخطأت».
+     🆕 b230 · ورسمٌ جديد بطلب المالك (٨ نوفمبر): «أوضح وأكثر تقدّماً»:
+     ① **منحنياتٌ ناعمة** (`PI.smooth` ثمّ `PI.geometry`) لا خطوطٌ مكسورة، ونُتَفُ الصوت دون ٦٠ م.ث لا تُرسم.
+     ② **بعرض اللوحة الحقيقيّ** لا مخطّطٌ من ثلاثمئة نقطةٍ يُمطّ — فلا يتشوّه المنحنى وتبقى النقطةُ مستديرة.
+     ③ **وحول خطّ الطالب حاشيةٌ بلون اللوحة** أضيقُ من شريط الأصل: إن طابقه ظهر الخطُّ داخل الشريط لا فوقه يحجبه.
+        ولكلٍّ نقطةٌ في آخره: هناك صعودُ السؤال وهبوطُ الخبر.
+     ④ **خطُّ الوسط** (مدى صاحبه) وخطّان متقطّعان على ثلاث نغماتٍ فوقه وتحته، و«أعلى» و«أخفض» في جانب البدء.
+     ⑤ **يظهر الخطّان مسحاً مع الزمن** في أوّل رسمٍ بعد التسجيل وحده (`S.fresh`) لا عند كلّ إعادة رسم — ولا حركةَ لمن طلب
+        تقليلها (CSS).
+     ⑥ **والسطرُ الأطولُ من ستّ ثوانٍ يُرسم آخرُه** (`PI.pair` — والأصلُ مرجعُ النافذة)، ويُقال ذلك في العنوان والملاحظة */
+  const CH = Object.freeze({ h: 136, padX: 10, padY: 20, k: 3 });
   function chart(){
     const k = S.chart, p = k != null && S.mode === 'echo' ? pitch.get(k) : null;
     if(!p) return '';
-    const o = { w: 300, h: 90, rtl: el.querySelector('.al-pls')?.dir === 'rtl' };
-    const og = p.og?.span ? PI.path(p.og, o) : '', mine = p.me?.span ? PI.path(p.me, o) : '';
-    const note = !mine ? T.pitchShort : p.og == null ? T.pitchNoOrig : T.pitchHint;
-    return `<figure class="al-pc"><figcaption><b>${T.pitchOf(k)}</b>${og ? `<span class="al-pc-k o">${T.orig}</span>` : ''}${
-        mine ? `<span class="al-pc-k m">${T.yours}</span>` : ''}</figcaption>
-      <svg class="al-pc-g" viewBox="0 0 300 90" preserveAspectRatio="none" role="img" aria-label="${T.pitchOf(k)}">
-        <line class="al-pc-mid" x1="0" y1="45" x2="300" y2="45"/>${og ? `<path class="al-pc-o" d="${og}"/>` : ''}${mine ? `<path class="al-pc-m" d="${mine}"/>` : ''}</svg>
+    const fresh = S.fresh === k;
+    S.fresh = null;
+    const rtl = el.querySelector('.al-pls')?.dir === 'rtl';
+    const cs = getComputedStyle(host);
+    /* داخلُ الإطار بلا حدَّيه (١ + ١) — والارتفاعُ في الأسفل `H + 2` لأنّ الصناديق `border-box`: فالرسمُ نقطةً بنقطة */
+    const W = Math.max(240, Math.round((host.clientWidth || 626) - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0) - 2));
+    const H = CH.h, f = v => Math.round(v * 10) / 10;
+    const win = PI.pair(p.og, p.me);
+    /* نقطةٌ لكلّ نقطتين من العرض تقريباً — وما زاد لا يُرى ويُثقل */
+    const geo = c => c?.span ? PI.geometry({ ...c, points: PI.smooth(c.points, CH.k) }, { w: W, h: H, pad: CH.padX, padY: CH.padY, rtl,
+      step: Math.max(1, Math.round((c.span[1] - c.span[0]) / PI.PITCH.hopMs / (W / 2))) }) : { d: '', end: null };
+    const og = geo(win.og), mine = geo(win.me);
+    const note = !mine.d ? T.pitchShort : (p.og == null ? T.pitchNoOrig : T.pitchHint) + (win.trimmed ? ' ' + T.pitchTail : '');
+    const span = win.trimmed ? T.last(PI.PITCH.tailMs / 1000) : '';
+    const yAt = st => f(H / 2 - st / PI.PITCH.range * (H / 2 - CH.padY));
+    const hl = (st, cls) => `<line class="${cls}" x1="0" y1="${yAt(st)}" x2="${W}" y2="${yAt(st)}"/>`;
+    const dot = (e, cls) => e ? `<i class="al-pc-e ${cls}" style="left:${f(e[0] / W * 100)}%;top:${f(e[1] / H * 100)}%"></i>` : '';
+    return `<figure class="al-pc"><figcaption><b>${T.pitchOf(k)}</b>${span ? `<span class="al-pc-t">${span}</span>` : ''}<span class="al-pc-lg">${
+        og.d ? `<span class="al-pc-k o">${T.orig}</span>` : ''}${mine.d ? `<span class="al-pc-k m">${T.yours}</span>` : ''}</span></figcaption>
+      <div class="al-pc-g${rtl ? ' rtl' : ''}${fresh ? ' in' : ''}" style="height:${H + 2}px">
+        <svg class="al-pc-s" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">${hl(3, 'al-pc-q')}${hl(-3, 'al-pc-q')}${hl(0, 'al-pc-mid')}</svg>
+        <span class="al-pc-y hi" aria-hidden="true">${T.hi}</span><span class="al-pc-y lo" aria-hidden="true">${T.lo}</span>
+        <div class="al-pc-w"><svg class="al-pc-s" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${T.pitchOf(k)}${
+          span ? ' · ' + span : ''}">${og.d ? `<path class="al-pc-o" d="${og.d}"/>` : ''}${
+          mine.d ? `<path class="al-pc-mh" d="${mine.d}"/><path class="al-pc-m" d="${mine.d}"/>` : ''}</svg>${dot(og.end, 'o')}${dot(mine.end, 'm')}</div>
+      </div>
       <p class="al-pc-n">${note}</p></figure>`;
   }
 
@@ -180,7 +214,7 @@ export function mountPractice(host, ctx){
       }
       if(echoT.get(k) !== t) return;                         // سُجّل السطرُ ثانيةً أثناء الحساب
       pitch.set(k, { me: meC, og: ogC });
-      if(S.chart === k) draw();
+      if(S.chart === k){ S.fresh = k; draw(); }
     } catch(e){ console.warn('[pitch]', e); }
   }
 
