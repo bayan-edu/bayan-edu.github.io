@@ -223,7 +223,8 @@ const guideOf = (k, isNew, ro) => {
         الاستماع لا القراءة.</div>`;
   if(k.needs !== 'url') return '';
   return `<div class="rk-guide">${GUIDE[k.code] || `<b>${esc(fieldOf(k))}:</b> يُفتح للطالب في تبويب جديد،
-    فيلزم أن يكون متاحاً لمن معه الرابط بلا تسجيل دخول.`}</div>`;
+    فيلزم أن يكون متاحاً لمن معه الرابط بلا تسجيل دخول.`}${k.code === 'audio' && !ro
+    ? '<br>أو يُبنى حوار بأصوات Google في إطاره تحت النموذج، فيملأ الحقل بعد تجميعه.' : ''}</div>`;
 };
 
 function form(item, official, ro){
@@ -273,6 +274,7 @@ function form(item, official, ro){
           ${guideOf(k, isNew, ro)}
         </div>
 
+        <div class="rk-main">
         <div class="card rk-card">
           <div class="rk-head">
             <span class="rk-ico">${kindIcon(k)}</span>
@@ -331,6 +333,10 @@ function form(item, official, ro){
               </div>
             </div>
           </section>`}
+        </div>
+        ${/* 🆕 b232 · الحوارُ المولَّد إطارُه وحده تحت النموذج — يُملأ حين تُحمَّل لوحتُه (`attachLines`)، ومخفيٌّ حتى تُحمَّل
+              فلا يومض إطارٌ فارغ */''}
+        ${!ro && k.code === 'audio' ? '<section class="rk-gen" id="rkGen" hidden></section>' : ''}
         </div>
       </div>
       ${ro || gate ? '' : `<div class="nav" style="margin-top:16px">
@@ -545,7 +551,12 @@ function attachLines(id, item){
     const dp = dm.dialoguePanel({ field: inp, item, lesson: ctx.lesson?.id });
     const up = inp.nextElementSibling?.classList.contains('mf') ? inp.nextElementSibling : inp;
     up.insertAdjacentElement('afterend', lp.el);
-    lp.el.insertAdjacentElement('afterend', dp.el);
+    /* 🆕 b232 · والحوارُ إطارٌ وحده تحت النموذج (`#rkGen`) — طلبُ المالك بلقطة: «من الأفضل فصل الجزء الخاص بتوليد الصوت في
+       إطار منفصل». فهو أداةٌ تصنع الملفّ كلَّه (مشهدٌ ومتحدّثون وسطور)، لا حقلٌ من حقول المصدر — وكان صندوقاً ثانياً بهيئة
+       «سطور المقطع» وسط «المحتوى». وما زال يملأ حقلَ الملفّ نفسَه، و«سطور المقطع» في موضعها: تتبع الملفَّ أيّاً كان مصدرُه */
+    const gen = document.getElementById('rkGen');
+    if(gen){ gen.append(dp.el); gen.hidden = false; }
+    else lp.el.insertAdjacentElement('afterend', dp.el);
   }).catch(e => console.error(e));
 }
 

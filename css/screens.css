@@ -2106,7 +2106,10 @@ html.pv-lock{overflow:hidden}
 /* البطاقةُ: شريطٌ بلون النمط، ورأسٌ يحمل أيقونته واسمه وكيف يصل الطالب، ثمّ قسمان بعلامةٍ بلونه.
    ⚠️ `overflow:hidden` ليُقصّ لونُ الرأس على انحناء البطاقة — ولا شيءَ فيها يطفو خارجها: القوائمُ المنسدلة أصليّة،
       ومعاينةُ النصّ تُلحق بـ`body` لا هنا. */
-.rk-card{flex:1;min-width:0;padding:0;overflow:hidden;border-top:4px solid var(--kd-ink)}
+/* 🆕 b232 · وعمودُ النموذج: البطاقةُ ثمّ إطارُ الحوار المولَّد تحتها (للمقطع الصوتيّ وحده · `#rkGen`). والهامشُ تحته هامشُ
+   البطاقة نفسُه (١٥) فلا يتغيّر بُعدُ زرّ الحفظ في الأنواع الأخرى */
+.rk-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:16px;margin-bottom:15px}
+.rk-card{margin:0;padding:0;overflow:hidden;border-top:4px solid var(--kd-ink)}
 .rk-head{display:flex;align-items:center;flex-wrap:wrap;gap:10px 14px;padding:15px 20px;
   background:var(--kd-wash);border-bottom:1px solid var(--line)}
 .rk-ico{flex:none;width:52px;height:52px;border-radius:14px;display:grid;place-items:center;background:var(--kd-soft)}
@@ -2128,6 +2131,21 @@ html.pv-lock{overflow:hidden}
 .rk-opt{font-weight:400;color:var(--text-muted)}
 /* الحقولُ الثلاثة في صفٍّ بطولٍ واحد: كان حقلُ المدّة (input) أطولَ من القائمتين بجواره — قِيس في المتصفّح */
 .rk .ed-3 input,.rk .ed-3 select{height:50px;padding-block:0}
+/* 🆕 b232 · إطارُ «حوار يُولَّد بأصوات Google» — طلبُ المالك: «فصل الجزء الخاص بتوليد الصوت في إطار منفصل». لوحتُه
+   (`dialogue_panel.js`) تُوضع فيه كما هي، **ويُنزع صندوقُها فالإطارُ صندوقُها** — لا صندوقٌ في صندوق. وشريطُه بلون النوع كبطاقة
+   النموذج فوقه: هو منها، يملأ حقلَ ملفّها. ورأسُه بهيئة رأسها: أيقونةٌ في هالةٍ بلون النوع (الميكروفونُ المجسَّم — صوتٌ يُنطق)
+   ثمّ الاسم، ووصفُه تحت الاسم لا تحت الأيقونة.
+   ⚠️ **والقواعدُ كلُّها تحت `.rk-gen`:** اللوحةُ نفسُها تُستعمل في محرّر الاختبار (النصّ الصوتيّ · editor_quiz.js) بهيئتها. */
+.rk-gen{background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--kd-ink);border-radius:var(--r);
+  box-shadow:var(--shadow);padding:16px 20px 18px}
+.rk-gen[hidden]{display:none}
+.rk-gen > .vp{margin:0;padding:0;border:0;background:none}
+.rk-gen .vp-top{align-items:center;gap:6px 12px}
+.rk-gen .vp-top::before{content:"";flex:none;width:46px;height:46px;border-radius:13px;
+  background:var(--kd-soft) url(/img/kind/recording.webp) center/32px no-repeat}
+.rk-gen .vp-h{font-size:var(--fs-read)}
+.rk-gen .dg > .vp-say,.rk-gen .dg > .vp-note{margin-inline-start:58px}
+.rk-gen .dg-body{margin-top:12px;padding-top:14px;border-top:1px solid var(--line)}
 /* إرشادُ النمط في العمود الجانبيّ — محايدٌ وحدُّه في صدره بلون النمط، والنصُّ بحبر الصفحة.
    ⚠️ **وبلا غسلة:** جُرّبت فجاء إرشادُ «ملف للقراءة» صندوقاً وردياً بحدٍّ أحمر — هيئةُ رسالة الخطأ (`.err`) بعينها. */
 .rk-guide{background:var(--fill-soft);border:1px solid var(--line);border-inline-start:3px solid var(--kd-ink);
@@ -2145,7 +2163,7 @@ html.pv-lock{overflow:hidden}
 @media (prefers-reduced-motion:reduce){ .it-k:hover .ic-3d{transform:none} }
 /* وتحت ٩٠٠ يصعد العمودُ الجانبيّ فوق البطاقة (`.ed-form` عمودٌ بمحاذاة البداية) — فالبطاقةُ تُمدّ بعرضها صراحةً، وإلّا
    ضاقت إلى أعرض ما فيها: نصُّ رأسها (قِيس في ٣٧٥: ٣٠٥ من ٣٤٣) */
-@media (max-width:900px){ .rk .rk-card{width:100%} }
+@media (max-width:900px){ .rk .rk-main{width:100%} }
 @media (max-width:520px){
   .rk-pick{padding:13px 12px 14px}
   .it-kinds{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -2153,6 +2171,9 @@ html.pv-lock{overflow:hidden}
   .it-k .ic-3d,.it-k .it-k-em{width:24px;height:24px}
   .rk-head{padding:13px 14px}
   .rk-sec{padding:14px 14px 16px}
+  .rk-gen{padding:14px}
+  .rk-gen .vp-top::before{width:40px;height:40px;background-size:28px}
+  .rk-gen .dg > .vp-say,.rk-gen .dg > .vp-note{margin-inline-start:0}
 }
 
 /* ═══ الأقسام والنصوص المشتركة ═══ */
