@@ -77,6 +77,8 @@ const ICO = {
   mic:  svg('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/>'),
   stop: svg('<rect x="6.5" y="6.5" width="11" height="11" rx="2"/>'),
 };
+/* 🆕 b235 · أيقونةُ الميكروفون لشريط «التدرّب بصوتك» (`lines_player.js`) — من هنا لا نسخةً ثالثة */
+export const MIC_ICON = ICO.mic;
 
 const esc = s => String(s == null ? '' : s)
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');

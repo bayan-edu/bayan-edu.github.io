@@ -13,8 +13,7 @@
    📱 **وiOS لا يشغّل عنصرَ صوتٍ من الشيفرة قبل أن يُشغَّل بنقرة:** فأوّلُ نقرةٍ في كلّ تدرّبٍ تفتح العنصرين (`prime`) —
       الأصلَ بصوتٍ مكتوم، وصوتَ الطالب بصمتٍ قصير — ثمّ يتتابعان بلا نقر. ⚠️ **ولم يُجرَّب على iPhone حقيقيّ بعد.**
    ══════════════════════════════════════════════════════════ */
-import { esc, AR, N, G } from './ui.js';
-import { S as ST } from './state.js';
+import { esc, AR, N } from './ui.js';
 import * as L from './audio_lines.js';
 import * as P from './audio_practice.js';
 import * as PI from './audio_pitch.js';
@@ -25,8 +24,9 @@ const T = Object.freeze({
   /* 🆕 b233 · سطرٌ واحدٌ بنصّ المالك: «بعد الضغط على التدرب بصوتك يكفي عبارة "اسمع... سجل... قارن"» — وسقط معه سطرا
      «التسجيل يبقى على جهازك…» و«لكل سطر زر تسجيل…».
      🆕 b234 · وبصيغة الطالبة — قرارُ المالك: «نعم أضف للطالبة "اسمعي… سجّلي… قارني"». فهو خطابٌ يُفصل بـ`G()` (bayan-language-identity
-     §٤)، والخانةُ الرابعة لمن لم يُسأل عن صيغته مصادرُ محايدة لا أمرٌ مذكّر. والصيغةُ تُقرأ عند الرسم من `S.prof` (`steps()`) */
-  steps: () => G(ST.prof?.gram_gender, 'اسمع… سجّل… قارن', 'اسمعي… سجّلي… قارني', 'استماع… تسجيل… مقارنة'),
+     §٤)، والخانةُ الرابعة لمن لم يُسأل عن صيغته مصادرُ محايدة لا أمرٌ مذكّر.
+     🆕 b235 · **وانتقل السطرُ إلى شريط «التدرّب بصوتك»** (`GO.steps` في lines_player.js) ليُقرأ قبل الضغط لا بعده —
+     فاللوحةُ تبدأ بأنماطها، والشريطُ فوقها رأسُها */
   echo: 'سطراً سطراً',
   role: 'تبادل الأدوار',
   roleHint: 'تُسمع أدوار الآخرين، ويُسجَّل صوتك في دورك، ثم يُسمع الحوار بصوتك.',
@@ -133,8 +133,7 @@ export function mountPractice(host, ctx){
       <div class="al-pr-who"><span>${T.pick}</span>${rs.map((r, i) =>
         `<button type="button" class="aud-b" data-p="role" data-r="${i}" aria-pressed="${S.role === r}"><bdi>${esc(r)}</bdi></button>`).join('')}
         <button type="button" class="aud-b primary" data-p="go"${S.role == null ? ' disabled' : ''}>${T.go}</button></div>`;
-    host.innerHTML = `<p class="al-pr-note">${T.steps()}</p>
-      ${rs.length ? `<div class="al-pr-tabs" role="group" aria-label="${T.name}">${tab('echo', T.echo)}${tab('role', T.role)}</div>` : ''}
+    host.innerHTML = `${rs.length ? `<div class="al-pr-tabs" role="group" aria-label="${T.name}">${tab('echo', T.echo)}${tab('role', T.role)}</div>` : ''}
       ${body}<div class="al-pr-st" aria-live="polite">${status()}</div>${chart()}`;
     decorate();
   }

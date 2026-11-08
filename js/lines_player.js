@@ -17,16 +17,31 @@
       في الدرس وحده (`item`) لا في مراجعة الاختبار، وحيث يسجّل المتصفّح (`canRecord`)، ولسطرٍ موقَّتٍ واحدٍ على الأقلّ. ويُحمَّل
       عند أوّل ضغطة. 🔑 **واللوحةُ موضعٌ ثابت بين الرأس والسطور:** الرسمُ يعيد الرأسَ والسطورَ وحدهما (بعد الاستماع كاملاً
       مثلاً)، فلا يُمحى تدرّبٌ قائم. وما دام التدرّبُ قائماً (`data-busy`) فالمقطعُ له: لا «⟲ السطر» ولا ▶ ولا تلوينَ هنا.
+   🆕 b235 · **و«التدرّب بصوتك» هدفٌ لا أداة** — حكمُ المالك (٨ نوفمبر): «أريد ابراز التدرب بصوتك كهدف رئيسي يختلف عن
+      اختيارات اعادة سطر او كشف النص التي هي ادوات للتدرب». فخرج من صفّ الأدوات إلى **شريطٍ في صدر السطور** باسمه وأيقونته
+      و«اسمع… سجّل… قارن» ظاهرةً قبل الضغط، **واللوحةُ تُفتح داخله** فيصيران بطاقةً واحدة. والأدواتُ تحته بجوار السطور التي
+      تعمل فيها، وتبقى ظاهرةً أثناء التدرّب: «كشف النص» يُقرأ معه، و«⟲ السطر» يعمل ما لم تجرِ جلسة.
+      🎯 **ويتدرّج بالاستماع** (اختيارُ المالك «(ج)»): قبل أن يُسمع المقطعُ كاملاً هادئٌ محايد، وبعده (`status` المحفوظ أو
+      `ended` الآن) بلون التفاعل — «اضغط هنا». فالاستماعُ أوّلاً يُشار إليه ولا يُفرض: الشريطُ يعمل في الحالين.
    ══════════════════════════════════════════════════════════ */
 import * as realApi from './api.js';
-import { esc, AR } from './ui.js';
+import { esc, AR, G } from './ui.js';
+import { S as ST } from './state.js';
 import * as L from './audio_lines.js';
-import { canRecord } from './recorder.js';
+import { canRecord, MIC_ICON } from './recorder.js';
 
 /* 🆕 b233 · وسقط عنوانُ «سطور المقطع» وسطرُ «الاستماع أولاً، والنص بعده» — قرارُ المالك بلقطة: «لا داعي لهذه التعليمات».
    فالزرّان يقولان ما يُفعل، والاسمُ لقارئ الشاشة وحده (`aria-label`). ويبقى السطران اللذان يخبران بحالٍ لا بتعليمة:
    «يُكشف النص بعد الاستماع كاملاً» و«اكتمل الاستماع» */
 const HINT = { wait: 'يُكشف النص بعد الاستماع كاملاً', now: 'اكتمل الاستماع، والنص متاح الآن' };
+/* 🆕 b235 · نصُّ الشريط. والخطواتُ انتقلت إليه من رأس اللوحة (`lines_practice.js`) لتُقرأ قبل الضغط — وهي خطابٌ يُفصل
+   بـ`G()` بثلاث صيغ (b234 · bayan-language-identity §٤). والزرّان مصدران: «البدء» و«إغلاق» */
+const GO = Object.freeze({
+  name: 'التدرّب بصوتك',
+  steps: () => G(ST.prof?.gram_gender, 'اسمع… سجّل… قارن', 'اسمعي… سجّلي… قارني', 'استماع… تسجيل… مقارنة'),
+  open: 'البدء',
+  close: 'إغلاق'
+});
 
 /* box حاوية المشغّل (.aud) · au عنصرُ الصوت · item المصدر ({ id, url }) ⇒ { el, lines } أو null بلا سطور
    🆕 b220 · أو `data` جاهزةٌ بصيغة `item_lines` مكانَ المصدر: نصُّ الاستماع في مراجعة الاختبار (`attempt_lines` · 200 ②) —
@@ -40,11 +55,19 @@ export async function attachLines(box, au, item, { api = realApi, data = null } 
   el.className = 'al-pl';
   el.setAttribute('role', 'group');
   el.setAttribute('aria-label', 'سطور المقطع');
-  el.innerHTML = '<div class="al-plh"></div><div class="al-pr" hidden></div><ol class="al-pls"></ol>';
+  const pid = 'al-pr-' + (item?.id ?? 'x');
+  el.innerHTML = `<section class="al-go" aria-label="${GO.name}" hidden>
+      <div class="al-go-h"><span class="al-go-i">${MIC_ICON}</span>
+        <span class="al-go-t"><b>${GO.name}</b><span class="al-go-s"></span></span>
+        <button type="button" class="aud-b al-go-b" data-a="prac" aria-expanded="false" aria-controls="${pid}">${GO.open}</button></div>
+      <div class="al-pr" id="${pid}" hidden></div></section><div class="al-plh"></div><ol class="al-pls"></ol>`;
   box.appendChild(el);
-  const head = el.querySelector('.al-plh'), prac = el.querySelector('.al-pr'), list = el.querySelector('.al-pls');
+  const go = el.querySelector('.al-go'), head = el.querySelector('.al-plh'), prac = el.querySelector('.al-pr'), list = el.querySelector('.al-pls');
 
   let lines = [], stopAt = null, last = -1, shown = false, P = null;
+  /* 🆕 b235 · سُمع المقطعُ كاملاً؟ — من حالة المصدر عند الفتح، ومن `ended` بعده (وهو ما يسجّله المشغّل استماعاً) */
+  let heard = item?.status === 'completed';
+  au.addEventListener('ended', () => { heard = true; go.classList.add('ready'); });
   const busy = () => el.hasAttribute('data-busy');
   function draw(hint){
     lines = L.fromRows(d.lines);
@@ -53,8 +76,10 @@ export async function attachLines(box, au, item, { api = realApi, data = null } 
     const say = hint || (!hasText && d.reveal === 'after' ? HINT.wait : '');
     head.innerHTML = `${say ? `<span class="al-hint">${say}</span>` : ''}
         ${timed ? '<button type="button" class="aud-b" data-a="line">⟲ السطر</button>' : ''}
-        ${hasText ? `<button type="button" class="aud-b" data-a="txt" aria-pressed="${shown}">${shown ? 'إخفاء النص' : 'كشف النص'}</button>` : ''}
-        ${timed && item?.id && canRecord() ? `<button type="button" class="aud-b" data-a="prac" aria-pressed="${!prac.hidden}">التدرّب بصوتك</button>` : ''}`;
+        ${hasText ? `<button type="button" class="aud-b" data-a="txt" aria-pressed="${shown}">${shown ? 'إخفاء النص' : 'كشف النص'}</button>` : ''}`;
+    go.hidden = !(timed && item?.id && canRecord());
+    go.classList.toggle('ready', heard);
+    go.querySelector('.al-go-s').textContent = GO.steps();
     list.dir = d.lang === 'ar' ? 'rtl' : 'ltr';
     list.innerHTML = lines.map((l, k) => `<li class="al-pli" data-k="${k}">${
         l.start != null ? `<button type="button" class="al-plb" data-a="play" aria-label="سماع السطر ${AR(k + 1)}">▶</button>`
@@ -110,7 +135,7 @@ export async function attachLines(box, au, item, { api = realApi, data = null } 
       b.textContent = shown ? 'إخفاء النص' : 'كشف النص';
       return;
     }
-    if(b.dataset.a === 'prac') return togglePractice(b);
+    if(b.dataset.a === 'prac') return togglePractice();
     if(busy()) return;
     if(b.dataset.a === 'line'){
       const k = L.lineAt(lines, au.currentTime * 1000);
@@ -120,16 +145,23 @@ export async function attachLines(box, au, item, { api = realApi, data = null } 
     if(b.dataset.a === 'play') playLine(+b.closest('.al-pli').dataset.k);
   });
 
-  /* 🆕 b222 · اللوحةُ تُحمَّل عند أوّل ضغطة، والإخفاءُ يوقف ما يجري فيها */
-  async function togglePractice(b){
+  /* 🆕 b222 · اللوحةُ تُحمَّل عند أوّل ضغطة، والإخفاءُ يوقف ما يجري فيها
+     🆕 b235 · والزرُّ في الشريط يقول ما يفعله الآن («البدء» · «إغلاق»)، و`data-open` يضمّ الشريطَ واللوحةَ بطاقةً واحدة */
+  const opened = on => {
+    prac.hidden = !on;
+    go.toggleAttribute('data-open', on);
+    const b = go.querySelector('.al-go-b');
+    b.setAttribute('aria-expanded', String(on));
+    b.textContent = on ? GO.close : GO.open;
+  };
+  async function togglePractice(){
     const on = prac.hidden;
-    b.setAttribute('aria-pressed', String(on));
-    if(!on){ P?.hide(); prac.hidden = true; return; }
-    prac.hidden = false;
+    if(!on){ P?.hide(); opened(false); return; }
+    opened(true);
     if(!P){
       prac.innerHTML = '<p class="al-pr-note">…</p>';
       const m = await import('./lines_practice.js').catch(err => { console.warn('[practice]', err); return null; });
-      if(!m || !el.isConnected){ prac.hidden = true; b.setAttribute('aria-pressed', 'false'); return; }
+      if(!m || !el.isConnected){ opened(false); return; }
       P = m.mountPractice(prac, { el, au, lines: () => lines, text: () => d.text === true, halt: () => { stopAt = null; } });
     }
     P.show();

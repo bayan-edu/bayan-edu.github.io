@@ -2460,11 +2460,31 @@ html.pv-lock{overflow:hidden}
 /* 🆕 b220 · نصُّ الاستماع في مراجعة الاختبار (quiz.js · 200 ②): مشغّلُ الدرس نفسُه في بطاقة كلّ نصٍّ صوتيّ */
 .al-rvw .aud{margin:0}
 .al-rvw .psg-t{margin-bottom:10px}
-/* 🆕 b222 · التدرّبُ بصوت الطالب (lines_practice.js · مختبر الصوتيّات ٥): لوحةٌ بين رأس السطور وسطورها بألوانٍ قائمة —
+/* 🆕 b222 · التدرّبُ بصوت الطالب (lines_practice.js · مختبر الصوتيّات ٥): لوحةٌ (منذ b235 داخل شريطها `.al-go` لا بين رأس السطور وسطورها) بألوانٍ قائمة —
    المختارُ بلون «المضغوط» كالسطر الجاري، ونقطةُ التسجيل بلون نقطة القراءة الجهريّة (`.ra-dot` في book.css، ولا يُحمَّل
    هنا)، وسطورُ الدور المختار بخطٍّ في أوّلها: يرى الطالبُ سطورَه قبل أن يبدأ */
 .al-pr{margin:2px 0 10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
 .al-pr[hidden]{display:none}
+/* 🆕 b235 · شريطُ «التدرّب بصوتك» في صدر السطور (lines_player.js) — هدفٌ لا أداة، فله شكلٌ غيرُ صفّ الأدوات: أيقونةٌ واسمٌ
+   وخطواتٌ وزرّ، واللوحةُ تُفتح داخله فيصيران بطاقةً واحدة. وبمهارة الهويّة البصريّة: قبل الاستماع كاملاً محايدٌ
+   (`fill-soft` + `line`)، وبعده `.ready` بعائلة `accent` وحدها — جملتُها «اضغط هنا»، وهي التي يقولها الشريطُ حينئذ.
+   والزرُّ المعبّأ للبدء وحده: مفتوحاً يعود محايداً، فـ«إغلاق» لا يُدعى إليه. ولا لونَ جديد */
+.al-go{margin:0 0 10px;border:1px solid var(--line);border-radius:16px;background:var(--fill-soft);
+ transition:background-color .3s ease,border-color .3s ease}
+.al-go[hidden]{display:none}
+.al-go-h{display:flex;align-items:center;gap:10px 12px;padding:10px 12px}
+.al-go-i{flex:none;display:grid;place-items:center;width:40px;height:40px;border-radius:50%;
+ background:var(--fill);color:var(--text-muted);transition:background-color .3s ease,color .3s ease}
+.al-go-t{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px;line-height:1.5}
+.al-go-s{font-size:var(--fs-meta);color:var(--text-muted)}
+.al-go-b{flex:none}
+.al-go.ready{background:var(--accent-soft);border-color:var(--accent-line)}
+.al-go.ready .al-go-i{background:var(--accent-fill);color:var(--accent)}
+.al-go.ready:not([data-open]) .al-go-b{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.al-go.ready:not([data-open]) .al-go-b:hover{box-shadow:0 0 0 3px var(--accent-line)}
+.al-go-b:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.al-go .al-pr{margin:0;border:0;border-top:1px solid var(--line);border-radius:0 0 15px 15px}
+@media (prefers-reduced-motion:reduce){ .al-go,.al-go-i{transition:none} }
 .al-pr p{margin:0 0 8px}
 .al-pr-note{font-size:var(--fs-meta);color:var(--text-muted)}
 .al-pr-hint{font-size:var(--fs-meta);line-height:1.7}
