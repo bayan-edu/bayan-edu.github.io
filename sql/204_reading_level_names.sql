@@ -45,7 +45,9 @@ update public.courses c
  where su.code = 'sk_read' and c.subject_id = su.id
    and lv.id = c.level_id and sc.id = lv.scale_id and sc.code = 'reading'
    and t.tier = c.tier
-   and c.title is distinct from 'مكتبة بيان — ' || lv.name || ' · ' || c.tier || ' (' || t.ages || ' سنوات)';
+   and c.title is distinct from 'مكتبة بيان — ' || lv.name || ' · ' || c.tier || ' (' || t.ages || ' سنوات)'
+   -- 📌 لا يمسّ إلا عنواناً يحمل الاسمَ المختلطَ القديم: `206` سمّى المقرّراتِ بطبقاتها، فإعادةُ هذا الملفّ بعده تمضي بلا أثر
+   and (c.title like '%قبل A1%' or c.title like '%مدخل C1%');
 
 -- ═══════════ الختم ═══════════
 

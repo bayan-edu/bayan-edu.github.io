@@ -99,14 +99,15 @@ begin
   end if;
 end $$;
 
--- ④ مقرَّرٌ لكلّ خانة: ٢٤ مستوًى × ٤ طبقات — العنوانُ «المادّة — المستوى · الطبقة (أعمارُها)»، والترتيبُ بالمستوى ثمّ الطبقة
+-- ④ مقرَّرٌ لكلّ خانة: ٢٤ مستوًى × ٤ طبقات — العنوانُ «المادّة — اسمُ الطبقة»، والترتيبُ بالمستوى ثمّ الطبقة
+--    📌 كان «المادّة — المستوى · الطبقة (أعمارُها)»، وسمّى المالكُ الطبقات في اليوم نفسِه (`206`) ⇒ يكتب الجديدَ هنا
 insert into public.courses (subject_id, level_id, title, position, active, tier)
-select su.id, lv.id, 'مكتبة بيان — ' || lv.name || ' · ' || t.code || ' (' || t.ages || ' سنوات)',
+select su.id, lv.id, 'مكتبة بيان — ' || t.name,
        lv.rank * 10 + t.n, true, t.code
   from public.subjects su
   join public.scales sc on sc.code = 'reading'
   join public.levels lv on lv.scale_id = sc.id
- cross join (values (1, 'M1', '٥–٧'), (2, 'M2', '٨–١٠'), (3, 'M3', '١١–١٣'), (4, 'M4', '١٤–١٨')) as t(n, code, ages)
+ cross join (values (1, 'M1', 'البراعم'), (2, 'M2', 'الأشبال'), (3, 'M3', 'اليافعون'), (4, 'M4', 'الشباب')) as t(n, code, name)
  where su.code = 'sk_read'
    and not exists (select 1 from public.courses c
                     where c.subject_id = su.id and c.level_id = lv.id and c.tier = t.code);

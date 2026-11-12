@@ -117,6 +117,11 @@ export async function openEditor(scaleId, levelId){
   const subj = id => byId(t.subjects, id) || {};
   const path = id => byId(t.paths, id);
 
+  /* 🆕 b239 · أعمارُ طبقات مكتبة بيان (206) — حدودُ الإطار §5. ⚠️ نسخةٌ ثانية إلى أن تُبنى دالّةُ
+     الطبقة في المرحلة ٦، فتُقرأ الحدودُ يومها من موضعٍ واحد (`spec-reading-library.md`). والتمييزُ
+     فيها عربيّ: «سنوات» بعد السبعة والعشرة، و«سنة» بعد الثلاثة عشر والثمانية عشر. */
+  const TIER_AGES = { M1: '٥–٧ سنوات', M2: '٨–١٠ سنوات', M3: '١١–١٣ سنة', M4: '١٤–١٨ سنة' };
+
   const card = c => {
     const s = subj(c.subject_id), p = path(c.path_id);
     return `<div class="ed-card ${c.curate?'':'ro'}" data-c="${c.id}">
@@ -125,9 +130,12 @@ export async function openEditor(scaleId, levelId){
         ${/* 🆕 b172 · بطاقةُ المقرَّر — والشاشةُ السابقةُ لقائمة الدروس، فلو
               صحّت الثانيةُ وحدَها لانتقل القارئُ من سطرٍ مستقيمٍ إلى مائل.
               وأربعُ موادّ من عشرين لاتينيّةُ الاسم (٢٢ أكتوبر). */''}
-        <div class="ed-t" dir="auto">${esc(s.name || c.title)}</div>
+        ${/* 🆕 b239 · والمقرَّرُ ذو الطبقة بعنوانه (206): طبقاتُ المستوى الواحد أربعُ بطاقاتٍ لمادّةٍ واحدة،
+              فاسمُ المادّة يكرّرها أربعاً، وعنوانُها «مكتبة بيان — البراعم» يفرّقها. */''}
+        <div class="ed-t" dir="auto">${esc(c.tier ? c.title : (s.name || c.title))}</div>
         <div class="ed-m">
           ${p ? `<span class="chip g" dir="auto">${esc(p.name)}</span>` : ''}
+          ${TIER_AGES[c.tier] ? `<span class="chip g">${TIER_AGES[c.tier]}</span>` : ''}
           ${/* 🆕 b194 · شارةُ الشُّعبة (183) — والبطاقةُ تحمل اسمَ المادّة لا المقرَّر، فمقرَّرا القدرات
                 (علميّ · نظريّ) بطاقتان بالاسم نفسِه لا يفرّقهما غيرُها. وعلى نسق المسار: كلاهما «لمن». */''}
           ${c.stream ? `<span class="chip g" dir="auto">${esc(c.stream)}</span>` : ''}
