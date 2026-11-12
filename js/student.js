@@ -135,6 +135,12 @@ function lastNext(){
       والطريقةُ والأوصافُ في STATE (b160).
    🔑 const آمنةٌ هنا كـLAST_KEY فوقها: لا يقرؤها إلا loadList، ولا
       تُنادى loadList وهذه الوحدةُ تُقيَّم. */
+/* 🆕 b236 · مكتبةُ بيان — المادّةُ التي تُفتح دروسُها رفوفاً لا قائمة (`library.js` · spec-reading-library.md ق٧).
+   🔑 بالرمز لا بالاسم ولا بالمعرّف: الاسمُ تغيّر في `203` نفسِه («Reading Comprehension» ⇐ «مكتبة بيان»)،
+      والرمزُ ثابتٌ بقرار المالك (ق١) — وهو ما تُرسله `list_subjects` في كلّ مادّة. */
+const LIBRARY = 'sk_read';
+const isLibrary = x => x?.code === LIBRARY;
+
 const SUBJ_IMG = {
   1: 'science',      // العلوم المتكاملة
   2: 'arabic',       // اللغة العربية       — وُلّدت من جديد b160 (هالةٌ بيضاء)
@@ -961,6 +967,38 @@ export async function loadMentors(subj, switching){
 
 /* ═══════════ ③ دروس المادة ═══════════ */
 
+/* 🆕 b236 · رأسُ دروس المادّة — الفتاتُ ثمّ المعلّمُ والشُّعبة. استُخرج من `loadLessons` حين صارت
+   رفوفُ المكتبة (library.js) تحمله أيضاً: **ونسختان منه تتفارقان.** والمعرّفاتُ (`bk` · `mnt` ·
+   `strm`) يربطها `bindSubjTop` بعد الرسم، في الشاشتين. */
+function subjTop(subj){
+  /* 🆕 b194 · شُعبتُك في رأس المادّة بجوار معلّمك وعلى نسقه: «التخصص: علمي، تغيير» —
+     والتغييرُ الشاشةُ نفسُها (`askStream`). و«،» لا «·» قبل الفعل كـ«معلّمك: أ. …، انتقال»
+     (قرارُ المالك · التعليلُ عند `joinList` في ui.js).
+     ⚠️ وبلا كلمةٍ للمادّة لا سطر: «: علمي» بلا اسمٍ قبلها تُقرأ عطلاً، والقاعدةُ تمنعه أصلاً (183). */
+  const strm = subj.stream_label && (subj.streams || []).find(st => st.id === subj.my_stream);
+  return `
+    <div class="crumb" id="bk">→ رجوع للمواد</div>
+    <div class="nav" style="margin-bottom:14px">
+      <button class="btn ghost" id="mnt" style="font-size:.8rem;padding:9px">
+        ${/* 🆕 124 · `mentor_g` تصل من `list_subjects`. و«الانتقال» بلا
+              مفعولٍ عمداً: الوجهةُ لم تُختَر بعد فلا صيغةَ لها. */''}
+        ${subj.mentor_name
+            ? G(subj.mentor_g, 'معلمك: أ. ', 'معلمتك: أ. ', 'مع أ. ')
+              + esc(subj.mentor_name) + '، انتقال'
+            : 'الانضمام إلى معلم'}
+      </button>
+      ${strm ? `<button class="btn ghost" id="strm" style="font-size:.8rem;padding:9px">${
+        esc(subj.stream_label)}: <bdi>${esc(strm.name)}</bdi>، تغيير</button>` : ''}
+    </div>`;
+}
+
+function bindSubjTop(subj){
+  document.getElementById("bk").onclick  = loadList;
+  document.getElementById("mnt").onclick = ()=>loadMentors(subj, true);
+  const sb = document.getElementById("strm");             // 🆕 b194
+  if(sb) sb.onclick = () => askStream(subj);
+}
+
 export async function loadLessons(subj){
   S.subj = subj;
   /* الأثرُ يُكتب هنا لا في openLesson: المادةُ هي وحدةُ الاستئناف،
@@ -986,14 +1024,30 @@ export async function loadLessons(subj){
      🆕 b173 · **والوجهُ السابقُ لا يحمل مستوى الطالب:** `my_level` صفُّه
         الحاضر، ودروسُ هذا الوجه من صفٍّ مضى — فبروازُه اسمُ مجموعته في
         الرئيسة، ومستوى كلِّ درسٍ عنوانٌ فوق دروسه (`paint` أدناه). */
-  head("الدروس", "", false, [subj.name, subj.past ? 'صفوف سابقة' : subj.my_level]);
+  /* 🆕 b236 · ومكتبةُ بيان «الكتب»: دروسُها كتبٌ على رفوف (`library.js`) — والبروازان كما هما */
+  const lib = isLibrary(subj);
+  head(lib ? "الكتب" : "الدروس", "", false, [subj.name, subj.past ? 'صفوف سابقة' : subj.my_level]);
   app.innerHTML = skeleton('rows');
+
+  /* 🆕 b236 · والمكتبةُ تطلب وحدتَها وأرففَها **مع** الدروس لا بعدها: الرفُّ يُرسم ولو خلا،
+     فأرففُه من `list_strands` لا ممّا ظهر في الدروس (التعليلُ في رأس library.js). */
+  const extra = lib ? Promise.all([import('./library.js'), api.listStrands(subj.id)]) : null;
 
   const { data, error } = await api.listLessons(subj.id);
   if(error){ app.innerHTML = `<div class="err"><b>تعذّر التحميل</b>${esc(error.message)}</div>`; return; }
   /* 🆕 b173 · دروسُ الوجه وحده — التعليلُ عند `pastOf` في رأس الملفّ */
   S.lessons = (data || []).filter(inView(subj));
   rememberSubject(subj, nextOf(subj));            // 🆕 b176 · والتالي معها — التعليلُ عند rememberSubject
+
+  /* 🆕 b236 · وهنا يفترق الطريقان — بعد الجلب والأثر، فـ«متابعة» في الرئيسة تعمل للمكتبة كما لغيرها.
+     ⚠️ وفشلُ الأرفف لا يحجب الكتب: تُرسم الرفوفُ ممّا في الدروس (`shelvesOf` في library.js). */
+  if(lib){
+    const [{ paintLibrary }, st] = await extra;
+    if(S.subj !== subj) return;                   // غادر الطالبُ قبل الوصول — لا تُرسم شاشةٌ فوق أخرى
+    return paintLibrary(subj, S.lessons, st?.error ? [] : (st?.data || []), {
+      top: subjTop(subj), bindTop: () => bindSubjTop(subj),
+      open: openLesson });
+  }
 
   /* ══ شريط تصفية الفروع · b122 ═════════════════════════
      🔑 ثابتُ ⑤ — الشريط يُبنى ممّا ظهر في دروس الطالب لا من
@@ -1026,12 +1080,6 @@ export async function loadLessons(subj){
 
   /* 🆕 b175 · `next` يمرّره `paint` — والتعليلُ عنده. و`aria-current="step"` يقول لقارئ
      الشاشة ما يقوله الوسمُ للعين: هذه خطوتُك في السلسلة. */
-  /* 🆕 b194 · شُعبتُك في رأس المادّة بجوار معلّمك وعلى نسقه: «التخصص: علمي، تغيير» —
-     والتغييرُ الشاشةُ نفسُها (`askStream`). و«،» لا «·» قبل الفعل كـ«معلّمك: أ. …، انتقال»
-     (قرارُ المالك · التعليلُ عند `joinList` في ui.js).
-     ⚠️ وبلا كلمةٍ للمادّة لا سطر: «: علمي» بلا اسمٍ قبلها تُقرأ عطلاً، والقاعدةُ تمنعه أصلاً (183). */
-  const strm = subj.stream_label && (subj.streams || []).find(st => st.id === subj.my_stream);
-
   const lcard = (l, next) => `
     <div class="lsn ${l.locked?'locked':''} ${l.done?'done':''} ${next?'next':''}" data-i="${l.id}"
          ${next?'aria-current="step"':''}>
@@ -1088,19 +1136,7 @@ export async function loadLessons(subj){
     </div>`;
 
   app.innerHTML = `
-    <div class="crumb" id="bk">→ رجوع للمواد</div>
-    <div class="nav" style="margin-bottom:14px">
-      <button class="btn ghost" id="mnt" style="font-size:.8rem;padding:9px">
-        ${/* 🆕 124 · `mentor_g` تصل من `list_subjects`. و«الانتقال» بلا
-              مفعولٍ عمداً: الوجهةُ لم تُختَر بعد فلا صيغةَ لها. */''}
-        ${subj.mentor_name
-            ? G(subj.mentor_g, 'معلمك: أ. ', 'معلمتك: أ. ', 'مع أ. ')
-              + esc(subj.mentor_name) + '، انتقال'
-            : 'الانضمام إلى معلم'}
-      </button>
-      ${strm ? `<button class="btn ghost" id="strm" style="font-size:.8rem;padding:9px">${
-        esc(subj.stream_label)}: <bdi>${esc(strm.name)}</bdi>، تغيير</button>` : ''}
-    </div>
+    ${subjTop(subj)}
     ${/* خيارٌ واحد لا يُصفّي شيئاً ⇒ لا شريط. والفئتان هما فئتا
           شاشة الأداء نفسُهما — ونسختان تتفارقان دائماً. */''}
     ${strands.length>1?`<div class="an-bar">
@@ -1209,10 +1245,7 @@ export async function loadLessons(subj){
     });
   }
 
-  document.getElementById("bk").onclick  = loadList;
-  document.getElementById("mnt").onclick = ()=>loadMentors(subj, true);
-  const sb = document.getElementById("strm");             // 🆕 b194
-  if(sb) sb.onclick = () => askStream(subj);
+  bindSubjTop(subj);
 
   const sel = document.getElementById("lsnStrand");
   if(sel) sel.onchange = e => {
