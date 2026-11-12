@@ -9,7 +9,7 @@ import * as api from './api.js';
 import { S } from './state.js';
 import { app, bar, head, toast, esc, AR, errBox, nav, registerRoutes,
          registerCounts, registerSearch, registerGram, refreshCounts,
-         mathBoot, scrollTop, N,
+         mathBoot, scrollTop, N, todayIso, birthProblem,
          openAddress, registerDeep, watchAddress } from './ui.js';
 import { loadList, loadFeedback, loadChat, openSearchHit, openLessonAt } from './student.js';
 import { loadTeacher, loadInbox, loadMySubjects } from './teacher.js';
@@ -22,7 +22,7 @@ import { loadFlashcards } from './flashcards.js';
 import { openPractice } from './practice.js';
 import { roleTabs, wireRoleTabs, gramSelect, wireGram, teacherFields,
          fillSubjects, readTeacher, GRAM_MSG } from './role_form.js';
-import { POLICY_VERSION, policyCheck, policyOk, POLICY_MSG } from './policy.js';
+import { POLICY_VERSION, POLICY_CHANGES, POLICY_URL, policyCheck, policyOk, POLICY_MSG } from './policy.js';
 
 /* ═══════════ ① البوابة ═══════════ */
 
@@ -96,6 +96,12 @@ export function renderGate(msg){
       ${reg && S.role !== 'teacher' ? `
       <label class="fl" style="margin-top:16px">اسمك كما يظهر في التقارير</label>
       <input type="text" id="nm" value="${esc(draft.nm||'')}" placeholder="الاسم الثلاثي">
+      ${/* 🆕 b240 · تاريخُ الميلاد (207 · ق٦) — **إجباريّ** بقرار المالك (١٢ نوفمبر): «يحلّ مشكلة الفئة العمريّة،
+            ولأغراضٍ أخرى قد تنشأ». ويعبر في البيانات الوصفية ويُختم عند أوّل دخول (`sealBirth`) ثمّ يُمحى منها.
+            ومن سجّل بـGoogle يُسأل في شاشة صفّه (`renderGradePicker`)، ومن سجّل قبل هذا يُسأل مرّةً حين يدخل المكتبة. */''}
+      <label class="fl" style="margin-top:16px" for="bd">تاريخ ميلادك</label>
+      <input type="date" id="bd" value="${esc(draft.bd||'')}" min="1930-01-01" max="${todayIso()}" required>
+      <p class="small">تُختار به كتب المكتبة المناسبة لعمرك، ولا يراه معلمك.</p>
       <label class="fl" style="margin-top:16px">المنهج الدراسي</label>
       <select id="cur"><option value="">— المنهج —</option></select>
       <div id="grwrap">
@@ -235,7 +241,7 @@ function askGram(){
 let draft = {};
 function keepDraft(){
   const g = id => document.getElementById(id)?.value ?? undefined;
-  draft = { em: g('em'), nm: g('nm'), kl: g('kl'),
+  draft = { em: g('em'), nm: g('nm'), kl: g('kl'), bd: g('bd'),
             t: { fullName: g('rf_nm'), school: g('rf_sc'),
                  subject: g('rf_sb'), years: g('rf_yr'), note: g('rf_nt') } };
 }
@@ -322,8 +328,13 @@ async function submitGate(){
   const nm = (document.getElementById("nm")||{}).value || "";
   const kl = (document.getElementById("kl")||{}).value || "";
   const g  = (document.getElementById("gr")||{}).value || "";
+  const bd = (document.getElementById("bd")||{}).value || "";
   if(reg && !nm.trim()){ toast("الاسم مطلوب — وهو ما يظهر في التقارير"); return; }
   if(reg && !g){ toast("صفّك الدراسي مطلوب"); return; }
+  /* 🆕 b240 · إجباريٌّ بحارس القاعدة نفسِه (`birthProblem` · ui.js) — ويُردّ قبل أن يُنشأ الحساب: بلا جلسةٍ يُختم
+     عند أوّل دخول، وتاريخٌ يردّه الحارسُ يومئذٍ يضيع بصمت */
+  const bdErr = reg ? birthProblem(bd) : null;
+  if(bdErr){ toast(bdErr); document.getElementById("bd")?.focus(); return; }
 
   const [gsc, glv] = g ? g.split('|') : [null, null];
   const scaleId = gsc ? Number(gsc) : null;
@@ -331,7 +342,7 @@ async function submitGate(){
 
   gateWait("جار التحقق…");
   const r = reg
-    ? await api.signUp(em, pw, nm.trim(), kl.trim(), scaleId, levelId, POLICY_VERSION, S.gramG)
+    ? await api.signUp(em, pw, nm.trim(), kl.trim(), scaleId, levelId, POLICY_VERSION, S.gramG, bd || null)
     : await api.signIn(em, pw);
 
   if(r.error){ renderGate(translate(r.error.message)); return; }
@@ -645,6 +656,7 @@ export async function boot(){
   if(!S.prof.policy_accepted_at && meta.policy_version){
     await api.acceptPolicy(meta.policy_version);
     S.prof.policy_accepted_at = new Date().toISOString();
+    S.prof.policy_version = meta.policy_version;   // 🆕 b240 · تُقارَن أدناه — نسخةُ التسجيل قد تسبق الحاليّة
   }
 
   /* 🆕 123 · وصيغةُ المخاطبة تُختَم بالمسلك نفسِه وللسبب نفسِه —
@@ -654,6 +666,16 @@ export async function boot(){
      🔑 وتُنتظَر (`await`) خلافاً لـ`refreshCounts` أدناه: الرقمُ يلحق
         بالشاشة، **والخطابُ لا يلحق بها**. */
   await api.sealGram(user.id, S.prof, meta);
+
+  /* 🆕 b240 · وتاريخُ الميلاد بالمسلك نفسِه (207) — ثمّ يُمحى من بيانات الحساب (`sealBirth`) */
+  await api.sealBirth(meta);
+
+  /* 🆕 b240 · **نسخةُ السياسة تُقارَن** — وكان رأسُ policy.js يعد بها ولا شيفرة: من وافق على نسخةٍ قبل
+     الحاليّة (أو لم يوافق قطّ) يُعرض عليه ما تغيّر ويوافق قبل أيّ شاشة. **ولكلّ دور:** السياسةُ واحدة.
+     ⚠️ ويُستثنى حسابُ المزوّد الذي لم يُكمل ملفَّه: شاشتُه (`renderCompleteProfile`) تسأل الموافقةَ في موضعها. */
+  const fresh = (user.app_metadata || {}).provider !== 'email' && !S.prof.scale_id && role === 'student'
+             && !S.prof.policy_accepted_at;
+  if(!fresh && S.prof.policy_version !== POLICY_VERSION) return renderPolicyUpdate();
 
   /* الأعداد تُجلب مرّةً هنا لا في كل شاشة — والشارات تُدهَن حين تصل.
      وبلا await عمداً: الشاشة لا تنتظر رقماً، و paintCounts تلحق بها. */
@@ -706,6 +728,43 @@ export async function boot(){
   landing(loadList);
 }
 
+/* ═══════════ ②-ب نسخةٌ جديدة من سياسة الخصوصية (b240) ═══════════
+
+   🔑 **تعرض ما تغيّر قبل المربّع** (`POLICY_CHANGES`): «وافقت» على نصٍّ لم يُعرض جديدُه إقرارٌ مبهم — وهو ما يمنعه
+      رأسُ policy.js في المربّع نفسِه. ومن لم يوافق قطّ يُسأل بالجملة المعتادة بلا قائمة: لا جديدَ عنده، كلُّها جديد.
+   🔑 **ولا تجاوزَ ولا تأجيل:** الموافقةُ شرطُ المتابعة كما في التسجيل، والبابُ الآخر «خروج» — والحذفُ في ملفّه
+      (§٩ من السياسة). **وسياسةٌ تُتجاوز بنقرةٍ لا تُطلب موافقتُها أصلاً.** */
+export function renderPolicyUpdate(){
+  bar.innerHTML = "";
+  head("سياسة الخصوصية", S.prof?.full_name || '');
+  const had = !!S.prof?.policy_accepted_at;
+  app.innerHTML = `
+    <div class="card">
+      <div class="line" style="color:var(--text);font-size:var(--fs-read)">
+        ${had ? 'حدّثنا سياسة الخصوصية، وهذا الجديد فيها:' : esc(POLICY_MSG)}</div>
+      ${had ? `<ul class="pol-new">${POLICY_CHANGES.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
+      <p class="small"><a href="${POLICY_URL}" target="_blank" rel="noopener">قراءة السياسة كاملة</a></p>
+      ${policyCheck()}
+    </div>
+    <div class="nav" style="margin-top:16px"><button class="btn primary" id="pu_go">متابعة ←</button></div>
+    <div class="nav"><button class="btn ghost" id="out">خروج</button></div>`;
+
+  document.getElementById("out").onclick = signOut;
+  document.getElementById("pu_go").onclick = async e => {
+    if(!policyOk(app)){ toast(POLICY_MSG); return; }
+    const b = e.currentTarget; b.disabled = true; b.textContent = '…';
+    const { data, error } = await api.acceptPolicy(POLICY_VERSION);
+    if(error || !data?.ok){
+      b.disabled = false; b.textContent = 'متابعة ←';
+      toast(error?.message || data?.error || 'تعذّر تسجيل الموافقة'); return;
+    }
+    S.prof.policy_version = POLICY_VERSION;
+    S.prof.policy_accepted_at = data.at;
+    boot();
+  };
+  scrollTop();
+}
+
 /* ═══════════ شاشة «صفّك الدراسي» ═══════════
    شبكة الأمان: تصلح الحسابات القائمة والقادمة معاً — بموافقة
    الطالب لا بإسناد صفٍّ عنه. */
@@ -726,15 +785,33 @@ export function renderGradePicker(msg){
         <select id="gr" disabled><option value="">— يُختار المنهج أولاً —</option></select>
       </div>
       <p class="small" id="grnote">يمكنك تغييرهما لاحقاً</p>
+      ${/* 🆕 b240 · وتاريخُ الميلاد إجباريٌّ هنا كما في البوّابة — وهذه شاشةُ من سجّل بـGoogle: لم يرَ حقلَ البوّابة قطّ.
+            ويُملأ بالمحفوظ إن وُجد (من ختم التسجيل)، فلا يُسأل مرّتين عمّا قاله. */''}
+      <label class="fl" style="margin-top:16px" for="bd">تاريخ ميلادك</label>
+      <input type="date" id="bd" min="1930-01-01" max="${todayIso()}" required>
+      <p class="small">تُختار به كتب المكتبة المناسبة لعمرك، ولا يراه معلمك.</p>
     </div>
     <div class="nav"><button class="btn primary" id="go">حفظ ومتابعة</button></div>
     <div class="nav"><button class="btn ghost" id="out">خروج</button></div>`;
 
   fillGrades();
+  let savedBd = '';
+  api.myBirthdate().then(r => {
+    const d = r?.data?.birth_date, f = document.getElementById("bd");
+    if(d && f && !f.value){ f.value = d; savedBd = d; }
+  }, () => null);
   document.getElementById("out").onclick = signOut;
   document.getElementById("go").onclick  = async ()=>{
     const g = (document.getElementById("gr")||{}).value || "";
     if(!g){ toast("صفّك الدراسي مطلوب"); return; }
+    const bd = (document.getElementById("bd")||{}).value || "";
+    const bdErr = birthProblem(bd);
+    if(bdErr){ toast(bdErr); document.getElementById("bd")?.focus(); return; }
+    if(bd !== savedBd){
+      const { data:b, error:eb } = await api.setMyBirthdate(bd);
+      if(eb || !b?.ok){ toast(eb?.message || b?.error || "تعذّر حفظ تاريخ الميلاد"); return; }
+      savedBd = bd;
+    }
     const [sc, lv] = g.split('|');
     const { data:r, error } = await api.setMyGrade(Number(sc), lv ? Number(lv) : null);
     if(error){ renderGradePicker(error.message); return; }

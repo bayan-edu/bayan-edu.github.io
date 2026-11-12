@@ -72,12 +72,16 @@ export const onAuthChange   = cb                => db.auth.onAuthStateChange(cb)
    البابَ على الجميع. **ومسلكٌ قائمٌ مُجرَّب آثرُ من محفِّزٍ يُستبدل.**
    ⚠️ والختمُ في `sealGram` أدناه — فما لا يُختَم يبقى `null`، وهو
       المعنى الصحيح: «لم يُسأل بعد» لا «مذكّر». */
-export const signUp = (email, password, fullName, klass, scaleId, levelId, policyVersion, gramGender) =>
+/* 🆕 b240 · و`birth_date` تعبر الفجوة كأخواتها (207 · ق٦) — والمحفِّزُ لم يُمسّ لها كما لم يُمسّ للصيغة.
+   ⚠️ **ولا تبقى هناك:** `sealBirth` تختمها عند أوّل دخولٍ ثمّ تمحوها من بيانات الحساب — فالتاريخُ لا يسكن موضعين،
+      ولا يسافر في رمز الجلسة. */
+export const signUp = (email, password, fullName, klass, scaleId, levelId, policyVersion, gramGender, birthDate) =>
   db.auth.signUp({ email, password,
     options:{ data:{ full_name: fullName, klass,
                      scale_id: scaleId, level_id: levelId,
                      policy_version: policyVersion,
-                     gram_gender: gramGender || null } } });
+                     gram_gender: gramGender || null,
+                     birth_date: birthDate || null } } });
 
 /* 🆕 b90 · تسجيلُ المعلّم يقف هنا عند الاسم: بقيّةُ حقوله تحتاج قائمةَ
    المواد، و`p_subjects_read` تشترط `auth.uid() is not null` ⇒ لا تُقرأ
@@ -162,6 +166,23 @@ export const sealGram = async (uid, profile, meta) => {
   const { data, error } = await setMyGram(uid, g);
   if(!error && data?.length) profile.gram_gender = g;
   return error;
+};
+
+/* 🆕 b240 · تاريخُ الميلاد (207 · ق٦) — جدولٌ لا يقرؤه غيرُ صاحبه، فدالّتان لا `select`.
+   ⇒ { ok, birth_date: 'YYYY-MM-DD' | null } · والكتابةُ ⇒ { ok, birth_date } أو { ok: false, error } بنصّ الحارس */
+export const myBirthdate    = ()                     => db.rpc('my_birthdate');
+export const setMyBirthdate = (date, ifEmpty = false) => db.rpc('set_my_birthdate', { p_date: date, p_if_empty: ifEmpty });
+
+/* ختمُه من البيانات الوصفية — بحكم `sealGram`: **لا يكتب إلا على فراغ** (`p_if_empty`)، فمن صحّحه من ملفّه لا يُردّ
+   عليه تصحيحُه. 🔑 **ثمّ يُمحى من بيانات الحساب** — إلّا إن لم يصل النداءُ أصلاً، فيبقى ليُختم في الدخول التالي.
+   وتاريخٌ يردّه الحارس (غيرُ معقول · حسابُ غيرِ طالب) يُمحى كذلك: ما لا يصلح اليومَ لا يصلح غداً. */
+export const sealBirth = async meta => {
+  const d = meta?.birth_date;
+  if(!d) return null;
+  const { error } = await setMyBirthdate(d, true);
+  if(error) return error;
+  await db.auth.updateUser({ data: { birth_date: null } }).catch(() => null);
+  return null;
 };
 
 /* 🆕 b173 · والمساراتُ معها — يقرؤها «ملفّي» وبطاقةُ «مسارك» في الرئيسة.

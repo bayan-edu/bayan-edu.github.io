@@ -30,7 +30,7 @@
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
 import { app, head, nav, toast, esc, escA, AR, N, icon, skeleton, errBox,
-         sayable, sayGroup, bindSay, backText, dirOf } from './ui.js';
+         sayable, sayGroup, bindSay, backText, dirOf, todayIso, yearsText, birthProblem } from './ui.js';
 import { mediaUrl } from './media.js';
 
 /* ── النمطُ يُحمَّل مع الشاشة لا مع المنصّة — حجّةُ `book.css` بعينها (book.js) ── */
@@ -339,8 +339,21 @@ async function paintProgress(subj, host, hooks){
 
   const done = Number(d.done || 0), rule = d.rule, next = d.next;
   const cap = (a, b) => Math.min(Number(a) || 0, Number(b) || 0);
+  /* 🆕 b240 · الانتظار (207 · ق١٥ ②): أتمّ الشرطَ والمستوى التالي فوق ما يُبلَغ في عمره الآن ⇒ يُقال متى يُفتح،
+     ولا منارة. **ولا وسمَ للطالب** («موهوب» · «قدرات خاصّة»): الخبرُ عن الكتب والعمر لا عنه. */
+  const waits = d.met && d.hold === 'age' && d.wait_age;
   let html;
-  if(!next){
+  if(waits){
+    html = `<div class="lb-prog-in st-done">
+      <div class="lb-prog-t">أتممت شرط هذا المستوى</div>
+      <div class="lb-prog-m">والمستوى التالي <bdi>${esc(next.name)}</bdi> يُفتح حين تبلغ ${yearsText(Number(d.wait_age))}</div>
+    </div>`;
+  } else if(d.met && d.hold === 'birth'){
+    html = `<div class="lb-prog-in st-done">
+      <div class="lb-prog-t">أتممت شرط هذا المستوى</div>
+      <div class="lb-prog-m">ويلزم تاريخ ميلادك للانتقال — من ملفك الشخصي</div>
+    </div>`;
+  } else if(!next){
     html = `<div class="lb-prog-t">هذا أعلى مستوى في المكتبة</div>
       <div class="lb-prog-m">الكتب المنجزة: ${AR(done)}</div>`;
   } else if(!rule){
@@ -370,6 +383,44 @@ async function paintProgress(subj, host, hooks){
     /* المستوى تغيّر ⇒ المادّةُ تُقرأ من جديد (`list_subjects`) ثمّ رفوفُ المستوى الجديد — هذا في student.js */
     hooks.relevel?.();
   };
+}
+
+
+/* ═══════════ تاريخُ الميلاد — يُسأل مرّةً قبل الرفوف (b240 · المرحلة ٦ · sql/207) ═══════════
+   🔑 **الطبقةُ منه** (ق٦ ④ · ق١٣): بلا تاريخٍ لا تُعرف رفوفُ عمره، والتسكينُ والترقيةُ تطلبانه. وهو إجباريٌّ في التسجيل
+      (البوّابة · وشاشةُ الصفّ لمن سجّل بـGoogle) — **فهذا السؤالُ لمن سجّل قبله**، أو لتاريخٍ ردّه الحارسُ عند الختم.
+   🔑 **والسببُ يُقال قبل السؤال، ومعه من يراه:** «لا يراه معلمك» — التاريخُ في جدولٍ لا يقرؤه غيرُ صاحبه، والمعلّمُ يرى
+      الطبقةَ لا التاريخ. ومن سُئل عن ميلاده بلا سببٍ ولا حدٍّ يتردّد، وتردّدُه في محلّه.
+   📐 في إطار المكتبة نفسِه (الحديقةُ واللوحُ الزجاجيّ) — فلا يُقرأ شاشةً أخرى انقطع إليها. */
+export async function paintBirthAsk(subj, hooks = {}){
+  const { top = '', bindTop } = hooks;
+  await loadCss();
+  app.innerHTML = `
+    <div class="lb" id="lb">
+      <div class="lb-top">${top}</div>
+      <section class="card lb-ask" aria-labelledby="lbAskT">
+        <h2 class="lb-ask-t" id="lbAskT">تاريخ ميلادك</h2>
+        <p class="line">تُختار كتب المكتبة على قدر عمرك.</p>
+        <label class="fl" for="lbBirth">تاريخ الميلاد</label>
+        <input type="date" id="lbBirth" min="1930-01-01" max="${todayIso()}">
+        <p class="small">يبقى لك وحدك ولا يراه معلمك، ويمكنك تعديله من ملفك الشخصي.</p>
+        <div class="nav"><button type="button" class="btn primary" id="lbBirthGo">حفظ</button></div>
+      </section>
+    </div>`;
+  bindTop?.();
+
+  const inp = document.getElementById('lbBirth');
+  const btn = document.getElementById('lbBirthGo');
+  btn.onclick = async () => {
+    const bad = birthProblem(inp.value);
+    if(bad){ toast(bad); inp.focus(); return; }
+    btn.disabled = true;
+    const { data: r, error } = await api.setMyBirthdate(inp.value).then(x => x, e => ({ error: e }));
+    if(error || !r?.ok){ btn.disabled = false; toast(error?.message || r?.error || 'تعذر الحفظ'); return; }
+    toast('حُفظ تاريخ ميلادك');
+    hooks.shelves?.();
+  };
+  inp.focus();
 }
 
 

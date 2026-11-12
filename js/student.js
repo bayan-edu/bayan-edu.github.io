@@ -1062,7 +1062,11 @@ export async function loadLessons(subj){
 
   /* 🆕 b236 · والمكتبةُ تطلب وحدتَها وأرففَها **مع** الدروس لا بعدها: الرفُّ يُرسم ولو خلا،
      فأرففُه من `list_strands` لا ممّا ظهر في الدروس (التعليلُ في رأس library.js). */
-  const extra = lib ? Promise.all([import('./library.js'), api.listStrands(subj.id)]) : null;
+  /* 🆕 b240 · ومعهما تاريخُ الميلاد للطالب (207 · ق٦ ④): من لم يُعطه يُسأل مرّةً قبل الرفوف — الطبقةُ منه.
+     ولغير الطالب لا يُسأل: المعلّمُ والمشرفُ يرون المقرّرات كلَّها، والقاعدةُ تردّ كتابتَه منهما. */
+  const asks = lib && (S.roleInfo?.role || S.prof?.role) === 'student';
+  const extra = lib ? Promise.all([import('./library.js'), api.listStrands(subj.id),
+                                   asks ? api.myBirthdate().then(r => r, () => ({})) : null]) : null;
 
   const { data, error } = await api.listLessons(subj.id);
   if(error){ app.innerHTML = `<div class="err"><b>تعذّر التحميل</b>${esc(error.message)}</div>`; return; }
@@ -1073,8 +1077,10 @@ export async function loadLessons(subj){
   /* 🆕 b236 · وهنا يفترق الطريقان — بعد الجلب والأثر، فـ«متابعة» في الرئيسة تعمل للمكتبة كما لغيرها.
      ⚠️ وفشلُ الأرفف لا يحجب الكتب: تُرسم الرفوفُ ممّا في الدروس (`shelvesOf` في library.js). */
   if(lib){
-    const [{ paintLibrary }, st] = await extra;
+    const [{ paintLibrary, paintBirthAsk }, st, bd] = await extra;
     if(S.subj !== subj) return;                   // غادر الطالبُ قبل الوصول — لا تُرسم شاشةٌ فوق أخرى
+    /* ⚠️ «لم يُعطه» ⇐ ردٌّ وصل وفيه فراغ — لا فشلُ النداء: انقطاعٌ لا يسأل من أعطاه */
+    if(asks && bd?.data?.ok && !bd.data.birth_date) return paintBirthAsk(subj, libHooks(subj));
     /* 🆕 b237 · والكتابُ يُفتح بطاقةً (`openBookCard`) لا صفحةَ درس — `libHooks` أعلى الملفّ */
     return paintLibrary(subj, S.lessons, st?.error ? [] : (st?.data || []), libHooks(subj));
   }

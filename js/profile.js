@@ -28,7 +28,7 @@
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
 import { S } from './state.js';
-import { app, head, toast, esc, AR, errBox, nav, scrollTop, G, goRoute, icon } from './ui.js';
+import { app, head, toast, esc, AR, errBox, nav, scrollTop, G, goRoute, icon, todayIso, birthProblem } from './ui.js';
 import { renderMark } from './avatar.js';
 import { POLICY_URL } from './policy.js';
 import { openAvatarEdit } from './avatar_edit.js';
@@ -59,8 +59,11 @@ export async function loadProfile(){
     const { data, error } = await api.listTeachableSubjects();
     Z = { teach: data || [], err: error };
   } else {
-    const [scRes, sbRes] = await Promise.all([ api.academicScales(), api.listSubjects() ]);
+    /* 🆕 b240 · وتاريخُ الميلاد (207) — بدالّته: جدولُه لا يقرؤه غيرُ صاحبه. وفشلُه لا يحجب الشاشة: يُرسم الحقلُ فارغاً */
+    const [scRes, sbRes, bdRes] = await Promise.all([ api.academicScales(), api.listSubjects(),
+                                                      api.myBirthdate().then(r => r, () => ({})) ]);
     Z = { scales: scRes.data || [], subjects: sbRes.data || [],
+          birth: bdRes?.data?.birth_date || '',
           err: scRes.error || sbRes.error };
   }
   render();
@@ -105,6 +108,12 @@ function studentFields(p){
   return `
     <label class="fl" style="margin-top:18px">اسمك كما يظهر في التقارير</label>
     <input type="text" id="pfName" dir="auto" value="${esc(p.full_name || '')}">
+
+    ${/* 🆕 b240 · تاريخُ الميلاد (207 · ق٦ ④) — ومن أخطأه يصحّحه هنا، فتُعاد طبقتُه في المكتبة على مستواه نفسِه.
+          ولا يُمحى من هنا: المكتبةُ تحتاجه، ومن أراد محوَه فبابُه حذفُ الحساب (§٩). */''}
+    <label class="fl" style="margin-top:16px" for="pfBirth">تاريخ ميلادك</label>
+    <input type="date" id="pfBirth" value="${esc(Z.birth || '')}" min="1930-01-01" max="${todayIso()}">
+    <p class="small">تُختار به كتب مكتبة بيان المناسبة لعمرك، ولا يراه معلمك.</p>
 
     <label class="fl" style="margin-top:16px">صفّك الدراسيّ</label>
     <select id="pfGrade"><option value="">— الصفّ —</option>${opts}</select>
@@ -329,6 +338,19 @@ function wire(){
         }
         S.prof.school = school; S.prof.bio = bio; S.prof.years_exp = years; changed++;
       }
+    }
+
+    /* ①ج 🆕 b240 · تاريخُ الميلاد — للطالب وحده، ويُكتب إن تغيّر. والفراغُ لا يُرسل: لا محوَ من هنا (التعليلُ عند الحقل) */
+    const bd = document.getElementById('pfBirth')?.value || '';
+    if(bd && bd !== (Z.birth || '')){
+      const bad = birthProblem(bd);
+      if(bad){ b.disabled = false; b.textContent = 'حفظ'; toast(bad); return; }
+      const { data: r, error } = await api.setMyBirthdate(bd);
+      if(error || !r?.ok){
+        b.disabled = false; b.textContent = 'حفظ';
+        toast('تعذّر حفظ تاريخ الميلاد — ' + (error?.message || r?.error || '')); return;
+      }
+      Z.birth = bd; changed++;
     }
 
     /* ② الصفّ — دالّةٌ لا UPDATE: تتحقّق أنّ الصفّ ينتمي للسلّم.

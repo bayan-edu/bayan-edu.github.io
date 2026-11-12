@@ -23,7 +23,13 @@ const PROBLEM = {
   total_unreachable: p  => `العدد ${AR(p.need)} والمنشور من الكتب ${AR(p.have)}، فلا يبلغه أحد قبل نشر غيرها.`,
   min_unreachable:   p  => `الحد في «${esc(p.name)}» ${AR(p.need)} والمنشور فيه ${AR(p.have)}.`,
   mins_exceed:       p  => `مجموع حدود الرفوف ${AR(p.sum)} أكبر من العدد ${AR(p.total)}.`,
+  /* 🆕 b240 · السقف (207 · ق١٤ · ق١٥) — والأوّلُ خبرٌ لا تنبيه (`NOTE`) */
+  ceiling:           p  => `هذا المقرر سقف طبقة «${esc(p.tier)}»: من يُتم شرطه ينتقل إلى <bdi>${esc(p.next)}</bdi> في طبقة «${esc(p.up)}». `
+                         + `والأصل أن يكون العدد كل كتب المقرر، والمنشور منها الآن ${AR(p.have)}.`,
+  above_ceiling:     p  => `هذا المقرر فوق سقف طبقة «${esc(p.tier)}»، فلا يصل إليه طالب: من تجاوز السقف ينتقل إلى الطبقة التي فوقها.`,
 };
+/* ما يُقال خبراً محايداً لا تنبيهاً — لا خطأَ فيه يُصلَح */
+const NOTE = new Set(['ceiling']);
 
 /**
  * يرسم اللوحة في `slot` أو يرفعه إن لم تنطبق. لا يرمي: فشلُها لا يحجب دروسَ المقرَّر تحتها.
@@ -71,7 +77,8 @@ export async function mountPromotion(course, slot){
           </div>
         </details>` : ''}
 
-        ${(d.problems || []).map(p => `<div class="warnbox">${(PROBLEM[p.code] || (() => esc(p.code)))(p)}</div>`).join('')}
+        ${(d.problems || []).map(p => `<div class="${NOTE.has(p.code) ? 'ed-promo-note' : 'warnbox'}">${
+            (PROBLEM[p.code] || (() => esc(p.code)))(p)}</div>`).join('')}
 
         <div class="ed-promo-row">
           <input type="text" id="edpNote" maxlength="200" placeholder="سبب التعديل — اختياري، ويُحفظ في السجل">

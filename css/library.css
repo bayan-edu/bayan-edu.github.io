@@ -239,6 +239,14 @@
 .lb-beacon{grid-column:1 / -1;justify-self:start;flex:none;
   box-shadow:0 0 0 3px color-mix(in srgb, var(--lb-gold) 45%, transparent), 0 6px 18px color-mix(in srgb, var(--lb-gold) 35%, transparent)}
 
+/* ══ سؤالُ تاريخ الميلاد (b240 · المرحلة ٦) — لوحُ بطاقة الكتاب نفسُه، أضيقُ منه: حقلٌ واحد وزرّ ══ */
+.lb-ask{max-width:520px;margin:14px auto 18px;padding:16px 20px 18px;border-radius:18px;
+  background:var(--lb-glass);border:1px solid var(--lb-glass-line);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 10px 30px rgba(40,25,8,.16)}
+.lb-ask-t{font-family:'Almarai';font-weight:800;font-size:1.25rem;margin:0 0 6px}
+.lb-ask input[type="date"]{max-width:260px}
+.lb-ask .nav{margin-top:12px}
+
 /* ══ بطاقةُ الكتاب وكلماتُه (b237 · المرحلة ٤) ══
    لوحٌ زجاجيٌّ كلوح الرأس فوق الحديقة نفسِها: الغلافُ كبيراً بجوار العنوان والملخّص والخطوات والأزرار.
    📌 والأزرارُ أزرارُ المنصّة (`.btn.primary` · `.btn.ghost`) والخطواتُ سطوحُها (`--surface` · `--line`) — لا لونٌ جديد. */

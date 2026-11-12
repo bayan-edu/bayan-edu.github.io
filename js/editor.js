@@ -11,7 +11,7 @@
 import * as api from './api.js';
 import { S } from './state.js';
 import { app, head, toast, esc, escA, AR, errBox, nav, setWide, scrollTop, N,
-         ICONS, KINDS, icon, gradesText } from './ui.js';
+         ICONS, KINDS, icon, gradesText, yearsText } from './ui.js';
 import { openQuiz } from './editor_quiz.js';
 import { openItems } from './editor_items.js';
 import { mediaUrl } from './media.js';
@@ -117,14 +117,18 @@ export async function openEditor(scaleId, levelId){
   const subj = id => byId(t.subjects, id) || {};
   const path = id => byId(t.paths, id);
 
-  /* 🆕 b239 · أعمارُ طبقات مكتبة بيان (206) — حدودُ الإطار §5. ⚠️ نسخةٌ ثانية إلى أن تُبنى دالّةُ
-     الطبقة في المرحلة ٦، فتُقرأ الحدودُ يومها من موضعٍ واحد (`spec-reading-library.md`). والتمييزُ
-     فيها عربيّ: «سنوات» بعد السبعة والعشرة، و«سنة» بعد الثلاثة عشر والثمانية عشر. */
-  const TIER_AGES = { M1: '٥–٧ سنوات', M2: '٨–١٠ سنوات', M3: '١١–١٣ سنة', M4: '١٤–١٨ سنة' };
+  /* 🆕 b240 · طبقاتُ السلّم من القاعدة (`author_tree.tiers` · 207): الأعمارُ والسقف — وسقطت `TIER_AGES` التي كانت
+     نسختَها الثانية هنا (b239). والمعدودُ يحكمه العدد (`yearsText`): «٥–٧ سنوات» · «١١–١٣ سنة».
+     🔑 **والسقفُ يُرى على البطاقة** (ق١٤ · ق١٥): مقرَّرُ السقف يحمل «سقف الطبقة» — منه يعبر الطالبُ إلى الطبقة التي فوقها —
+        وما فوقه **يُعتَّم ولا يُغلق** («فوق سقف الطبقة»): لا يصل إليه طالب، والمصمّمُ قد يبني فيه. */
+  const tierOf = c => c.tier && (t.tiers || []).find(x => String(x.scale_id) === String(sc.id) && x.code === c.tier);
+  const ages   = x => `${AR(x.age_from)}–${yearsText(x.age_to ?? x.age_from)}`;
 
   const card = c => {
     const s = subj(c.subject_id), p = path(c.path_id);
-    return `<div class="ed-card ${c.curate?'':'ro'}" data-c="${c.id}">
+    const T = tierOf(c);
+    const above = !!(T && lv && lv.rank > T.ceiling), atTop = !!(T && lv && lv.rank === T.ceiling);
+    return `<div class="ed-card ${c.curate?'':'ro'}${above ? ' off' : ''}" data-c="${c.id}">
       <div class="ed-ic">${esc(s.icon || '📘')}</div>
       <div style="flex:1;min-width:0">
         ${/* 🆕 b172 · بطاقةُ المقرَّر — والشاشةُ السابقةُ لقائمة الدروس، فلو
@@ -135,7 +139,8 @@ export async function openEditor(scaleId, levelId){
         <div class="ed-t" dir="auto">${esc(c.tier ? c.title : (s.name || c.title))}</div>
         <div class="ed-m">
           ${p ? `<span class="chip g" dir="auto">${esc(p.name)}</span>` : ''}
-          ${TIER_AGES[c.tier] ? `<span class="chip g">${TIER_AGES[c.tier]}</span>` : ''}
+          ${T ? `<span class="chip g">${ages(T)}</span>` : ''}
+          ${atTop ? '<span class="chip">سقف الطبقة</span>' : above ? '<span class="chip">فوق سقف الطبقة</span>' : ''}
           ${/* 🆕 b194 · شارةُ الشُّعبة (183) — والبطاقةُ تحمل اسمَ المادّة لا المقرَّر، فمقرَّرا القدرات
                 (علميّ · نظريّ) بطاقتان بالاسم نفسِه لا يفرّقهما غيرُها. وعلى نسق المسار: كلاهما «لمن». */''}
           ${c.stream ? `<span class="chip g" dir="auto">${esc(c.stream)}</span>` : ''}

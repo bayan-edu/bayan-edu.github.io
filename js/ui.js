@@ -13,7 +13,7 @@ import { renderMark, whenReady as avatarReady } from './avatar.js';
    والدمجُ مرّ بلا تعارضٍ **لأنّ الجانبين كتبا السطرَ نفسَه حرفاً** — وهو
    أخبثُ ما في التصادم: لا يشتكي. ⇒ هذه ترفعه، **فالختمُ يجيب «أيُّ شيفرةٍ
    يشغّلها المتصفّح»، وجوابان لسؤالٍ واحدٍ لا جواب.** */
-export const BUILD = "b239";
+export const BUILD = "b240";
 
 /* ── مراسي الصفحة ── */
 export const app = document.getElementById("app");
@@ -297,6 +297,22 @@ export const esc  = s => String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g
 export const escA = s => esc(s).replace(/"/g, "&quot;");
 export const AR   = n => String(n).replace(/[0-9]/g, d => "٠١٢٣٤٥٦٧٨٩"[+d]);
 export const mmss = s => { const m=Math.floor(s/60), x=s%60; return m+":"+(x<10?"0":"")+x; };
+/* 🆕 b240 · تاريخُ اليوم بصيغة حقل التاريخ (`YYYY-MM-DD`) بتوقيت الجهاز — حدٌّ أعلى لحقول الميلاد (207).
+   و`en-CA` لأنّها تكتب هذه الصيغةَ بعينها؛ والحارسُ الحقّ في القاعدة بتوقيت الرياض. */
+export const todayIso = () => new Date().toLocaleDateString('en-CA');
+/* 🆕 b240 · حارسُ تاريخ الميلاد في الواجهة — بنصّ حارس القاعدة (`set_my_birthdate`) وحدودِه: لا مستقبل، والعمرُ ٤–١٠٠.
+   🔑 **ولازمٌ لا زينة:** في التسجيل بلا جلسة يُختم التاريخُ عند أوّل دخول (`sealBirth`) — فتاريخٌ يردّه الحارسُ يومئذٍ
+      يُمحى ويضيع الحقلُ الإجباريّ بصمت. فيُردّ هنا قبل أن يُنشأ الحساب. ⇒ نصُّ المشكلة أو `null`. */
+export const birthProblem = d => {
+  if(!d) return 'تاريخ الميلاد مطلوب';
+  if(d > todayIso()) return 'تاريخ الميلاد لا يكون في المستقبل';
+  const [y, m, day] = d.split('-').map(Number), t = new Date();
+  const age = t.getFullYear() - y - ((t.getMonth() + 1 < m || (t.getMonth() + 1 === m && t.getDate() < day)) ? 1 : 0);
+  return age < 4 || age > 100 ? 'تاريخ الميلاد خارج المدى المقبول' : null;
+};
+/* والعمرُ بمعدوده: «٨ سنوات» · «١١ سنة» — العددُ يحكم المعدود. وبينهما مسافةٌ لا تنكسر: على الهاتف
+   انكسر السطرُ بين «٨» و«سنوات» (قِيس باللقطة) فقُرئ الرقمُ وحده */
+export const yearsText = n => `${AR(n)} ${n >= 3 && n <= 10 ? 'سنوات' : 'سنة'}`;
 
 export function shrinkFont(face, target, basePx, minPx){
   let px = basePx;
