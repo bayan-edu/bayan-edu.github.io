@@ -213,7 +213,11 @@ export const setMyStream = (subjectId, streamId) =>
   db.rpc('set_my_stream', { p_subject: subjectId, p_stream: streamId });
 
 export const markItemOpened    = id => db.rpc('track_item', { p_item: id, p_status: 'opened' });
-export const markItemCompleted = id => db.rpc('track_item', { p_item: id, p_status: 'completed' });
+/* 🆕 b237 · وزمنُ القراءة معه (ثوانٍ صحيحة) — `track_item` تقبله منذ زمنٍ وتجمعه (`seconds_spent += …`) والواجهةُ لم تكن
+   ترسله، فكان يبلغ `onEnd` في book.js ثمّ يضيع. وهو «بياناتُ كلّ قارئٍ على كلّ نصّ» التي يطلبها ميثاقُ مشروع القراءة.
+   والوسيطُ اختياريّ: ما سوى الكتاب (صوتٌ · رابط · محاكاة) يُتمّ بلا زمن، فيُرسل صفراً كما كان. */
+export const markItemCompleted = (id, seconds) => db.rpc('track_item', {
+  p_item: id, p_status: 'completed', p_seconds: Math.max(0, Math.round(Number(seconds) || 0)) });
 
 /* 🆕 b152 · نصُّ المصدر — للكتاب المقلَّب (book.js).
    `list_lessons` لا تحمل `body` عمداً: النصوصُ طويلة، والقائمةُ تُجلب

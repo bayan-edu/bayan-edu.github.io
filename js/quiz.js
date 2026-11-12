@@ -56,7 +56,7 @@ import { app, bar, head, toast, esc, fmt, AR, mmss, media, pgMedia, srcOf,
            دالّةُ العدد والمعدود باسمٍ آخر، ولا يُعاد تسميةُ المحلّية:
            هي في أربعة عشر موضعاً وتلك في موضعٍ واحد. */
         N as عدد, pushView, joinList } from './ui.js';
-import { loadList, loadLessons } from './student.js';
+import { loadList, loadLessons, isLibrary } from './student.js';
 /* `kindLabel` لا `KIND_LABEL`: اسمُ النمط صار يتبع لسانَ الورقة
    (render_q.js · b142)، والخريطةُ الخام لم يبقَ لها قارئٌ هنا. */
 import { questionText, questionBody, kindLabel, paperIsEnglish, gapCount,
@@ -959,14 +959,17 @@ function renderResult(){
       <div class="model"><strong>الإجابة النموذجية — للمقارنة</strong>${fmt(x.model||'')}</div>
     </div>`).join("");
 
+  /* 🆕 b237 · وكتابُ المكتبة: «العودة» تقول وِجهتَها — الرفوف (`loadLessons` للمكتبة رفوف) لا عنوانَ الكتاب الذي تغادره،
+     وسطرُ الإتمام «الكتاب» لا «الدرس»: الطالبُ لم يرَ في المكتبة درساً. */
+  const lib = isLibrary(S.subj);
   app.innerHTML = `
-    <div class="crumb" id="back">→ ${S.lesson ? esc(S.lesson.title) : 'قائمة المواد'}</div>
+    <div class="crumb" id="back">→ ${lib ? 'رجوع للرفوف' : S.lesson ? esc(S.lesson.title) : 'قائمة المواد'}</div>
     ${r.auto?'<div class="err"><b>سُلّم تلقائياً</b>انتهى الوقت قبل إنهائك للاختبار.</div>':''}
     <div class="score-hero">
       <div class="score-num">${AR(r.score)} / ${AR(r.total)}</div>
       <div class="score-of">الأسئلة المصحَّحة آلياً، زمن الحل ${mmss(r.secs)}</div>
       <div class="verdict">${verdict(r.pct)}</div>
-      ${r.lesson_done?'<div class="unlocked">أتممت هذا الدرس</div>':''}
+      ${r.lesson_done?`<div class="unlocked">${lib ? 'أتممت هذا الكتاب' : 'أتممت هذا الدرس'}</div>`:''}
       ${(r.unlocked||[]).length?`<div class="unlocked">فُتح لك الآن: ${esc(r.unlocked.join('، '))}</div>`:''}
     </div>
     <div class="nav"><button class="btn primary" id="again">إعادة الاختبار</button></div>

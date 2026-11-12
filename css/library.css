@@ -84,13 +84,14 @@
 /* ── ولوحٌ زجاجيٌّ عاجيّ لكلّ نصٍّ فوقها: العنوانُ وبروازاه · والفتاتُ والمعلّمُ والألسنة ──
    🔑 النصُّ لا يُكتب على صورة: الحديقةُ فيها الفاتحُ والداكن في سطرٍ واحد، فلا لونَ حبرٍ يصحّ عليها كلِّها. واللوحُ
       يعطيه أرضاً واحدة، وحبرُه حبرُ المنصّة (`--text`) لا لونٌ جديد. */
-.wrap:has(.lb) > header,
+/* ⚠️ `:not(.bare)`: بطاقةُ الكتاب بلا عنوان رأس (`head('', '')` · b237)، و`.bare` تُلغي حشوَه — فلوحٌ عليه يبقى شريطاً فارغاً */
+.wrap:has(.lb) > header:not(.bare),
 .lb-top{background:var(--lb-glass);border:1px solid var(--lb-glass-line);border-radius:16px;
   backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 6px 22px rgba(40,25,8,.14)}
 /* 📌 **لوحٌ واحدٌ لا لوحان:** الرأسُ و`.lb-top` متلاصقان بلا فجوة (قِيس: صفر) وحافّتاهما على خطٍّ واحد — وكان لكلٍّ
       زواياه المستديرة فبدا الملتقى شقّاً بين بطاقتين. ⇒ الأعلى مستديرٌ من فوق، والأسفلُ من تحت، وبينهما خطُّ الحدّ نفسُه،
       والظلُّ للأسفل وحده فلا يقع ظلُّ الأعلى على الأسفل. */
-.wrap:has(.lb) > header{margin-top:14px;padding:12px 18px 8px;border-radius:16px 16px 0 0;border-bottom:0;box-shadow:none}
+.wrap:has(.lb) > header:not(.bare){margin-top:14px;padding:12px 18px 8px;border-radius:16px 16px 0 0;border-bottom:0;box-shadow:none}
 .lb-top{padding:10px 14px 12px;margin-bottom:14px;border-radius:0 0 16px 16px}
 .lb-top > :last-child{margin-bottom:0}
 .lb-top .status{padding:14px}
@@ -223,6 +224,52 @@
   background:var(--surface);color:var(--text);border:1px solid var(--line)}
 .lb-pg .ic{width:17px;height:17px}
 .lb-pg:disabled{opacity:.4;cursor:default}
+
+/* ══ بطاقةُ الكتاب وكلماتُه (b237 · المرحلة ٤) ══
+   لوحٌ زجاجيٌّ كلوح الرأس فوق الحديقة نفسِها: الغلافُ كبيراً بجوار العنوان والملخّص والخطوات والأزرار.
+   📌 والأزرارُ أزرارُ المنصّة (`.btn.primary` · `.btn.ghost`) والخطواتُ سطوحُها (`--surface` · `--line`) — لا لونٌ جديد. */
+.lb-card{max-width:880px;margin:14px auto 18px;padding:14px 20px 20px;border-radius:18px;
+  background:var(--lb-glass);border:1px solid var(--lb-glass-line);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 10px 30px rgba(40,25,8,.16)}
+.lb-card-in{display:grid;grid-template-columns:200px minmax(0,1fr);gap:26px;align-items:start;margin-top:10px}
+.lb-card-cover .lb-jacket{width:200px;box-shadow:-6px 12px 26px rgba(60,35,10,.4), -1px 2px 4px rgba(60,35,10,.22)}
+.lb-card-k{font-size:var(--fs-meta);color:var(--text-muted)}
+.lb-card-t{font-family:'Almarai';font-weight:800;font-size:1.45rem;line-height:1.35;margin:2px 0 6px}
+.lb-card-sum{font-size:var(--fs-ui);color:var(--text-muted);margin:0 0 12px}
+
+/* الخطوات — مرقّمةٌ بأرقامنا (`arabic-indic`)، والمنجزةُ تحمل ✔ محايدة مكان رقمها:
+   إنجازُ خطوةٍ حالٌ لا حكم (الحكمُ وسمُ «أُنجز» على الغلاف) */
+.lb-steps{list-style:none;display:grid;gap:8px;margin:4px 0 16px;padding:0;counter-reset:lbst}
+.lb-step{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:12px;
+  background:var(--surface);border:1px solid var(--line)}
+.lb-step::before{counter-increment:lbst;content:counter(lbst, arabic-indic);flex:none;
+  width:26px;height:26px;border-radius:50%;display:grid;place-items:center;
+  font-family:'Almarai';font-weight:800;font-size:var(--fs-tag);
+  background:var(--fill);border:1.5px solid var(--lb-gold);color:var(--text)}
+.lb-step.is-done::before{content:'✔';color:var(--text-muted);border-color:var(--line-strong)}
+.lb-step b{font-family:'Almarai';font-weight:700;font-size:var(--fs-ui)}
+.lb-step span{margin-inline-start:auto;font-size:var(--fs-meta);color:var(--text-muted)}
+.lb-card-btns{margin:0;flex-wrap:wrap}
+.lb-card .status{padding:14px 0}
+
+/* كلماتٌ قبل القراءة — شبكةُ بطاقاتٍ صغيرة: الكلمةُ ونطقُها ثمّ معناها.
+   ⚠️ و`unicode-bidi:plaintext` على المعنى شرطُ `backText` (ui.js): تشطر المعنى سطرين إن اختلف اتّجاهاهما. */
+.lb-wlist{list-style:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;
+  margin:6px 0 16px;padding:0}
+.lb-w{display:grid;gap:4px;align-content:start;padding:10px 12px;border-radius:12px;
+  background:var(--surface);border:1px solid var(--line)}
+.lb-w-f{display:flex;align-items:center;gap:8px;font-size:1.05rem}
+.lb-w-f b{font-weight:700}
+.lb-w-b{white-space:pre-line;unicode-bidi:plaintext;font-size:var(--fs-ui);color:var(--text-muted)}
+.lb-w-img{width:100%;max-height:120px;object-fit:contain;border-radius:8px}
+
+@media (max-width: 640px){
+  .lb-card{padding:12px 14px 16px}
+  .lb-card-in{grid-template-columns:1fr;justify-items:center;gap:14px}
+  .lb-card-cover .lb-jacket{width:150px}
+  .lb-card-body{width:100%}
+  .lb-card-k,.lb-card-t,.lb-card-sum{text-align:center}
+}
 
 /* ── عرضٌ متوسّط: الخلفيّان يُطويان — طرفٌ يُرى بلا مكانٍ له يزاحم الكتب ── */
 @media (max-width: 900px){

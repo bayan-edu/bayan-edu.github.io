@@ -1,9 +1,11 @@
 /* ══════════════════════════════════════════════════════════
    بيان — library.js · رفوفُ مكتبة بيان  (b236 · المرحلة ٣ من spec-reading-library.md)
+                       وبطاقةُ الكتاب ودورتُه  (b237 · المرحلة ٤ — في آخر الملفّ)
 
    المكتبةُ واجهةُ عرضٍ لدروس المادّة ٧ (`sk_read`) لا نظامٌ جديد: الرفُّ فرعٌ من
    فروعها، والكتابُ درسٌ كما تُرجعه `list_lessons` — بغلافه (`203`) وحاله وأفضلِ
-   نتيجته. فلا نداءَ هنا يكتب شيئاً، ولا حالَ تُحسب إلا ممّا وصل.
+   نتيجته. فلا حالَ تُحسب إلا ممّا وصل، ولا نداءَ يكتب إلا ضمَّ كلمات الكتاب إلى
+   «تذكّرها» حين تُفتح (`openWords` · حكمُ `openLessonDeck` بعينه).
    وتُنادى من `loadLessons` في student.js وحدها، بعد الجلب والأثر (`rememberSubject`):
    فالبوّاباتُ قبلها (الشُّعبة · التسكين · المعلّم) واحدةٌ للمكتبة ولغيرها.
 
@@ -26,7 +28,9 @@
       الرفّ** — الأيمنُ للسابق والأيسرُ للتالي، فالصفحةُ عربيّة. **والرفوفُ الخلفيّة لا تُبلَغ
       بـTab:** تُرى ولا تُقرأ (`aria-hidden` · `tabindex=-1`)، ونقرُها يُحضرها إلى الصدارة.
    ══════════════════════════════════════════════════════════ */
-import { app, toast, esc, escA, AR, icon } from './ui.js';
+import * as api from './api.js';
+import { app, head, nav, toast, esc, escA, AR, N, icon, skeleton, errBox,
+         sayable, sayGroup, bindSay, backText, dirOf } from './ui.js';
 import { mediaUrl } from './media.js';
 
 /* ── النمطُ يُحمَّل مع الشاشة لا مع المنصّة — حجّةُ `book.css` بعينها (book.js) ── */
@@ -92,21 +96,27 @@ function shelvesOf(strands, lessons){
 }
 
 /* ── ما يُرسم ── */
-function bookHtml(l, live){
-  const st = stateOf(l), say = SAY[st](l);
+
+/* الغلافُ ووسمُه — للكتاب على الرفّ ولبطاقته (b237): مصدرٌ واحدٌ لا نسختان.
+   🔑 الغلافُ المولَّد يُرسم دائماً تحت الصورة: فإن لم تصل الصورة (`error` في `paintLibrary` و`openBook`)
+      أُزيلت فظهر ما تحتها — لا مستطيلٌ فارغ. وكتابٌ بلا غلافٍ اليوم هو الحالُ الغالب (عائقُ محتوى).
+   📌 والنبرةُ من المعرّف لا عشوائيّة: الكتابُ يلبس اللونَ نفسَه في كلّ زيارة. */
+function jacket(l, st, say){
   const src = l.cover ? mediaUrl(l.cover) : null;
-  /* 🔑 الغلافُ المولَّد يُرسم دائماً تحت الصورة: فإن لم تصل الصورة (`error` في `paintLibrary`)
-        أُزيلت فظهر ما تحتها — لا مستطيلٌ فارغ. وكتابٌ بلا غلافٍ اليوم هو الحالُ الغالب (عائقُ محتوى).
-     📌 والنبرةُ من المعرّف لا عشوائيّة: الكتابُ يلبس اللونَ نفسَه في كلّ زيارة. */
-  /* 📌 و`title` للفأر: لافتةُ العنوان سطرٌ واحدٌ يُقصّ في غلافٍ بعرض ٩٦px، والعنوانُ كاملاً في التلميح */
-  return `<button type="button" class="lb-book is-${st}" data-l="${l.id}" ${live ? '' : 'tabindex="-1"'}
-      title="${escA(l.title)}" aria-label="${escA(l.title + (say ? '، ' + say : ''))}">
-    <span class="lb-jacket">
+  return `<span class="lb-jacket">
       <span class="lb-gen" data-t="${Math.abs(Number(l.id) || 0) % 4}" aria-hidden="true"><span
         class="lb-gen-t" dir="auto">${esc(l.title)}</span></span>
       ${src ? `<img class="lb-img" src="${escA(src)}" alt="" loading="lazy" decoding="async">` : ''}
       ${say ? `<span class="badge lb-badge ${BADGE[st]}" aria-hidden="true">${st === 'locked' ? LOCK : ''}${esc(say)}</span>` : ''}
-    </span>
+    </span>`;
+}
+
+function bookHtml(l, live){
+  const st = stateOf(l), say = SAY[st](l);
+  /* 📌 و`title` للفأر: لافتةُ العنوان سطرٌ واحدٌ يُقصّ في غلافٍ بعرض ٩٦px، والعنوانُ كاملاً في التلميح */
+  return `<button type="button" class="lb-book is-${st}" data-l="${l.id}" ${live ? '' : 'tabindex="-1"'}
+      title="${escA(l.title)}" aria-label="${escA(l.title + (say ? '، ' + say : ''))}">
+    ${jacket(l, st, say)}
     <span class="lb-title" dir="auto" aria-hidden="true">${esc(l.title)}</span>
   </button>`;
 }
@@ -310,4 +320,145 @@ export async function paintLibrary(subj, lessons, strands, { top = '', bindTop, 
   PHONE.addEventListener('change', onMedia);
 
   place();
+}
+
+
+/* ═══════════ بطاقةُ الكتاب ودورتُه (b237 · المرحلة ٤) ═══════════
+
+   الرفُّ ⇐ **بطاقةُ الكتاب** ⇐ «كلمات قبل القراءة» (تُتخطّى) ⇐ الكتابُ المقلَّب (`textBook` كما هو) ⇐ أسئلةُ الفهم
+   ⇐ النتيجةُ التشخيصيّة ⇐ **الرفُّ** بحاله الجديدة (`quiz.js` تعود بـ`loadLessons`، وهي للمكتبة رفوف).
+   🔑 **والبطاقةُ تقول أين أنت قبل أن تقول ماذا تفعل:** الخطواتُ الثلاث بحالها، والزرُّ الأوّل خطوتُك التالية —
+      البدء · متابعة القراءة · أسئلة الفهم · إعادة القراءة. فمن قرأ ولم يُختبر لا يُردّ إلى أوّل الكتاب.
+   🔑 **والحالُ من القاعدة وحدها:** القراءةُ «تمّت» بـ`status` مصدرِ النصّ (`completed` لا يُكتب إلا بختامٍ بسرعة
+      قارئ · book.js)، والأسئلةُ بـ`best` و`done`. ولا يُحسب في المتصفّح ما لا تعرفه القاعدة.
+   📌 والقراءةُ والأسئلةُ يفتحهما student.js (`hooks.read` · `hooks.quiz`): المحرّكان هناك، وهذه الشاشةُ لا
+      تعرف إلا أنّ لهما باباً. والعودةُ من الكتاب إلى هذه البطاقة لا إلى صفحة الدرس (`openText` هناك). */
+
+const textOf = l => (l.items || []).find(i => i.kind === 'text');
+const quizOf = l => (l.items || []).find(i => i.kind === 'quiz' && i.quiz_id);
+
+/**
+ * بطاقةُ الكتاب.
+ * @param hooks { shelves: إلى الرفوف · read(l, item) · quiz(l, item) }
+ */
+export async function openBook(subj, l, hooks){
+  await loadCss();
+  /* عنوانُ الدرس نفسُه (/subjects/7/lessons/42) — والتحديثُ يعود إلى هذه البطاقة (`openLessonAt`) */
+  nav('subjects', `/subjects/${subj.id}/lessons/${l.id}`);
+  /* بلا عنوان: الغلافُ والعنوانُ في البطاقة، واسمٌ يُكتب مرّتين في شاشةٍ واحدة يُقرأ سهواً — حجّةُ `openText` */
+  head('', '');
+
+  const st = stateOf(l), say = SAY[st](l);
+  const text = textOf(l), quiz = quizOf(l);
+  const read = text?.status === 'completed';
+  const words = Number(l.cards || 0);
+
+  /* الخطوات — ما ليس للكتاب لا يُعرض (كتابٌ بلا كلماتٍ يبدأ بالقراءة).
+     📌 وعلامةُ «تمّت» محايدة لا `ok`: إنجازُ خطوةٍ حالٌ لا حكمٌ على إجابة (الهويّةُ البصريّة ①) —
+        والحكمُ وسمُ «أُنجز» على الغلاف، بنتيجته. */
+  const steps = [
+    words ? { name: 'كلمات قبل القراءة', meta: N(words, 'كلمة', 'كلمتان', 'كلمات', 'كلمة') } : null,
+    text  ? { name: 'القراءة', meta: read ? 'تمّت' : text.status ? 'بدأتها' : '', done: read } : null,
+    quiz  ? { name: 'أسئلة الفهم', done: !!l.done,
+              meta: l.best != null ? `أفضل نتيجة ${AR(Math.round(l.best))}٪` : `المطلوب ${AR(l.pass_mark ?? 80)}٪` } : null,
+  ].filter(Boolean);
+
+  /* الزرُّ الأوّل خطوتُك التالية، وما بعده أبوابُ الخطوات الأخرى — والأزرارُ مصادر (الهويّةُ اللغويّة §٦) */
+  let main;
+  if(l.done)              main = text ? ['read', 'إعادة القراءة'] : ['quiz', 'إعادة الاختبار'];
+  else if(read && quiz)   main = ['quiz', 'أسئلة الفهم'];
+  else if(text?.status)   main = ['read', 'متابعة القراءة'];
+  else if(text || quiz)   main = [words ? 'words' : text ? 'read' : 'quiz', 'البدء'];
+  const more = [];
+  if(main && words && main[0] !== 'words') more.push(['words', 'الكلمات']);
+  if(main && text && main[0] !== 'read')   more.push(['read', main[1] === 'البدء' ? 'تخطّي الكلمات' : 'القراءة']);
+  if(main && quiz && main[0] !== 'quiz' && (read || l.done || l.best != null))
+    more.push(['quiz', l.done ? 'إعادة الاختبار' : 'أسئلة الفهم']);
+
+  const kicker = [l.strand?.name, l.level].filter(Boolean).map(x => `<bdi>${esc(x)}</bdi>`).join('، ');
+
+  app.innerHTML = `
+    <div class="lb lb-view" id="lb">
+      <article class="lb-card">
+        <div class="crumb" id="lbk">→ رجوع للرفوف</div>
+        <div class="lb-card-in">
+          <div class="lb-card-cover">${jacket(l, st, say)}</div>
+          <div class="lb-card-body">
+            ${kicker ? `<div class="lb-card-k">${kicker}</div>` : ''}
+            <h2 class="lb-card-t" dir="auto">${esc(l.title)}</h2>
+            ${l.summary ? `<p class="lb-card-sum" dir="auto">${esc(l.summary)}</p>` : ''}
+            ${steps.length ? `<ol class="lb-steps">${steps.map(s => `
+              <li class="lb-step${s.done ? ' is-done' : ''}"><b>${s.name}</b>${s.meta ? `<span>${esc(s.meta)}</span>` : ''}</li>`).join('')}
+            </ol>` : ''}
+            ${main ? `<div class="nav lb-card-btns">
+              <button type="button" class="btn primary" data-act="${main[0]}">${main[1]}</button>
+              ${more.map(([a, t]) => `<button type="button" class="btn ghost" data-act="${a}">${t}</button>`).join('')}
+            </div>` : '<div class="status">هذا الكتاب قيد الإعداد</div>'}
+          </div>
+        </div>
+      </article>
+    </div>`;
+
+  const root = document.getElementById('lb');
+  root.addEventListener('error', e => { if(e.target?.classList?.contains('lb-img')) e.target.remove(); }, true);
+  document.getElementById('lbk').onclick = () => hooks.shelves();
+  root.querySelectorAll('[data-act]').forEach(b => b.onclick = () => {
+    const a = b.dataset.act;
+    if(a === 'words') return openWords(subj, l, hooks);
+    if(a === 'read' && text) return hooks.read(l, text);
+    if(a === 'quiz' && quiz) return hooks.quiz(l, quiz);
+  });
+  /* الزرُّ الأوّل يُركَّز: لوحةُ المفاتيح تصل البطاقةَ من رفٍّ بـEnter، فتجد خطوتَها التالية تحت Enter ثانيةً */
+  root.querySelector('.btn.primary')?.focus({ preventScroll: true });
+  window.scrollTo(0, 0);
+}
+
+/* ── كلماتٌ قبل القراءة — بطاقاتُ الدرس قائمةً تُقرأ وتُسمع، لا جلسةَ تقليب ──
+   🔑 **ولماذا لا `openLessonDeck`:** تلك جلسةُ استرجاعٍ (قلبٌ وتقديرٌ و«بعبارتك»)، ومغادرتُها تسأل «إنهاء الجلسة
+      الآن؟» — والخطوةُ هنا تمهيدٌ يُتخطّى (spec · المرحلة ٤). فالكلمةُ ومعناها ونطقُها معاً، وزرٌّ واحدٌ إلى الكتاب.
+   🔑 **والفتحُ أخذ:** ما ليس في «تذكّرها» يُضمّ الآن — حكمُ `openLessonDeck` بعينه («فتحُها هو أخذُها»)، فتعود الكلمةُ
+      بعد أيّامٍ متباعدة. والفشلُ صامت: القائمةُ تُقرأ بلا اشتراك، ويُعاد في الفتح التالي.
+   📌 والكلماتُ ملوّنةٌ في الكتاب نفسِه أيضاً (`bookLook` · الملحق) — فالسطرُ تحت العنوان يقول ذلك. */
+async function openWords(subj, l, hooks){
+  nav('subjects', `/subjects/${subj.id}/lessons/${l.id}`);
+  head('', '');
+  const text = textOf(l);
+  app.innerHTML = `
+    <div class="lb lb-view" id="lb">
+      <article class="lb-card lb-words">
+        <div class="crumb" id="lbk">→ <bdi>${esc(l.title)}</bdi></div>
+        <h2 class="lb-card-t">كلمات قبل القراءة</h2>
+        <p class="lb-card-sum">تظهر هذه الكلمات ملوّنة في الكتاب، ومعناها بضغطة عليها.</p>
+        <div id="lbw">${skeleton('rows', 3)}</div>
+        ${text ? '<div class="nav lb-card-btns"><button type="button" class="btn primary" id="lbgo">القراءة</button></div>' : ''}
+      </article>
+    </div>`;
+  document.getElementById('lbk').onclick = () => openBook(subj, l, hooks);
+  const go = document.getElementById('lbgo');
+  if(go) go.onclick = () => hooks.read(l, text);
+
+  /* ⚠️ `.then(نجاح، فشل)` لا `.catch`: مُنشئُ طلبات Supabase يملك `then` وحدها (عطلُ b155 · `textBook`) */
+  const { data, error } = await api.lessonCards(l.id).then(r => r, e => ({ error: e }));
+  const host = document.getElementById('lbw');
+  if(!host) return;                                   // غادر قبل الوصول
+  if(error){ host.innerHTML = errBox(error, 'كلمات الكتاب'); return; }
+  const cards = data || [];
+  if(!cards.length){ host.innerHTML = '<div class="status">لا كلمات لهذا الكتاب</div>'; return; }
+
+  const fresh = cards.filter(c => !c.mine).map(c => c.id);
+  if(fresh.length) api.subscribeCards(fresh).then(() => {}, () => {});
+
+  host.innerHTML = `<ul class="lb-wlist">${cards.map((c, k) => `
+    <li class="lb-w" data-k="${k}">
+      ${c.front_image ? `<img class="lb-w-img" src="${escA(mediaUrl(c.front_image) || '')}" alt="" loading="lazy">` : ''}
+      <div class="lb-w-f" dir="${dirOf(c.front)}"><b>${esc(c.front)}</b>${sayable(c) ? sayGroup(c, c.front) : ''}</div>
+      <div class="lb-w-b" dir="auto">${esc(backText(c.back))}</div>
+    </li>`).join('')}</ul>`;
+  /* النطقُ يُربط بعد الرسم، لكلّ كلمةٍ بصوتها (`bindSay` · ui.js) */
+  host.querySelectorAll('.lb-w').forEach(row => {
+    const c = cards[Number(row.dataset.k)];
+    const say = sayable(c);
+    if(say) bindSay(row, c, say);
+  });
+  host.querySelectorAll('.lb-w-img').forEach(img => img.onerror = () => img.remove());
 }

@@ -139,7 +139,28 @@ function lastNext(){
    🔑 بالرمز لا بالاسم ولا بالمعرّف: الاسمُ تغيّر في `203` نفسِه («Reading Comprehension» ⇐ «مكتبة بيان»)،
       والرمزُ ثابتٌ بقرار المالك (ق١) — وهو ما تُرسله `list_subjects` في كلّ مادّة. */
 const LIBRARY = 'sk_read';
-const isLibrary = x => x?.code === LIBRARY;
+/* 🆕 b237 · مصدَّرةٌ لـquiz.js (نصُّ «العودة» وسطرُ الإتمام) — و`function` لا `const`: رأسُ الملفّ (الاستيرادُ الدائريّ) */
+export function isLibrary(x){ return x?.code === LIBRARY; }
+
+/* 🆕 b237 · الجسرُ إلى library.js — ما تفتحه رفوفُ المكتبة وبطاقةُ الكتاب ممّا يسكن هنا: رأسُ المادّة، والعودةُ إلى
+   الرفوف، **والقراءةُ والأسئلة** (المحرّكان هنا). و`S.lesson` تُضبط قبلهما: الكتابُ يقرأ منها كلماتِه واختبارَه، والنتيجةُ
+   عنوانَ عودتها. ⚠️ ويُبنى لكلّ نداء: الرأسُ نصٌّ من حال المادّة (المعلّمُ · الشُّعبة) ساعةَ الرسم. */
+function libHooks(subj){
+  return {
+    top: subjTop(subj), bindTop: () => bindSubjTop(subj),
+    shelves: () => loadLessons(subj),
+    open:  l => openBookCard(l),
+    read:  (l, i) => { S.lesson = l; return openText(i); },
+    quiz:  (l, q) => { S.lesson = l; return openItem(q); },
+  };
+}
+
+/* بطاقةُ كتابٍ — من الرفّ ومن الرابط (`openLessonAt`) ومن «عودة» الكتاب المقلَّب (`openText`) */
+async function openBookCard(l){
+  S.lesson = l;
+  const { openBook } = await import('./library.js');
+  return openBook(S.subj, l, libHooks(S.subj));
+}
 
 const SUBJ_IMG = {
   1: 'science',      // العلوم المتكاملة
@@ -841,6 +862,8 @@ export async function openLessonAt(subjectId, lessonId, past){
         يبلغه لم يفتحه له — والعنوانُ يُستبدل بالمادّة (ui.js · openAddress). */
   if(!l)        return loadLessons(subj);
   if(l.locked){ toast(l.reason || 'هذا الدرس غير متاح بعد'); return loadLessons(subj); }
+  /* 🆕 b237 · وكتابُ المكتبة يُفتح بطاقتَه — فتحديثُ الصفحة على كتابٍ يعود إليه، لا إلى صفحة درسٍ لا يراها الطالبُ من الرفّ */
+  if(isLibrary(subj)) return openBookCard(l);
   openLesson(l);
 }
 
@@ -1044,9 +1067,8 @@ export async function loadLessons(subj){
   if(lib){
     const [{ paintLibrary }, st] = await extra;
     if(S.subj !== subj) return;                   // غادر الطالبُ قبل الوصول — لا تُرسم شاشةٌ فوق أخرى
-    return paintLibrary(subj, S.lessons, st?.error ? [] : (st?.data || []), {
-      top: subjTop(subj), bindTop: () => bindSubjTop(subj),
-      open: openLesson });
+    /* 🆕 b237 · والكتابُ يُفتح بطاقةً (`openBookCard`) لا صفحةَ درس — `libHooks` أعلى الملفّ */
+    return paintLibrary(subj, S.lessons, st?.error ? [] : (st?.data || []), libHooks(subj));
   }
 
   /* ══ شريط تصفية الفروع · b122 ═════════════════════════
@@ -1406,7 +1428,8 @@ async function openText(i){
     <div class="crumb" id="bk">→ عودة</div>
     <div id="book">${skeleton('rows', 3)}</div>
     <div id="ra" hidden></div>`;
-  const back = () => l ? openLesson(l) : loadLessons(S.subj);
+  /* 🆕 b237 · وكتابُ المكتبة يعود إلى بطاقته لا إلى صفحة الدرس: الطالبُ جاءه من البطاقة، وصفحةُ الدرس لا تُرى في المكتبة */
+  const back = () => !l ? loadLessons(S.subj) : isLibrary(S.subj) ? openBookCard(l) : openLesson(l);
   document.getElementById("bk").onclick = back;
 
   /* 🆕 b156 · **شبكةُ أمان:** أيُّ خطأٍ بعد الهيكل يُعرض رسالةً بنسخة
@@ -1467,9 +1490,11 @@ async function textBook(i, l, back){
       if(act === 'back') return back();
     },
     onResume: () => toast("فُتح الكتاب على صفحتك الأخيرة"),
-    onEnd: async () => {
-      if(i.status === 'completed') return;
-      const { error: e } = await api.markItemCompleted(i.id);
+    /* 🆕 b237 · وزمنُ القراءة يُرسل مع الإتمام — **وفي كلّ ختامٍ لا في الأوّل وحده:** `track_item` تجمعه، ومن أعاد القراءةَ
+       قرأ فعلاً (`onEnd` لا يُنادى لمسحٍ أسرعَ من القراءة · book.js). والإعادةُ صامتة: لا «سُجّلت» ثانيةً لما سُجّل. */
+    onEnd: async ({ seconds } = {}) => {
+      if(i.status === 'completed'){ api.markItemCompleted(i.id, seconds).then(() => {}, () => {}); return; }
+      const { error: e } = await api.markItemCompleted(i.id, seconds);
       if(e){ toast("لم تُسجَّل قراءتك — ربما تكون المشكلة في الاتصال"); return; }
       i.status = 'completed';
       toast("سُجّلت قراءتك ✔");
