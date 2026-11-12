@@ -1126,6 +1126,33 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
 .qz-go.off{color:var(--text-muted);opacity:.55;cursor:not-allowed}
 .ed-empty{color:var(--text-muted);font-size:var(--fs-meta);padding:10px 4px 14px}
 
+/* 🆕 b238 · لوحةُ «شرط الترقية» (editor_promotion.js · 205) — بطاقةُ المنصّة (`.card`) بلا لونٍ جديد: الأرقامُ حقولٌ
+   كحقول النماذج، وخبرُ المنشور بجوار العدد بـ`--text-muted`، والتنبيهاتُ `.warnbox` («انتبه» · لا «أخطأتَ»: الحفظُ لا يُردّ).
+   📌 والأصلُ في قائمة الحدود يُميَّز بالخطّ لا باللون (`.par`): «كلّ رفوفه» تقول إنّه يعدّ ما تحته. */
+.ed-promo{padding:14px 16px;margin-bottom:14px;display:grid;gap:10px}
+.ed-promo-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ed-promo-h b{font-family:'Almarai';font-weight:800;font-size:var(--fs-ui)}
+.ed-promo-h .chip{margin:0}
+.ed-promo-d{margin:0;font-size:var(--fs-meta);color:var(--text-muted)}
+.ed-promo-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.ed-promo-n{display:flex;align-items:center;gap:10px;font-family:'Almarai';font-weight:700;font-size:var(--fs-ui)}
+.ed-promo-n input,.ed-promo-s input{width:84px;padding:8px 10px;text-align:center}
+.ed-promo-pub{font-size:var(--fs-meta);color:var(--text-muted)}
+.ed-promo-row #edpNote{flex:1;min-width:220px;padding:9px 12px}
+.ed-promo-mins summary{cursor:pointer;font-size:var(--fs-meta);color:var(--text-muted);padding:2px 0}
+/* قائمةٌ لا شبكة: الأصلُ ثمّ رفوفُه تحته مزاحةً — والشبكةُ بعمودين كانت تفرّق الأصلَ عن رفوفه (قِيس باللقطة) */
+.ed-promo-grid{display:grid;gap:6px;margin-top:8px;max-width:560px}
+.ed-promo-s:not(.par){margin-inline-start:22px}
+.ed-promo-s{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:2px 10px;
+  padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--fill-soft)}
+.ed-promo-s span{font-size:var(--fs-ui)}
+.ed-promo-s.par span{font-family:'Almarai';font-weight:800}
+.ed-promo-s i{font-style:normal;font-weight:400;font-size:var(--fs-tag);color:var(--text-muted)}
+.ed-promo-s em{grid-column:1;font-style:normal;font-size:var(--fs-tag);color:var(--text-muted)}
+.ed-promo-s input{grid-row:1 / span 2;grid-column:2}
+.ed-promo-btns{margin:0}
+.ed-promo .warnbox{margin:0}
+
 /* 🆕 b195 · سطرُ الوحدة العابرة تحت عنوانها (184) — على نسق `.ed-m`، وزرُّه وقائمتُه بعرض
    كلمتهما: `button.btn` تمتدّ (`flex:1`) و`select` بعرض سطرها في base.css. */
 .ed-ub{margin:-6px 0 12px;align-items:center}

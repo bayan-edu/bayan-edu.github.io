@@ -225,6 +225,20 @@
 .lb-pg .ic{width:17px;height:17px}
 .lb-pg:disabled{opacity:.4;cursor:default}
 
+/* ══ تاجُ المكتبة — ما أنجزتَ من شرط مستواك، والمنارة (b238 · المرحلة ٥) ══
+   سطحٌ محايدٌ داخل لوح الرأس، والشريطُ `.pbar` بأحوال بطاقة المادّة (screens.css) — والمنارةُ زرُّ المنصّة الأوّل
+   (`accent` · «اضغط هنا» بعينها) ومعه هالةٌ من ذهب المشهد: زينةٌ تقول «هنا شيءٌ جديد» ولا تقول جملةً من الخمس. */
+.lb-prog{margin:0 0 12px;padding:10px 12px;border-radius:12px;background:var(--fill-soft);border:1px solid var(--line)}
+.lb-prog[hidden]{display:none}
+.lb-prog-in{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px 14px}
+.lb-prog-t{font-family:'Almarai';font-weight:800;font-size:var(--fs-ui)}
+.lb-prog-m{font-size:var(--fs-meta);color:var(--text-muted)}
+.lb-prog-in .pbar{grid-column:1 / -1;height:7px;margin:0}
+.lb-prog-mins{grid-column:1 / -1;display:flex;flex-wrap:wrap;gap:6px}
+.lb-prog-mins .chip{margin:0}
+.lb-beacon{grid-column:1 / -1;justify-self:start;flex:none;
+  box-shadow:0 0 0 3px color-mix(in srgb, var(--lb-gold) 45%, transparent), 0 6px 18px color-mix(in srgb, var(--lb-gold) 35%, transparent)}
+
 /* ══ بطاقةُ الكتاب وكلماتُه (b237 · المرحلة ٤) ══
    لوحٌ زجاجيٌّ كلوح الرأس فوق الحديقة نفسِها: الغلافُ كبيراً بجوار العنوان والملخّص والخطوات والأزرار.
    📌 والأزرارُ أزرارُ المنصّة (`.btn.primary` · `.btn.ghost`) والخطواتُ سطوحُها (`--surface` · `--line`) — لا لونٌ جديد. */
@@ -264,6 +278,8 @@
 .lb-w-img{width:100%;max-height:120px;object-fit:contain;border-radius:8px}
 
 @media (max-width: 640px){
+  .lb-prog-in{grid-template-columns:minmax(0,1fr)}
+  .lb-beacon{justify-self:stretch}
   .lb-card{padding:12px 14px 16px}
   .lb-card-in{grid-template-columns:1fr;justify-items:center;gap:14px}
   .lb-card-cover .lb-jacket{width:150px}

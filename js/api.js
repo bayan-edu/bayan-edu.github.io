@@ -643,6 +643,15 @@ export const subjectDecks = sid => db.rpc('subject_decks', { p_subject: sid });
    (ذاك العمودُ فارغٌ ولم يُملأ قطّ). وتحمل `note` و`front_image` فسقط
    نداءُ `deck_cards` الثاني الذي كان يُكمّلهما. */
 export const lessonCards  = lid => db.rpc('lesson_cards',  { p_lesson: lid });
+
+/* 🆕 b238 · شرطُ الترقية بالنصاب (205) — لكلّ مادّةٍ تدرّجُها بالمستوى (المكتبةُ وIELTS).
+   للمصمّم: الشرطُ وكتبُ المقرَّر في رفوفها وتنبيهاتُ الحارس، وكتابتُه (`p_note` سببُ التعديل في السجلّ — به تُقارَن النتائج).
+   وللطالب: ما أنجز وما بقي، والمنارة — والحكمُ في القاعدة (`promote_level` تعيد الحساب قبل أن تكتب). */
+export const coursePromotion   = cid => db.rpc('course_promotion', { p_course: cid });
+export const savePromotionRule = (cid, total, mins, note) => db.rpc('save_promotion_rule', {
+  p_course: cid, p_total: total ?? null, p_mins: mins || [], p_note: note || null });
+export const levelProgress     = sid => db.rpc('level_progress', { p_subject: sid });
+export const promoteLevel      = sid => db.rpc('promote_level',  { p_subject: sid });
 export const deckCards    = did => db.rpc('deck_cards',    { p_deck: did });
 export const deleteCard   = id  => db.rpc('delete_card',   { p_id: id });
 export const deleteDeck   = id  => db.rpc('delete_deck',   { p_id: id });

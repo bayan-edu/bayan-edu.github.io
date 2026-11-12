@@ -731,6 +731,9 @@ export async function openCourse(course){
         </details>
       </div>` :`<div class="warnbox">يمكنك إضافة مصادر إلى الدروس القائمة.</div>`}
 
+    ${/* 🆕 b238 · شرطُ الترقية (205) — يُكتب حيث تُبنى الكتب (editor_promotion.js). لفريق الإشراف وحده، ويُرفع إن لم ينطبق */''}
+    ${course.curate ? '<div id="edPromo"></div>' : ''}
+
     ${units.map(u => block(u)).join("")}
     ${group(null).length || !units.length ? block(null) : ''}
 
@@ -763,6 +766,9 @@ export async function openCourse(course){
   if(imt) imt.onclick = () => openTextsImport(course);
   const imb = document.getElementById("imb");               // 🆕 b208 · بوّابةُ البنك (192)
   if(imb) imb.onclick = () => openBankImport(course);
+  /* 🆕 b238 · لوحةُ الشرط بعد الرسم وبتحميلٍ كسول — فلا تؤخّر الدروسَ، ولا يدفع ثمنَها مقرَّرٌ لا ترقيةَ فيه */
+  const ep = document.getElementById("edPromo");
+  if(ep) import('./editor_promotion.js').then(m => m.mountPromotion(course, ep), () => ep.remove());
   /* 🆕 b195 · و`[data-l]` لا كلُّ صفّ: صفُّ الدرس المستعار بلا مفتاح، وبلا الشرط يفتح «درساً جديداً» */
   if(course.curate) app.querySelectorAll(".ed-row[data-l]").forEach(el =>
     el.onclick = () => editLesson(course, lessons.find(x => String(x.id) === el.dataset.l)));

@@ -164,9 +164,10 @@ function recall(subj){
  * @param subj     المادّة كما في `list_subjects`
  * @param lessons  دروسُها كما في `list_lessons` (بعد تصفية الوجه)
  * @param strands  فروعُها كما في `list_strands` — وفارغةٌ إن تعذّرت
- * @param o        { top: رأسُ المادّة (html) · bindTop: ربطُه · open: فتحُ الدرس }
+ * @param hooks    { top: رأسُ المادّة (html) · bindTop: ربطُه · open: فتحُ بطاقة الكتاب · relevel: بعد المنارة } (`libHooks` · student.js)
  */
-export async function paintLibrary(subj, lessons, strands, { top = '', bindTop, open }){
+export async function paintLibrary(subj, lessons, strands, hooks = {}){
+  const { top = '', bindTop, open } = hooks;
   await loadCss();
 
   /* 🔑 **مستواك وحده على الرفوف** (`own_level` ⇐ `my_courses().is_current`): `courses_of` تفتح للطالب مقرّراتِ ما دون
@@ -198,6 +199,7 @@ export async function paintLibrary(subj, lessons, strands, { top = '', bindTop, 
     <div class="lb" id="lb">
       <div class="lb-top">
         ${top}
+        <div class="lb-prog" id="lbProg" hidden></div>
         <div class="tabs lb-tabs" role="tablist" aria-label="الأرفف">
           ${shelves.map((s, i) => `<button type="button" class="tab lb-tab" role="tab" id="lb-t-${i}"
               aria-controls="lb-c-${i}"><bdi>${esc(s.name)}</bdi><span class="lb-n">${AR(s.books.length)}</span></button>`).join('')}
@@ -320,6 +322,54 @@ export async function paintLibrary(subj, lessons, strands, { top = '', bindTop, 
   PHONE.addEventListener('change', onMedia);
 
   place();
+  /* 🆕 b238 · وتاجُ المكتبة يلحق بالرفوف ولا يؤخّرها — نداءٌ بعد الرسم، وفشلُه يُبقيه مطويّاً */
+  paintProgress(subj, root.querySelector('#lbProg'), hooks);
+}
+
+/* ═══════════ تاجُ المكتبة: ما أنجزتَ من شرط مستواك، والمنارة (b238 · المرحلة ٥ · sql/205) ═══════════
+   🔑 **والمنارةُ تضيء بما تقوله القاعدة لا بما يحسبه المتصفّح** (`ready` من `level_progress`)، وضغطُها يعيد الحسابَ
+      هناك (`promote_level`) ثمّ يكتب المستوى التالي — فلا يرقّي زرٌّ من لم يبلغ، ولو عُدِّل في المتصفّح.
+   🔑 **وأحوالُه أربع:** شرطٌ قائم (ما أنجزتَ من كم، وحدودُ الرفوف) · اكتمل (والمنارة) · مستوًى بلا شرطٍ (عددُ ما أنجزتَ
+      وحده — لا وعدَ بلا شرط) · وأعلى مستوى.
+   📐 والشريطُ `.pbar`/`.pfill` المنصّة بأحوال بطاقة المادّة نفسِها (`st-active` · `st-mid` · `st-done`) — لا لونٌ جديد. */
+async function paintProgress(subj, host, hooks){
+  if(!host) return;
+  const { data: d } = await api.levelProgress(subj.id).then(r => r, e => ({ error: e }));
+  if(!host.isConnected || !d?.ok || !d.applicable || !d.course_id) return;
+
+  const done = Number(d.done || 0), rule = d.rule, next = d.next;
+  const cap = (a, b) => Math.min(Number(a) || 0, Number(b) || 0);
+  let html;
+  if(!next){
+    html = `<div class="lb-prog-t">هذا أعلى مستوى في المكتبة</div>
+      <div class="lb-prog-m">الكتب المنجزة: ${AR(done)}</div>`;
+  } else if(!rule){
+    html = `<div class="lb-prog-m">الكتب المنجزة في هذا المستوى: ${AR(done)}</div>`;
+  } else {
+    const pct = Math.min(100, Math.round(done / rule.total * 100));
+    const st  = d.ready ? 'st-done' : pct >= 50 ? 'st-mid' : 'st-active';
+    html = `<div class="lb-prog-in ${st}">
+      <div class="lb-prog-t">${d.ready ? 'اكتمل شرط الانتقال إلى' : 'الانتقال إلى'} <bdi>${esc(next.name)}</bdi></div>
+      <div class="lb-prog-m">الكتب المنجزة: ${AR(cap(done, rule.total))} من ${AR(rule.total)}</div>
+      <div class="pbar" role="progressbar" aria-label="الكتب المنجزة" aria-valuemin="0"
+           aria-valuemax="${rule.total}" aria-valuenow="${cap(done, rule.total)}"><div class="pfill" style="width:${pct}%"></div></div>
+      ${(rule.mins || []).length ? `<div class="lb-prog-mins">${rule.mins.map(m => `<span class="chip">${
+          m.done >= m.min ? '✔ ' : ''}<bdi>${esc(m.name)}</bdi>: ${AR(cap(m.done, m.min))} من ${AR(m.min)}</span>`).join('')}</div>` : ''}
+      ${d.ready ? `<button type="button" class="btn primary lb-beacon" id="lbGo">الانتقال إلى <bdi>${esc(next.name)}</bdi></button>` : ''}
+    </div>`;
+  }
+  host.innerHTML = html;
+  host.hidden = false;
+
+  const go = host.querySelector('#lbGo');
+  if(go) go.onclick = async () => {
+    go.disabled = true;
+    const { data: r, error } = await api.promoteLevel(subj.id).then(x => x, e => ({ error: e }));
+    if(error || !r?.ok){ go.disabled = false; toast(error?.message || r?.error || 'تعذر الانتقال'); return; }
+    toast('انتقلت إلى ' + (r.level || ''));
+    /* المستوى تغيّر ⇒ المادّةُ تُقرأ من جديد (`list_subjects`) ثمّ رفوفُ المستوى الجديد — هذا في student.js */
+    hooks.relevel?.();
+  };
 }
 
 

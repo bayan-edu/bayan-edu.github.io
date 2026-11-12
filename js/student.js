@@ -152,6 +152,14 @@ function libHooks(subj){
     open:  l => openBookCard(l),
     read:  (l, i) => { S.lesson = l; return openText(i); },
     quiz:  (l, q) => { S.lesson = l; return openItem(q); },
+    /* 🆕 b238 · بعد المنارة (205): المستوى تغيّر، فالمادّةُ تُقرأ من جديد — اسمُ المستوى في البرواز و`my_level` منها —
+       ثمّ رفوفُ المستوى الجديد. وإن تعذّرت القراءةُ فالمادّةُ كما كانت، والرفوفُ تُجلب على الحال الجديدة على كلّ حال. */
+    relevel: async () => {
+      const { data } = await api.listSubjects().then(r => r, () => ({}));
+      if(data) S.subjects = data;
+      const x = (S.subjects || []).find(v => String(v.id) === String(subj.id));
+      return loadLessons(x ? viewOf(x) : subj);
+    },
   };
 }
 
