@@ -294,7 +294,20 @@ const PT_AR = {
   splitAria: 'عرض عمود النصّ — يُسحب، أو يُحرَّك بالأسهم',
   num:     AR,
   /* 🆕 b179 · الفاصلُ بلسان الورقة: «،» هنا — «·» تُقرأ صفراً بجوار «سؤال ٣» (joinList · ui.js) */
-  sep:     '، '
+  sep:     '، ',
+  /* 🆕 b246 · الجلسةُ التكيّفيّة (213 · ق١٧): التمهيدُ والتوقّفُ والمستوى المبدئيّ.
+     🔑 **ولا أمرَ فيها يحتاج `G()`:** «ولا عجلة» تقول «خذ وقتك» بلا صيغة، والباقي اسمٌ أو ماضٍ. */
+  practice:  'تمهيد',
+  practiceS: 'سؤالان للتعرّف على طريقة الاختبار، ولا يدخلان في النتيجة.',
+  again:     'مرّة أخرى',
+  againS:    'السؤالان نفساهما، ولا عجلة.',
+  started:   'انتهى التمهيد، وبدأ الاختبار',
+  paused:    'توقّف الاختبار',
+  pausedS:   'وأُبلغ معلمك ليفتحه لك من جديد.',
+  back:      'العودة إلى المواد',
+  levelP:    'مستواك المبدئيّ:',
+  /* «التسكينُ نقطةُ بداية لا حكم» (ق١٧ ⑧) — والرفوفُ اسمُ المكتبة عند الطالب (library.js) */
+  levelPS:   'بداية لا حكم، ورفوفك صارت على هذا المستوى.'
 };
 
 /* 🔑 ولا `tipF` هنا — **ونقصٌ مقصودٌ لا سهو**: الأمرُ الإنجليزيُّ لا
@@ -320,22 +333,75 @@ const PT_EN = {
   blanks:  list => `Unanswered: ${list} —
     answer if you have a reason to prefer one, and leave it blank if you do not.
     A guess lands on a distractor, and you are given a diagnosis that is not yours.`,
-  title:   s => `${s} Placement Test`,
+  /* 🆕 b246 · واسمُ المادّة العربيّ لا يُسبَق به العنوانُ الإنجليزيّ: «مكتبة بيان Placement Test» سطرٌ بلسانين
+     ينقلب ترتيبُه (قِيس في المختبر) ⇒ العنوانُ وحده. وIELTS اسمٌ لاتينيّ فيبقى كما كان. */
+  title:   s => dirOf(s) === 'ltr' ? `${s} Placement Test` : 'Placement Test',
   level:   l => `Your level: ${l}`,
   go:      'Start learning →',
   splitAria: 'Passage column width — drag, or use the arrow keys',
   num:     String,
-  sep:     ' · '          // أرقامُها غربيّة — فلا صفرَ يُلتبس
+  sep:     ' · ',         // أرقامُها غربيّة — فلا صفرَ يُلتبس
+  practice:  'Practice',
+  practiceS: 'Two questions to show how the test works. They do not count.',
+  again:     'Once more',
+  againS:    'The same two questions. Take your time.',
+  started:   'Practice done. The test begins.',
+  paused:    'The test has paused',
+  pausedS:   'Your teacher has been told and will reopen it for you.',
+  back:      'Back to subjects',
+  levelP:    'Your starting level:',
+  levelPS:   'A starting point, not a verdict. Your shelves now match it.'
 };
 
 /* `PL` غائبةٌ في الاختبار العاديّ ⇒ العربية دائماً، فلا يتبدّل فيه شيء. */
 const PT = () => PL?.en ? PT_EN : PT_AR;
 
-export function startPlacementQuiz(session, quiz, subject, resumed){
-  PL = { session, subject, en: paperIsEnglish(quiz) };
+/* 🆕 b246 · و`stage` من الجلسة التكيّفيّة (213): «تمهيد» يكتب بطاقتَه فوق سؤاليه، ومحطّاتُ IELTS بلا مرحلة كما كانت */
+export function startPlacementQuiz(session, quiz, subject, resumed, stage){
+  PL = { session, subject, en: paperIsEnglish(quiz), stage: stage || null, retry: false };
   paperDir(PL.en);
   if(resumed) toast(PT().resumed);
   mountStation(quiz);
+}
+
+/* ═══════════ 🆕 b246 · شاشتا الجلسة التكيّفيّة خارج الورقة (213 · ق١٧) ═══════════
+   🔑 **شاشةُ البالغ لـM1 قبل التمهيد** (ق١٧ ⑪): الطفلُ لا يقرأ تعليماتٍ مكتوبة، فالخطابُ للبالغ الذي بجواره —
+      **بالعربيّة دائماً**، فهو قارئُ المنصّة لا قارئُ الورقة. وحدُّها جملةٌ واحدة: **لا يقرأ النصَّ للطفل** —
+      فالقراءةُ بصوتٍ تحوّل الاختبارَ إلى استماع (أبحاثُ التيسيرات · Sireci)، ويخرج المستوى أعلى من قراءته.
+   🔑 **والموقوفةُ عائلةُ «في الطريق»** كشاشة انتظار المعلّم (`.pend-hero`): تنتظر معلّماً، لا حكمٌ على الطالب.
+      ولسانُها لسانُ الورقة إن كانت الجلسةُ جاريةً هنا، والعربيّةُ إن عاد إليها الطالبُ من المواد. */
+export function showPlacementAdult(subject, go){
+  head(PT_AR.title(subject?.name || ''), '');
+  bar.innerHTML = '';
+  app.innerHTML = `
+    <div class="card pl-card">
+      <div class="pl-h">قبل البدء</div>
+      <p>يبقى بجوار الطفل بالغ حتى نهاية الاختبار.</p>
+      <ul class="pl-do">
+        <li><b>نعم:</b> المساعدة في الجهاز، وإعادة التعليمات عند الحاجة.</li>
+        <li><b>لا:</b> قراءة النصوص أو الأسئلة للطفل بصوت.</li>
+      </ul>
+      <p class="pl-why">فالقراءة بصوت تجعل الاختبار استماعاً، فيظهر مستواه أعلى من قراءته.</p>
+      <div class="nav"><button class="btn primary" id="plgo">البدء</button></div>
+    </div>`;
+  document.getElementById('plgo').onclick = go;
+}
+
+export function showPlacementPaused(subject){
+  const T = PT();
+  clearInterval(S.tick);
+  PL = null;
+  head(T.title(subject?.name || ''), '');
+  bar.innerHTML = '';
+  app.innerHTML = `
+    <div class="pl-paused">
+      <div class="pend-hero" role="status">
+        <div class="pend-t">${esc(T.paused)}</div>
+        <div class="pend-s">${esc(T.pausedS)}</div>
+      </div>
+      <div class="nav"><button class="btn primary" id="plback">${esc(T.back)}</button></div>
+    </div>`;
+  document.getElementById('plback').onclick = () => { paperDir(false); loadList(); };
 }
 
 /* محطّةٌ تُركَّب في مكان سابقتها — بلا مغادرةٍ ولا دخولٍ ثانٍ */
@@ -610,7 +676,13 @@ function renderPage(){
         فيفسد داخل جَنبة. */
   const splitable = !!(pg && pg.body && !isAudio);
 
-  app.innerHTML = !splitable ? `${pgHtml}${cards}${tail}` : `
+  /* 🆕 b246 · بطاقةُ التمهيد (213 · ق١٧): فوق سؤاليه، محايدةٌ لا عائلةَ لها — تشرح ولا تحكم.
+     وفي المرّة الثانية تقول ذلك («السؤالان نفساهما») فلا يظنّ الطالبُ أنّ الشاشة علقت. */
+  const plNote = PL?.stage === 'practice' ? `
+    <div class="pl-note" role="note"><b>${esc(PL.retry ? T.again : T.practice)}</b><span>${
+      esc(PL.retry ? T.againS : T.practiceS)}</span></div>` : '';
+
+  app.innerHTML = !splitable ? `${plNote}${pgHtml}${cards}${tail}` : `${plNote}
     <div class="split" id="split" style="--split:${splitPct()}%">
       <div class="split-a" id="splitA">${pgHtml}</div>
       <div class="split-h" id="splitH" role="separator" aria-orientation="vertical"
@@ -868,22 +940,41 @@ async function finish(auto){
     const T = PT(), EN = !!PL.en;
     const { data, error } = await api.placementSubmit(
       PL.session, payload, Math.round((Date.now()-S.t0)/1000));
+
+    /* 🆕 b246 · نقرتان أرسلتا المحطّةَ نفسَها (213 يردّ الثانية `stale`) ⇒ الجارية من الخادم، بلا شاشة خطأ */
+    if(data?.stale){
+      const r = await api.placementStart(PL.subject?.tool);
+      if(r.data?.ok && r.data.quiz){ PL.stage = r.data.stage || PL.stage; PL.retry = false; mountStation(r.data.quiz); return; }
+    }
+    if(!error && data?.stage === 'paused'){ showPlacementPaused(PL.subject); return; }   // 🆕 b246 · أخطأ التمهيدَ مرّتين
+
     if(error || !data?.ok){
       app.innerHTML = `<div class="err"><b>${esc(T.failed)}</b>${
         esc(error?.message || data?.error || '')}</div>`; return; }
 
-    if(!data.done){ mountStation(data.quiz); return; }
+    if(!data.done){
+      /* 🆕 b246 · الجلسةُ التكيّفيّة: التمهيدُ يُعاد مرّةً بقوله، ثمّ يبدأ الاختبار — وIELTS بلا مرحلةٍ كما كان */
+      if(PL.stage === 'practice' && data.stage === 'stations') toast(T.started);
+      if(data.stage){ PL.stage = data.stage; PL.retry = !!data.retry; }
+      mountStation(data.quiz); return;
+    }
 
     /* ⚠️ `PL` تُصفَّر هنا، فما بعدها يُبنى من `T` و`EN` المحفوظتين أعلاه —
        و`PT()` بعد التصفير تردّ العربية. والاتجاهُ يبقى حتى يُغادر
        الطالبُ الشاشة فعلاً: هذه آخرُ صفحةٍ من الورقة، لا أوّلُ صفحةٍ
        من المنصّة. */
-    const n = data.stations || 0;
+    const n = data.stations || 0, sub = PL.subject;
     PL = null;
+    /* 🆕 b246 · والترويسةُ تُعاد بلا سطرها الثاني — كان سطرُ آخر صفحةٍ («أسئلة نصّ واحد…») يبقى فوق النتيجة (قِيس في المختبر) */
+    head(T.title(sub?.name || ''), '');
+    /* 🆕 b246 · والمستوى المبدئيّ (213 · ق١٠ ④): اسمُه يقول إنّه بداية، وسطرُه يقول معناها — لا «حُدِّد بعد ٣ أقسام» وحده.
+       و`<bdi>` لأنّ «R12 · A2» لاتينيٌّ في سطرٍ عربيّ: نقطتُه الوسطى تنقلب بلا عزل. */
     app.innerHTML = `
       <div class="card" style="text-align:center;padding:34px;max-width:520px;margin:0 auto">
-        <div class="rev-q">${esc(T.level(data.level || ''))}</div>
-        <div class="line" style="margin-top:10px">${EN
+        <div class="rev-q">${data.provisional
+          ? `${esc(T.levelP)} <bdi>${esc(data.level || '')}</bdi>`
+          : esc(T.level(data.level || ''))}</div>
+        <div class="line" style="margin-top:10px">${data.provisional ? esc(T.levelPS) : EN
           ? `Set after ${n} section${n === 1 ? '' : 's'}. Your lessons now match your level.`
           : `حُدِّد بعد ${عدد(n,'قسم','قسمين','أقسام','قسماً')}. ودروسك صارت على مقاسك.`}</div>
         <div class="nav" style="margin-top:22px">

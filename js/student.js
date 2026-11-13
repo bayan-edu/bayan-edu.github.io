@@ -10,7 +10,7 @@ import { S } from './state.js';
 import { app, head, toast, esc, escA, AR, ICONS, KINDS, bubble, errBox, nav,
          refreshCounts, scrollTop, scrollBottom, shape, icon,
          skeleton, waiting, G, N, NW, fmt,
-         sayable, sayGroup, bindSay, backMeta, backText, dirOf, srcOf, videoOf, siteUrl } from './ui.js';
+         sayable, sayGroup, bindSay, backMeta, backText, dirOf, srcOf, videoOf, siteUrl, goRoute } from './ui.js';
 import { startQuiz } from './quiz.js';
 import { mediaUrl, isManaged, accents, speak, playAudio, bookVoice } from './media.js';
 import { isSim, openSim } from './simulations.js';
@@ -1907,9 +1907,13 @@ async function startPlacement(x){
   waiting('screen');
   const { data, error } = await api.placementStart(x.tool);
   if(error){ app.innerHTML = errBox(error.message, 'تحديد المستوى'); return; }
-  if(!data.ok){ toast(data.error); loadList(); return; }
-  const { startPlacementQuiz } = await import('./quiz.js');
-  startPlacementQuiz(data.session, data.quiz, x, data.resumed);
+  /* 🆕 b246 · بلا تاريخ ميلادٍ لا طبقةَ ولا بنك (213) ⇒ إلى الملفّ حيث يُكتب، لا إلى المواد حيث يعود السؤالُ نفسُه */
+  if(!data.ok){ toast(data.error); if(data.need === 'birth') goRoute('profile'); else loadList(); return; }
+  const { startPlacementQuiz, showPlacementAdult, showPlacementPaused } = await import('./quiz.js');
+  /* 🆕 b246 · الجلسةُ التكيّفيّة (213 · ق١٧): الموقوفةُ تنتظر معلّمها · وتمهيدُ M1 تسبقه شاشةُ البالغ (⑪) — جديداً كان أو مستأنَفاً بعد توقّف */
+  if(data.stage === 'paused'){ showPlacementPaused(x); return; }
+  const go = () => startPlacementQuiz(data.session, data.quiz, x, data.resumed, data.stage);
+  if(data.tier === 'M1' && data.stage === 'practice') showPlacementAdult(x, go); else go();
 }
 
 /* ═══════════ بطاقات الدرس — مصدرٌ ثابت لا فعلٌ يقع مرّة ═══════════ */

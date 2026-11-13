@@ -491,6 +491,11 @@ export const deleteRoute = id => db.rpc('delete_route', { p_id: id });
 export const placementStart  = t => db.rpc('placement_start', { p_tool: t });
 export const placementSubmit = (sid, ans, sec) =>
   db.rpc('placement_submit', { p_session: sid, p_answers: ans, p_duration: sec });
+/* 🆕 b246 · جلساتٌ تنتظر المعلّم (213 · قرارُ المالك: الجرس) — الموقوفةُ تُستأنف، ومن انتهى عند R1 يُطّلع عليه.
+   والحارسُ في القاعدة (`placement_watches`): معلّمُ الطالب في مادّة الأداة، والمديرُ لمن لا معلّمَ له. */
+export const placementAlerts = () => db.rpc('placement_alerts');
+export const placementResume = sid => db.rpc('placement_resume', { p_session: sid });
+export const placementSeen   = sid => db.rpc('placement_seen',   { p_session: sid });
 export const deleteQuiz = (id, confirm=false) =>
   db.rpc('delete_quiz', { p_quiz: id, p_confirm: confirm });
 export const saveLesson = o => db.rpc('save_lesson', {

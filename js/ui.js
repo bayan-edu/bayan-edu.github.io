@@ -13,7 +13,7 @@ import { renderMark, whenReady as avatarReady } from './avatar.js';
    والدمجُ مرّ بلا تعارضٍ **لأنّ الجانبين كتبا السطرَ نفسَه حرفاً** — وهو
    أخبثُ ما في التصادم: لا يشتكي. ⇒ هذه ترفعه، **فالختمُ يجيب «أيُّ شيفرةٍ
    يشغّلها المتصفّح»، وجوابان لسؤالٍ واحدٍ لا جواب.** */
-export const BUILD = "b245";
+export const BUILD = "b246";
 
 /* ── مراسي الصفحة ── */
 export const app = document.getElementById("app");
@@ -1062,8 +1062,10 @@ export function skeleton(kind = 'rows', n){
 
 /* الوجهة ← حقلُها في my_counts. و«المستحقّ» هنا لأنه شارةٌ على بندٍ،
    وليس في BELL أدناه لأنه حالٌ لا حدث (القرار ②). */
+/* 🆕 b246 · وشاشةُ التصحيح صار فيها اختبارُ المستوى (213) ⇒ شارتُها مجموعُ حقلين: `+` يجمع، ولا يُعَدّ شيءٌ هنا من جديد —
+   الحقلان من `my_counts` كما هما، وكلٌّ منهما عدُّه في القاعدة وحدها (الثابت ⑨). */
 const NCOUNT = { cards:'due', feedback:'feedback', chat:'messages',
-                 inbox:'messages', grade:'grading', requests:'requests' };
+                 inbox:'messages', grade:'grading+placement', requests:'requests' };
 
 /* بنودُ الجرس — [الوجهة · الحقل · النصّ]. ولا يُعرض بندٌ لوجهةٍ ليست
    في دور المستخدم، فيُفرز chat عن inbox بلا شرطٍ على الدور. */
@@ -1075,6 +1077,9 @@ const BELL = [
   ['chat',     'messages', n => `${N(n,'رسالة جديدة','رسالتان جديدتان','رسائل جديدة','رسالة جديدة')} في مراسلاتك`],
   ['inbox',    'messages', n => `${N(n,'رسالة','رسالتان','رسائل','رسالة')} من طلابك`],
   ['grade',    'grading',  n => `${N(n,'إجابة مقالية','إجابتان مقاليتان','إجابات مقالية','إجابة مقالية')} تنتظر تصحيحك`],
+  /* 🆕 b246 · اختبارُ المستوى (213 · قرارُ المالك: الجرس لا الرسائل) — بندُه في شاشة التصحيح، أوّلَها.
+     و«بانتظارك» لا «ينتظرك»: لا فعلَ يلزمه أن يطابق المثنّى والجمع. */
+  ['grade',    'placement', n => `${N(n,'اختبار مستوى','اختبارا مستوى','اختبارات مستوى','اختبار مستوى')} بانتظارك`],
   ['requests', 'requests', n => `${N(n,'طلب','طلبان','طلبات','طلب')} انضمام معلّم`]
 ];
 
@@ -1107,7 +1112,7 @@ function paintCounts(){
       ?.setAttribute('aria-label', n ? `الإشعارات، ${AR(n)} جديدة` : 'الإشعارات، لا جديد');
   }
   document.querySelectorAll('#drawer [data-n]').forEach(el => {
-    const n = c[el.dataset.n] || 0;
+    const n = el.dataset.n.split('+').reduce((s, k) => s + (c[k] || 0), 0);
     el.textContent = AR(n);
     el.hidden = !n;
   });

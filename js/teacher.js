@@ -16,10 +16,12 @@ import { paragraphs, issueRows, noteDraft, mergeNote } from './reading_ai.js';
 export async function loadTeacher(){
   nav('grade'); head("لوحة المعلم — "+S.prof.full_name, "الإجابات المقالية بانتظار تصحيحك");
   app.innerHTML = `<div class="status">جار التحميل…</div>`;
-  /* 🆕 b169 · والقراءاتُ الجهريّة معها بنداءٍ موازٍ — وفشلُها لا يحجب التصحيح */
-  const [{ data, error }, rd] = await Promise.all([
+  /* 🆕 b169 · والقراءاتُ الجهريّة معها بنداءٍ موازٍ — وفشلُها لا يحجب التصحيح
+     🆕 b246 · واختبارُ المستوى كذلك (213): جلساتٌ تنتظر المعلّم، وفشلُها لا يحجب شيئاً */
+  const [{ data, error }, rd, pl] = await Promise.all([
     api.attemptsToGrade(),
-    api.teacherReadings().then(r => r, e => ({ error: e }))
+    api.teacherReadings().then(r => r, e => ({ error: e })),
+    api.placementAlerts().then(r => r, e => ({ error: e }))
   ]);
 
   const all  = data || [];
@@ -31,6 +33,7 @@ export async function loadTeacher(){
 
   app.innerHTML = `
     ${errBox(error,'قائمة التصحيح')}
+    ${placementHtml(pl)}
     <h2 class="sec">بانتظار التصحيح (${AR(wait.length)})</h2>
     ${wait.length?wait.map(a=>card(a,false)).join(""):'<div class="status">لا توجد محاولات معلّقة 🎉</div>'}
     ${done.length?`<h2 class="sec">مُصحَّحة</h2>${done.slice(0,20).map(a=>card(a,true)).join("")}`:''}
@@ -39,6 +42,44 @@ export async function loadTeacher(){
 
   app.querySelectorAll(".pend[data-a]").forEach(el=>el.onclick=()=>openGrade(+el.dataset.a));
   app.querySelectorAll(".pend[data-r]").forEach(el=>el.onclick=()=>openReading(+el.dataset.r));
+  app.querySelectorAll("[data-pl]").forEach(b => b.onclick = () => placementAct(b));
+}
+
+/* ═══════════ ①أ اختبارُ المستوى — جلساتٌ تنتظر المعلّم (b246 · sql/213) ═══════════
+   🔑 **في شاشة التصحيح لا في قسمٍ جديد** — بحجّة القراءات الجهريّة نفسِها (b169): عملُ طالبٍ ينتظر المعلّم.
+      والجرسُ يدلّ عليها (`placement` في `my_counts` · سطرُه في `BELL`)، **وأوّلَ الشاشة**: الموقوفُ طالبٌ لا يتقدّم حتى يُستأنف.
+   🔑 **يسكت البندُ بفعل المعلّم وحده** — الاستئنافُ للموقوفة (التمهيدُ من جديد)، و«إخفاء التنبيه» لمن انتهى عند R1 دون نجاحٍ
+      في نصّ. لا علامةَ «قُرئت» تُطفئه بالمرور (قرارُ المالك: الجرس لا الرسائل).
+   📌 والنصُّ محايد: لا جنسَ الطالب في البند — الفعلُ للاختبار (`توقّف`) أو مصدرٌ (`دون نجاح`). */
+function placementHtml(pl){
+  if(pl?.error) return errBox(pl.error, 'اختبار المستوى');
+  const list = Array.isArray(pl?.data) ? pl.data : [];
+  if(!list.length) return '';
+  const row = a => {
+    const paused = a.stage === 'paused';
+    return `<div class="pend plc">
+      <div class="plc-i">
+        <div class="qz-t">${esc(a.name || '')}</div>
+        <div class="qz-m">${paused ? 'توقّف عند التمهيد بعد محاولتين' : 'المستوى المبدئي <bdi>R1</bdi>، دون نجاح في أيّ نص'}
+          · ${new Date(a.at).toLocaleDateString('ar-EG')}</div>
+      </div>
+      <button class="btn ${paused ? 'primary' : 'ghost'}" data-pl="${a.session}" data-act="${paused ? 'resume' : 'seen'}">${
+        paused ? 'استئناف' : 'إخفاء التنبيه'}</button>
+    </div>`;
+  };
+  return `<h2 class="sec">اختبار المستوى — بانتظارك (${AR(list.length)})</h2>
+    ${list.some(a => a.stage === 'paused') ? '<p class="hint plc-hint">الاستئناف يفتح التمهيد من جديد.</p>' : ''}
+    ${list.map(row).join('')}`;
+}
+
+async function placementAct(b){
+  b.disabled = true;
+  const sid = +b.dataset.pl, resume = b.dataset.act === 'resume';
+  const { data, error } = await (resume ? api.placementResume(sid) : api.placementSeen(sid));
+  if(error || !data?.ok){ b.disabled = false; toast(error?.message || data?.error || 'تعذّر الحفظ'); return; }
+  toast(resume ? 'فُتح الاختبار من جديد' : 'أُخفي التنبيه');
+  refreshCounts();                 // الجرسُ ينقص بفعل المعلّم
+  loadTeacher();
 }
 
 /* ═══════════ ①ب القراءات الجهرية (b169 · sql/175) ═══════════

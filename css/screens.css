@@ -1005,6 +1005,12 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
  padding:15px;margin-bottom:10px;cursor:pointer}
 .pend:hover{border-color:var(--accent)}
 .pend.done{border-color:var(--accent-edge);opacity:.7}
+/* 🆕 b246 · اختبارُ المستوى — بندٌ ينتظر فعلاً (213): ليس مَنقراً كلُّه كأخويه، فزرُّه وحده يفعل —
+   ولا حدَّ يشتعل بالمرور، فالحدُّ المشتعل وعدٌ بنقرةٍ لا تقع. */
+.pend.plc{display:flex;align-items:center;gap:12px;flex-wrap:wrap;cursor:default}
+.pend.plc:hover{border-color:var(--line)}
+.plc-i{flex:1 1 220px;min-width:0}
+.plc-hint{text-align:start;margin:-6px 0 10px}
 .essaybox{background:var(--fill-soft);border:1px solid var(--line);border-radius:11px;
  padding:15px;font-size:var(--fs-read);line-height:1.95;white-space:pre-wrap;margin-bottom:14px}
 
@@ -1037,6 +1043,24 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
 .pend-ic{font-size:2.6rem;margin-bottom:12px}
 .pend-t{font-family:'Almarai';font-weight:800;font-size:1.15rem;color:var(--warn);margin-bottom:8px}
 .pend-s{color:var(--text-muted);font-size:var(--fs-ui);line-height:1.9}
+
+/* ═══ 🆕 b246 · الجلسةُ التكيّفيّة — شاشاتُها (213 · ق١٧) ═══
+   🔑 **محايدةٌ كلُّها إلا الموقوفة:** بطاقةُ البالغ وبطاقةُ التمهيد تشرحان ولا تحكمان (`--fill-soft` · `--line`)،
+      و«نعم/لا» للبالغ كلمتان لا لونان — الأخضرُ «أصبتَ» وحدها، والأحمرُ «أخطأتَ» وحدها (الهويّة البصريّة ①).
+      والموقوفةُ تستعير `.pend-hero` كما هي: تنتظر معلّماً كشاشة انتظار المعلّم — عائلةُ «في الطريق». */
+.pl-card{max-width:560px;margin:0 auto;padding:24px 22px}
+.pl-h{font-family:'Almarai';font-weight:800;font-size:1.15rem;margin-bottom:10px}
+.pl-card p{line-height:1.9;margin:0 0 12px}
+.pl-do{list-style:none;margin:0 0 12px;padding:0;display:grid;gap:8px}
+.pl-do li{background:var(--fill-soft);border:1px solid var(--line);border-radius:10px;
+  padding:10px 13px;line-height:1.85}
+.pl-do b{font-family:'Almarai';font-weight:800}
+.pl-card .pl-why{font-size:var(--fs-meta);color:var(--text-muted);line-height:1.8}
+.pl-note{background:var(--fill-soft);border:1px solid var(--line);border-radius:var(--r);
+  padding:12px 15px;margin-bottom:14px}
+.pl-note b{display:block;font-family:'Almarai';font-weight:800;margin-bottom:2px}
+.pl-note span{color:var(--text-muted);font-size:var(--fs-ui);line-height:1.8}
+.pl-paused{max-width:560px;margin-inline:auto}
 .req{background:var(--fill-soft);border:1px solid var(--line);border-radius:12px;
   padding:16px;margin-bottom:11px}
 .req-h{font-family:'Almarai';font-weight:700;font-size:var(--fs-read)}
