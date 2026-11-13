@@ -60,7 +60,7 @@ import { loadList, loadLessons, isLibrary } from './student.js';
 /* `kindLabel` لا `KIND_LABEL`: اسمُ النمط صار يتبع لسانَ الورقة
    (render_q.js · b142)، والخريطةُ الخام لم يبقَ لها قارئٌ هنا. */
 import { questionText, questionBody, kindLabel, paperIsEnglish, gapCount,
-         bodyRead } from './render_q.js';
+         bodyRead, sentenceText } from './render_q.js';
 import { wireMatching } from './match_dnd.js';
 
 /* مشتقّاتُ عرضٍ لا حالةَ محاولة — تُبنى كلُّها من S.quiz و S.ans عند
@@ -545,12 +545,21 @@ function renderPage(){
   /* المقطع الصوتي يخرج من بطاقة النصّ إلى شريطٍ ملتصق: الصفحة صارت
      طويلة، وزرُّ الإعادة يجب أن يبقى في المتناول — فالإعادة غير
      المحدودة هي ما يمنع الكود من قياس الذاكرة العاملة بدل الفهم. */
+  /* 🆕 b241 · اختيارُ الجملة (208 · ق١٦): **النصُّ المشترك نفسُه يصير مَنقراً** — الجملُ تُلفّ في متنه
+     (`sentenceText` · render_q.js)، والنقرُ يُسنَد إلى السؤال «المسلَّح» (`S.arm`): أوّلُ سؤال جملةٍ في الصفحة،
+     ونقرُ بطاقةِ غيره يسلّحها. ⚠️ ولفٌّ تعذّر (النصُّ تغيّر بعد تقسيمه) ⇒ النصُّ كما هو، والجملُ قائمةٌ في البطاقة. */
+  const sq = qs.filter(q => q.kind === 'sentence');
+  if(!sq.some(q => q.id === S.arm)) S.arm = sq[0]?.id ?? null;
+  const sntHtml = sq.length && pg?.body
+    ? sentenceText(pg.body, sq[0].options, A.get(S.arm)?.o ?? null) : null;
+  const sntMap = sntHtml ? sq[0].options : null;   // نصُّ الجملة بموضعها — للمطابقة مع السؤال المسلَّح
+
   const pgHtml = !pg ? '' : `
     ${isAudio ? `<div class="psg-audio">${pgMedia(pg)}</div>` : ''}
     <div class="card" style="padding:16px">
       ${pg.title?`<div class="psg-t" dir="auto">${esc(pg.title)}</div>`:''}
       ${isAudio ? '' : pgMedia(pg)}
-      ${pg.body?`<div class="psg" dir="auto">${fmt(pg.body)}</div>`:''}
+      ${pg.body?`<div class="psg${sntHtml ? ' snt-on' : ''}" dir="auto">${sntHtml ?? fmt(pg.body)}</div>`:''}
     </div>`;
 
   let seen = null;                       // آخرُ عنوان قسمٍ كُتب في هذه الصفحة
@@ -567,7 +576,7 @@ function renderPage(){
     seen = q.section || seen;
 
         return `${sec}
-      <div class="card qcard" id="q${q.id}" data-q="${q.id}">
+      <div class="card qcard${q.kind === 'sentence' && sq.length > 1 && q.id === S.arm ? ' armed' : ''}" id="q${q.id}" data-q="${q.id}">
         <div class="qnum" dir="auto">${T.q(N.get(q.id))}${T.sep}${kindLabel(q.kind, EN)}</div>
         ${media(q)}
         ${qAudio?`<audio controls preload="metadata" src="${esc(qAudio)}"
@@ -610,6 +619,47 @@ function renderPage(){
 
   if(splitable) wireSplit();
 
+  /* 🆕 b241 · لفٌّ تعذّر ⇒ القائمةُ الاحتياطيّة في بطاقات الجمل (رأسُ `sentenceText`) */
+  if(sq.length && !sntHtml) app.querySelectorAll('.snt-list').forEach(l => { l.hidden = false; });
+
+  /* ── 🆕 b241 · نقرُ الجملة في النصّ — يُسنَد إلى السؤال المسلَّح ──
+     🔑 **والمطابقةُ بنصّ الجملة لا بموضعها:** الجملُ الملفوفةُ جملُ السؤال الأوّل، وسؤالٌ ثانٍ على النصّ نفسِه
+        يُطابَق بها نصّاً — فلا يلزم تقسيمٌ واحد. وجملةٌ لا مقابلَ لها فيه لا تُسنَد (لا يُخمَّن له جواب).
+     ♿ والجملةُ زرٌّ بدوره وتبويبه: Enter والمسافة تختارانها كالنقر. */
+  const sntOf = (q, i) => {
+    const t = String(sntMap?.[i]?.body || '').trim();
+    return (q?.options || []).find(o => String(o.body || '').trim() === t) || null;
+  };
+  const paintSnt = () => {
+    const q = sq.find(z => z.id === S.arm), a = A.get(S.arm);
+    app.querySelectorAll('.psg .snt').forEach(s => {
+      const o = sntOf(q, +s.dataset.s);
+      s.classList.toggle('sel', !!o && !!a && a.o === o.id);
+    });
+    app.querySelectorAll('.qcard').forEach(c =>
+      c.classList.toggle('armed', sq.length > 1 && +c.dataset.q === S.arm));
+  };
+  const pickSnt = span => {
+    const q = sq.find(z => z.id === S.arm), a = A.get(S.arm);
+    const o = sntOf(q, +span.dataset.s);
+    if(!q || !a || !o) return;
+    credit(q.id);
+    if(a.o !== null && a.o !== o.id) a.chg++;
+    a.o = o.id;
+    const card = app.querySelector(`.qcard[data-q="${q.id}"]`);
+    const pick = card?.querySelector('.snt-pick');
+    if(pick){ pick.innerHTML = fmt(o.body); pick.dir = dirOf(o.body); pick.classList.add('on'); }
+    card?.querySelectorAll('.snt-list .opt').forEach(x => x.classList.toggle('sel', +x.dataset.o === o.id));
+    paintSnt();
+    syncWarn();
+  };
+  /* ⚠️ على النصّ نفسِه لا على `#app`: `#app` باقٍ بين الصفحات، ومستمعٌ يُضاف إليه في كلّ رسمٍ يتكاثر */
+  app.querySelector('.psg.snt-on')?.addEventListener('keydown', e => {
+    const s = e.target.closest?.('.snt');
+    if(!s || (e.key !== 'Enter' && e.key !== ' ')) return;
+    e.preventDefault(); pickSnt(s);
+  });
+
   /* ── التفويض: مستمعٌ واحد للصفحة كلها ──
      صارت الصفحة تحمل عشرات الأزرار؛ وربطُ مستمعٍ بكلٍّ منها عملٌ
      يتضاعف بلا داعٍ. والحدثُ يصعد من الزرّ إلى ما يحويه، فيكفي أن
@@ -641,6 +691,14 @@ function renderPage(){
   }));
 
    app.onclick = onAns(e => {
+    /* 🆕 b241 · جملةٌ في النصّ ⇒ للسؤال المسلَّح · وبطاقةُ سؤالِ جملةٍ تُنقر ⇒ تُسلَّح */
+    const s = e.target.closest('.psg .snt');
+    if(s){ pickSnt(s); return; }
+    const arm = e.target.closest('.qcard');
+    if(arm && +arm.dataset.q !== S.arm && sq.some(z => z.id === +arm.dataset.q)){
+      S.arm = +arm.dataset.q; paintSnt();
+    }
+
     const b = e.target.closest('.opt'); if(!b) return;
     const card = b.closest('.qcard'), qid = +card.dataset.q;
     const a = A.get(qid), v = +b.dataset.o;
@@ -662,6 +720,13 @@ function renderPage(){
     a.o = v;
     card.querySelectorAll('.opt').forEach(x =>
       x.classList.toggle('sel', +x.dataset.o === v));
+    /* 🆕 b241 · والقائمةُ الاحتياطيّة لاختيار الجملة تكتب سطرَ «المختارة» كالنقر في النصّ */
+    if(a.kind === 'sentence'){
+      const o = (qs.find(z => z.id === qid)?.options || []).find(x => x.id === v);
+      const pick = card.querySelector('.snt-pick');
+      if(o && pick){ pick.innerHTML = fmt(o.body); pick.dir = dirOf(o.body); pick.classList.add('on'); }
+      paintSnt();
+    }
   });
 
     app.oninput = onAns(e => {
@@ -686,7 +751,7 @@ function renderPage(){
   let warned = false;
   const blanks = () => qs.filter(q => {
     const a = A.get(q.id);
-        return a.kind==='mcq' ? a.o === null
+        return (a.kind==='mcq' || a.kind==='sentence') ? a.o === null     // 🆕 b241
          : a.kind==='msq' ? a.os.length === 0
          : a.kind==='gap' ? a.txt.every(v => !v.trim())
          /* 114 · و«إكمال من قائمة» كالمزاوجة: كائنٌ فارغ ⇒ لم يُسنَد شيء */
@@ -742,7 +807,8 @@ async function finish(auto){
   app.innerHTML = `<div class="status">${esc(PT().marking)}</div>`; bar.innerHTML = "";
 
     const payload = S.ans.map(a =>
-      a.kind==='mcq' ? { q:a.q, o:a.o,   sec:a.sec, chg:a.chg }
+      (a.kind==='mcq' || a.kind==='sentence')                          // 🆕 b241 · الجملةُ خيارٌ كالاختيار
+                     ? { q:a.q, o:a.o,   sec:a.sec, chg:a.chg }
     : a.kind==='msq' ? { q:a.q, os:a.os, sec:a.sec, chg:a.chg }
     : a.kind==='gap' ? { q:a.q, txt:a.txt.map(v=>v.trim()), sec:a.sec, chg:a.chg }
     : (a.kind==='matching' || a.kind==='cloze')
@@ -898,6 +964,15 @@ function renderResult(){
                 ${hit ? '' : `<span class="jd-dx">الصواب: ${fmt(k2 || '—')}</span>`}
               </div></div>`;
           }).join("")}</div>`
+      /* 🆕 b241 · اختيارُ الجملة (208) — الجملتان بنصّهما بلا حرف: الجملةُ تُعرف بنصّها.
+         والصوابُ من موضعيه (`correct` لجملةٍ واحدة · `correct_ids` لأكثر)، و«الصحيحة» تتّسع لجملتين. */
+      : x.kind==='sentence'
+      ? (() => {
+          const ks = (x.correct_ids?.length ? x.correct_ids : [x.correct]).map(opt).filter(Boolean);
+          return `<div class="line">إجابتك: ${c ? `<b class="snt-q"><bdi>${fmt(c.body)}</bdi></b>` : '<b>— لم تُجب —</b>'}</div>
+            ${x.is_correct ? '' : `<div class="line">الصحيحة: ${ks.length
+              ? ks.map(k => `<b class="snt-q"><bdi>${fmt(k.body)}</bdi></b>`).join(' · ') : '<b>—</b>'}</div>`}`;
+        })()
       : x.kind==='gap'
       ? `<div class="line" dir="auto">إجابتك: <b dir="auto">${
              esc(joinList((x.given||[]).filter(v=>v.trim()), '  ·  ')) || '— لم تُجب —'}</b></div>

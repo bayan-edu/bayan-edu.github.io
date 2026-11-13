@@ -10,6 +10,7 @@ export const KIND_LABEL = {
   gap:  'إكمال الناقص',
   cloze:'إكمال من قائمة',
   matching:'المزاوجة',
+  sentence:'اختيار الجملة',          // 🆕 b241 · 208
   essay:'مقالي قصير'
 };
 
@@ -35,6 +36,7 @@ export const KIND_LABEL_EN = {
   gap:  'Complete the missing word',
   cloze:'Complete from the list',
   matching:'Matching',
+  sentence:'Choose the sentence',
   essay:'Short written answer'
 };
 
@@ -52,6 +54,8 @@ const T_AR = {
   slotX:  n => `إزالة مقابل البند ${AR(n)}`,
   gapSR:  n => `الفراغ ${AR(n)}`,
   essay:  'السلسلة السببية كاملة…',
+  snt:    'تُختار الجملة بالضغط عليها في النص',
+  sntNone:'لا جملة مختارة بعد',
   num:    AR
 };
 
@@ -64,6 +68,8 @@ const T_EN = {
   slotX:  n => `Remove the match for item ${n}`,
   gapSR:  n => `Gap ${n}`,
   essay:  'Write your answer in full…',
+  snt:    'Tap the sentence in the passage',
+  sntNone:'No sentence chosen yet',
   num:    String
 };
 
@@ -152,12 +158,50 @@ function clozeUnit(q, pairs = {}, ro = false, en = false){
     </div>`;
 }
 
+/* ── 🆕 b241 · اختيارُ الجملة (208 · ق١٦) ─────────────────────────
+   🔑 **الخياراتُ جملُ النصّ نفسُه بترتيبه** — فيُنقر النصُّ المشترك في موضعه لا قائمةٌ تُكرّره
+      (اختيارُ المالك: «النقرُ في النصّ»). وهذه تلفّ الجملَ في المتن **بالبحث المتتابع**: كلُّ جملةٍ
+      تُطلب بعد سابقتها، وما بينهما (مسافةٌ · سطرٌ · فقرة) يُرسم كما هو — فيبقى تنسيقُ النصّ وفقراتُه.
+   ⚠️ **وجملةٌ لا تُوجد ⇒ `null`**: النصُّ تغيّر بعد تقسيمه (وحارسُ النشر يمنعه — 208). فيرسم المستدعي
+      الجملَ قائمةً في البطاقة: فشلٌ يُنقص ولا يحجب.
+   📌 و`data-o` معرّفُ جملة السؤال الأوّل في الصفحة؛ وسؤالان على نصٍّ واحد يُطابَقان **بنصّ الجملة**
+      لا بموضعها (quiz.js) — فلا يلزم أن يكون تقسيمُهما واحداً. */
+export function sentenceText(body, options, chosen = null, ro = false){
+  const src = String(body || '');
+  let at = 0, out = '';
+  for(const [i, o] of (options || []).entries()){
+    const t = String(o.body || '');
+    const k = t ? src.indexOf(t, at) : -1;
+    if(k < 0) return null;
+    out += fmt(src.slice(at, k));
+    out += `<span class="snt${chosen === o.id ? ' sel' : ''}" data-s="${i}" data-o="${o.id}"${
+      ro ? '' : ' role="button" tabindex="0"'}>${fmt(t)}</span>`;
+    at = k + t.length;
+  }
+  return out + fmt(src.slice(at));
+}
+
 /* جسم البند: الخيارات أو الحقول أو المزاوجة أو المقالي.
    opts = { picked, values, pairs, ro, bank } */
 export function questionBody(q, opts = {}){
   const { picked = () => false, values = [], ro = false, en = false } = opts;
   const multi = q.kind === 'msq';
   const T = TX(en);
+
+  /* 🆕 b241 · اختيارُ الجملة — البطاقةُ تقول الجملةَ المختارة، والنقرُ في النصّ المشترك (quiz.js).
+     والقائمةُ تحتها مخفيّة **احتياطاً**: تظهر حين يتعذّر لفُّ الجمل في النصّ (`sentenceText` ⇒ null)،
+     أو حيث لا نصَّ مشتركاً معروضاً (معاينةُ المحرّر · `list: true`). وبلا حروف: الجملةُ تُعرف بنصّها. */
+  if(q.kind === 'sentence'){
+    const cur = (q.options || []).find(o => picked(o));
+    return `<div class="q-hint">${esc(T.snt)}</div>
+      <div class="snt-pick${cur ? ' on' : ''}" dir="${dirOf(cur?.body || '')}">${
+        cur ? fmt(cur.body) : esc(T.sntNone)}</div>
+      <div class="opts snt-list"${opts.list ? '' : ' hidden'}>${(q.options||[]).map((o, j) => `
+        <button class="opt ${picked(o) ? 'sel' : ''}" data-o="${o.id}" data-pvo="${j}"
+                dir="${dirOf(o.body)}" style="text-align:start" ${ro ? 'disabled' : ''}>
+          <span style="flex:1">${fmt(o.body)}</span>
+        </button>`).join("")}</div>`;
+  }
 
   if(q.kind === 'mcq' || multi)
     return `${multi ? `<div class="q-hint">${esc(T.msq)}</div>` : ''}

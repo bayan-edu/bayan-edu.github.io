@@ -522,6 +522,16 @@ function qCard(q){
             gapCount(q.body||'') ? czLive(q)
                                  : '<span class="eq-hint">الجملة وفراغاتها تُكتب أعلاه</span>'}</div>
         </div>
+      ` : q.kind === 'sentence' ? `
+
+        <div class="eq-hint" style="display:block;margin-bottom:9px;line-height:1.85">
+          الجمل شرائح من النص المشترك بعينه، فلا تُحرَّر هنا: تُقسَّم آلياً بالنقطة والاستفهام والتعجّب،
+          ويُدمج ما انقسم خطأً ويُفصل ما اجتمع. وصحيحة واحدة أو أكثر، والكود للخاطئة وحدها.</div>
+        <div id="sntbox">${sntFields(q, locked, dxSelect)}</div>
+
+        <label class="fl" style="margin-top:20px">شرح الخطأ — يراه الطالب بعد التسليم *</label>
+        <textarea id="qe" placeholder="لماذا هذه الجملة تدلّ، وما الذي يُغري بغيرها؟"
+          ${locked?'disabled':''}>${esc(q.explanation||'')}</textarea>
       ` : q.kind === 'matching' ? `
 
         <div id="mtbox">${matchFields(q, locked)}</div>
@@ -816,6 +826,129 @@ function passageBar(q, locked){
     ${p.body ? `<div class="psg" dir="auto" style="max-height:160px;margin-top:9px">
       ${fmt((p.body||'').slice(0,700))}${(p.body||'').length>700?'…':''}</div>` : ''}
   </div>`;
+}
+
+/* ═══════════ 🆕 b241 · اختيارُ الجملة (208 · ق١٦) ═══════════
+
+   🔑 **الجملُ شرائحُ من متن النصّ المشترك بعينه** (`slice` لا كتابة) — فتطابقه حرفاً، وهو شرطُ `save_question`
+      وحارسِ النشر (بلا مسافات) وشرطُ لفّها في النصّ عند الطالب (`sentenceText` · بالبحث المتتابع). ⇒ لا حقلَ
+      يُكتب فيه نصُّ جملة: التقسيمُ آليّ، والتصحيحُ دمجٌ وفصلٌ بنقرة، وكلاهما شرائحُ من الشرائح.
+   🔑 **والتقسيمُ بالنقطة والاستفهام والتعجّب** (ومعها «؟» و«…») **إلا ثلاثة**، قِيست على نصوص المشروع:
+        حوارٌ يكمل بحرفٍ صغير («"Where?" he asked.») · اختصارٌ معروف (Mr. · Dr. · e.g. · a.m.) ·
+        ورقمٌ عشريّ (3.5 — لا مسافةَ بعد النقطة فلا تُعدّ حدّاً أصلاً).
+      وما فات القاعدةَ يصحّحه المؤلّف — والقاعدةُ تُخطئ نادراً لا أبداً. */
+const SNT_END  = /[.!?؟…]+["'”’»)\]]*(?=\s|$)/g;
+const SNT_ABBR = /(?:^|[\s("'])(?:Mr|Mrs|Ms|Dr|St|Jr|Sr|Prof|vs|etc|No|e\.g|i\.e|a\.m|p\.m|U\.S|U\.K)\.$/i;
+
+export function splitSentences(text){
+  const s = String(text || ''), out = [];
+  let start = 0, m;
+  SNT_END.lastIndex = 0;
+  while((m = SNT_END.exec(s))){
+    const end = m.index + m[0].length;
+    if(SNT_ABBR.test(s.slice(start, m.index + 1))) continue;           // اختصار ⇒ الجملةُ ماضية
+    const next = s.slice(end).match(/^\s*(\S)/);
+    if(next && /[a-z]/.test(next[1])) continue;                         // حوارٌ يكمل بحرفٍ صغير
+    const piece = s.slice(start, end).trim();
+    if(piece) out.push(piece);
+    start = end;
+  }
+  const rest = s.slice(start).trim();
+  if(rest) out.push(rest);
+  return out;
+}
+
+/* مواضعُ الجمل في المتن بالبحث المتتابع — `null` إن غابت واحدة (تغيّر النصُّ بعد تقسيمه) */
+function sntSpans(text, list){
+  const s = String(text || ''); let at = 0;
+  const out = [];
+  for(const o of list){
+    const k = s.indexOf(o.body, at);
+    if(!o.body || k < 0) return null;
+    out.push({ a: k, b: k + o.body.length });
+    at = k + o.body.length;
+  }
+  return out;
+}
+
+const pgBody = q => ((Z.passages || []).find(x => String(x.id) === String(q.passage_id)) || {}).body || '';
+
+function sntFields(q, locked, dxSelect){
+  const body = pgBody(q), list = q.options || [];
+  if(!q.passage_id) return `<div class="warnbox">يُضاف نص مشترك أولاً — جمله هي خيارات هذا السؤال.</div>`;
+  if(!body.trim())  return `<div class="warnbox">النص المشترك بلا متن — اختيار الجملة يحتاج نصاً مقروءاً.</div>`;
+  if(!list.length)  return locked ? '' : `<button class="btn primary" id="sntsplit">✂ تقسيم النص إلى جمل</button>`;
+
+  const drift = !sntSpans(body, list);
+  return `
+    ${drift ? `<div class="warnbox">تغيّر النص المشترك بعد تقسيمه — فلا يُحفظ السؤال حتى يُعاد التقسيم.</div>` : ''}
+    <div class="eq-snts">${list.map((o, i) => `
+      <div class="eq-snt ${o.correct ? 'ok' : ''}" data-i="${i}">
+        <span class="key">${AR(i + 1)}</span>
+        <span class="eq-snt-t" dir="${dirOf(o.body)}">${fmt(o.body)}</span>
+        <span class="eq-snt-c">
+          <label class="eq-c"><input type="checkbox" class="eq-sc" data-o="${i}"
+            ${o.correct ? 'checked' : ''} ${locked ? 'disabled' : ''}> صحيحة</label>
+          ${o.correct ? '' : dxSelect(o.dx, i)}
+          ${locked ? '' : `${i < list.length - 1
+              ? `<button class="it-b" data-merge="${i}" title="دمجها مع التي بعدها">⤓ دمج</button>` : ''}
+            <button class="it-b" data-cut="${i}" title="فصلها جملتين">✂ فصل</button>`}
+        </span>
+      </div>`).join('')}</div>
+    ${locked ? '' : `<button class="btn ghost" id="sntsplit" style="margin-top:10px">↻ إعادة التقسيم من النص</button>`}`;
+}
+
+/* أفعالُ القائمة — كلُّها تُعيد رسمَ البطاقة (`repaint`) ولا تكتب نصّاً لم يكن في المتن */
+function wireSnt(q, main){
+  const mark = () => { dirty = true; };              // كأختها في `wire` — محلّيّةٌ هناك
+  const split = main.querySelector('#sntsplit');
+  if(split) split.onclick = () => {
+    if((q.options || []).some(o => o.correct || o.dx)
+       && !confirm('إعادة التقسيم تمحو الصحيحة والأكواد — أتمضي؟')) return;
+    q.options = splitSentences(pgBody(q)).map(t => ({ label: null, body: t, correct: false, dx: null }));
+    if(q.options.length < 3) toast('في النص أقلّ من ثلاث جمل — والسؤال يحتاج ثلاثاً على الأقل');
+    mark(); repaint(q);
+  };
+
+  main.querySelectorAll('.eq-sc').forEach(el => el.onchange = () => {
+    const o = q.options[+el.dataset.o];
+    o.correct = el.checked; o.dx = null;            // الكودُ جوابُ «لماذا تُغري وهي خاطئة؟» — يسقط مع الصواب
+    mark(); repaint(q);
+  });
+
+  main.querySelectorAll('[data-merge]').forEach(el => el.onclick = () => {
+    const i = +el.dataset.merge, sp = sntSpans(pgBody(q), q.options);
+    if(!sp){ toast('تغيّر النص بعد تقسيمه — يُعاد التقسيم أولاً'); return; }
+    const t = pgBody(q).slice(sp[i].a, sp[i + 1].b);       // بما بينهما من مسافةٍ أو سطر — شريحةٌ من المتن
+    q.options.splice(i, 2, { label: null, body: t, correct: false, dx: null });
+    mark(); repaint(q);
+  });
+
+  /* الفصلُ موضعُه المؤشّر: الجملةُ تُعرض في حقلٍ للقراءة، ويُوضع المؤشّر حيث تنقسم */
+  main.querySelectorAll('[data-cut]').forEach(el => el.onclick = () => {
+    const i = +el.dataset.cut, row = el.closest('.eq-snt'), o = q.options[i];
+    row.innerHTML = `<span class="key">${AR(i + 1)}</span>
+      <div style="flex:1">
+        <textarea class="eq-cut" readonly dir="${dirOf(o.body)}" rows="2">${esc(o.body)}</textarea>
+        <div class="eq-hint" style="display:block">يُوضع المؤشّر حيث تنقسم الجملة</div>
+        <div class="nav" style="margin:6px 0 0">
+          <button class="btn primary" data-cutgo>فصل هنا</button>
+          <button class="btn ghost" data-cutno>إلغاء</button></div>
+      </div>`;
+    const ta = row.querySelector('.eq-cut');
+    ta.focus(); ta.setSelectionRange(Math.floor(o.body.length / 2), Math.floor(o.body.length / 2));
+    row.querySelector('[data-cutno]').onclick = () => repaint(q);
+    row.querySelector('[data-cutgo]').onclick = () => {
+      const p = ta.selectionStart ?? 0;
+      const a = o.body.slice(0, p).trimEnd(), b = o.body.slice(p).trimStart();
+      if(!a || !b){ toast('المؤشّر في طرف الجملة — يُوضع في وسطها'); return; }
+      q.options.splice(i, 1, { label: null, body: a, correct: false, dx: null },
+                             { label: null, body: b, correct: false, dx: null });
+      mark(); repaint(q);
+    };
+  });
+
+  /* والكودُ للخاطئة — بحقل `.eq-dx` نفسِه في الاختيار، فيلتقطه مستمعُه القائم في `wire` */
 }
 
 /* ═══════════ الخانة — النسخ المكافئة ═══════════
@@ -1403,6 +1536,8 @@ function wire(q){
                       : "السؤال يحتاج خيارين على الأقل"); return; }
     q.options.splice(+el.dataset.rm, 1); mark(); repaint(q);
   });
+
+  if(q.kind === 'sentence') wireSnt(q, main);        // 🆕 b241 · 208
 
   const ao = main.querySelector("#addo");
   if(ao) ao.onclick = () => {
@@ -2207,6 +2342,8 @@ async function addQuestion(kind){
     matching:{ id:null, kind:'matching', body:'', answered:0, explanation:'',
              options: [0,1,2].map(() => ({ label:null, body:'', correct:false, dx:null })),
              accept:{ pairs:{} }, wrong:{}, bank:[] },   // 112 · بالهُويّة
+    /* 🆕 b241 · 208 · الجملُ تُولَّد من النصّ المشترك بزرّ «تقسيم النص» — فتبدأ فارغة */
+    sentence:{ id:null, kind:'sentence', body:'', answered:0, explanation:'', options:[] },
     essay: { id:null, kind:'essay', body:'', answered:0, model:'', options:[] }
   };
   Z.questions.push(blank[kind] || blank.mcq);
@@ -2412,7 +2549,7 @@ function preview(){
                     style="width:100%;margin-bottom:12px"></audio>`:''}
         ${v?`<iframe class="media-v" src="${esc(v)}" allowfullscreen></iframe>`:''}`; })()}
       ${questionText(q, [], false, pvEn)}
-      ${questionBody(q, { bank: q.bank, pairs: [], en: pvEn })}
+      ${questionBody(q, { bank: q.bank, pairs: [], en: pvEn, list: true })}
     </div>
     </div>
 
@@ -3447,6 +3584,7 @@ function kindChips(){
        + chip('matching', 'مزاوجة',          r.match || 0)
        + chip('gap',      'إكمال ناقص',      kindStat('gap').n)
        + chip('cloze',    'إكمال من قائمة',  r.cloze || 0)
+       + chip('sentence', 'اختيار الجملة',   r.sentence || 0)        // 🆕 b241 · 208
        + chip('essay',    'مقالي',           r.essay || 0);
 }
 
@@ -3723,7 +3861,7 @@ function nodes(idxs){
 
 const kIcon = k => k === 'essay' ? '✍️' : k === 'msq' ? '☑'
                  : k === 'matching' ? '⇄' : k === 'gap' ? '✎'
-                 : k === 'cloze' ? '⇢' : '◉';
+                 : k === 'cloze' ? '⇢' : k === 'sentence' ? '❝' : '◉';
 
 /* نصُّ الصفّ في الشريط — والقصُّ هنا سقفٌ للرسم لا حدٌّ لما يُرى: ما يُرى يحكمه عرضُ الصفّ ونقاطُ CSS.
    🔴 b212 · كان ٣٠ حرفاً في الخانة و٣٨ في السؤال، والحركاتُ تُعدّ أحرفاً ⇒ يُقطع النصّ قبل أن يمتلئ
@@ -3887,6 +4025,7 @@ function listHead(){
         <button data-k="gap"><i>✎</i><div><b>إكمال الناقص</b><span>يكتب الطالب الإجابة</span></div></button>
         <button data-k="cloze"><i>⇢</i><div><b>إكمال من قائمة</b><span>يختار من كلمات مُعطاة</span></div></button>
         <button data-k="matching"><i>⇄</i><div><b>المزاوجة</b><span>لكلّ بند درجة</span></div></button>
+        <button data-k="sentence"><i>❝</i><div><b>اختيار الجملة</b><span>ينقر الطالب جملةً في النصّ المشترك</span></div></button>
         <hr>
         <button data-k="essay"><i>¶</i><div><b>مقالي قصير</b><span>يصحّحه المعلّم</span></div></button>
       </div>

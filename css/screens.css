@@ -779,6 +779,28 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
 .psg{border-start-start-radius:0;border-end-start-radius:0}
 .psg-t{font-family:'Almarai';font-weight:800;font-size:var(--fs-meta);color:var(--accent);margin-bottom:8px}
 
+/* ── 🆕 b241 · اختيارُ الجملة (208 · ق١٦) — الجملةُ في النصّ زرٌّ ──
+   🔑 **بعائلة `accent` وحدها:** جملتُها «اخترتَ / اضغط هنا»، كالخيار المختار (`.opt.sel`) سواءً — ولا `ok` قبل الحكم.
+   📐 والجملةُ لا تُؤطَّر: إطارٌ حول كلّ جملةٍ يقطع النصَّ قطعاً ويُثقل القراءة. خطٌّ منقّطٌ خافتٌ تحتها يقول «تُنقر»،
+      والمختارةُ تأخذ أرضيّةَ الخيار المختار وخطَّه. والتركيزُ بإطارٍ ظاهر — من يتنقّل بالمفاتيح يرى أين هو. */
+.psg.snt-on .snt{cursor:pointer;border-radius:5px;padding:1px 2px;
+  text-decoration:underline dotted color-mix(in srgb, var(--accent) 45%, transparent);
+  text-underline-offset:5px;transition:background .15s}
+.psg.snt-on .snt:hover{background:var(--accent-soft)}
+.psg.snt-on .snt:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.psg.snt-on .snt.sel{background:var(--accent-fill);text-decoration:underline solid var(--accent);text-decoration-thickness:2px}
+/* البطاقةُ تقول المختارة — محايدةً قبل الاختيار، وبحدّ الاختيار بعده */
+.snt-pick{padding:11px 14px;border-radius:11px;border:1px dashed var(--line-strong);background:var(--fill-soft);
+  color:var(--text-muted);font-size:var(--fs-read);line-height:1.8}
+.snt-pick.on{border:1px solid var(--accent);background:var(--accent-fill);color:var(--text)}
+.snt-list{margin-top:10px}
+/* ⚠️ `hidden` وحدها لا تُخفي هنا: `.opts` تكتب `display` فتغلب `display:none` الأصيلة — قِيس باللقطة
+   (الخاصّيّةُ `hidden` كانت صادقةً في الفحص والقائمةُ ظاهرةٌ على الشاشة) */
+.snt-list[hidden]{display:none}
+/* سؤالا جملةٍ في صفحة: المسلَّحُ يُرى — فالنقرُ في النصّ يُعرف لأيّهما */
+.qcard.armed{box-shadow:0 0 0 2px var(--accent)}
+.snt-q{font-weight:700}
+
 /* ═══ 🆕 b143 · الامتحان المقسوم — نصٌّ وأسئلةٌ جنباً إلى جنب ═══
 
    🔑 **البنيةُ واحدةٌ في العرضين**، و@media وحدها تقرّر أعمودان أم
@@ -1743,6 +1765,14 @@ html.pv-lock{overflow:hidden}
   background:var(--fill-soft);border:1px solid var(--line);
   border-radius:11px;padding:10px 13px;margin-bottom:9px}
 .eq-opt.ok{border-color:var(--ok-edge);background:var(--ok-soft)}
+/* 🆕 b241 · جملُ «اختيار الجملة» في المحرّر — كالخيار سواءً (والمفتاحُ بحدّ `ok` كمفتاح الخيار)، والنصُّ مقروءٌ لا حقلٌ:
+   الجملةُ شريحةٌ من المتن لا تُكتب (208). والأفعالُ تحتها في سطرٍ يلتفّ — والجملةُ الطويلة لا تُزاحَم. */
+.eq-snt{display:flex;align-items:flex-start;gap:9px;flex-wrap:wrap;background:var(--fill-soft);border:1px solid var(--line);
+  border-radius:11px;padding:10px 13px;margin-bottom:9px}
+.eq-snt.ok{border-color:var(--ok-edge);background:var(--ok-soft)}
+.eq-snt-t{flex:1 1 260px;font-size:var(--fs-ui);line-height:1.8}
+.eq-snt-c{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:1 1 100%;padding-inline-start:39px}
+.eq-cut{width:100%;font-size:var(--fs-ui);line-height:1.8}
 .eq-ob{flex:1 1 220px;width:auto;padding:10px 12px;font-size:var(--fs-ui)}
 .eq-c{display:flex;align-items:center;gap:5px;font-size:var(--fs-tag);color:var(--text-muted);
   white-space:nowrap;cursor:pointer;font-family:'Almarai';font-weight:700}
