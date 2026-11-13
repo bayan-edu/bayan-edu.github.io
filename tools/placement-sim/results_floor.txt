@@ -1,0 +1,48 @@
+﻿
+① fixed step: every fail moves down 3 bands, placed at the lowest band of the last station — entry centre R19
+ true band  placed (median)  placed range 10-90%  2+ too high  lowest band seen (median)  no passage passed  stations
+        R3               R9                R9–R9         1.00                        R12               0.96       3.0
+        R6               R9               R9–R12         1.00                        R12               0.85       3.0
+        R9              R12               R9–R15         0.62                        R12               0.38       3.0
+       R12              R15              R12–R18         0.81                        R15               0.03       3.0
+       R15              R18              R15–R18         0.62                        R18               0.00       3.0
+
+② routed by the estimate, prior centred on the entry (sd 1.6 logits) — the proposal as simulated — entry centre R19
+ true band  placed (median)  placed range 10-90%  2+ too high  lowest band seen (median)  no passage passed  stations
+        R3               R5                R4–R7         0.70                         R6               0.03       3.0
+        R6               R7                R6–R9         0.49                         R7               0.00       3.0
+        R9              R10               R8–R12         0.36                        R10               0.00       3.0
+       R12              R13              R11–R14         0.23                        R12               0.00       3.0
+       R15              R15              R14–R17         0.15                        R14               0.00       3.0
+
+③ routed by the estimate, prior = the tier (R13, sd 3.0) — no floor rule — entry centre R19
+ true band  placed (median)  placed range 10-90%  2+ too high  lowest band seen (median)  no passage passed  stations
+        R3               R3                R1–R5         0.22                         R2               0.00       3.0
+        R6               R6                R4–R9         0.24                         R5               0.00       3.0
+        R9               R9               R7–R11         0.21                         R6               0.00       3.0
+       R12              R12              R10–R14         0.14                         R9               0.00       3.0
+       R15              R15              R13–R16         0.08                        R13               0.00       3.0
+
+④ as ③ + floor rule: no end before a passage is passed or R1 is reached (max 5 stations) — entry centre R19
+ true band  placed (median)  placed range 10-90%  2+ too high  lowest band seen (median)  no passage passed  stations
+        R3               R3                R1–R5         0.22                         R2               0.00       3.0
+        R6               R6                R4–R9         0.24                         R5               0.00       3.0
+        R9               R9               R7–R11         0.21                         R6               0.00       3.0
+       R12              R12              R10–R14         0.14                         R9               0.00       3.0
+       R15              R15              R13–R16         0.08                        R13               0.00       3.0
+
+⑤ as ④ + a broad first station (k-4, k, k+4) — entry centre R19
+ true band  placed (median)  placed range 10-90%  2+ too high  lowest band seen (median)  no passage passed  stations
+        R3               R3                R1–R6         0.25                         R3               0.00       3.0
+        R6               R6                R4–R8         0.22                         R4               0.00       3.0
+        R9               R9               R7–R11         0.19                         R6               0.00       3.0
+       R12              R12              R10–R14         0.14                        R10               0.00       3.0
+       R15              R15              R13–R17         0.11                        R13               0.00       3.0
+
+⑥ as ⑤ but entering at the tier centre R13 — entry centre R13
+ true band  placed (median)  placed range 10-90%  2+ too high  lowest band seen (median)  no passage passed  stations
+        R3               R3                R1–R5         0.20                         R2               0.00       3.0
+        R6               R6                R4–R8         0.15                         R4               0.00       3.0
+        R9               R9               R7–R11         0.14                         R7               0.00       3.0
+       R12              R12              R10–R14         0.12                         R9               0.00       3.0
+       R15              R15              R13–R17         0.10                         R9               0.00       3.0
