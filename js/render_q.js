@@ -11,6 +11,7 @@ export const KIND_LABEL = {
   cloze:'إكمال من قائمة',
   matching:'المزاوجة',
   sentence:'اختيار الجملة',          // 🆕 b241 · 208
+  judge:'حكم ودليله',                // 🆕 b242 · 209
   essay:'مقالي قصير'
 };
 
@@ -37,6 +38,7 @@ export const KIND_LABEL_EN = {
   cloze:'Complete from the list',
   matching:'Matching',
   sentence:'Choose the sentence',
+  judge:'Judgment and evidence',
   essay:'Short written answer'
 };
 
@@ -56,6 +58,7 @@ const T_AR = {
   essay:  'السلسلة السببية كاملة…',
   snt:    'تُختار الجملة بالضغط عليها في النص',
   sntNone:'لا جملة مختارة بعد',
+  jdB:    'والدليل: الجملة التي تدلّ على الحكم، بالضغط عليها في النص',
   num:    AR
 };
 
@@ -70,6 +73,7 @@ const T_EN = {
   essay:  'Write your answer in full…',
   snt:    'Tap the sentence in the passage',
   sntNone:'No sentence chosen yet',
+  jdB:    'Then tap the sentence in the passage that shows it',
   num:    String
 };
 
@@ -166,6 +170,12 @@ function clozeUnit(q, pairs = {}, ro = false, en = false){
       الجملَ قائمةً في البطاقة: فشلٌ يُنقص ولا يحجب.
    📌 و`data-o` معرّفُ جملة السؤال الأوّل في الصفحة؛ وسؤالان على نصٍّ واحد يُطابَقان **بنصّ الجملة**
       لا بموضعها (quiz.js) — فلا يلزم أن يكون تقسيمُهما واحداً. */
+/* 🆕 b242 · جملُ البند وأحكامُه بمفتاحها (209): في «حكمٌ ودليلُه» الأحكامُ `J…` والجملُ `S…` في خياراتٍ واحدة،
+   وفي «اختيار الجملة» الخياراتُ كلُّها جمل. موضعٌ واحد يفرّقهما — يقرؤه الطالبُ والمراجعةُ والمحرّر. */
+export const judgments   = q => (q?.options || []).filter(o => /^J/.test(o.k || ''));
+export const sentencesOf = q => q?.kind === 'judge'
+  ? (q.options || []).filter(o => /^S/.test(o.k || '')) : (q?.options || []);
+
 export function sentenceText(body, options, chosen = null, ro = false){
   const src = String(body || '');
   let at = 0, out = '';
@@ -191,6 +201,28 @@ export function questionBody(q, opts = {}){
   /* 🆕 b241 · اختيارُ الجملة — البطاقةُ تقول الجملةَ المختارة، والنقرُ في النصّ المشترك (quiz.js).
      والقائمةُ تحتها مخفيّة **احتياطاً**: تظهر حين يتعذّر لفُّ الجمل في النصّ (`sentenceText` ⇒ null)،
      أو حيث لا نصَّ مشتركاً معروضاً (معاينةُ المحرّر · `list: true`). وبلا حروف: الجملةُ تُعرف بنصّها. */
+  /* 🆕 b242 · حكمٌ ودليلُه (209) — مرحلتان في بطاقةٍ واحدة: الأحكامُ خياراتٌ بحروفها (`data-j`)، ثمّ الدليلُ
+     جملةٌ في النصّ كاختيار الجملة سواءً. والأحكامُ `J…` والجملُ `S…` بمفتاحها (`k`) — فلا يُخلط بينهما. */
+  if(q.kind === 'judge'){
+    const js = judgments(q), ss = sentencesOf(q);
+    const cur = ss.find(o => picked(o));
+    const pj  = opts.pickedJ || (() => false);
+    return `<div class="opts jd-a">${js.map((o, j) => `
+        <button class="opt ${pj(o) ? 'sel' : ''}" data-j="${o.id}" data-pvo="${j}"
+                dir="${dirOf(o.body)}" style="text-align:start" ${ro ? 'disabled' : ''}>
+          <span class="key">${esc(optLabel(o, j))}</span>
+          <span style="flex:1">${fmt(o.body)}</span>
+        </button>`).join("")}</div>
+      <div class="q-hint" style="margin-top:12px">${esc(T.jdB)}</div>
+      <div class="snt-pick${cur ? ' on' : ''}" dir="${dirOf(cur?.body || '')}">${
+        cur ? fmt(cur.body) : esc(T.sntNone)}</div>
+      <div class="opts snt-list"${opts.list ? '' : ' hidden'}>${ss.map((o, j) => `
+        <button class="opt ${picked(o) ? 'sel' : ''}" data-o="${o.id}"
+                dir="${dirOf(o.body)}" style="text-align:start" ${ro ? 'disabled' : ''}>
+          <span style="flex:1">${fmt(o.body)}</span>
+        </button>`).join("")}</div>`;
+  }
+
   if(q.kind === 'sentence'){
     const cur = (q.options || []).find(o => picked(o));
     return `<div class="q-hint">${esc(T.snt)}</div>

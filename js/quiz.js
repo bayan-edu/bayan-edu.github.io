@@ -60,7 +60,7 @@ import { loadList, loadLessons, isLibrary } from './student.js';
 /* `kindLabel` لا `KIND_LABEL`: اسمُ النمط صار يتبع لسانَ الورقة
    (render_q.js · b142)، والخريطةُ الخام لم يبقَ لها قارئٌ هنا. */
 import { questionText, questionBody, kindLabel, paperIsEnglish, gapCount,
-         bodyRead, sentenceText } from './render_q.js';
+         bodyRead, sentenceText, sentencesOf, judgments } from './render_q.js';
 import { wireMatching } from './match_dnd.js';
 
 /* مشتقّاتُ عرضٍ لا حالةَ محاولة — تُبنى كلُّها من S.quiz و S.ans عند
@@ -186,7 +186,7 @@ export async function startQuiz(meta){
   S.passages = {};
   (data.passages||[]).forEach(pg => S.passages[pg.id] = pg);
   S.itemId = meta.item_id || null;
-     S.ans = data.questions.map(q=>({ q:q.id, kind:q.kind, o:null, os:[],
+     S.ans = data.questions.map(q=>({ q:q.id, kind:q.kind, o:null, os:[], j:null,   // 🆕 b242 · j: الحكم (209)
                                    txt:Array(gapCount(q.body)||1).fill(""),
                                    pairs:{},                                     // 112 · { مفتاح البند: مفتاح المقابل }
                                    essay:"", sec:0, chg:0 }));
@@ -342,7 +342,7 @@ function mountStation(data){
   S.passages = {};
   (data.passages||[]).forEach(pg => S.passages[pg.id] = pg);
   S.itemId = null;
-  S.ans = data.questions.map(q=>({ q:q.id, kind:q.kind, o:null, os:[],
+  S.ans = data.questions.map(q=>({ q:q.id, kind:q.kind, o:null, os:[], j:null,
                                    txt:Array(q.gaps||1).fill(""),
                                    pairs:{},                                     // 112 · { مفتاح البند: مفتاح المقابل }
                                    essay:"", sec:0, chg:0 }));
@@ -548,11 +548,12 @@ function renderPage(){
   /* 🆕 b241 · اختيارُ الجملة (208 · ق١٦): **النصُّ المشترك نفسُه يصير مَنقراً** — الجملُ تُلفّ في متنه
      (`sentenceText` · render_q.js)، والنقرُ يُسنَد إلى السؤال «المسلَّح» (`S.arm`): أوّلُ سؤال جملةٍ في الصفحة،
      ونقرُ بطاقةِ غيره يسلّحها. ⚠️ ولفٌّ تعذّر (النصُّ تغيّر بعد تقسيمه) ⇒ النصُّ كما هو، والجملُ قائمةٌ في البطاقة. */
-  const sq = qs.filter(q => q.kind === 'sentence');
+  /* 🆕 b242 · و«حكمٌ ودليلُه» (209) يشارك اختيارَ الجملة نقرَه: دليلُه جملةٌ في النصّ نفسِه — وجملُه `S…` من خياراته (`sentencesOf`) */
+  const sq = qs.filter(q => q.kind === 'sentence' || q.kind === 'judge');
   if(!sq.some(q => q.id === S.arm)) S.arm = sq[0]?.id ?? null;
   const sntHtml = sq.length && pg?.body
-    ? sentenceText(pg.body, sq[0].options, A.get(S.arm)?.o ?? null) : null;
-  const sntMap = sntHtml ? sq[0].options : null;   // نصُّ الجملة بموضعها — للمطابقة مع السؤال المسلَّح
+    ? sentenceText(pg.body, sentencesOf(sq[0]), A.get(S.arm)?.o ?? null) : null;
+  const sntMap = sntHtml ? sentencesOf(sq[0]) : null;   // نصُّ الجملة بموضعها — للمطابقة مع السؤال المسلَّح
 
   const pgHtml = !pg ? '' : `
     ${isAudio ? `<div class="psg-audio">${pgMedia(pg)}</div>` : ''}
@@ -569,14 +570,14 @@ function renderPage(){
     const picked = o => multi ? a.os.includes(o.id) : a.o === o.id;
 
        const body = questionBody(q, { picked, essay:a.essay, values:a.txt,
-                                      pairs:a.pairs, en:EN });
+                                      pairs:a.pairs, en:EN, pickedJ: o => a.j === o.id });
 
     const sec = (q.section && q.section !== seen)
       ? `<div class="q-sec" dir="auto">${esc(q.section)}</div>` : '';
     seen = q.section || seen;
 
         return `${sec}
-      <div class="card qcard${q.kind === 'sentence' && sq.length > 1 && q.id === S.arm ? ' armed' : ''}" id="q${q.id}" data-q="${q.id}">
+      <div class="card qcard${sq.length > 1 && q.id === S.arm ? ' armed' : ''}" id="q${q.id}" data-q="${q.id}">
         <div class="qnum" dir="auto">${T.q(N.get(q.id))}${T.sep}${kindLabel(q.kind, EN)}</div>
         ${media(q)}
         ${qAudio?`<audio controls preload="metadata" src="${esc(qAudio)}"
@@ -628,7 +629,7 @@ function renderPage(){
      ♿ والجملةُ زرٌّ بدوره وتبويبه: Enter والمسافة تختارانها كالنقر. */
   const sntOf = (q, i) => {
     const t = String(sntMap?.[i]?.body || '').trim();
-    return (q?.options || []).find(o => String(o.body || '').trim() === t) || null;
+    return sentencesOf(q).find(o => String(o.body || '').trim() === t) || null;
   };
   const paintSnt = () => {
     const q = sq.find(z => z.id === S.arm), a = A.get(S.arm);
@@ -704,6 +705,26 @@ function renderPage(){
     const a = A.get(qid), v = +b.dataset.o;
     credit(qid);
 
+    /* 🆕 b242 · حكمٌ ودليلُه (209): زرُّ الحكم (`data-j`) يُسنَد إلى `a.j` ويُلوَّن بين الأحكام وحدها،
+       وقائمةُ الدليل الاحتياطيّة (`data-o`) تُسنَد إلى `a.o` وتُلوَّن بين الجمل وحدها — فلا يمحو أحدُهما الآخر */
+    if(a.kind === 'judge'){
+      if(b.dataset.j){
+        const jv = +b.dataset.j;
+        if(a.j !== null && a.j !== jv) a.chg++;
+        a.j = jv;
+        card.querySelectorAll('.jd-a .opt').forEach(x => x.classList.toggle('sel', +x.dataset.j === jv));
+      } else {
+        if(a.o !== null && a.o !== v) a.chg++;
+        a.o = v;
+        card.querySelectorAll('.snt-list .opt').forEach(x => x.classList.toggle('sel', +x.dataset.o === v));
+        const o = sentencesOf(qs.find(z => z.id === qid)).find(x => x.id === v);
+        const pick = card.querySelector('.snt-pick');
+        if(o && pick){ pick.innerHTML = fmt(o.body); pick.dir = dirOf(o.body); pick.classList.add('on'); }
+        paintSnt();
+      }
+      return;
+    }
+
     if(a.kind === 'msq'){
       const j = a.os.indexOf(v);
       if(a.os.length) a.chg++;                 // تبديلٌ بعد أول اختيار = تغيير
@@ -752,6 +773,7 @@ function renderPage(){
   const blanks = () => qs.filter(q => {
     const a = A.get(q.id);
         return (a.kind==='mcq' || a.kind==='sentence') ? a.o === null     // 🆕 b241
+         : a.kind==='judge' ? (a.j === null || a.o === null)               // 🆕 b242 · نصفُ جوابٍ فراغٌ يُنبَّه عليه
          : a.kind==='msq' ? a.os.length === 0
          : a.kind==='gap' ? a.txt.every(v => !v.trim())
          /* 114 · و«إكمال من قائمة» كالمزاوجة: كائنٌ فارغ ⇒ لم يُسنَد شيء */
@@ -809,6 +831,7 @@ async function finish(auto){
     const payload = S.ans.map(a =>
       (a.kind==='mcq' || a.kind==='sentence')                          // 🆕 b241 · الجملةُ خيارٌ كالاختيار
                      ? { q:a.q, o:a.o,   sec:a.sec, chg:a.chg }
+    : a.kind==='judge' ? { q:a.q, j:a.j, o:a.o, sec:a.sec, chg:a.chg }   // 🆕 b242 · الحكمُ والدليل
     : a.kind==='msq' ? { q:a.q, os:a.os, sec:a.sec, chg:a.chg }
     : a.kind==='gap' ? { q:a.q, txt:a.txt.map(v=>v.trim()), sec:a.sec, chg:a.chg }
     : (a.kind==='matching' || a.kind==='cloze')
@@ -966,6 +989,26 @@ function renderResult(){
           }).join("")}</div>`
       /* 🆕 b241 · اختيارُ الجملة (208) — الجملتان بنصّهما بلا حرف: الجملةُ تُعرف بنصّها.
          والصوابُ من موضعيه (`correct` لجملةٍ واحدة · `correct_ids` لأكثر)، و«الصحيحة» تتّسع لجملتين. */
+      /* 🆕 b242 · حكمٌ ودليلُه (209) — الحكمُ والدليلُ كلٌّ بحكمه، ثمّ الدرجةُ من مقامها (٢ أو ١). والمفتاحُ بعد التسليم
+         كلُّه (`accept`): **ما يدعمه النصّ** أحكاماً بجملها — فيرى الطالبُ أنّ غيرَ حكمه قد يُقبل بدليله (لا «رأيَ صحيحٌ سرّيّ»). */
+      : x.kind==='judge'
+      ? (() => {
+          const q   = S.quiz.questions.find(z => z.id === x.q) || {};
+          const byK = k => (q.options || []).find(o => o.k === k);
+          const g = x.given || {}, acc = x.accept || {}, map = acc.map || {};
+          const jo = opt(g.j), so = opt(g.o);
+          const keyed = !!(jo && map[jo.k]);
+          const sup   = keyed && !!so && (map[jo.k] || []).includes(so.k);
+          const max   = acc.mode === 'two' ? 2 : 1;
+          return `<div class="line">حكمك: <b>${jo ? fmt(jo._l + ') ' + jo.body) : '— بلا اختيار —'}</b>${
+              jo ? ` <span class="jd-m">${keyed ? '✔' : '✗'}</span>` : ''}</div>
+            <div class="line">دليلك: ${so ? `<b class="snt-q"><bdi>${fmt(so.body)}</bdi></b>${
+              keyed ? ` <span class="jd-m">${sup ? '✔' : '✗'}</span>` : ''}` : '<b>— بلا اختيار —</b>'}</div>
+            <div class="line">الدرجة: <b>${AR(g.score ?? 0)} من ${AR(max)}</b></div>
+            ${x.is_correct ? '' : `<div class="line" style="margin-top:8px">ما يدعمه النص:</div>
+              ${Object.entries(map).map(([jk, ss]) => `<div class="line">${fmt(byK(jk)?.body || '')} — ${
+                (ss || []).map(sk => `<b class="snt-q"><bdi>${fmt(byK(sk)?.body || '')}</bdi></b>`).join(' · ')}</div>`).join('')}`}`;
+        })()
       : x.kind==='sentence'
       ? (() => {
           const ks = (x.correct_ids?.length ? x.correct_ids : [x.correct]).map(opt).filter(Boolean);

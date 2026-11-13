@@ -522,6 +522,16 @@ function qCard(q){
             gapCount(q.body||'') ? czLive(q)
                                  : '<span class="eq-hint">الجملة وفراغاتها تُكتب أعلاه</span>'}</div>
         </div>
+      ` : q.kind === 'judge' ? `
+
+        <div class="eq-hint" style="display:block;margin-bottom:9px;line-height:1.85">
+          حكمٌ يختاره الطالب، ثمّ جملةٌ من النص تدلّ عليه. والمقبولُ كلُّ حكمٍ يدعمه النص بجمله —
+          حكمٌ واحدٌ أو أكثر، ومعه حكمٌ مرفوضٌ واحدٌ على الأقل. والكودُ للمرفوض وللجملة التي لا تدلّ.</div>
+        <div id="jdbox">${judgeFields(q, locked, dxSelect)}</div>
+
+        <label class="fl" style="margin-top:20px">شرح الخطأ — يراه الطالب بعد التسليم *</label>
+        <textarea id="qe" placeholder="أيّ الأحكام يدعمه النص، وبأيّ جملة؟"
+          ${locked?'disabled':''}>${esc(q.explanation||'')}</textarea>
       ` : q.kind === 'sentence' ? `
 
         <div class="eq-hint" style="display:block;margin-bottom:9px;line-height:1.85">
@@ -949,6 +959,172 @@ function wireSnt(q, main){
   });
 
   /* والكودُ للخاطئة — بحقل `.eq-dx` نفسِه في الاختيار، فيلتقطه مستمعُه القائم في `wire` */
+}
+
+/* ═══════════ 🆕 b242 · حكمٌ ودليلُه (209 · ق١٦) ═══════════
+
+   🔑 **الأحكامُ `J…` والجملُ `S…` خياراتٌ بمفاتيح ثابتة**، والمفتاحُ «حكمٌ ⇐ جملُه» في `q.accept.map` — فالمقبولُ ما له
+      مدخلٌ في الخريطة، والمرفوضُ ما ليس له. **والمفاتيحُ لا يُعاد ترقيمُها:** الجديدُ يأخذ رقماً لم يُستعمل (`jKey`)، فلا
+      تنقلب إشارةٌ في الخريطة إلى غير صاحبها حين يُحذف حكمٌ أو تُدمج جملتان.
+   🔑 **والجملُ كاختيار الجملة سواءً** (`splitSentences` · `sntSpans` أعلاه): شرائحُ من المتن، تُدمج وتُفصل ولا تُكتب.
+      والدمجُ يحمل إشاراتِ الجملتين إلى الجملة الجديدة (الدليلُ فيها ما زال)، والفصلُ يُسقطها (أيُّ النصفين الدليل؟ — يقوله المؤلّف).
+   📌 **والأحكامُ مرقّمةٌ بأرقامٍ لا بحروف:** الطالبُ يراها مخلوطة (`get_quiz` · 209 ⑤) فحرفُ المحرّر ليس حرفَه. */
+const jKey = (q, p) => p + (Math.max(0, ...(q.options || [])
+  .filter(o => (o.k || '').startsWith(p)).map(o => +o.k.slice(1) || 0)) + 1);
+const jShort = t => { const s = String(t || '').trim(); return s.length > 22 ? s.slice(0, 21) + '…' : (s || '—'); };
+
+function judgeFields(q, locked, dxSelect){
+  const acc = (q.accept ||= { mode: 'two', map: {} }); acc.map ||= {};
+  const js = (q.options || []).filter(o => /^J/.test(o.k || ''));
+  const ss = (q.options || []).filter(o => /^S/.test(o.k || ''));
+  const keyed = js.filter(o => acc.map[o.k]);
+  const body = pgBody(q);
+  const idx = o => q.options.indexOf(o);
+
+  const partA = `
+    <label class="fl" style="margin-top:4px">الدرجة</label>
+    <select id="jmode" ${locked ? 'disabled' : ''}>
+      <option value="two"   ${acc.mode !== 'point' ? 'selected' : ''}>من ٠ إلى ٢ — حكمٌ مقبول بدليله ٢، وبغير دليله ١ (من R9)</option>
+      <option value="point" ${acc.mode === 'point' ? 'selected' : ''}>نقطة واحدة للحكم ودليله معاً (R6–R8)</option>
+    </select>
+    <label class="fl" style="margin-top:16px">الأحكام — يختار الطالب واحداً منها</label>
+    <div class="opts eq-opts">${js.map((o, i) => `
+      <div class="eq-opt ${acc.map[o.k] ? 'ok' : ''}" dir="${dirOf(o.body)}">
+        <span class="key">${AR(i + 1)}</span>
+        <input class="eq-ob" data-o="${idx(o)}" dir="auto" value="${esc(o.body || '')}"
+               placeholder="نصّ الحكم" ${locked ? 'disabled' : ''}>
+        <label class="eq-c"><input type="checkbox" class="eq-jk" data-k="${o.k}"
+          ${acc.map[o.k] ? 'checked' : ''} ${locked ? 'disabled' : ''}> يدعمه النص</label>
+        ${acc.map[o.k] ? '<span class="eq-sp"></span>' : dxSelect(o.dx, idx(o))}
+        ${locked ? '' : `<button class="eq-x" data-jrm="${o.k}" title="حذف الحكم">✕</button>`}
+      </div>`).join('')}</div>
+    ${locked ? '' : '<button class="btn ghost eq-addo" id="jadd">＋ حكم</button>'}`;
+
+  let partB;
+  if(!q.passage_id)     partB = `<div class="warnbox">يُضاف نص مشترك أولاً — جمله هي الأدلّة.</div>`;
+  else if(!body.trim()) partB = `<div class="warnbox">النص المشترك بلا متن — الدليل جملة من نص مقروء.</div>`;
+  else if(!ss.length)   partB = locked ? '' : `<button class="btn primary" id="jsplit">✂ تقسيم النص إلى جمل</button>`;
+  else partB = `
+    ${!sntSpans(body, ss) ? `<div class="warnbox">تغيّر النص المشترك بعد تقسيمه — فلا يُحفظ السؤال حتى يُعاد التقسيم.</div>` : ''}
+    ${keyed.length ? '' : `<div class="eq-hint" style="display:block">يُعلَّم حكمٌ «يدعمه النص» أعلاه، فتظهر هنا خاناتُ دليله.</div>`}
+    <div class="eq-snts">${ss.map((o, i) => {
+      const sup = keyed.filter(j => (acc.map[j.k] || []).includes(o.k));
+      return `
+      <div class="eq-snt ${sup.length ? 'ok' : ''}">
+        <span class="key">${AR(i + 1)}</span>
+        <span class="eq-snt-t" dir="${dirOf(o.body)}">${fmt(o.body)}</span>
+        <span class="eq-snt-c">
+          ${keyed.map(j => `<label class="eq-c"><input type="checkbox" class="eq-sup" data-j="${j.k}" data-s="${o.k}"
+              ${(acc.map[j.k] || []).includes(o.k) ? 'checked' : ''} ${locked ? 'disabled' : ''}>
+              دليلُ «<bdi>${esc(jShort(j.body))}</bdi>»</label>`).join('')}
+          ${sup.length === keyed.length && keyed.length ? '' : dxSelect(o.dx, idx(o))}
+          ${locked ? '' : `${i < ss.length - 1
+              ? `<button class="it-b" data-jmerge="${i}" title="دمجها مع التي بعدها">⤓ دمج</button>` : ''}
+            <button class="it-b" data-jcut="${i}" title="فصلها جملتين">✂ فصل</button>`}
+        </span>
+      </div>`; }).join('')}</div>
+    ${locked ? '' : `<button class="btn ghost" id="jsplit" style="margin-top:10px">↻ إعادة التقسيم من النص</button>`}`;
+
+  return `${partA}
+    <label class="fl" style="margin-top:20px">الأدلّة — جمل النص المشترك</label>
+    ${partB}`;
+}
+
+function wireJudge(q, main){
+  const mark = () => { dirty = true; };
+  const acc  = (q.accept ||= { mode: 'two', map: {} }); acc.map ||= {};
+  const Js = () => q.options.filter(o => /^J/.test(o.k || ''));
+  const Ss = () => q.options.filter(o => /^S/.test(o.k || ''));
+  const setSs = list => { q.options = [...Js(), ...list]; };
+
+  /* 🔴 **تغييرُ ترتيب الخيارات لا يمرّ بـ`repaint`:** هي تقرأ الحقولَ أوّلاً (`collect`) بمواضعها **في الرسم القديم**
+     (`data-o`) — فحذفُ حكمٍ يُزيح الجملَ موضعاً، ويُكتب حقلُ الحكم المحذوف في أوّل جملةٍ فيمحوها. قِيس: «S6» بلا نصّ
+     في الحفظ بعد إضافة حكمٍ ثمّ حذفه. ⇒ تُقرأ الحقولُ **قبل** التغيير، ثمّ يُرسم بلا قراءة. */
+  const restructure = fn => {
+    collect(q); fn(); mark();
+    document.getElementById("main").innerHTML = qCard(q);
+    wire(q);
+  };
+
+  const md = main.querySelector('#jmode');
+  if(md) md.onchange = () => { acc.mode = md.value; mark(); };
+
+  main.querySelectorAll('.eq-jk').forEach(el => el.onchange = () => {
+    const k = el.dataset.k;
+    if(el.checked){ acc.map[k] ||= []; const o = q.options.find(x => x.k === k); if(o) o.dx = null; }
+    else delete acc.map[k];
+    mark(); repaint(q);
+  });
+
+  const add = main.querySelector('#jadd');
+  if(add) add.onclick = () => {
+    if(Js().length >= 5){ toast('خمسة أحكام حدّ كافٍ'); return; }
+    restructure(() => { q.options = [...Js(), { k: jKey(q, 'J'), body: '', dx: null }, ...Ss()]; });
+  };
+  main.querySelectorAll('[data-jrm]').forEach(el => el.onclick = () => {
+    if(Js().length <= 2){ toast('يلزم حكمان على الأقل'); return; }
+    restructure(() => {
+      q.options = q.options.filter(o => o.k !== el.dataset.jrm);
+      delete acc.map[el.dataset.jrm];
+    });
+  });
+
+  const split = main.querySelector('#jsplit');
+  if(split) split.onclick = () => {
+    const touched = Ss().some(o => o.dx) || Object.values(acc.map).some(v => v.length);
+    if(touched && !confirm('إعادة التقسيم تمحو الأدلّة وأكواد الجمل — أتمضي؟')) return;
+    restructure(() => {
+      setSs(splitSentences(pgBody(q)).map((t, i) => ({ k: 'S' + (i + 1), body: t, dx: null })));
+      Object.keys(acc.map).forEach(k => { acc.map[k] = []; });
+    });
+    if(Ss().length < 3) toast('في النص أقلّ من ثلاث جمل — والسؤال يحتاج ثلاثاً على الأقل');
+  };
+
+  main.querySelectorAll('.eq-sup').forEach(el => el.onchange = () => {
+    const l = (acc.map[el.dataset.j] ||= []), s = el.dataset.s;
+    acc.map[el.dataset.j] = el.checked ? [...new Set([...l, s])] : l.filter(x => x !== s);
+    mark(); repaint(q);
+  });
+
+  main.querySelectorAll('[data-jmerge]').forEach(el => el.onclick = () => {
+    const i = +el.dataset.jmerge, list = Ss(), sp = sntSpans(pgBody(q), list);
+    if(!sp){ toast('تغيّر النص بعد تقسيمه — يُعاد التقسيم أولاً'); return; }
+    const nk = jKey(q, 'S'), gone = [list[i].k, list[i + 1].k];
+    restructure(() => {
+      list.splice(i, 2, { k: nk, body: pgBody(q).slice(sp[i].a, sp[i + 1].b), dx: null });
+      setSs(list);
+      for(const j in acc.map){                                // الدليلُ في إحداهما ما زال في المدموجة
+        const l = acc.map[j];
+        if(l.some(x => gone.includes(x))) acc.map[j] = [...new Set([...l.filter(x => !gone.includes(x)), nk])];
+      }
+    });
+  });
+
+  main.querySelectorAll('[data-jcut]').forEach(el => el.onclick = () => {
+    const i = +el.dataset.jcut, list = Ss(), o = list[i], row = el.closest('.eq-snt');
+    row.innerHTML = `<span class="key">${AR(i + 1)}</span>
+      <div style="flex:1">
+        <textarea class="eq-cut" readonly dir="${dirOf(o.body)}" rows="2">${esc(o.body)}</textarea>
+        <div class="eq-hint" style="display:block">يُوضع المؤشّر حيث تنقسم الجملة</div>
+        <div class="nav" style="margin:6px 0 0">
+          <button class="btn primary" data-cutgo>فصل هنا</button>
+          <button class="btn ghost" data-cutno>إلغاء</button></div>
+      </div>`;
+    const ta = row.querySelector('.eq-cut');
+    ta.focus(); ta.setSelectionRange(Math.floor(o.body.length / 2), Math.floor(o.body.length / 2));
+    row.querySelector('[data-cutno]').onclick = () => repaint(q);
+    row.querySelector('[data-cutgo]').onclick = () => {
+      const p = ta.selectionStart ?? 0;
+      const a = o.body.slice(0, p).trimEnd(), b = o.body.slice(p).trimStart();
+      if(!a || !b){ toast('المؤشّر في طرف الجملة — يُوضع في وسطها'); return; }
+      const ka = jKey(q, 'S'), kb = 'S' + (+ka.slice(1) + 1);
+      restructure(() => {
+        list.splice(i, 1, { k: ka, body: a, dx: null }, { k: kb, body: b, dx: null });
+        setSs(list);
+        for(const j in acc.map) acc.map[j] = acc.map[j].filter(x => x !== o.k);   // أيُّ النصفين الدليل؟ يقوله المؤلّف
+      });
+    };
+  });
 }
 
 /* ═══════════ الخانة — النسخ المكافئة ═══════════
@@ -1538,6 +1714,7 @@ function wire(q){
   });
 
   if(q.kind === 'sentence') wireSnt(q, main);        // 🆕 b241 · 208
+  if(q.kind === 'judge')    wireJudge(q, main);      // 🆕 b242 · 209
 
   const ao = main.querySelector("#addo");
   if(ao) ao.onclick = () => {
@@ -2294,7 +2471,7 @@ function collect(q){
 /* 🔑 الأنماط التي تحمل مفاتيحَها في question_keys لا في options.
    تُقرأ في ثلاثة مسارات: الحفظ · التصدير · الاستيراد — وواحدٌ منها
    تخلّف عن الآخرَين مرّةً فعلاً (112). فصار الشرطُ اسماً لا نسخاً. */
-const KEYED = new Set(['gap','matching','cloze']);
+const KEYED = new Set(['gap','matching','cloze','judge']);   // 🆕 b242 · والحكمُ ودليلُه مفتاحُه في accept (209)
 
 async function saveQ(q){
   collect(q);
@@ -2344,6 +2521,10 @@ async function addQuestion(kind){
              accept:{ pairs:{} }, wrong:{}, bank:[] },   // 112 · بالهُويّة
     /* 🆕 b241 · 208 · الجملُ تُولَّد من النصّ المشترك بزرّ «تقسيم النص» — فتبدأ فارغة */
     sentence:{ id:null, kind:'sentence', body:'', answered:0, explanation:'', options:[] },
+    /* 🆕 b242 · 209 · حكمان يُكتبان، والجملُ من النصّ المشترك بزرّ التقسيم، والدرجةُ ٠–٢ افتراضاً (من R9) */
+    judge:   { id:null, kind:'judge', body:'', answered:0, explanation:'',
+               options: [{ k:'J1', body:'', dx:null }, { k:'J2', body:'', dx:null }],
+               accept: { mode:'two', map:{} } },
     essay: { id:null, kind:'essay', body:'', answered:0, model:'', options:[] }
   };
   Z.questions.push(blank[kind] || blank.mcq);
@@ -3585,6 +3766,7 @@ function kindChips(){
        + chip('gap',      'إكمال ناقص',      kindStat('gap').n)
        + chip('cloze',    'إكمال من قائمة',  r.cloze || 0)
        + chip('sentence', 'اختيار الجملة',   r.sentence || 0)        // 🆕 b241 · 208
+       + chip('judge',    'حكم ودليله',      r.judge || 0)           // 🆕 b242 · 209
        + chip('essay',    'مقالي',           r.essay || 0);
 }
 
@@ -3861,7 +4043,7 @@ function nodes(idxs){
 
 const kIcon = k => k === 'essay' ? '✍️' : k === 'msq' ? '☑'
                  : k === 'matching' ? '⇄' : k === 'gap' ? '✎'
-                 : k === 'cloze' ? '⇢' : k === 'sentence' ? '❝' : '◉';
+                 : k === 'cloze' ? '⇢' : k === 'sentence' ? '❝' : k === 'judge' ? '⚖' : '◉';
 
 /* نصُّ الصفّ في الشريط — والقصُّ هنا سقفٌ للرسم لا حدٌّ لما يُرى: ما يُرى يحكمه عرضُ الصفّ ونقاطُ CSS.
    🔴 b212 · كان ٣٠ حرفاً في الخانة و٣٨ في السؤال، والحركاتُ تُعدّ أحرفاً ⇒ يُقطع النصّ قبل أن يمتلئ
@@ -4026,6 +4208,7 @@ function listHead(){
         <button data-k="cloze"><i>⇢</i><div><b>إكمال من قائمة</b><span>يختار من كلمات مُعطاة</span></div></button>
         <button data-k="matching"><i>⇄</i><div><b>المزاوجة</b><span>لكلّ بند درجة</span></div></button>
         <button data-k="sentence"><i>❝</i><div><b>اختيار الجملة</b><span>ينقر الطالب جملةً في النصّ المشترك</span></div></button>
+        <button data-k="judge"><i>⚖</i><div><b>حكم ودليله</b><span>حكمٌ يُختار، ثمّ جملةٌ تدلّ عليه</span></div></button>
         <hr>
         <button data-k="essay"><i>¶</i><div><b>مقالي قصير</b><span>يصحّحه المعلّم</span></div></button>
       </div>
