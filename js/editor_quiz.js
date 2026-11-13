@@ -51,6 +51,7 @@ import { questionText, questionBody, KIND_LABEL, kindLabel, paperIsEnglish,
          gapCount, orderingUnit } from './render_q.js';
 import { wireMatching } from './match_dnd.js';
 import { practiceLinkBox } from './practice_links.js';
+import { splitSentences, expandKinds } from './sentences.js';   // 🆕 b244 · قاعدةُ التقسيم وصيغُ ق١٦ المختصرة
 import { openBanks, openForm } from './editor_banks.js';
 import { TRANSCRIPT } from './audio_lines.js';
 
@@ -853,30 +854,9 @@ function passageBar(q, locked){
    🔑 **الجملُ شرائحُ من متن النصّ المشترك بعينه** (`slice` لا كتابة) — فتطابقه حرفاً، وهو شرطُ `save_question`
       وحارسِ النشر (بلا مسافات) وشرطُ لفّها في النصّ عند الطالب (`sentenceText` · بالبحث المتتابع). ⇒ لا حقلَ
       يُكتب فيه نصُّ جملة: التقسيمُ آليّ، والتصحيحُ دمجٌ وفصلٌ بنقرة، وكلاهما شرائحُ من الشرائح.
-   🔑 **والتقسيمُ بالنقطة والاستفهام والتعجّب** (ومعها «؟» و«…») **إلا ثلاثة**، قِيست على نصوص المشروع:
-        حوارٌ يكمل بحرفٍ صغير («"Where?" he asked.») · اختصارٌ معروف (Mr. · Dr. · e.g. · a.m.) ·
-        ورقمٌ عشريّ (3.5 — لا مسافةَ بعد النقطة فلا تُعدّ حدّاً أصلاً).
-      وما فات القاعدةَ يصحّحه المؤلّف — والقاعدةُ تُخطئ نادراً لا أبداً. */
-const SNT_END  = /[.!?؟…]+["'”’»)\]]*(?=\s|$)/g;
-const SNT_ABBR = /(?:^|[\s("'])(?:Mr|Mrs|Ms|Dr|St|Jr|Sr|Prof|vs|etc|No|e\.g|i\.e|a\.m|p\.m|U\.S|U\.K)\.$/i;
-
-export function splitSentences(text){
-  const s = String(text || ''), out = [];
-  let start = 0, m;
-  SNT_END.lastIndex = 0;
-  while((m = SNT_END.exec(s))){
-    const end = m.index + m[0].length;
-    if(SNT_ABBR.test(s.slice(start, m.index + 1))) continue;           // اختصار ⇒ الجملةُ ماضية
-    const next = s.slice(end).match(/^\s*(\S)/);
-    if(next && /[a-z]/.test(next[1])) continue;                         // حوارٌ يكمل بحرفٍ صغير
-    const piece = s.slice(start, end).trim();
-    if(piece) out.push(piece);
-    start = end;
-  }
-  const rest = s.slice(start).trim();
-  if(rest) out.push(rest);
-  return out;
-}
+   🔑 **والتقسيمُ بالنقطة والاستفهام والتعجّب إلا ثلاثة** — وقاعدتُه في `sentences.js` منذ b244: يقرؤها المحرّرُ
+      ومسارا الاستيراد معاً، فلا تفترق نسختان. ويُعاد تصديرُها من هنا لمن استوردها من هذا الملفّ. */
+export { splitSentences };
 
 /* مواضعُ الجمل في المتن بالبحث المتتابع — `null` إن غابت واحدة (تغيّر النصُّ بعد تقسيمه) */
 function sntSpans(text, list){
@@ -2922,6 +2902,14 @@ function parseImport(txt){
   const pref = p => (p.ref ?? p.id ?? null);
   const refs = new Set(out.passages.map(pref).filter(Boolean));
 
+  /* 🆕 b244 · صيغُ ق١٦ المختصرة تُوسَّع أوّلاً (`expandKinds` · sentences.js) — الجملةُ بنصّها والحكمُ بدليله والبنودُ
+     بترتيبها — فما يُفحص تحت ويُحفظ هو الصيغةُ الكاملة نفسُها، كما يحفظها المحرّر. والتوسيعُ نفسُه في بوّابة المقرّر. */
+  { const x = expandKinds({ passages: out.passages, questions: out.questions });
+    out.questions = x.payload.questions; out.issues.push(...x.errors); }
+  const pgText = ref => String((out.passages.find(p => String(pref(p)) === String(ref)) || {}).body || '');
+  const sameText = (ref, list) =>
+    pgText(ref).replace(/\s/g, '') === list.map(o => String(o.body || '')).join('').replace(/\s/g, '');
+
   /* 🔑 الهدفُ يُكتب في الملفّ **بكوده** لا بمعرّفه: المؤلّفُ يعرف
      «U1.IDEA» ولا يعرف «417». والترجمةُ هنا مرّةً واحدة، ويُثبَّت ما
      حُلَّ على السؤال (`_obj`) فيقرؤه runImport ولا يُعيد الحلّ.
@@ -3118,6 +3106,61 @@ function parseImport(txt){
       return;
     }
 
+    /* ── 🆕 b244 · أنماطُ ق١٦ (208 · 209 · 210) ─────────────────
+       حدودُ `save_question` نفسُها تُقال قبل الإدراج: هذا الصندوقُ يُدرج سؤالاً سؤالاً (`runImport`)، فسؤالٌ يُردّ في
+       وسط الملفّ يترك ما قبله مُدرَجاً. والقاعدةُ تبقى الحَكَم عند كلّ حفظ. */
+    if(kind === 'sentence'){
+      if(!q.passage){ out.issues.push(`س${n}: اختيار الجملة يحتاج نصاً مشتركاً — جمله هي الخيارات`); return; }
+      const nOk = opts.filter(o => o.correct).length;
+      if(opts.length < 3) out.issues.push(`س${n}: يلزم ثلاث جمل على الأقل`);
+      if(nOk < 1) out.issues.push(`س${n}: بلا جملة صحيحة`);
+      else if(nOk >= opts.length) out.issues.push(`س${n}: يلزم جملة خاطئة واحدة على الأقل`);
+      if(refs.has(q.passage) && opts.length && !sameText(q.passage, opts))
+        out.issues.push(`س${n}: الجمل لا تطابق النص المشترك — تُقسَّم من النص نفسه بلا حذف ولا زيادة`);
+      opts.forEach(o => { if(o.dx && !o.correct && !dxCodes.has(o.dx)) out.issues.push(`س${n}: كود غير معروف "${o.dx}"`); });
+      if(!String(q.explanation || '').trim()) out.issues.push(`س${n}: بلا شرح للخطأ`);
+      return;
+    }
+    if(kind === 'judge'){
+      if(!q.passage){ out.issues.push(`س${n}: الحكم ودليله يحتاج نصاً مشتركاً — جمله هي الأدلّة`); return; }
+      const js = opts.filter(o => /^J\d{1,3}$/.test(o.k || '')), ss = opts.filter(o => /^S\d{1,3}$/.test(o.k || ''));
+      if(js.length + ss.length !== opts.length) out.issues.push(`س${n}: كل حكم مفتاحه J ورقم، وكل جملة S ورقم`);
+      if(js.length < 2) out.issues.push(`س${n}: يلزم حكمان على الأقل`);
+      if(ss.length < 3) out.issues.push(`س${n}: يلزم ثلاث جمل على الأقل`);
+      if(refs.has(q.passage) && ss.length && !sameText(q.passage, ss))
+        out.issues.push(`س${n}: الجمل لا تطابق النص المشترك — تُقسَّم من النص نفسه بلا حذف ولا زيادة`);
+      const map = q.accept?.map, mode = q.accept?.mode;
+      if(mode !== 'two' && mode !== 'point') out.issues.push(`س${n}: الدرجة mode إمّا "two" (٠–٢) أو "point" (٠/١)`);
+      if(!map || typeof map !== 'object' || Array.isArray(map)){
+        out.issues.push(`س${n}: المفتاح { "mode": …, "map": { "J1": ["S5"] } } — أو judgments مختصرة`); return; }
+      const keyed = Object.keys(map);
+      if(!keyed.length) out.issues.push(`س${n}: لا حكم مقبول — المقبول حكمٌ له دليل`);
+      else if(keyed.length >= js.length) out.issues.push(`س${n}: يلزم حكم لا يدعمه النص — وإلا صار اختيار الحكم هبة`);
+      keyed.forEach(k => {
+        if(!js.some(o => o.k === k)) out.issues.push(`س${n}: حكم في المفتاح لا وجود له: ${k}`);
+        if(!Array.isArray(map[k]) || !map[k].length) out.issues.push(`س${n}: الحكم المقبول ${k} بلا دليل`);
+        else map[k].filter(s => !ss.some(o => o.k === s)).forEach(s => out.issues.push(`س${n}: دليل ليس من جمل النص: ${s}`));
+      });
+      opts.forEach(o => {
+        if(!o.dx) return;
+        if(map[o.k]) out.issues.push(`س${n}: الحكم المقبول لا كود له: ${o.k}`);
+        else if(!dxCodes.has(o.dx)) out.issues.push(`س${n}: كود غير معروف "${o.dx}"`);
+      });
+      if(js.some(o => !String(o.body || '').trim())) out.issues.push(`س${n}: حكم بلا نصّ`);
+      if(!String(q.explanation || '').trim()) out.issues.push(`س${n}: بلا شرح للخطأ`);
+      return;
+    }
+    if(kind === 'ordering'){
+      if(opts.length < 3 || opts.length > 8){
+        out.issues.push(`س${n}: الترتيب من ثلاثة بنود إلى ثمانية — والموجود ${AR(opts.length)}`); return; }
+      if(opts.some(o => !String(o.body || '').trim())) out.issues.push(`س${n}: بند بلا نصّ`);
+      const bs = opts.map(o => String(o.body || '').replace(/\s+/g, ' ').trim().toLowerCase());
+      if(new Set(bs).size !== bs.length) out.issues.push(`س${n}: بندان بنص واحد — والترتيب لا يفرّق بينهما`);
+      if(opts.some(o => String(o.dx || '').trim())) out.issues.push(`س${n}: لا كود في الترتيب — الخطأ في موضع البند لا فيه`);
+      if(!String(q.explanation || '').trim()) out.issues.push(`س${n}: بلا شرح للخطأ`);
+      return;
+    }
+
     if(kind !== 'mcq' && kind !== 'msq'){
       out.issues.push(`س${n}: نمط غير معروف "${kind}"`); return;
     }
@@ -3236,8 +3279,12 @@ function exportQuiz(){
       /* 112 · ومفتاحُ البند يُصدَّر معه: إليه تشير accept و wrong_map،
          فملفٌّ بلا مفاتيح يعود بمفاتيحَ يتيمة. */
       if(q.kind === 'cloze') return o;      // 113 · الفراغُ هو البند ⇒ لا خيارات
+      /* 🔴 b244 · و«حكمٌ ودليلُه» كان يُصدَّر بلا مفتاحَي J…/S… — و`accept.map` يشير إليهما ⇒ ملفٌّ يعود بخريطةٍ يتيمة
+         تردّه القاعدة. والترتيبُ بنودُه نصوصٌ بترتيبها لا خياراتٌ بكود. (والجملةُ خيارٌ كالاختيار: صحيحةٌ أو كودُها.) */
       o.options = (q.options || []).map(x =>
           q.kind === 'matching' ? { k: x.k, body: x.body }  // بندٌ بلا حكمٍ ولا كود
+        : q.kind === 'judge'    ? { k: x.k, body: x.body, ...(x.dx ? { dx: x.dx } : {}) }
+        : q.kind === 'ordering' ? { body: x.body }          // الموضعُ هو المفتاح (210)
         : x.correct             ? { body: x.body, correct: true }
         :                         { body: x.body, dx: x.dx || null });
       return o;
@@ -3262,7 +3309,11 @@ function importBox(){
         ولوسم ما يقيسه السؤال: <code dir="ltr">"objective": "U1.IDEA"</code> —
         بكود الهدف لا برقمه. وسؤالٌ بلا هدفٍ يُستورد، لكنّ التشخيصَ لا ينطق عنه.<br>
         ولإعلان التكافؤ: تُضاف <code dir="ltr">"variant": "F1"</code> إلى البندين —
-        أو يُوضعان داخل <code dir="ltr">groups</code>. ويُقرنان بعد الإدراج تلقائياً.</div>
+        أو يُوضعان داخل <code dir="ltr">groups</code>. ويُقرنان بعد الإدراج تلقائياً.<br>
+        ولأنماط القراءة الجملةُ بنصّها كما في النص المشترك، والنص يُقسَّم آلياً:
+        <code dir="ltr">"kind": "sentence", "answer": "…"</code> ·
+        <code dir="ltr">"kind": "judge", "judgments": [{ "body": "…", "evidence": ["…"] }, { "body": "…" }]</code> ·
+        <code dir="ltr">"kind": "ordering", "items": ["…", "…", "…"]</code> بترتيبها الصحيح.</div>
 
       <!-- 🔑 القائمة عند نقطة القرار: من يكتب JSON خارج المنصّة لا يرى
            أكواده، فيخترع ما يظنّه معقولاً ثم يُفاجأ بالرفض. وأرخص من

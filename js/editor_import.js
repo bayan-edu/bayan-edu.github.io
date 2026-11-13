@@ -64,6 +64,7 @@ import { AUDIO_EXT, AUDIO_MAX_MB, audioKey } from './media.js';
 import * as LN from './audio_lines.js';
 import { planAudio, withKeys, hashName, envelope, findPauses, timedLines } from './audio_import.js';
 import { clock } from './recorder.js';
+import { expandKinds } from './sentences.js';   // 🆕 b244 · صيغُ ق١٦ المختصرة
 
 const MAX = 2 * 1024 * 1024;          // حدُّ الملفّ — كما في صندوق الاختبار
 
@@ -461,6 +462,12 @@ async function previewFromPlan(e, course, parsed){
 const AUDIO_HELP = `<span class="imp-help"><b>وللاستماع:</b> اسم الملف الصوتي في <code dir="ltr">"media": "dialogue1.mp3"</code>،
       ويُسحب الملف مع ملف JSON. ونص المقطع في <code dir="ltr">"transcript"</code> سطراً سطراً:
       <code dir="ltr">["Tom: Hi!", "Sara: Hello."]</code> — تُقترح مواضع سطوره من وقفات الصوت، وتُراجع في «سطور المقطع».</span>`;
+/* 🆕 b244 · أنماطُ القراءة الثلاثة (ق١٦) — والصيغةُ المختصرة تُكتب كما يكتبها مشروعُ القراءة: الجملةُ بنصّها */
+const Q16_HELP = `<span class="imp-help"><b>ولأنماط القراءة:</b> الجملة تُكتب بنصها كما في النص المشترك، ويُقسَّم النص آلياً —
+      <code dir="ltr">"kind": "sentence", "answer": "…"</code> لاختيار الجملة ·
+      <code dir="ltr">"kind": "judge", "judgments": [{ "body": "…", "evidence": ["…"] }, { "body": "…" }]</code>
+      للحكم ودليله، والمقبول حكم له دليل ·
+      <code dir="ltr">"kind": "ordering", "items": ["…", "…", "…"]</code> للترتيب، بترتيبها الصحيح.</span>`;
 /* الحجمُ بوحدته: ملفٌّ دون الميجابايت بالكيلوبايت — فلا يُقرأ «٠٫٠ م.ب» لملفٍّ فيه صوت */
 const SZ = n => n < 1048576 ? `${AR(Math.max(1, Math.round(n / 1024)))} ك.ب`
                             : `${AR((n / 1048576).toFixed(1)).replace('.', '٫')} م.ب`;
@@ -578,10 +585,12 @@ const K = {
       وكلّ مشتّت خاطئ بكود تشخيصه.<br>
       ويُنشئ الاختبار وبنده في الدرس. ولإضافة أسئلة إلى اختبار قائم
       فبابها شاشة الاختبار نفسها.<br>
-      ${AUDIO_HELP}`,
+      ${AUDIO_HELP}<br>
+      ${Q16_HELP}`,
     ph: '{ "lesson_key": "U1L2.DISC", "quiz": { … }, "questions": [ … ] }',
     sample: SAMPLE,
     audio: true,
+    expand: true,                     // 🆕 b244 · صيغُ ق١٦ المختصرة
     call: (course, payload, dry) => api.importQuiz(course.id, payload, dry),
     plan: planBox,
     count: pl => N(pl?.['أسئلة'] || 0, 'سؤال', 'سؤالين', 'أسئلة', 'سؤالاً'),
@@ -710,10 +719,12 @@ const K = {
       والصيغ تُقرن داخل الملفّ (<code dir="ltr">variant</code>)، والنصوص البديلة لنصّ واحد
       مجموعة (<code dir="ltr">group</code>).<br>
       <b>ويُضيف ولا يستبدل:</b> والملفّ نفسه يُعاد فيُقال «لا جديد».<br>
-      ${AUDIO_HELP}`,
+      ${AUDIO_HELP}<br>
+      ${Q16_HELP}`,
     ph: '{ "bank": "بنك الاستيعاب المقروء", "passages": [ … ], "questions": [ … ] }',
     sample: SAMPLE_BANK,
     audio: true,
+    expand: true,                     // 🆕 b244 · صيغُ ق١٦ المختصرة
     call: (course, payload, dry) => api.importBank(course.id, payload, dry),
     plan: planBank,
     same: d => `البنك «<bdi>${esc(d.bank || '')}</bdi>»`,
@@ -886,9 +897,24 @@ async function openImport(course, kind, back){
     /* 🎧 b221 · الصوتُ المسحوب قبل أيّ نداء: يُطابَق ويُبصم ويُفكّ — وما لم يُطابَق يُقال ولا يُرسل شيء.
        والحمولةُ بمفاتيح البصمة نفسِها في الجافّة والاعتماد، فما فُحص هو ما يُعتمد */
     let payload = parsed;
+    /* 🆕 b244 · صيغُ ق١٦ المختصرة تُوسَّع قبل أيّ نداء (`expandKinds` · sentences.js): الجملةُ بنصّها والحكمُ بدليله
+       والبنودُ بترتيبها ⇒ الصيغةُ الكاملة التي يحفظها المحرّر. **وليس هذا تحقُّقاً يخالف رأسَ الملفّ:** القاعدةُ لا تعرف
+       قاعدةَ التقسيم، فتُوسَّع الصيغةُ هنا بالقاعدة الواحدة ثمّ تحكم القاعدةُ في الناتج كلِّه. وما يُردّ هنا خطأُ مطابقةٍ
+       وحده (جملةٌ لم تُوجد في نصّها) — ولا يُرسل معه شيء. والتوسيعُ حتميّ، فبصمةُ الدفعة ثابتةٌ بين جافّةٍ واعتماد. */
+    if(C.expand){
+      const x = expandKinds(payload);
+      if(x.errors.length){
+        out.innerHTML = `<div class="eq-ready" style="margin-top:14px">
+          ${x.errors.slice(0, 20).map(e => `<div class="eq-iss">⚠️ ${esc(e)}</div>`).join('')}
+          ${x.errors.length > 20 ? `<div class="eq-iss">… و${AR(x.errors.length - 20)} غيرها</div>` : ''}
+          <div class="line" style="margin-top:8px">ولم يُرسل شيء إلى القاعدة.</div></div>`;
+        return;
+      }
+      payload = x.payload;
+    }
     if(C.audio){
       const say = t => { out.innerHTML = `<div class="status" style="margin-top:14px">${esc(t)}</div>`; };
-      A = planAudio(parsed, [...aud.values()].map(v => v.file.name), AUDIO_EXT);
+      A = planAudio(payload, [...aud.values()].map(v => v.file.name), AUDIO_EXT);
       const bad = [...A.errors];
       for(const k of A.files){
         const v = aud.get(k);
