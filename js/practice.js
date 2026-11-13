@@ -20,8 +20,9 @@
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
 import { app, bar, head, toast, esc, fmt, AR, media, pgMedia, srcOf,
-         scrollTop, backText, N, joinList } from './ui.js';
-import { questionText, questionBody, KIND_LABEL } from './render_q.js';
+         scrollTop, backText, N, joinList, dirOf } from './ui.js';
+import { questionText, questionBody, KIND_LABEL,
+         sentenceText, sentencesOf, judgments, orderingUnit } from './render_q.js';   // 🆕 b245 · أنماطُ ق١٦ (211)
 import { wireMatching } from './match_dnd.js';
 
 /* حالةُ الجلسة — تعيش هنا لا في S: زائرٌ بلا حساب لا حالةَ تطبيقٍ له،
@@ -104,8 +105,12 @@ const cur = () => P.items[P.i];
 /* إجابةٌ فارغة بحسب النمط — كأختها في quiz.js، والأسماءُ عينُها
    لأنّ الحمولة التي تصل القاعدة عينُها. */
 function blank(q){
-  return { o:null, os:[], txt:[], pairs:{} , kind:q.kind };
+  return { o:null, os:[], txt:[], pairs:{}, j:null, seq:[], kind:q.kind };   // 🆕 b245 · j الحكم · seq الترتيب
 }
+
+/* 🆕 b245 · الجملةُ تُنقر في النصّ كما في الاختبار (b241): سؤالٌ واحدٌ في الشاشة فلا تسليحَ ولا مطابقة —
+   جملُ السؤال هي جملُ النصّ الملفوفة. ولفٌّ تعذّر ⇒ القائمةُ في البطاقة. */
+const tapsText = q => q.kind === 'sentence' || q.kind === 'judge';
 
 function draw(){
   if(P.i >= P.items.length) return done();
@@ -125,10 +130,13 @@ const counter = () =>
 function quizHtml(q){
   const pg = P.passages.find(p => String(p.id) === String(q.passage_id));
   const qAudio = srcOf(q.audio);
+  const snt = tapsText(q) && pg?.body ? sentenceText(pg.body, sentencesOf(q), P.a.o) : null;
   return `
-    ${pg ? `<div class="card"><div class="line" style="color:var(--text)"
+    ${pg ? (snt ? `<div class="card">${pg.title ? `<div class="psg-t" dir="auto">${esc(pg.title)}</div>` : ''}
+              <div class="psg snt-on" dir="auto">${snt}</div>${pgMedia(pg)}</div>`
+         : `<div class="card"><div class="line" style="color:var(--text)"
               dir="auto">${pg.title ? `<b>${esc(pg.title)}</b><br>` : ''}${fmt(pg.body||'')}</div>
-            ${pgMedia(pg)}</div>` : ''}
+            ${pgMedia(pg)}</div>`) : ''}
     <div class="qcard" data-q="${q.id}">
       ${counter()}
       <div class="qnum" style="color:var(--text-muted)">${esc(KIND_LABEL[q.kind] || 'سؤال')}</div>
@@ -136,7 +144,8 @@ function quizHtml(q){
       ${qAudio ? `<audio controls preload="metadata" src="${esc(qAudio)}"
                    style="width:100%;margin-bottom:12px"></audio>` : ''}
       ${questionText(q, q.kind === 'cloze' ? P.a.pairs : P.a.txt)}
-      ${questionBody(q, { picked: o => false, values: P.a.txt, pairs: P.a.pairs })}
+      ${questionBody(q, { picked: o => false, values: P.a.txt, pairs: P.a.pairs, seq: P.a.seq,
+                          list: tapsText(q) && !snt })}
     </div>
     <div id="fb"></div>
     <div class="nav" style="margin-top:16px">
@@ -198,9 +207,51 @@ function wire(){
     if(bk) a.pairs[ik] = bk; else delete a.pairs[ik];
   });
 
+  /* 🆕 b245 · الجملةُ المختارة: في النصّ وفي سطر «المختارة» وفي القائمة الاحتياطيّة معاً — حالةٌ واحدة تُرسم في ثلاثة */
+  const pickSentence = id => {
+    const o = sentencesOf(cur()).find(x => x.id === id); if(!o) return;
+    a.o = id;
+    const at = sentencesOf(cur()).indexOf(o);
+    app.querySelectorAll('.psg .snt').forEach(s => s.classList.toggle('sel', +s.dataset.s === at));
+    app.querySelectorAll('.snt-list .opt').forEach(x => x.classList.toggle('sel', +x.dataset.o === id));
+    const pick = app.querySelector('.snt-pick');
+    if(pick){ pick.innerHTML = fmt(o.body); pick.dir = dirOf(o.body); pick.classList.add('on'); }
+  };
+  app.querySelector('.psg.snt-on')?.addEventListener('keydown', e => {
+    const s = e.target.closest?.('.snt');
+    if(!s || P.shown || (e.key !== 'Enter' && e.key !== ' ')) return;
+    e.preventDefault(); pickSentence(+s.dataset.o);
+  });
+
   app.onclick = e => {
+    if(P.shown) { if(e.target.closest('.snt, [data-ord], [data-j]')) return; }
+    const s = e.target.closest('.psg .snt');
+    if(s){ if(!P.shown) pickSentence(+s.dataset.o); return; }
+
+    /* 🆕 b245 · الترتيب: بندٌ في القائمة ⇒ الخانةُ التالية · ومرتّبٌ ⇒ يعود — والوحدةُ تُعاد وحدها (كالاختبار · b243) */
+    const ob = e.target.closest('[data-ord]');
+    if(ob){
+      if(P.shown || ob.disabled) return;
+      const v = +ob.dataset.ord, i = a.seq.indexOf(v);
+      if(i >= 0) a.seq.splice(i, 1); else a.seq.push(v);
+      const unit = app.querySelector('.ord');
+      if(unit) unit.outerHTML = orderingUnit(cur(), a.seq, false, false);
+      (i >= 0 ? app.querySelector(`.ord-pool [data-ord="${v}"]`)
+              : app.querySelector('.ord-pool [data-ord]') || app.querySelector(`.ord-seq [data-ord="${v}"]`))?.focus();
+      return;
+    }
+
     const b = e.target.closest('.opt'); if(!b) return;
     if(P.shown) return;                       // بعد الكشف لا يُبدَّل
+
+    /* 🆕 b245 · حكمٌ ودليلُه: زرُّ الحكم (`data-j`) بين الأحكام وحدها، والقائمةُ الاحتياطيّة للدليل (`data-o`) */
+    if(a.kind === 'judge' && b.dataset.j){
+      a.j = +b.dataset.j;
+      app.querySelectorAll('.jd-a .opt').forEach(x => x.classList.toggle('sel', +x.dataset.j === a.j));
+      return;
+    }
+    if(a.kind === 'judge' || a.kind === 'sentence'){ pickSentence(+b.dataset.o); return; }
+
     const v = +b.dataset.o;
     if(a.kind === 'msq'){
       const j = a.os.indexOf(v);
@@ -225,7 +276,9 @@ function wire(){
 
 /* الحمولةُ بأسماء submit_attempt عينِها — فالعقدُ واحدٌ في المسارين */
 function payload(q, a){
-  if(q.kind === 'mcq') return { o: a.o == null ? '' : String(a.o) };
+  if(q.kind === 'mcq' || q.kind === 'sentence') return { o: a.o == null ? '' : String(a.o) };
+  if(q.kind === 'judge')    return { j: a.j == null ? '' : String(a.j), o: a.o == null ? '' : String(a.o) };   // 🆕 b245
+  if(q.kind === 'ordering') return { seq: a.seq };                                                          // 🆕 b245
   if(q.kind === 'msq') return { os: a.os };
   if(q.kind === 'gap') return { txt: a.txt };
   return { pairs: a.pairs };
@@ -260,14 +313,16 @@ async function send(){
 
 function feedback(r){
   const ok = r.is_correct;
+  /* 🆕 b245 · والحكمُ ودليلُه والترتيبُ درجةٌ لا عددُ إصابات — والترتيبُ يقول كيف صُحِّح (كمراجعة الاختبار · b243) */
   const part = (r.hits != null && r.of)
-    ? `<div class="line">أصبت ${AR(r.hits)} من ${AR(r.of)}</div>` : '';
+    ? (r.kind === 'judge'    ? `<div class="line">الدرجة: <b>${AR(r.hits)} من ${AR(r.of)}</b></div>`
+     : r.kind === 'ordering' ? `<div class="line">الدرجة: <b>${AR(r.hits)} من ${AR(r.of)}</b> — درجة لكل بند جاء بعد ما يسبقه في الترتيب الصحيح</div>`
+     : `<div class="line">أصبت ${AR(r.hits)} من ${AR(r.of)}</div>`) : '';
   return `
     <div class="rev ${ok ? 'ok' : 'no'}" style="margin-top:14px">
       <span class="tag ${ok ? 'ok' : 'no'}">${ok ? 'صحيحة' : 'خاطئة'}</span>
       ${part}
-      ${!ok && r.correct != null
-        ? `<div class="line" dir="auto">الصواب: <b>${esc(showCorrect(r))}</b></div>` : ''}
+      ${!ok && r.correct != null ? correctHtml(r) : ''}
       ${r.dx?.note
         ? `<div class="trap"><strong>لماذا وقع الخطأ</strong>${fmt(r.dx.note)}</div>` : ''}
       ${r.explanation ? `<div class="line" dir="auto"
@@ -284,9 +339,30 @@ function feedback(r){
       ⇒ المفتاحُ يُترجَم إلى **نصّ البند** من `options` (وهي في الحمولة
       أصلاً بمفاتيحها منذ 119). وفي «إكمال من قائمة» لا خيارات، والمفتاحُ
       **رقمُ الفراغ** نفسُه — فيُعرَّب رقماً كما يُرقَّم في نصّ السؤال. */
+/* 🆕 b245 · صوابُ أنماط ق١٦ كتلةٌ لا سطر: الجملةُ والترتيبُ مصفوفتا معرّفات (لا خاناتُ إكمال)، والحكمُ خريطةُ مفاتيح —
+   كلٌّ يُقرأ **بنصّه** من خيارات السؤال، وكلُّ نصٍّ معزولٌ (`bdi`) في سطره. ⚠️ وكانت سطراً واحداً بـ«» حول جملٍ إنجليزيّة
+   داخل سطرٍ عربيّ، فانقلبت العلامتان ونقطةُ الجملة إلى طرفها الآخر (كشفته لقطة — فخُّ الاتجاه في ذاكرة المشروع). */
+function correctHtml(r){
+  const c = r.correct, opts = cur().options || [];
+  const txt = o => `<bdi>${esc(String(o?.body ?? '—'))}</bdi>`;
+  const byId = id => opts.find(o => String(o.id) === String(id));
+  const byK  = k  => opts.find(o => o.k === k);
+  if(r.kind === 'sentence')
+    return `<div class="line">الصواب: ${(Array.isArray(c) ? c : [c]).map(id =>
+      `<b class="snt-q">${txt(byId(id))}</b>`).join(' · ')}</div>`;
+  if(r.kind === 'ordering')
+    return `<div class="line">الترتيب الصحيح:</div>${(Array.isArray(c) ? c : []).map((id, i) =>
+      `<div class="line">${AR(i + 1)}. ${txt(byId(id))}</div>`).join('')}`;
+  if(r.kind === 'judge')
+    return `<div class="line">ما يدعمه النص:</div>${Object.entries(c.map || {}).map(([jk, ss]) =>
+      `<div class="line">${txt(byK(jk))} — ${(ss || []).map(s => `<b class="snt-q">${txt(byK(s))}</b>`).join(' · ')}</div>`).join('')}`;
+  return `<div class="line" dir="auto">الصواب: <b>${esc(showCorrect(r))}</b></div>`;
+}
+
 function showCorrect(r){
   const c = r.correct;
   if(c == null) return '—';
+  const opts = cur().options || [];
 
   // gap: مصفوفةُ خاناتٍ، ولكلّ خانةٍ بدائلُها
   if(Array.isArray(c))
@@ -294,7 +370,6 @@ function showCorrect(r){
 
   // matching · cloze: { مفتاحُ البند → نصُّ الصواب }
   if(typeof c === 'object'){
-    const opts = cur().options || [];
     const at   = k => opts.findIndex(o => String(o.k) === String(k));
     const name = k => { const i = at(k);
       return i >= 0 ? String(opts[i].body) : (isFinite(+k) ? AR(+k) : String(k)); };
