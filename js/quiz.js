@@ -60,7 +60,7 @@ import { loadList, loadLessons, isLibrary } from './student.js';
 /* `kindLabel` لا `KIND_LABEL`: اسمُ النمط صار يتبع لسانَ الورقة
    (render_q.js · b142)، والخريطةُ الخام لم يبقَ لها قارئٌ هنا. */
 import { questionText, questionBody, kindLabel, paperIsEnglish, gapCount,
-         bodyRead, sentenceText, sentencesOf, judgments } from './render_q.js';
+         bodyRead, sentenceText, sentencesOf, judgments, orderingUnit } from './render_q.js';
 import { wireMatching } from './match_dnd.js';
 
 /* مشتقّاتُ عرضٍ لا حالةَ محاولة — تُبنى كلُّها من S.quiz و S.ans عند
@@ -117,9 +117,10 @@ export function budget(quiz){
 
      🆕 والمزاوجة وحدها تُحسب بالبند لا بالسؤال: بندٌ ثالثٌ وبندٌ
         ثامن ليسا سؤالاً واحداً في الكلفة كما ليسا واحداً في الدرجة.
-        والأدنى ثلاثة — وهو ما تفرضه save_question أصلاً. */
+        والأدنى ثلاثة — وهو ما تفرضه save_question أصلاً.
+     🆕 b243 · والترتيبُ مثلُها (210): كلُّ بندٍ يُقرأ ويُوضع، وحدودُه حدودُها (٣–٨). */
   const perQ = qs.reduce((s, q) =>
-        s + (q.kind === 'matching'
+        s + ((q.kind === 'matching' || q.kind === 'ordering')
                ? COST.pair * Math.max(3, (q.options || []).length)
                : (COST.q[q.kind] ?? COST.q.mcq))
           + ((q.audio || q.video) ? COST.media : 0), 0);
@@ -187,6 +188,7 @@ export async function startQuiz(meta){
   (data.passages||[]).forEach(pg => S.passages[pg.id] = pg);
   S.itemId = meta.item_id || null;
      S.ans = data.questions.map(q=>({ q:q.id, kind:q.kind, o:null, os:[], j:null,   // 🆕 b242 · j: الحكم (209)
+                                   seq:[],                                       // 🆕 b243 · ترتيبُ الطالب (210)
                                    txt:Array(gapCount(q.body)||1).fill(""),
                                    pairs:{},                                     // 112 · { مفتاح البند: مفتاح المقابل }
                                    essay:"", sec:0, chg:0 }));
@@ -342,7 +344,7 @@ function mountStation(data){
   S.passages = {};
   (data.passages||[]).forEach(pg => S.passages[pg.id] = pg);
   S.itemId = null;
-  S.ans = data.questions.map(q=>({ q:q.id, kind:q.kind, o:null, os:[], j:null,
+  S.ans = data.questions.map(q=>({ q:q.id, kind:q.kind, o:null, os:[], j:null, seq:[],
                                    txt:Array(q.gaps||1).fill(""),
                                    pairs:{},                                     // 112 · { مفتاح البند: مفتاح المقابل }
                                    essay:"", sec:0, chg:0 }));
@@ -569,7 +571,7 @@ function renderPage(){
          const qAudio = srcOf(q.audio);
     const picked = o => multi ? a.os.includes(o.id) : a.o === o.id;
 
-       const body = questionBody(q, { picked, essay:a.essay, values:a.txt,
+       const body = questionBody(q, { picked, essay:a.essay, values:a.txt, seq:a.seq,
                                       pairs:a.pairs, en:EN, pickedJ: o => a.j === o.id });
 
     const sec = (q.section && q.section !== seen)
@@ -700,6 +702,26 @@ function renderPage(){
       S.arm = +arm.dataset.q; paintSnt();
     }
 
+    /* 🆕 b243 · الترتيب (210): بندٌ في القائمة ⇒ إلى الخانة التالية · وبندٌ مرتّب ⇒ يعود، وما بعده يتقدّم.
+       وتُعاد الوحدةُ وحدها بالدالّة نفسها (`orderingUnit`) لا الصفحة — فلا يُهدم صوتٌ ولا يُصفَّر زمن (b22).
+       ♿ والتركيزُ لا يضيع مع الزرّ المهدوم: بعد الوضع إلى أوّل ما بقي في القائمة — فـEnter المتكرّرة ترتّب بالمفاتيح —
+       وبعد الإعادة إلى البند نفسه في القائمة. */
+    const ob = e.target.closest('[data-ord]');
+    if(ob && !ob.disabled){
+      const card = ob.closest('.qcard'); if(!card) return;
+      const qid = +card.dataset.q, a = A.get(qid), q = qs.find(z => z.id === qid);
+      if(!a || !q) return;
+      credit(qid);
+      const v = +ob.dataset.ord, i = a.seq.indexOf(v);
+      if(i >= 0){ a.seq.splice(i, 1); a.chg++; } else a.seq.push(v);   // إعادةُ بندٍ مرتّب = تغيير
+      const unit = card.querySelector('.ord');
+      if(unit) unit.outerHTML = orderingUnit(q, a.seq, false, EN);
+      const next = i >= 0 ? card.querySelector(`.ord-pool [data-ord="${v}"]`)
+                          : (card.querySelector('.ord-pool [data-ord]') || card.querySelector(`.ord-seq [data-ord="${v}"]`));
+      next?.focus();
+      return;
+    }
+
     const b = e.target.closest('.opt'); if(!b) return;
     const card = b.closest('.qcard'), qid = +card.dataset.q;
     const a = A.get(qid), v = +b.dataset.o;
@@ -774,6 +796,7 @@ function renderPage(){
     const a = A.get(q.id);
         return (a.kind==='mcq' || a.kind==='sentence') ? a.o === null     // 🆕 b241
          : a.kind==='judge' ? (a.j === null || a.o === null)               // 🆕 b242 · نصفُ جوابٍ فراغٌ يُنبَّه عليه
+         : a.kind==='ordering' ? a.seq.length < (q.options || []).length   // 🆕 b243 · ترتيبٌ ناقصٌ كذلك
          : a.kind==='msq' ? a.os.length === 0
          : a.kind==='gap' ? a.txt.every(v => !v.trim())
          /* 114 · و«إكمال من قائمة» كالمزاوجة: كائنٌ فارغ ⇒ لم يُسنَد شيء */
@@ -832,6 +855,7 @@ async function finish(auto){
       (a.kind==='mcq' || a.kind==='sentence')                          // 🆕 b241 · الجملةُ خيارٌ كالاختيار
                      ? { q:a.q, o:a.o,   sec:a.sec, chg:a.chg }
     : a.kind==='judge' ? { q:a.q, j:a.j, o:a.o, sec:a.sec, chg:a.chg }   // 🆕 b242 · الحكمُ والدليل
+    : a.kind==='ordering' ? { q:a.q, seq:a.seq, sec:a.sec, chg:a.chg }   // 🆕 b243 · الترتيبُ معرّفاتٍ بترتيبه
     : a.kind==='msq' ? { q:a.q, os:a.os, sec:a.sec, chg:a.chg }
     : a.kind==='gap' ? { q:a.q, txt:a.txt.map(v=>v.trim()), sec:a.sec, chg:a.chg }
     : (a.kind==='matching' || a.kind==='cloze')
@@ -1008,6 +1032,30 @@ function renderResult(){
             ${x.is_correct ? '' : `<div class="line" style="margin-top:8px">ما يدعمه النص:</div>
               ${Object.entries(map).map(([jk, ss]) => `<div class="line">${fmt(byK(jk)?.body || '')} — ${
                 (ss || []).map(sk => `<b class="snt-q"><bdi>${fmt(byK(sk)?.body || '')}</bdi></b>`).join(' · ')}</div>`).join('')}`}`;
+        })()
+      /* 🆕 b243 · الترتيب (210) — ترتيبُ الطالب مرقّماً، وعلى كلّ بندٍ بعد الأوّل حكمُ رابطه: ✔ إن جاء بعد ما يسبقه
+         في الصواب مباشرة. ثمّ الدرجةُ بالروابط — وهي ما صُحِّح به، فيُقال كيف — والترتيبُ الصحيح إن لم يكتمل.
+         ولا تشخيص: الخطأُ في الموضع لا في البند (210 ④)، فيُقال ما فعله الطالب كالمزاوجة. */
+      : x.kind==='ordering'
+      ? (() => {
+          const key = x.accept || [], g = x.given || [];
+          const link = i => i > 0 && key.indexOf(g[i]) >= 0 && key.indexOf(g[i]) === key.indexOf(g[i-1]) + 1;
+          const hits = g.filter((_, i) => link(i)).length;
+          const row = (id, i, cls) => {
+            const o = opt(id);
+            return `<div class="jd${cls ? ' ' + cls : ''}">
+              <span class="key">${AR(i+1)}</span>
+              <div style="flex:1">
+                <span dir="${dirOf(o?.body || '')}" style="display:block">${fmt(o?.body || '')}</span>
+                ${cls ? `<span class="jd-m">${cls === 'hit' ? '✔' : '✗'}</span>` : ''}
+              </div></div>`;
+          };
+          return `<div class="line">ترتيبك:</div>
+            ${g.length ? `<div class="jds">${g.map((id, i) => row(id, i, i ? (link(i) ? 'hit' : 'err') : '')).join('')}</div>`
+                       : '<div class="line"><b>— بلا ترتيب —</b></div>'}
+            <div class="line">الدرجة: <b>${AR(hits)} من ${AR(Math.max(0, key.length - 1))}</b> — درجة لكل بند جاء بعد ما يسبقه في الترتيب الصحيح</div>
+            ${x.is_correct ? '' : `<div class="line" style="margin-top:8px">الترتيب الصحيح:</div>
+              <div class="jds">${key.map((id, i) => row(id, i, '')).join('')}</div>`}`;
         })()
       : x.kind==='sentence'
       ? (() => {

@@ -801,6 +801,17 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
 .qcard.armed{box-shadow:0 0 0 2px var(--accent)}
 .snt-q{font-weight:700}
 
+/* ── 🆕 b243 · الترتيب (210 · ق١٦) — خاناتٌ مرقّمة فوق، وبنودٌ تُنقر تحت ──
+   🔑 المرتَّبُ بعائلة `accent` كالخيار المختار (`.opt.sel`)، والخانةُ الفارغةُ محايدةٌ منقّطةُ الحدّ كـ`.snt-pick` قبل الاختيار:
+      كلاهما «لم يُملأ بعد». ولا `ok` قبل الحكم.
+   📐 والخانةُ بارتفاع البند نفسه (حشوُه ومفتاحُه) فلا تقفز الصفحةُ حين تُملأ. */
+.ord-seq{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px}
+.ord-gap{display:flex;align-items:center;gap:12px;padding:13px 15px;border-radius:11px;
+  border:1px dashed var(--line-strong);line-height:1.8;font-size:var(--fs-read)}
+.ord-gap .key{opacity:.75}
+.ord-pool{margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.ord-x{flex:0 0 auto;align-self:center;font-size:var(--fs-tag);color:var(--text-muted)}
+
 /* ═══ 🆕 b143 · الامتحان المقسوم — نصٌّ وأسئلةٌ جنباً إلى جنب ═══
 
    🔑 **البنيةُ واحدةٌ في العرضين**، و@media وحدها تقرّر أعمودان أم
@@ -929,7 +940,9 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
   font-size:var(--fs-ui);line-height:1.75}
 .jd .key{flex:0 0 27px;height:27px;font-size:var(--fs-tag)}
 .jd.hit{border-color:var(--ok-edge);background:var(--ok-soft)}
-.jd.err{border-color:var(--danger-edge);background:var(--danger-soft)}
+/* 🔴 b243 · و`.err` اسمُ صندوق الخطأ العامّ في base.css (`margin-bottom:14px`) — فكان كلُّ صفٍّ خاطئٍ في مراجعة المزاوجة
+   والإكمال من قائمة يُباعد ما تحته ضعفَي الفاصل. قِيس في مراجعة الترتيب: ٢١px بعد الخاطئ و٧ بعد غيره. */
+.jd.err{border-color:var(--danger-edge);background:var(--danger-soft);margin:0}
 .jd.dim{opacity:.6}
 .jd-m{display:block;margin-top:4px;font-family:'Almarai';font-weight:800;font-size:var(--fs-tag);color:var(--text-muted)}
 .jd.hit .jd-m{color:var(--ok)}

@@ -12,6 +12,7 @@ export const KIND_LABEL = {
   matching:'المزاوجة',
   sentence:'اختيار الجملة',          // 🆕 b241 · 208
   judge:'حكم ودليله',                // 🆕 b242 · 209
+  ordering:'الترتيب',                // 🆕 b243 · 210
   essay:'مقالي قصير'
 };
 
@@ -39,6 +40,7 @@ export const KIND_LABEL_EN = {
   matching:'Matching',
   sentence:'Choose the sentence',
   judge:'Judgment and evidence',
+  ordering:'Put in order',
   essay:'Short written answer'
 };
 
@@ -59,6 +61,9 @@ const T_AR = {
   snt:    'تُختار الجملة بالضغط عليها في النص',
   sntNone:'لا جملة مختارة بعد',
   jdB:    'والدليل: الجملة التي تدلّ على الحكم، بالضغط عليها في النص',
+  ord:    'يُضغط كل بند في دوره، من الأول إلى الأخير. والضغط على بند مرتّب يعيده',
+  ordBack:'إعادته إلى القائمة',
+  ordLive:(n, t) => `رُتّب ${AR(n)} من ${AR(t)}`,
   num:    AR
 };
 
@@ -74,6 +79,9 @@ const T_EN = {
   snt:    'Tap the sentence in the passage',
   sntNone:'No sentence chosen yet',
   jdB:    'Then tap the sentence in the passage that shows it',
+  ord:    'Tap each item in turn, from first to last. Tap a placed item to take it back',
+  ordBack:'take it back',
+  ordLive:(n, t) => `${n} of ${t} placed`,
   num:    String
 };
 
@@ -191,6 +199,41 @@ export function sentenceText(body, options, chosen = null, ro = false){
   return out + fmt(src.slice(at));
 }
 
+/* ── 🆕 b243 · الترتيب (210 · ق١٦) ───────────────────────────────
+   🔑 **يُبنى الترتيبُ بالنقر لا بتحريك القائمة:** البنودُ تحت (مخلوطةً بالبذرة · `ordering_pool`)، وكلُّ نقرةٍ تضع بنداً
+      في الخانة التالية فوق، ونقرةٌ على بندٍ مرتّبٍ تعيده. فلا يُحسب للطالب ترتيبٌ لم يلمسه — وقائمةٌ تُسحب وتبدأ
+      مخلوطةً كانت تمنح من لم يجب روابطَ الخلط نفسِه.
+   📐 والخاناتُ الفارغةُ مرقّمةٌ ظاهرة: يرى الطالبُ كم بقي وأين يقع ما ينقره. وبعائلة `accent` وحدها كالخيار المختار —
+      «اخترتَ / اضغط هنا»، ولا `ok` قبل الحكم.
+   ♿ كلُّ بندٍ زرٌّ أصيل، والقائمةُ `<ol>` تُقرأ بترتيبها، والحالةُ تُعلَن («رُتّب ٣ من ٥»). وهذه ترسم ولا تُحرّك:
+      النقرُ في quiz.js، ثمّ يُعاد رسمُ الوحدة وحدها بالدالّة نفسها. */
+export function orderingUnit(q, seq = [], ro = false, en = false){
+  const T = TX(en);
+  const all = q.options || [];
+  const byId = new Map(all.map(o => [o.id, o]));
+  const placed = (seq || []).map(id => byId.get(id)).filter(Boolean);
+  const pool = all.filter(o => !placed.includes(o));
+  /* والخانةُ الفارغة باتجاه البنود لا الصفحة: رقمُها حيث يقع رقمُ البند حين يُملأ (قِيس: كانت يميناً والمملوءةُ يساراً) */
+  const d = dirOf(all.map(o => o.body || '').join(' '));
+  return `<div class="ord${ro ? ' ro' : ''}">
+      <ol class="ord-seq" dir="${d}">${placed.map((o, i) => `<li>
+        <button type="button" class="opt sel ord-on" data-ord="${o.id}"
+                dir="${dirOf(o.body)}" style="text-align:start" ${ro ? 'disabled' : ''}>
+          <span class="key">${T.num(i+1)}</span>
+          <span style="flex:1">${fmt(o.body)}</span>
+          ${ro ? '' : `<span class="ord-x" aria-hidden="true">✕</span><span class="sr-only">${esc(T.ordBack)}</span>`}
+        </button></li>`).join("")}${pool.map((_, i) => `
+        <li class="ord-gap"><span class="key">${T.num(placed.length + i + 1)}</span></li>`).join("")}</ol>
+      ${pool.length ? `<div class="opts ord-pool">${pool.map(o => `
+        <button type="button" class="opt" data-ord="${o.id}"
+                dir="${dirOf(o.body)}" style="text-align:start" ${ro ? 'disabled' : ''}>
+          <span style="flex:1">${fmt(o.body)}</span>
+        </button>`).join("")}</div>` : ''}
+      <p class="ord-live sr-only" aria-live="polite" role="status">${
+        placed.length ? esc(T.ordLive(placed.length, all.length)) : ''}</p>
+    </div>`;
+}
+
 /* جسم البند: الخيارات أو الحقول أو المزاوجة أو المقالي.
    opts = { picked, values, pairs, ro, bank } */
 export function questionBody(q, opts = {}){
@@ -222,6 +265,9 @@ export function questionBody(q, opts = {}){
           <span style="flex:1">${fmt(o.body)}</span>
         </button>`).join("")}</div>`;
   }
+
+  if(q.kind === 'ordering')
+    return `<div class="q-hint">${esc(T.ord)}</div>${orderingUnit(q, opts.seq || [], ro, en)}`;
 
   if(q.kind === 'sentence'){
     const cur = (q.options || []).find(o => picked(o));

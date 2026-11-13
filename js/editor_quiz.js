@@ -48,7 +48,7 @@ import { attachUpload } from './upload.js';
 import { openCourse, openTools, toolBtn, cmdHead } from './editor.js';
 import { openItems } from './editor_items.js';
 import { questionText, questionBody, KIND_LABEL, kindLabel, paperIsEnglish,
-         gapCount } from './render_q.js';
+         gapCount, orderingUnit } from './render_q.js';
 import { wireMatching } from './match_dnd.js';
 import { practiceLinkBox } from './practice_links.js';
 import { openBanks, openForm } from './editor_banks.js';
@@ -531,6 +531,16 @@ function qCard(q){
 
         <label class="fl" style="margin-top:20px">شرح الخطأ — يراه الطالب بعد التسليم *</label>
         <textarea id="qe" placeholder="أيّ الأحكام يدعمه النص، وبأيّ جملة؟"
+          ${locked?'disabled':''}>${esc(q.explanation||'')}</textarea>
+      ` : q.kind === 'ordering' ? `
+
+        <div class="eq-hint" style="display:block;margin-bottom:9px;line-height:1.85">
+          البنود تُكتب بترتيبها الصحيح، من الأول إلى الأخير — والطالب يراها مخلوطة ويرتّبها.
+          من ثلاثة إلى ثمانية، ولكل بند جاء بعد سابقه الصحيح درجة.</div>
+        <div id="ordbox">${ordFields(q, locked)}</div>
+
+        <label class="fl" style="margin-top:20px">شرح الخطأ — يراه الطالب بعد التسليم *</label>
+        <textarea id="qe" placeholder="ما الذي يدلّ على الترتيب — كلمات الزمن، أو السبب ونتيجته؟"
           ${locked?'disabled':''}>${esc(q.explanation||'')}</textarea>
       ` : q.kind === 'sentence' ? `
 
@@ -1127,6 +1137,58 @@ function wireJudge(q, main){
   });
 }
 
+/* ═══════════ 🆕 b243 · الترتيب (210 · ق١٦) ═══════════
+
+   🔑 **البنودُ تُكتب بترتيبها الصحيح — فموضعُها هو المفتاح** (210 ③): لا علامةَ «صحيحة» ولا مفتاحَ ثانٍ يُحفظ فيختلف
+      عن الأوّل بصمت. والطالبُ يراها مخلوطة (`ordering_pool`)، فترتيبُ المحرّر ليس ترتيبَه.
+   🔴 **والنقلُ والحذفُ والإضافةُ تغييرُ بنية** ⇒ تُقرأ الحقولُ قبله ثمّ يُرسم بلا قراءة (`restructure` · درسُ b242 في `wireJudge`).
+   ♿ والتركيزُ يتبع البندَ المنقول: سهمُه في موضعه الجديد — فيُنقل بالمفاتيح خطوةً بعد خطوة. */
+function ordFields(q, locked){
+  const list = q.options || [];
+  return `<div class="opts eq-opts">${list.map((o, i) => `
+      <div class="eq-opt" dir="${dirOf(o.body)}">
+        <span class="key">${AR(i + 1)}</span>
+        <input class="eq-ob" data-o="${i}" dir="auto" value="${esc(o.body || '')}"
+               placeholder="${i === 0 ? 'البند الأول' : 'البند ' + AR(i + 1)}" ${locked ? 'disabled' : ''}>
+        ${locked ? '' : `
+        <button class="it-b" data-oup="${i}" title="تقديمه" aria-label="تقديم البند ${AR(i + 1)}" ${i === 0 ? 'disabled' : ''}>↑</button>
+        <button class="it-b" data-odn="${i}" title="تأخيره" aria-label="تأخير البند ${AR(i + 1)}" ${i === list.length - 1 ? 'disabled' : ''}>↓</button>
+        <button class="eq-x" data-orm="${i}" title="حذف البند">✕</button>`}
+      </div>`).join('')}</div>
+    ${locked ? '' : '<button class="btn ghost eq-addo" id="oadd">＋ بند</button>'}`;
+}
+
+function wireOrd(q, main){
+  const mark = () => { dirty = true; };
+  const restructure = (fn, focus) => {
+    collect(q); fn(); mark();
+    document.getElementById("main").innerHTML = qCard(q);
+    wire(q);
+    if(focus) focus();
+  };
+  const at = (attr, i) => document.querySelector(`#main [${attr}="${i}"]:not([disabled])`);
+  const move = (i, j) => restructure(() => {
+    const o = q.options; [o[i], o[j]] = [o[j], o[i]];
+  }, () => (at(j < i ? 'data-oup' : 'data-odn', j) || at(j < i ? 'data-odn' : 'data-oup', j))?.focus());
+
+  main.querySelectorAll('[data-oup]').forEach(el => el.onclick = () => {
+    const i = +el.dataset.oup; if(i > 0) move(i, i - 1);
+  });
+  main.querySelectorAll('[data-odn]').forEach(el => el.onclick = () => {
+    const i = +el.dataset.odn; if(i < q.options.length - 1) move(i, i + 1);
+  });
+  main.querySelectorAll('[data-orm]').forEach(el => el.onclick = () => {
+    if(q.options.length <= 3){ toast('يلزم ثلاثة بنود على الأقل'); return; }
+    restructure(() => { q.options.splice(+el.dataset.orm, 1); });
+  });
+  const add = main.querySelector('#oadd');
+  if(add) add.onclick = () => {
+    if(q.options.length >= 8){ toast('ثمانية بنود حدّ كافٍ'); return; }
+    restructure(() => { q.options.push({ label: null, body: '', correct: false, dx: null }); },
+                () => document.querySelector(`#main .eq-ob[data-o="${q.options.length - 1}"]`)?.focus());
+  };
+}
+
 /* ═══════════ الخانة — النسخ المكافئة ═══════════
    ⚠️ الخانة ليست مدى كالقسم والنصّ: النسخ قد تتباعد في الترتيب،
       فلا تُستعمل range() هنا بل بحثٌ بالمفتاح في كل الأسئلة.
@@ -1710,11 +1772,17 @@ function wire(q){
     if(q.options.length <= min){
       toast(min === 3 ? "الاختيار المتعدّد يحتاج ثلاثة خيارات على الأقل"
                       : "السؤال يحتاج خيارين على الأقل"); return; }
-    q.options.splice(+el.dataset.rm, 1); mark(); repaint(q);
+    /* 🔴 b243 · لا `repaint` بعد الحذف: هي تقرأ الحقولَ بمواضعها في الرسم القديم (`collect`)، والحذفُ يُزيحها — فيعود
+       نصُّ المحذوف ويُزاح كلُّ نصٍّ عن صوابه وكوده. قِيس: حذفُ «أ» من أ ب✔ ج د جعل الصوابَ على نصّ «أ» المحذوف، وسقط «د»،
+       وانتقل كودُه إلى «ج». ⇒ تُقرأ الحقولُ **قبل** الحذف ثمّ يُرسم بلا قراءة (درسُ b242 في `wireJudge`). */
+    collect(q);
+    q.options.splice(+el.dataset.rm, 1); mark();
+    main.innerHTML = qCard(q); wire(q);
   });
 
   if(q.kind === 'sentence') wireSnt(q, main);        // 🆕 b241 · 208
   if(q.kind === 'judge')    wireJudge(q, main);      // 🆕 b242 · 209
+  if(q.kind === 'ordering') wireOrd(q, main);        // 🆕 b243 · 210
 
   const ao = main.querySelector("#addo");
   if(ao) ao.onclick = () => {
@@ -2525,6 +2593,9 @@ async function addQuestion(kind){
     judge:   { id:null, kind:'judge', body:'', answered:0, explanation:'',
                options: [{ k:'J1', body:'', dx:null }, { k:'J2', body:'', dx:null }],
                accept: { mode:'two', map:{} } },
+    /* 🆕 b243 · 210 · ثلاثة بنودٍ تُكتب بترتيبها الصحيح — وهو المفتاح */
+    ordering:{ id:null, kind:'ordering', body:'', answered:0, explanation:'',
+               options: [0,1,2].map(() => ({ label:null, body:'', correct:false, dx:null })) },
     essay: { id:null, kind:'essay', body:'', answered:0, model:'', options:[] }
   };
   Z.questions.push(blank[kind] || blank.mcq);
@@ -2699,6 +2770,16 @@ function preview(){
         `dir` على غلافِ الورقة (القسم · النصّ · البطاقة) لا على الصفحة. */
   const pvEn = !!Z.tool && paperIsEnglish(Z);
 
+  /* 🆕 b243 · الترتيبُ في المعاينة كما عند الطالب: مخلوطٌ لا بترتيب التأليف (وإلا عرضت المعاينةُ الجوابَ مرتّباً)،
+     ولا بترتيبه أبداً، ويُرتَّب بالنقر بالدالّة نفسها. وبندٌ لم يُحفظ بعد يأخذ معرّفاً للمعاينة وحدها. */
+  const pvSeq = [];
+  const pq = q.kind !== 'ordering' ? q : (() => {
+    const os = (q.options || []).map((o, i) => ({ ...o, id: o.id ?? -(i + 1) }));
+    const sh = [...os];
+    for(let i = sh.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [sh[i], sh[j]] = [sh[j], sh[i]]; }
+    return { ...q, options: sh.every((o, i) => o === os[i]) ? sh.reverse() : sh };
+  })();
+
   app.innerHTML = `
     <div class="crumb" id="pvx">→ ${pvOnly === 'form' ? 'رجوع إلى التركيب'
                                      : pvOnly ? 'مصادر الدرس' : 'رجوع إلى التحرير'}</div>
@@ -2730,7 +2811,7 @@ function preview(){
                     style="width:100%;margin-bottom:12px"></audio>`:''}
         ${v?`<iframe class="media-v" src="${esc(v)}" allowfullscreen></iframe>`:''}`; })()}
       ${questionText(q, [], false, pvEn)}
-      ${questionBody(q, { bank: q.bank, pairs: [], en: pvEn, list: true })}
+      ${questionBody(pq, { bank: q.bank, pairs: [], en: pvEn, list: true, seq: pvSeq })}
     </div>
     </div>
 
@@ -2749,6 +2830,15 @@ function preview(){
   /* المزاوجة في المعاينة تعمل كما تعمل عند الطالب — والدالّة نفسها،
      فما يجرّبه المؤلّف هو ما سيلمسه الطالب لا محاكاةً له. */
   wireMatching(app);
+
+  if(q.kind === 'ordering') document.getElementById('qcard').addEventListener('click', e => {
+    const b = e.target.closest('[data-ord]'); if(!b) return;
+    const v = +b.dataset.ord, i = pvSeq.indexOf(v);
+    if(i >= 0) pvSeq.splice(i, 1); else pvSeq.push(v);
+    document.querySelector('#qcard .ord').outerHTML = orderingUnit(pq, pvSeq, false, pvEn);
+    (document.querySelector(i >= 0 ? `#qcard .ord-pool [data-ord="${v}"]` : '#qcard .ord-pool [data-ord]')
+      || document.querySelector(`#qcard [data-ord="${v}"]`))?.focus();
+  });
 
   app.querySelectorAll("[data-pvo]").forEach(el => el.onclick = () => {
     if(q.kind === 'msq'){                       // تبديلٌ في مكانه — لا إلغاء لما سواه
@@ -3767,6 +3857,7 @@ function kindChips(){
        + chip('cloze',    'إكمال من قائمة',  r.cloze || 0)
        + chip('sentence', 'اختيار الجملة',   r.sentence || 0)        // 🆕 b241 · 208
        + chip('judge',    'حكم ودليله',      r.judge || 0)           // 🆕 b242 · 209
+       + chip('ordering', 'ترتيب',           r.ordering || 0)        // 🆕 b243 · 210
        + chip('essay',    'مقالي',           r.essay || 0);
 }
 
@@ -3963,7 +4054,10 @@ const NOSEC   = '— بلا قسم —';
    في شارة الفلتر. و«gap» سقط سهواً فكان يُكتب بحروفه اللاتينية. */
 const F_LABEL = { mcq:'◉ اختيار من متعدد', msq:'☑ اختيار متعدّد الإجابات',
                   matching:'⇄ المزاوجة', gap:'✎ إكمال الناقص',
-                  cloze:'⇢ إكمال من قائمة', essay:'✍️ مقالي' };
+                  cloze:'⇢ إكمال من قائمة', essay:'✍️ مقالي',
+                  /* 🔴 b243 · و`sentence` و`judge` سقطا هنا في b241 وb242 — بالعطل نفسِه الذي يصفه رأسُ هذه الخريطة:
+                     شارتاهما في عدّاد الأنماط، ونقرُ إحداهما كان يُخفي الأسئلةَ كلَّها ويكتب المفتاحَ خاماً */
+                  sentence:'❝ اختيار الجملة', judge:'⚖ حكم ودليله', ordering:'⇅ الترتيب' };
 const F_JUDGE = new Set(['all','warn','none','free']);   // ما يسكن الشريط نفسه
 /* ⚠️ ومفاتيحُ الأنماط تُشتقّ من F_LABEL لا تُعاد كتابتها: كانت قائمةً
    ثانيةً في nodePass، فنمطٌ يُضاف إلى إحداهما يسقط من الأخرى صامتاً —
@@ -4043,7 +4137,8 @@ function nodes(idxs){
 
 const kIcon = k => k === 'essay' ? '✍️' : k === 'msq' ? '☑'
                  : k === 'matching' ? '⇄' : k === 'gap' ? '✎'
-                 : k === 'cloze' ? '⇢' : k === 'sentence' ? '❝' : k === 'judge' ? '⚖' : '◉';
+                 : k === 'cloze' ? '⇢' : k === 'sentence' ? '❝' : k === 'judge' ? '⚖'
+                 : k === 'ordering' ? '⇅' : '◉';
 
 /* نصُّ الصفّ في الشريط — والقصُّ هنا سقفٌ للرسم لا حدٌّ لما يُرى: ما يُرى يحكمه عرضُ الصفّ ونقاطُ CSS.
    🔴 b212 · كان ٣٠ حرفاً في الخانة و٣٨ في السؤال، والحركاتُ تُعدّ أحرفاً ⇒ يُقطع النصّ قبل أن يمتلئ
@@ -4209,6 +4304,7 @@ function listHead(){
         <button data-k="matching"><i>⇄</i><div><b>المزاوجة</b><span>لكلّ بند درجة</span></div></button>
         <button data-k="sentence"><i>❝</i><div><b>اختيار الجملة</b><span>ينقر الطالب جملةً في النصّ المشترك</span></div></button>
         <button data-k="judge"><i>⚖</i><div><b>حكم ودليله</b><span>حكمٌ يُختار، ثمّ جملةٌ تدلّ عليه</span></div></button>
+        <button data-k="ordering"><i>⇅</i><div><b>الترتيب</b><span>لكلّ رابطٍ صحيح درجة</span></div></button>
         <hr>
         <button data-k="essay"><i>¶</i><div><b>مقالي قصير</b><span>يصحّحه المعلّم</span></div></button>
       </div>
