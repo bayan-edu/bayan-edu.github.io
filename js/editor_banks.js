@@ -57,7 +57,9 @@ export async function openBanks(course, subject){
           <span class="chip">${N(b.slots, 'خانة', 'خانتان', 'خانات', 'خانة')}</span>
           <span class="chip">${N(b.questions, 'سؤال', 'سؤالان', 'أسئلة', 'سؤالاً')}</span>
           ${b.passages ? `<span class="chip">${N(b.passages, 'نصّ', 'نصّان', 'نصوص', 'نصّاً')}</span>` : ''}
-          ${b.forms ? `<span class="chip g">يسحب منه ${N(b.forms, 'نموذج', 'نموذجان', 'نماذج', 'نموذجاً')}</span>`
+          ${/* 🆕 b247 · بنكُ اختبار المستوى (214) لا نموذجَ له — يركّب منه المحرّكُ محطّاتِه، فـ«لم يسحب منه نموذج» تُضلّل فيه */
+            b.tier ? `<span class="chip">بنك اختبار المستوى · <bdi>${esc(b.tier)}</bdi></span>`
+            : b.forms ? `<span class="chip g">يسحب منه ${N(b.forms, 'نموذج', 'نموذجان', 'نماذج', 'نموذجاً')}</span>`
                     : `<span class="chip">لم يسحب منه نموذج بعد</span>`}
         </div>
       </div>
@@ -122,7 +124,9 @@ export async function openForm(course, lesson, z){
 
   const [bk, strands] = await Promise.all([
     api.subjectBanks(course.subject_id), strandsOf(course.subject_id)]);
-  const banks = bk.data?.ok ? bk.data.banks || [] : [];
+  /* 🆕 b247 · وبنكُ اختبار المستوى لا يُسحب منه في نموذج (214 ⑧ · والحارسُ في form_slots_guard) — فلا يُعرض هنا،
+     وإلا فُتحت الشاشةُ عليه إن كان أوّلَها، وسحب منه «تركيب» ثمّ ردّ الحفظُ السطورَ كلَّها */
+  const banks = (bk.data?.ok ? bk.data.banks || [] : []).filter(b => !b.tier);
   F = { course, lesson, z, rows: rowsOf(z), dirty: false, banks, strands,
         bankErr: bk.error?.message || (bk.data && !bk.data.ok ? bk.data.error : null),
         bank: banks[0]?.id ?? null, f: { strand: '', obj: '', diff: '' },

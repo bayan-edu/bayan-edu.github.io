@@ -316,6 +316,7 @@ const reopen = () => ctx.bank ? openBank(ctx.course, ctx.bank, Z.id) : openQuiz(
    كلَّها، فصندوقٌ ثانٍ بحقولٍ أقلّ يُعيد ما لم يعرضه إلى افتراضه بصمت. */
 export function quizSettings(){
   const A = Z.attempts || 0;
+  const TB = Z.station_kind === 'adaptive';     // 🆕 b247 · بنكُ اختبار المستوى: دورُه وكتمانُه ثابتان (214 ⑧)
   const box = document.createElement('div');
   box.className = 'modal';
   box.innerHTML = `
@@ -347,7 +348,7 @@ export function quizSettings(){
         ⚠️ أكواد تشخيص الاستماع تصير أضعف — قد يكون الخطأ فوات سمع لا سوء فهم.</div>
 
       <label class="fl" style="margin-top:12px">بعد التسليم</label>
-      <select id="qs_r">
+      <select id="qs_r" ${TB ? 'disabled' : ''}>
         <option value="immediate" ${Z.reveal!=='never'?'selected':''}>تُعرض المراجعة والتشخيص</option>
         <option value="never" ${Z.reveal==='never'?'selected':''}>لا يُعرض شيء — لمحطّات القياس</option>
       </select>
@@ -367,7 +368,11 @@ export function quizSettings(){
           <div class="eq-hint" style="margin-top:3px">الأقسام والنصوص تبقى كتلاً بترتيبها،
             والخلط داخلها. وأسئلة النصّ المشترك لا تُخلط.</div></span></label>`}
 
-      ${Z.tool ? `
+      ${/* 🆕 b247 · بنكُ اختبار المستوى: قائمةُ الأدوار أدناه بلا «adaptive»، فيختار المتصفّحُ أوّلَها ويكتبه الحفظ (214 ⑧)
+            ⇒ تُخفى فيه ويُقال ما هو. والكتمانُ ثابتٌ فيه (quizzes_adaptive_chk)، فقائمتُه معطّلةٌ أعلاه */
+        TB ? `
+        <div class="eq-hint" style="margin-top:14px">بنك اختبار المستوى · <bdi>${esc(Z.tier || '')}</bdi> ·
+          <bdi dir="ltr">${esc(Z.tool || '')}</bdi> — الطبقة والأداة من ملف الاستيراد، ولا تُبدَّل هنا.</div>` : Z.tool ? `
         <div style="display:flex;gap:12px;margin-top:14px">
           <div style="flex:1"><label class="fl">الأداة</label>
             <input id="qs_tl" dir="ltr" value="${esc(Z.tool)}"></div>
@@ -441,6 +446,12 @@ export function quizSettings(){
 function qCard(q){
   const locked = q.answered > 0;
   const multi  = q.kind === 'msq';
+  /* 🆕 b247 · بنكُ اختبار المستوى لا يُري الطالبَ شيئاً (reveal = never): فالحقلُ فيه دليلُ الإجابة الصحيحة
+     للتوثيق، لا شرحٌ للطالب ولا شرطٌ للحفظ (214 ⑦ · قرارُ المالك ١٤ نوفمبر). وما خصّ النمطَ من الإرشاد باقٍ:
+     «أيّ الأحكام يدعمه النص، وبأيّ جملة؟» سؤالُ دليلٍ أصلاً. */
+  const TB = Z?.station_kind === 'adaptive';
+  const EL = TB ? 'دليل الإجابة الصحيحة — للتوثيق، ولا يراه الطالب' : 'شرح الخطأ — يراه الطالب بعد التسليم *';
+  const EP = TB ? 'ما دليل الإجابة الصحيحة من النص أو المسموع؟' : 'لماذا الإجابة الصحيحة صحيحة، وأين يزلّ الفهم؟';
   const dx = (S.tree?.dx) || [];
   const fams = [...new Set(dx.map(d => d.family || 'عام'))];
 
@@ -494,8 +505,8 @@ function qCard(q){
         <div class="opts eq-opts">${(q.options||[]).map(opt).join("")}</div>
         ${locked ? '' : '<button class="btn ghost eq-addo" id="addo">＋ خيار</button>'}
 
-        <label class="fl" style="margin-top:20px">شرح الخطأ — يراه الطالب بعد التسليم *</label>
-        <textarea id="qe" placeholder="لماذا الإجابة الصحيحة صحيحة، وأين يزلّ الفهم؟"
+        <label class="fl" style="margin-top:20px">${EL}</label>
+        <textarea id="qe" placeholder="${EP}"
           ${locked?'disabled':''}>${esc(q.explanation||'')}</textarea>
              ` : q.kind === 'gap' ? `
 
@@ -506,15 +517,15 @@ function qCard(q){
         </div>
         <div id="gapbox">${gapFields(q, locked)}</div>
 
-        <label class="fl" style="margin-top:20px">شرح الخطأ — يراه الطالب بعد التسليم *</label>
-        <textarea id="qe" placeholder="لماذا الإجابة الصحيحة صحيحة، وأين يزلّ الفهم؟"
+        <label class="fl" style="margin-top:20px">${EL}</label>
+        <textarea id="qe" placeholder="${EP}"
           ${locked?'disabled':''}>${esc(q.explanation||'')}</textarea>
       ` : q.kind === 'cloze' ? `
 
         <div id="gapbox">${clozeFields(q, locked)}</div>
 
-        <label class="fl" style="margin-top:20px">شرح الخطأ — يراه الطالب بعد التسليم *</label>
-        <textarea id="qe" placeholder="لماذا الإجابة الصحيحة صحيحة، وأين يزلّ الفهم؟"
+        <label class="fl" style="margin-top:20px">${EL}</label>
+        <textarea id="qe" placeholder="${EP}"
           ${locked?'disabled':''}>${esc(q.explanation||'')}</textarea>
 
         <div class="cz-pv">
@@ -530,7 +541,7 @@ function qCard(q){
           حكمٌ واحدٌ أو أكثر، ومعه حكمٌ مرفوضٌ واحدٌ على الأقل. والكودُ للمرفوض وللجملة التي لا تدلّ.</div>
         <div id="jdbox">${judgeFields(q, locked, dxSelect)}</div>
 
-        <label class="fl" style="margin-top:20px">شرح الخطأ — يراه الطالب بعد التسليم *</label>
+        <label class="fl" style="margin-top:20px">${EL}</label>
         <textarea id="qe" placeholder="أيّ الأحكام يدعمه النص، وبأيّ جملة؟"
           ${locked?'disabled':''}>${esc(q.explanation||'')}</textarea>
       ` : q.kind === 'ordering' ? `
@@ -540,7 +551,7 @@ function qCard(q){
           من ثلاثة إلى ثمانية، ولكل بند جاء بعد سابقه الصحيح درجة.</div>
         <div id="ordbox">${ordFields(q, locked)}</div>
 
-        <label class="fl" style="margin-top:20px">شرح الخطأ — يراه الطالب بعد التسليم *</label>
+        <label class="fl" style="margin-top:20px">${EL}</label>
         <textarea id="qe" placeholder="ما الذي يدلّ على الترتيب — كلمات الزمن، أو السبب ونتيجته؟"
           ${locked?'disabled':''}>${esc(q.explanation||'')}</textarea>
       ` : q.kind === 'sentence' ? `
@@ -550,15 +561,15 @@ function qCard(q){
           ويُدمج ما انقسم خطأً ويُفصل ما اجتمع. وصحيحة واحدة أو أكثر، والكود للخاطئة وحدها.</div>
         <div id="sntbox">${sntFields(q, locked, dxSelect)}</div>
 
-        <label class="fl" style="margin-top:20px">شرح الخطأ — يراه الطالب بعد التسليم *</label>
+        <label class="fl" style="margin-top:20px">${EL}</label>
         <textarea id="qe" placeholder="لماذا هذه الجملة تدلّ، وما الذي يُغري بغيرها؟"
           ${locked?'disabled':''}>${esc(q.explanation||'')}</textarea>
       ` : q.kind === 'matching' ? `
 
         <div id="mtbox">${matchFields(q, locked)}</div>
 
-        <label class="fl" style="margin-top:20px">شرح الخطأ — يراه الطالب بعد التسليم *</label>
-        <textarea id="qe" placeholder="لماذا الإجابة الصحيحة صحيحة، وأين يزلّ الفهم؟"
+        <label class="fl" style="margin-top:20px">${EL}</label>
+        <textarea id="qe" placeholder="${EP}"
           ${locked?'disabled':''}>${esc(q.explanation||'')}</textarea>
       ` : `
         <label class="fl" style="margin-top:16px">الإجابة النموذجية — يقارن بها الطالب نفسه *</label>
@@ -2868,7 +2879,14 @@ const SAMPLE = JSON.stringify({
 
 function parseImport(txt){
   const dxCodes = new Set(((S.tree?.dx) || []).map(d => d.code));
-  const out = { passages: [], questions: [], groups: {}, issues: [], warns: [] };
+  const out = { passages: [], questions: [], groups: {}, issues: [], warns: [], notes: [] };
+  /* 🆕 b247 · وبنكُ اختبار المستوى معفًى من «شرح الخطأ» (214 ⑦ · قرارُ المالك): الحقلُ فيه دليلُ الإجابة الصحيحة
+     للتوثيق — فالسؤالُ بلا دليلٍ يُعدّ ويُحذَّر منه مرّةً في الذيل، ولا يُردّ به الملفّ.
+     ⚠️ وفي `notes` لا في `warns`: صندوقُ warns يختمه سطرٌ عن فخاخ الخانات («صحّح الخيارات بعده»)
+        يُقرأ هراءً تحت تنبيهٍ عن الدليل. */
+  const TB = Z?.station_kind === 'adaptive';
+  let noEv = 0;
+  const noExpl = n => TB ? noEv++ : out.issues.push(`س${n}: بلا شرح للخطأ`);
   let j;
   try { j = JSON.parse(txt); }
   catch(e){ out.issues.push('JSON غير صالح: ' + e.message); return out; }
@@ -2939,7 +2957,8 @@ function parseImport(txt){
        فروعها، فلو وُضع في الذيل لم يُفحص إلا الاختيارُ من متعدّد. */
     const obRaw = String(q.objective ?? '').trim();
     if(!obRaw){
-      out.warns.push(`س${n}: بلا هدف — التشخيصُ لا ينطق عنه`);
+      /* 🆕 b247 · وبنكُ اختبار المستوى لا يُلزَم فيه هدفٌ ولا يُعرض منه تشخيص (214 ②) — فلا يُعدّ غيابُه سؤالاً سؤالاً */
+      if(!TB) out.warns.push(`س${n}: بلا هدف — التشخيصُ لا ينطق عنه`);
     } else if(obList){
       if(/^\d+$/.test(obRaw))
         out.issues.push(`س${n}: الهدف يُكتب بكوده لا برقمه — "${obRaw}"`);
@@ -2991,7 +3010,7 @@ function parseImport(txt){
         if(bad) out.issues.push(`س${n}: مقبول ليس في القائمة — "${bad}"`);
       }
 
-      if(!String(q.explanation || '').trim()) out.issues.push(`س${n}: بلا شرح للخطأ`);
+      if(!String(q.explanation || '').trim()) noExpl(n);
       return;
     }
 
@@ -3102,7 +3121,7 @@ function parseImport(txt){
         else if(!dxCodes.has(code)) out.issues.push(`س${n}: كود غير معروف "${code}"`);
       });
 
-      if(!String(q.explanation || '').trim()) out.issues.push(`س${n}: بلا شرح للخطأ`);
+      if(!String(q.explanation || '').trim()) noExpl(n);
       return;
     }
 
@@ -3118,7 +3137,7 @@ function parseImport(txt){
       if(refs.has(q.passage) && opts.length && !sameText(q.passage, opts))
         out.issues.push(`س${n}: الجمل لا تطابق النص المشترك — تُقسَّم من النص نفسه بلا حذف ولا زيادة`);
       opts.forEach(o => { if(o.dx && !o.correct && !dxCodes.has(o.dx)) out.issues.push(`س${n}: كود غير معروف "${o.dx}"`); });
-      if(!String(q.explanation || '').trim()) out.issues.push(`س${n}: بلا شرح للخطأ`);
+      if(!String(q.explanation || '').trim()) noExpl(n);
       return;
     }
     if(kind === 'judge'){
@@ -3147,7 +3166,7 @@ function parseImport(txt){
         else if(!dxCodes.has(o.dx)) out.issues.push(`س${n}: كود غير معروف "${o.dx}"`);
       });
       if(js.some(o => !String(o.body || '').trim())) out.issues.push(`س${n}: حكم بلا نصّ`);
-      if(!String(q.explanation || '').trim()) out.issues.push(`س${n}: بلا شرح للخطأ`);
+      if(!String(q.explanation || '').trim()) noExpl(n);
       return;
     }
     if(kind === 'ordering'){
@@ -3157,7 +3176,7 @@ function parseImport(txt){
       const bs = opts.map(o => String(o.body || '').replace(/\s+/g, ' ').trim().toLowerCase());
       if(new Set(bs).size !== bs.length) out.issues.push(`س${n}: بندان بنص واحد — والترتيب لا يفرّق بينهما`);
       if(opts.some(o => String(o.dx || '').trim())) out.issues.push(`س${n}: لا كود في الترتيب — الخطأ في موضع البند لا فيه`);
-      if(!String(q.explanation || '').trim()) out.issues.push(`س${n}: بلا شرح للخطأ`);
+      if(!String(q.explanation || '').trim()) noExpl(n);
       return;
     }
 
@@ -3179,7 +3198,7 @@ function parseImport(txt){
       out.issues.push(`س${n}: يلزم خيار صحيح واحد بالضبط`);
     }
 
-    if(!String(q.explanation || '').trim()) out.issues.push(`س${n}: بلا شرح للخطأ`);
+    if(!String(q.explanation || '').trim()) noExpl(n);
 
     opts.forEach((o, k) => {
       if(!String(o.body || '').trim()) out.issues.push(`س${n}: خيار ${k+1} بلا نصّ`);
@@ -3219,6 +3238,7 @@ function parseImport(txt){
     }
   });
 
+  if(noEv) out.notes.push(`أسئلة بلا دليل للإجابة الصحيحة: ${AR(noEv)} — يُكتب في explanation للتوثيق، ولا يراه الطالب`);
   return out;
 }
 
@@ -3305,7 +3325,8 @@ function importBox(){
       <div class="qnum">⇪ استيراد اختبار · يُضاف إلى ${
         N((Z.questions||[]).length,'سؤال قائم','سؤالين قائمين','أسئلة قائمة','سؤالاً قائماً')}</div>
       <div class="line" style="margin-bottom:12px">يُلصق JSON — أسئلة ونصوصاً مشتركة وأقساماً.
-        كل سؤال يمرّ بنفس التحقّق: كود تشخيص لكل مشتّت، وشرح للخطأ.<br>
+        كل سؤال يمرّ بنفس التحقّق: كود تشخيص لكل مشتّت${Z.station_kind === 'adaptive'
+          ? '. ودليل الإجابة الصحيحة يُكتب للتوثيق، ولا يُشترط' : '، وشرح للخطأ'}.<br>
         ولوسم ما يقيسه السؤال: <code dir="ltr">"objective": "U1.IDEA"</code> —
         بكود الهدف لا برقمه. وسؤالٌ بلا هدفٍ يُستورد، لكنّ التشخيصَ لا ينطق عنه.<br>
         ولإعلان التكافؤ: تُضاف <code dir="ltr">"variant": "F1"</code> إلى البندين —
@@ -3408,6 +3429,8 @@ function importBox(){
         ${p.warns.map(x => `<div>⚠️ ${esc(x)}</div>`).join('')}
         <div style="margin-top:7px;opacity:.85">الاستيراد ممكن — لكن صحّح <b>الخيارات</b> بعده،
         فالنسخة التي تخالف فخاخ شريكها لا تقيس ما يقيسه.</div></div>` : ''}
+      ${p.notes.length ? `<div class="warnbox" style="margin-top:10px">
+        ${p.notes.map(x => `<div>⚠️ ${esc(x)}</div>`).join('')}</div>` : ''}
       ${okAll ? `<div class="nav" style="margin-top:12px">
         <button class="btn primary" id="igo">استيراد ${
           N(p.questions.length,'سؤال','سؤالين','أسئلة','سؤالاً')}</button></div>` : ''}`;
@@ -3592,6 +3615,9 @@ function passageForm(p, draft){
   const d = p || draft || {};              // ما يملأ الحقول
   const r = range(cur, 'passage_id');
   let pk = d.kind && d.kind !== 'text' ? d.kind : null;   // نوع الوسيط المختار
+  /* 🆕 b247 · بنكُ اختبار المستوى (214 · ق١٧): نطاقُ كلّ نصٍّ حقلُه هنا — ومنه صعوبةُ أسئلته في المحرّك.
+     و«مجموعةُ كلمات» لـM1 وحده (ق١٧ ⑫): «استمع واختر»، تعليمتُها المسموعة وسيطُها، وعنوانُها يكفي. */
+  const TB = Z.station_kind === 'adaptive', M1 = TB && Z.tier === 'M1';
      const main = document.getElementById("main");
   main.innerHTML = `
     <div class="card eq-pgbox">
@@ -3609,6 +3635,7 @@ function passageForm(p, draft){
         <button class="eq-tool ${pk==='image'?'on':''}" data-pk="image">🖼️ صورة</button>
         <button class="eq-tool ${pk==='audio'?'on':''}" data-pk="audio">🎧 صوت</button>
         <button class="eq-tool ${pk==='video'?'on':''}" data-pk="video">🎬 فيديو</button>
+        ${M1 ? `<button class="eq-tool ${pk==='words'?'on':''}" data-pk="words">🔤 مجموعة كلمات</button>` : ''}
         <span class="eq-sep" id="pfBookSep" hidden></span>
         <button class="eq-tool" id="pfBook" hidden aria-expanded="false">📖 إدراج من نصّ الكتاب</button>
         <span class="eq-bk-err" id="pfBookErr" hidden>تعذّر قراءة نصّ الكتاب</span>
@@ -3619,7 +3646,7 @@ function passageForm(p, draft){
         placeholder="الفقرة كاملة…">${esc(d.body || '')}</textarea>
 
         <input id="pfMedia" dir="ltr" class="eq-md" value="${esc(d.media || '')}"
-             placeholder="${pk==='image'?'رابط الصورة':pk==='video'?'رابط الفيديو':'رابط المقطع الصوتي'}"
+             placeholder="${pk==='image'?'رابط الصورة':pk==='video'?'رابط الفيديو':pk==='words'?'رابط التعليمة المسموعة (اختياري)':'رابط المقطع الصوتي'}"
              ${pk ? '' : 'hidden'}>
 
       <label class="fl" style="margin-top:16px">اللغة</label>
@@ -3628,9 +3655,16 @@ function passageForm(p, draft){
         <option value="en" ${d.lang==='en'?'selected':''}>English</option>
       </select>
 
+      ${TB ? `
+      <label class="fl" style="margin-top:16px" for="pfBand">النطاق</label>
+      <input id="pfBand" type="number" min="0" max="24" step="1" inputmode="numeric" dir="ltr"
+             value="${d.band ?? ''}" style="max-width:120px">
+      <div class="eq-hint">من ١ إلى ٢٤، و٠ لنصّ التمهيد. ومنه صعوبة أسئلته في الاختبار.</div>` : ''}
+
       ${/* 🆕 b196 · مجموعةُ البدائل — في البنك وحده (185): نصوصٌ هي صيغٌ لنصٍّ واحد، والنموذجُ يختار
             منها حارةً واحدة في كلّ محاولة (`get_quiz`). والاختبارُ العاديّ حارتُه للاختبار كلِّه كما كانت. */
-        Z.role === 'bank' ? `
+        /* 🆕 b247 · ولا في بنك اختبار المستوى: المحرّكُ يختار المقتطفَ بنطاقه (`placement_pick`) لا بحارة — فحقلٌ لا أثرَ له يُضلّل */
+        Z.role === 'bank' && !TB ? `
       <label class="fl" style="margin-top:16px">مجموعة البدائل <span style="opacity:.6">(اختياري)</span></label>
       <input id="pfGroup" dir="auto" value="${esc(d.group || '')}" placeholder="مثال: نص-١">
       <div class="eq-hint">النصوص البديلة لنصّ واحد تحمل الاسم نفسه، ويُختار منها نصّ واحد في كلّ محاولة.
@@ -3660,6 +3694,7 @@ function passageForm(p, draft){
                    media: main.querySelector("#pfMedia").value,
                    lang:  main.querySelector("#pfLang").value,
                    group: main.querySelector("#pfGroup")?.value,
+                   band:  main.querySelector("#pfBand")?.value ?? d.band,   // 🆕 b247 · لا يضيع النطاقُ بتبديل نوع الوسيط
                    kind:  pk === el.dataset.pk ? 'text' : el.dataset.pk };
     /* 🔑 المحفوظ يبقى محفوظاً والجديد يبقى جديداً.
        وتمريرُ كائنٍ حيث كان null كان يجعل isNew = !p تصير false،
@@ -3673,11 +3708,17 @@ function passageForm(p, draft){
 
   main.querySelector("#pfSave").onclick = async () => {
     const v = id => (main.querySelector('#' + id)?.value || '').trim();
-    if(!v("pfBody") && !v("pfMedia")){ toast("النصّ يحتاج نصاً أو مقطعاً صوتياً"); return; }
+    const words = pk === 'words';
+    if(!v("pfBody") && !v("pfMedia") && !(words && v("pfTitle"))){
+      toast(words ? "مجموعة الكلمات تحتاج عنواناً أو تعليمة مسموعة" : "النصّ يحتاج نصاً أو مقطعاً صوتياً"); return; }
+    /* 🆕 b247 · والنطاقُ يُفحص قبل الحفظ لا بعده — فلا يُحفظ النصّ ويُردّ نطاقُه */
+    const band = !TB || v("pfBand") === '' ? null : Number(v("pfBand"));
+    if(TB && band !== null && !(Number.isInteger(band) && band >= 0 && band <= 24)){
+      toast("النطاق عدد من ٠ إلى ٢٤"); return; }
     const { data, error } = await api.savePassage({
       id: p?.id ?? null, quiz: Z.id, title: v("pfTitle") || null,
       body: v("pfBody") || null, media: v("pfMedia") || null,
-      kind: v("pfMedia") ? (pk || 'audio') : 'text',
+      kind: words ? 'words' : v("pfMedia") ? (pk || 'audio') : 'text',
       lang: v("pfLang") || 'ar',
       position: p?.position ?? ((Z.passages||[]).length + 1) });
     if(error){ toast(error.message); return; }
@@ -3686,12 +3727,21 @@ function passageForm(p, draft){
     /* 🆕 b196 · ومجموعةُ البدائل بابُها `set_passage_group` لا `save_passage` — فحفظُ النصّ لا يمسّها،
        وتُكتب بعده إن خالفت المحفوظ. والمقارنةُ بما في القاعدة لا بما في الحقل: تبديلُ نوع الوسيط
        يُعيد رسمَ الصندوق بما كُتب، فيستوي المكتوبُ والمحفوظ في العين وهما مختلفان. */
-    if(Z.role === 'bank'){
+    if(Z.role === 'bank' && !TB){
       const pid = p?.id ?? data.id;
       const was = (Z.passages || []).find(x => String(x.id) === String(pid))?.group || '';
       if(v("pfGroup") !== was){
         const g = await api.setPassageGroup([pid], v("pfGroup") || null);
         if(g.error || !g.data?.ok) toast(g.error?.message || g.data?.error);
+      }
+    }
+    /* 🆕 b247 · والنطاقُ بابُه `set_passage_band` (214) كالمجموعة — ويُقارَن بالمحفوظ لا بالحقل، للعلّة نفسِها */
+    if(TB){
+      const pid = p?.id ?? data.id;
+      const was = (Z.passages || []).find(x => String(x.id) === String(pid))?.band ?? null;
+      if(band !== was){
+        const b = await api.setPassageBand(pid, band);
+        if(b.error || !b.data?.ok) toast(b.error?.message || b.data?.error);
       }
     }
     if(isNew){ await applyPassage(data.id); toast("أُضيف النصّ ورُبط"); return; }

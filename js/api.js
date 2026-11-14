@@ -608,6 +608,9 @@ export const savePassage = o => db.rpc('save_passage', {
 
 export const deletePassage = id => db.rpc('delete_passage', { p_id: id });
 
+/* 🆕 b247 · نطاقُ النصّ في بنك اختبار المستوى (214 · ق١٧) — بابُه وحده كالمجموعة، لا معاملٌ في `save_passage` (رأسُ 214 ⑤) */
+export const setPassageBand = (id, band) => db.rpc('set_passage_band', { p_id: id, p_band: band });
+
 // النصّ والقسم حاويتان تعلوان مجموعة — تُربطان بمدى لا بسؤال
 export const attachPassage = (pid, ids) =>
   db.rpc('attach_passage', { p_passage: pid, p_ids: ids });

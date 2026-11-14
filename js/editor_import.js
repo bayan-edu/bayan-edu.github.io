@@ -202,9 +202,15 @@ function planBank(pl){
   const b = pl['البنك'] || {}, was = b['فيه قبلها'];
   const vars = Object.keys(pl['خاناتٌ ستُقرن'] || {}).length;
   const grps = Object.keys(pl['مجموعاتُ نصوص'] || {}).length;
+  /* 🆕 b247 · بنكُ اختبار المستوى (214): طبقتُه وأداتُه، والنصوصُ بنطاقاتها مرتّبةً — و٠ «تمهيد» لا «R0» */
+  const t = pl['طبقة'];
+  const bands = Object.entries(pl['بنطاقاتها'] || {}).sort((a, z) => a[0] - z[0]).map(([k, n]) =>
+    `<span class="chip">${k === '0' ? 'تمهيد' : `<bdi>R${esc(k)}</bdi>`} <b>${AR(n)}</b></span>`).join(' ');
   return `
     <div class="line" style="margin-bottom:8px"><b><bdi>${esc(b['العنوان'] || '—')}</bdi></b>
-      <span class="chip${b['جديد'] ? ' g' : ''}">${b['جديد'] ? 'بنك جديد' : 'بنك قائم'}</span></div>
+      <span class="chip${b['جديد'] ? ' g' : ''}">${b['جديد'] ? 'بنك جديد' : 'بنك قائم'}</span>${t ? `
+      <span class="chip">بنك اختبار المستوى · <bdi>${esc(t['الطبقة'] || '')}</bdi> · <bdi>${esc(t['الأداة'] || '')}</bdi></span>` : ''}</div>
+    ${bands ? `<div class="ed-m" style="margin-bottom:8px">${bands}</div>` : ''}
     ${was ? `<div class="ed-m" style="margin-bottom:10px">
       <span class="chip">فيه قبلها: ${N(was['أسئلة'] || 0, 'سؤال', 'سؤالان', 'أسئلة', 'سؤالاً')}</span>
       <span class="chip">${N(was['خانات'] || 0, 'خانة', 'خانتان', 'خانات', 'خانة')}</span>
@@ -468,6 +474,12 @@ const Q16_HELP = `<span class="imp-help"><b>ولأنماط القراءة:</b> �
       <code dir="ltr">"kind": "judge", "judgments": [{ "body": "…", "evidence": ["…"] }, { "body": "…" }]</code>
       للحكم ودليله، والمقبول حكم له دليل ·
       <code dir="ltr">"kind": "ordering", "items": ["…", "…", "…"]</code> للترتيب، بترتيبها الصحيح.</span>`;
+/* 🆕 b247 · بنكُ اختبار المستوى (214 · ق١٧) — طبقتُه وأداتُه في الرأس، ونطاقُ كلّ نصّ، والهدفُ فيه اختياريّ (لا نموذجَ يسحب منه) */
+const TIER_HELP = `<span class="imp-help"><b>ولبنك اختبار المستوى:</b> الطبقة والأداة في الرأس —
+      <code dir="ltr">"tier": "M4", "tool": "reading_placement"</code> — ونطاق كل نص
+      <code dir="ltr">"band": 13</code>، و٠ لنص التمهيد. ومجموعة «استمع واختر» لـM1
+      <code dir="ltr">"kind": "words"</code>. والهدف فيه اختياري، فلا نموذج يسحب منه. ويُكتب في
+      <code dir="ltr">"explanation"</code> دليل الإجابة الصحيحة — للتوثيق، ولا يراه الطالب.</span>`;
 /* الحجمُ بوحدته: ملفٌّ دون الميجابايت بالكيلوبايت — فلا يُقرأ «٠٫٠ م.ب» لملفٍّ فيه صوت */
 const SZ = n => n < 1048576 ? `${AR(Math.max(1, Math.round(n / 1024)))} ك.ب`
                             : `${AR((n / 1048576).toFixed(1)).replace('.', '٫')} م.ب`;
@@ -715,12 +727,13 @@ const K = {
     intro: `يُلصق ملفّ الأسئلة كما سُلّم. والبنك يُعرف <b>بعنوانه</b> في المادة
       (<code dir="ltr">bank</code>): القائم تُضاف إليه الدفعة، والغائب يُنشأ.<br>
       والأسئلة بصيغة ملفّ الاختبار نفسها: الهدف بكوده — <b>وهو إلزامي هنا</b>، فبه يأخذ
-      السؤال فرعه ويزنه النموذج — وكلّ مشتّت خاطئ بكود تشخيصه.<br>
+      السؤال فرعه ويزنه النموذج، إلا في بنك اختبار المستوى — وكلّ مشتّت خاطئ بكود تشخيصه.<br>
       والصيغ تُقرن داخل الملفّ (<code dir="ltr">variant</code>)، والنصوص البديلة لنصّ واحد
       مجموعة (<code dir="ltr">group</code>).<br>
       <b>ويُضيف ولا يستبدل:</b> والملفّ نفسه يُعاد فيُقال «لا جديد».<br>
       ${AUDIO_HELP}<br>
-      ${Q16_HELP}`,
+      ${Q16_HELP}<br>
+      ${TIER_HELP}`,
     ph: '{ "bank": "بنك الاستيعاب المقروء", "passages": [ … ], "questions": [ … ] }',
     sample: SAMPLE_BANK,
     audio: true,
@@ -730,7 +743,9 @@ const K = {
     same: d => `البنك «<bdi>${esc(d.bank || '')}</bdi>»`,
     count: pl => N(pl?.['أسئلة'] || 0, 'سؤال', 'سؤالين', 'أسئلة', 'سؤالاً'),
     done: d => `اعتُمد ${N(d.questions || 0, 'سؤال', 'سؤالان', 'أسئلة', 'سؤالاً')}`,
-    okline: 'اعتُمدت الدفعة — ولا يرى الطالب أسئلة البنك إلا داخل نموذج'
+    /* 🆕 b247 · وبنكُ اختبار المستوى لا نموذجَ له (214 ⑨) — فالسطرُ يتبع الخطّة */
+    okline: pl => pl?.['طبقة'] ? 'اعتُمدت الدفعة — ولا يرى الطالب أسئلة البنك إلا في اختبار المستوى'
+                               : 'اعتُمدت الدفعة — ولا يرى الطالب أسئلة البنك إلا داخل نموذج'
   }
 };
 
@@ -1017,7 +1032,7 @@ async function openImport(course, kind, back){
       toast(C.done(data));
       out.innerHTML = `
         <div class="eq-ready ok" style="margin-top:14px">
-          <div class="eq-ok">${esc(C.okline)}</div>
+          <div class="eq-ok">${esc(typeof C.okline === 'function' ? C.okline(plan) : C.okline)}</div>
           ${C.plan(plan)}
           ${audioBox(A, aud, head)}
         </div>
