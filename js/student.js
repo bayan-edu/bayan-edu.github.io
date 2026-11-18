@@ -147,7 +147,7 @@ export function isLibrary(x){ return x?.code === LIBRARY; }
    عنوانَ عودتها. ⚠️ ويُبنى لكلّ نداء: الرأسُ نصٌّ من حال المادّة (المعلّمُ · الشُّعبة) ساعةَ الرسم. */
 function libHooks(subj){
   return {
-    top: subjTop(subj), bindTop: () => bindSubjTop(subj),
+    top: libTop(subj), bindTop: () => bindSubjTop(subj),            // 🆕 b249 · شريطٌ لا رأس (`libTop`)
     shelves: () => loadLessons(subj),
     open:  l => openBookCard(l),
     read:  (l, i) => { S.lesson = l; return openText(i); },
@@ -1006,19 +1006,36 @@ function subjTop(subj){
      والتغييرُ الشاشةُ نفسُها (`askStream`). و«،» لا «·» قبل الفعل كـ«معلّمك: أ. …، انتقال»
      (قرارُ المالك · التعليلُ عند `joinList` في ui.js).
      ⚠️ وبلا كلمةٍ للمادّة لا سطر: «: علمي» بلا اسمٍ قبلها تُقرأ عطلاً، والقاعدةُ تمنعه أصلاً (183). */
-  const strm = subj.stream_label && (subj.streams || []).find(st => st.id === subj.my_stream);
+  const strm = streamOf(subj);
   return `
     <div class="crumb" id="bk">→ رجوع للمواد</div>
     <div class="nav" style="margin-bottom:14px">
-      <button class="btn ghost" id="mnt" style="font-size:.8rem;padding:9px">
-        ${/* 🆕 124 · `mentor_g` تصل من `list_subjects`. و«الانتقال» بلا
-              مفعولٍ عمداً: الوجهةُ لم تُختَر بعد فلا صيغةَ لها. */''}
-        ${subj.mentor_name
-            ? G(subj.mentor_g, 'معلمك: أ. ', 'معلمتك: أ. ', 'مع أ. ')
-              + esc(subj.mentor_name) + '، انتقال'
-            : 'الانضمام إلى معلم'}
-      </button>
+      <button class="btn ghost" id="mnt" style="font-size:.8rem;padding:9px">${mentorText(subj)}</button>
       ${strm ? `<button class="btn ghost" id="strm" style="font-size:.8rem;padding:9px">${
+        esc(subj.stream_label)}: <bdi>${esc(strm.name)}</bdi>، تغيير</button>` : ''}
+    </div>`;
+}
+
+/* 🆕 b249 · نصّا الزرّين يُستخرجان: رأسُ الدروس وشريطُ المكتبة يقرآنهما — ونسختان تتفارقان */
+const streamOf = subj => subj.stream_label && (subj.streams || []).find(st => st.id === subj.my_stream);
+/* 🆕 124 · `mentor_g` تصل من `list_subjects`. و«الانتقال» بلا مفعولٍ عمداً: الوجهةُ لم تُختَر بعد فلا صيغةَ لها. */
+const mentorText = subj => subj.mentor_name
+  ? G(subj.mentor_g, 'معلمك: أ. ', 'معلمتك: أ. ', 'مع أ. ') + esc(subj.mentor_name) + '، انتقال'
+  : 'الانضمام إلى معلم';
+
+/* 🆕 b249 · شريطُ رفوف المكتبة — بدلُ الرأس الكبير (قرارُ المالك على لقطة الرفوف · ١٨ نوفمبر).
+   🔑 **بطاقاتٌ صغيرةٌ في سطرٍ واحد لا لوحٌ يحملها:** المادّةُ والمستوى (بروازا الرأس نفسُهما) ثمّ المعلّمُ بجوار
+      المستوى — والرفوفُ تبدأ تحتها بلا عنوانٍ يكرّر ما تقوله لافتاتُها. والمعرّفاتُ (`bk` · `mnt` · `strm`) معرّفاتُ
+      `subjTop` بعينها، فيربطها `bindSubjTop` نفسُه.
+   📌 والمادّةُ والمستوى نصٌّ لا زرّ: يقولان «أين أنت» ولا يفعلان شيئاً — فلا يلبسان هيئةَ ما يُنقر. */
+function libTop(subj){
+  const strm = streamOf(subj);
+  return `<div class="lb-bar">
+      <button type="button" class="lb-pill lb-act lb-back" id="bk">→ رجوع للمواد</button>
+      <span class="lb-pill" dir="auto">${esc(subj.name)}</span>
+      ${subj.my_level ? `<span class="lb-pill" dir="auto">${esc(subj.my_level)}</span>` : ''}
+      <button type="button" class="lb-pill lb-act" id="mnt">${mentorText(subj)}</button>
+      ${strm ? `<button type="button" class="lb-pill lb-act" id="strm">${
         esc(subj.stream_label)}: <bdi>${esc(strm.name)}</bdi>، تغيير</button>` : ''}
     </div>`;
 }
@@ -1057,7 +1074,11 @@ export async function loadLessons(subj){
         الرئيسة، ومستوى كلِّ درسٍ عنوانٌ فوق دروسه (`paint` أدناه). */
   /* 🆕 b236 · ومكتبةُ بيان «الكتب»: دروسُها كتبٌ على رفوف (`library.js`) — والبروازان كما هما */
   const lib = isLibrary(subj);
-  head(lib ? "الكتب" : "الدروس", "", false, [subj.name, subj.past ? 'صفوف سابقة' : subj.my_level]);
+  /* 🆕 b249 · **والمكتبةُ بلا عنوانٍ ولا رأس** (قرارُ المالك على لقطة الرفوف · ١٨ نوفمبر): «الكتب» تقول ما تقوله
+     الرفوفُ نفسُها، والبروازان نزلا بطاقتين صغيرتين في شريط الرفوف (`libTop`). وعنوانُ التبويب يُكتب هنا بيدٍ لأنّ
+     `head` بلا عنوانٍ تردّه إلى اسم الموقع — فتبويبُ المكتبة لا يُعرف من غيره. */
+  if(lib){ head('', ''); document.title = subj.name + ' — بيان'; }
+  else head("الدروس", "", false, [subj.name, subj.past ? 'صفوف سابقة' : subj.my_level]);
   app.innerHTML = skeleton('rows');
 
   /* 🆕 b236 · والمكتبةُ تطلب وحدتَها وأرففَها **مع** الدروس لا بعدها: الرفُّ يُرسم ولو خلا،

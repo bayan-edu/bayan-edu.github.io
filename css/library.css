@@ -13,7 +13,8 @@
          والذهبُ للّسان المختار: كانت ألواناً بلا عائلة.
    🔑 **والسمةُ يدويّة** (`:root[data-theme="dark"]`) — لا `prefers-color-scheme` في المنصّة.
    📐 الأرقامُ مقاسةٌ على نافذة المالك (١٤١٢×٥٧٤): غلافٌ حدُّه ٩٦px ⇐ الخزانةُ نحو ٤٩٠px، فالرفُّ الأوّل
-      يُرى كاملاً تحت الألسنة والثاني بتمريرٍ قصير. وتصغيرُ الغلاف ليتّسع الرفّان يجعل عنوانَه لا يُقرأ.
+      يُرى كاملاً تحت الشريط والثاني بتمريرٍ قصير. وتصغيرُ الغلاف ليتّسع الرفّان يجعل عنوانَه لا يُقرأ.
+      (🆕 b249 · والشريطُ سطرٌ واحدٌ بعد أن كان لوحاً بعنوانٍ وألسنة — فالرفّان أقربُ إلى أوّل الشاشة.)
    ══════════════════════════════════════════════════════════ */
 
 /* المشهدُ أعرضُ من عمود النصّ (‎760px) — كالكتاب (`book.css` · ‎1160px) والمعلّمين (‎1060px) */
@@ -81,47 +82,59 @@
   background:linear-gradient(var(--lb-veil),var(--lb-veil)),
              url('../img/garden_library_pure_scenic_bg.webp') center bottom / cover no-repeat, var(--page)}
 
-/* ── ولوحٌ زجاجيٌّ عاجيّ لكلّ نصٍّ فوقها: العنوانُ وبروازاه · والفتاتُ والمعلّمُ والألسنة ──
+/* ── شريطُ الرفوف: بطاقاتٌ صغيرةٌ كلٌّ على لوحه الزجاجيّ العاجيّ (b249 · بدلُ اللوح الكبير) ──
    🔑 النصُّ لا يُكتب على صورة: الحديقةُ فيها الفاتحُ والداكن في سطرٍ واحد، فلا لونَ حبرٍ يصحّ عليها كلِّها. واللوحُ
-      يعطيه أرضاً واحدة، وحبرُه حبرُ المنصّة (`--text`) لا لونٌ جديد. */
-/* ⚠️ `:not(.bare)`: بطاقةُ الكتاب بلا عنوان رأس (`head('', '')` · b237)، و`.bare` تُلغي حشوَه — فلوحٌ عليه يبقى شريطاً فارغاً */
-.wrap:has(.lb) > header:not(.bare),
-.lb-top{background:var(--lb-glass);border:1px solid var(--lb-glass-line);border-radius:16px;
-  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 6px 22px rgba(40,25,8,.14)}
-/* 📌 **لوحٌ واحدٌ لا لوحان:** الرأسُ و`.lb-top` متلاصقان بلا فجوة (قِيس: صفر) وحافّتاهما على خطٍّ واحد — وكان لكلٍّ
-      زواياه المستديرة فبدا الملتقى شقّاً بين بطاقتين. ⇒ الأعلى مستديرٌ من فوق، والأسفلُ من تحت، وبينهما خطُّ الحدّ نفسُه،
-      والظلُّ للأسفل وحده فلا يقع ظلُّ الأعلى على الأسفل. */
-.wrap:has(.lb) > header:not(.bare){margin-top:14px;padding:12px 18px 8px;border-radius:16px 16px 0 0;border-bottom:0;box-shadow:none}
-.lb-top{padding:10px 14px 12px;margin-bottom:14px;border-radius:0 0 16px 16px}
-.lb-top > :last-child{margin-bottom:0}
-.lb-top .status{padding:14px}
-
-/* ── ألسنةُ الرفوف — `.tabs`/`.tab` المنصّة، ولا تلتفّ: تُمرَّر ── */
-.lb-tabs{overflow-x:auto;scrollbar-width:none}
-.lb-tabs::-webkit-scrollbar{display:none}
-.lb-tab{flex:1 0 auto;white-space:nowrap;padding:9px 14px}
-.lb-tab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.lb-n{display:inline-block;margin-inline-start:7px;font-size:var(--fs-tag);opacity:.8}
+      يعطيه أرضاً واحدة، وحبرُه حبرُ المنصّة (`--text`) لا لونٌ جديد.
+   🆕 b249 · **وسقط اللوحُ الكبير** (قرارُ المالك على لقطة الرفوف · ١٨ نوفمبر): كان يحمل العنوانَ «الكتب» وبروازيه
+      والفتاتَ والمعلّمَ وألسنةَ الرفوف — نحو ٤٢٠px فوق أوّل كتاب في نافذة المالك (‎٥٧٤px). سقط العنوانُ والألسنة،
+      ونزل الباقي بطاقاتٍ في سطرٍ واحد: المادّةُ والمستوى والمعلّمُ بجوارهما، والانتقالُ في طرفه الآخر.
+   📌 والرأسُ (`header`) فارغٌ هنا (`head('', '')` ⇐ `.bare`) — فلا لوحَ له. */
+.lb-top{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:14px 0 6px}
+.lb-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-width:0}
+.lb-pill{display:inline-flex;align-items:center;gap:4px;margin:0;padding:6px 14px;border-radius:12px;
+  font-family:'Almarai';font-weight:700;font-size:var(--fs-ui);line-height:1.5;color:var(--text);white-space:nowrap;
+  background:var(--lb-glass);border:1px solid var(--lb-glass-line);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 4px 16px rgba(40,25,8,.12)}
+/* ما يُنقر يقول ذلك بهيئته: حدُّ الذهب وانقلابُه إلى `accent` عند التحويم — والمادّةُ والمستوى بلا هذا، نصٌّ لا زرّ */
+.lb-act{cursor:pointer;font:inherit;font-family:'Almarai';font-weight:700;font-size:var(--fs-ui);
+  border-color:color-mix(in srgb, var(--lb-gold) 55%, transparent);transition:border-color .2s, color .2s}
+.lb-act:hover{border-color:var(--accent);color:var(--accent)}
+.lb-act:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.lb-back{color:var(--text-muted);font-size:var(--fs-meta)}
+.lb-none{margin:10px 0;padding:14px;border-radius:14px;background:var(--lb-glass);border:1px solid var(--lb-glass-line)}
 
 /* ── المسرح: الرفوفُ في منظورٍ قائمةً على الحديقة نفسِها — لا إطارَ له ولا خلفيّة (الحديقةُ للصفحة كلِّها أعلاه) ──
    ⚠️ و`overflow:hidden` باقٍ: الرفّان الخلفيّان يتجاوزان الخزانة جانباً، وبلا قصٍّ يولد تمريرٌ أفقيٌّ في عرضٍ ضيّق. */
 .lb-stage{position:relative;overflow:hidden;padding:6px 64px 22px;margin-bottom:12px}
 .lb-scene{position:relative;max-width:760px;margin:0 auto;perspective:1600px}
 
-/* ── الخزانة ── */
-.lb-case{position:relative;z-index:3;border:3px solid var(--lb-frame);border-radius:14px;
-  background:var(--lb-back);box-shadow:var(--lb-shadow);transform-origin:50% 60%;
-  transition:transform .55s cubic-bezier(.2,.85,.25,1), filter .55s, opacity .45s}
+/* ── الخزانة ──
+   🆕 b249 · **والحركةُ أنعم** (طلبُ المالك · ١٨ نوفمبر). وكان فيها ثلاثُ علل، وعلاجُ كلٍّ في موضعه:
+     ① **التعتيمُ بـ`filter:brightness`** — يُعاد رسمُ الخزانة كلِّها بكتبها في كلّ إطارٍ من الانتقال، فيتقطّع على جهازٍ
+        متوسّط. ⇒ صار حجاباً فوقها (`::after`) تتغيّر شفافيّتُه وحدها، والشفافيّةُ والتحويلُ يُركّبان ولا يُرسمان.
+     ② **`z-index` يقفز في أوّل الانتقال** — الراحلُ يسقط خلف القادم قبل أن يتحرّكا، فيُرى القادمُ يقطعه. ⇒ صار ينتقل
+        معهما (الأرقامُ ٣٠ · ٢٠ · ١٠ لتتّسع لخطواتٍ بينها)، فيتبادلان الصدارةَ في منتصف الطريق حيث يتقاربان.
+     ③ **على العرض المتوسّط والهاتف لا حركةَ أصلاً** — الخلفيّان كانا `display:none` فالتبديلُ قفزة. ⇒ ينزلقان خارج
+        المسرح ويخفتان (أدناه)، و`visibility` تتأخّر بمدّة الانزلاق فلا يختفي الراحلُ قبل أن يرحل.
+   والمنحنى أبطأُ ختاماً (‎.22,.8,.24,1 · ‎.7s): الرفُّ يستقرّ ولا يرتطم. */
+.lb-case{--lb-move:.7s cubic-bezier(.22,.8,.24,1);
+  position:relative;z-index:30;border:3px solid var(--lb-frame);border-radius:14px;
+  background:var(--lb-back);box-shadow:var(--lb-shadow);transform-origin:50% 60%;will-change:transform;
+  transition:transform var(--lb-move), opacity .5s ease, z-index .7s linear, visibility 0s linear .7s}
+.lb-case[data-pos="front"]{transition:transform var(--lb-move), opacity .5s ease, z-index .7s linear, visibility 0s}
+.lb-case:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
+.lb-case::after{content:'';position:absolute;inset:-3px;z-index:8;border-radius:14px;pointer-events:none;
+  background:rgba(40,22,6,.22);opacity:0;transition:opacity .6s ease}
+:root[data-theme="dark"] .lb-case::after{background:rgba(0,0,0,.38)}
 
 /* المواضعُ من `place()` في library.js. والسابقُ يميناً لأنّ الصفحةَ عربيّة: ما قبلُ عن اليمين.
    📌 والخلفيّان بمقاس الصدارة نفسِه ووراءها، فلا يُرى منهما إلا طرفٌ — والصدارةُ معتمةٌ تحجب الباقي. */
 .lb-case:not([data-pos="front"]){position:absolute;inset:0;cursor:pointer}
-.lb-case[data-pos="prev"]{z-index:2;filter:brightness(.8);
-  transform:translate3d(15%,-10px,-180px) scale(.86) rotateY(-5deg)}
-.lb-case[data-pos="next"]{z-index:2;filter:brightness(.8);
-  transform:translate3d(-15%,-10px,-180px) scale(.86) rotateY(5deg)}
-.lb-case[data-pos="prev"]:hover,.lb-case[data-pos="next"]:hover{filter:brightness(.95)}
-.lb-case[data-pos="back"]{z-index:1;opacity:0;visibility:hidden;transform:translate3d(0,-14px,-320px) scale(.78)}
+.lb-case:is([data-pos="prev"],[data-pos="next"])::after{opacity:1}
+.lb-case:is([data-pos="prev"],[data-pos="next"]):hover::after{opacity:.35}
+.lb-case[data-pos="prev"]{z-index:20;transform:translate3d(15%,-10px,-180px) scale(.86) rotateY(-5deg)}
+.lb-case[data-pos="next"]{z-index:20;transform:translate3d(-15%,-10px,-180px) scale(.86) rotateY(5deg)}
+.lb-case[data-pos="back"]{z-index:10;opacity:0;visibility:hidden;transform:translate3d(0,-14px,-320px) scale(.78)}
 
 .lb-crown{height:42px;display:flex;align-items:center;justify-content:center;background:var(--lb-crown);
   border-bottom:2px solid var(--lb-crown-edge);border-radius:11px 11px 0 0;
@@ -134,17 +147,26 @@
 
 /* الرفُّ: خاناتُه، وتحتها لوحٌ بسطحٍ وحافّةٍ مطعّمةٍ بخيط ذهب.
    ⚠️ عددُ الأعمدة عددُ `COLS` في library.js — والحدُّ حدُّ `PHONE` هناك. */
-.lb-row{position:relative;display:grid;grid-template-columns:repeat(4,1fr);align-items:end;gap:10px;
-  padding:14px 6px 24px}
-.lb-row::before{content:'';position:absolute;inset-inline:-10px;bottom:16px;height:8px;background:var(--lb-plank-top)}
-.lb-row::after{content:'';position:absolute;inset-inline:-10px;bottom:0;height:16px;border-radius:2px;
-  background:var(--lb-inlay) center 6px / 98% 2px no-repeat, var(--lb-rail);
+/* 🆕 b249 · **والكتابُ قائمٌ على اللوح لا معلّقٌ فوقه** (ملاحظةُ المالك · ١٨ نوفمبر). كانت لافتةُ العنوان تحت الغلاف
+   في جسم الكتاب نفسِه، فهي التي تلمس اللوح والغلافُ فوقها بنحو ٣٠px — يُرى الكتابُ طافياً في وسط الرفّ.
+   ⇒ **قاعدةُ الغلاف في منتصف سطح اللوح** (`--deck`): نصفُ السطح خلفه ونصفُه أمامه، فيُقرأ واقفاً عليه، ومعه ظلُّ
+      تماسٍّ تحته (`.lb-book::before`). **واللافتةُ نزلت إلى حافّة اللوح الأماميّة** (`--rail`) كبطاقة رفٍّ نحاسيّة —
+      وهو موضعُها في المكتبات الحقيقيّة. وحسابُ الحشو: ‎rail + deck/2. */
+.lb-row{--rail:22px;--deck:10px;
+  position:relative;display:grid;grid-template-columns:repeat(4,1fr);align-items:end;gap:10px;
+  padding:14px 6px calc(var(--rail) + var(--deck) / 2)}
+.lb-row::before{content:'';position:absolute;inset-inline:-10px;bottom:var(--rail);height:var(--deck);background:var(--lb-plank-top)}
+.lb-row::after{content:'';position:absolute;inset-inline:-10px;bottom:0;height:var(--rail);border-radius:2px;
+  background:var(--lb-inlay) center calc(100% - 4px) / 98% 2px no-repeat, var(--lb-rail);
   border-top:1.5px solid var(--lb-rail-edge);box-shadow:0 6px 12px rgba(60,35,10,.25)}
 .lb-slot{display:flex;justify-content:center;align-items:flex-end;min-width:0}
 
 /* ── الكتاب — زرٌّ حقيقيّ بلا هيئة زرّ ── */
 .lb-book{appearance:none;background:none;border:0;margin:0;padding:0;font:inherit;color:inherit;cursor:pointer;
   position:relative;width:min(74%,96px);display:flex;flex-direction:column;align-items:center}
+/* ظلُّ التماسّ — قبل الغلاف في الرسم (‎::before) فيقع تحته، ويمتدّ على سطح اللوح أمامه */
+.lb-book::before{content:'';position:absolute;inset-inline:2%;bottom:-4px;height:9px;border-radius:50%;pointer-events:none;
+  background:radial-gradient(closest-side, rgba(40,20,4,.55), transparent)}
 .lb-book:focus-visible{outline:none}
 .lb-ghost{visibility:hidden;cursor:default}
 
@@ -185,11 +207,14 @@
   box-shadow:inset 0 0 0 1px var(--line-strong), 0 1px 4px rgba(0,0,0,.28)}
 .lb-lk{width:11px;height:11px;vertical-align:-1px;margin-inline-end:3px}
 
-/* لافتةُ العنوان تحت كلّ كتاب — دائمة: العنوانُ يُقرأ بلا تحويم، واللمسُ لا يحوم */
-.lb-title{display:block;box-sizing:border-box;width:100%;margin-top:6px;padding:2px 6px;border-radius:6px;
+/* لافتةُ العنوان تحت كلّ كتاب — دائمة: العنوانُ يُقرأ بلا تحويم، واللمسُ لا يحوم.
+   🆕 b249 · **على حافّة اللوح لا في جسم الكتاب** (التعليلُ عند `.lb-row`): خارجُ التدفّق، تبدأ تحت قاعدة الغلاف بنصف
+      السطح وقليل. و`z-index:1` لأنّ الحافّة (`.lb-row::after`) تُرسم بعد الكتب فتحجبها لولاه. */
+.lb-title{position:absolute;z-index:1;inset-inline:0;top:calc(100% + var(--deck) / 2 + 2px);display:block;box-sizing:border-box;
+  padding:1px 6px;border-radius:5px;line-height:1.35;
   background:var(--lb-tag);border:1px solid var(--lb-gold);color:var(--lb-ink);
   font-family:'Almarai';font-weight:700;font-size:var(--fs-tag);text-align:center;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 2px 6px rgba(60,35,10,.15)}
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 1px 3px rgba(30,15,3,.3)}
 
 /* النهوضُ للمتاح وحده — والمقفلُ لا ينهض: النهوضُ يقول «التقطني» وهو لا يُفتح (حجّةُ `.lsn.locked`) */
 .lb-case[data-pos="front"] .lb-book:not(.is-locked):is(:hover,:focus-visible) .lb-jacket{
@@ -199,9 +224,9 @@
 .lb-book.is-locked :is(.lb-img,.lb-gen){filter:grayscale(.8) brightness(.78)}
 .lb-book.is-locked .lb-title{opacity:.75}
 
-/* الرفُّ الخالي يقول ذلك على لافتةٍ في رفّه الأوّل فوق لوحه (‎24px حشوُ الرفّ لِلّوح) — والألواحُ باقيةٌ
+/* الرفُّ الخالي يقول ذلك على لافتةٍ في رفّه الأوّل فوق لوحه (حشوُ الرفّ لِلّوح · `.lb-row`) — والألواحُ باقيةٌ
    بخاناتٍ لا تُرى، فالخزانةُ بمقاسها */
-.lb-empty{position:absolute;inset:0 0 24px;z-index:2;display:grid;place-items:center;margin:0;pointer-events:none}
+.lb-empty{position:absolute;inset:0 0 calc(var(--rail) + var(--deck) / 2);z-index:2;display:grid;place-items:center;margin:0;pointer-events:none}
 .lb-empty span{background:var(--lb-tag);color:var(--lb-ink);border:1px solid var(--lb-gold);border-radius:10px;
   padding:8px 18px;font-family:'Almarai';font-weight:700;font-size:var(--fs-ui);box-shadow:0 3px 10px rgba(60,35,10,.18)}
 
@@ -228,10 +253,17 @@
 /* ══ تاجُ المكتبة — ما أنجزتَ من شرط مستواك، والمنارة (b238 · المرحلة ٥) ══
    سطحٌ محايدٌ داخل لوح الرأس، والشريطُ `.pbar` بأحوال بطاقة المادّة (screens.css) — والمنارةُ زرُّ المنصّة الأوّل
    (`accent` · «اضغط هنا» بعينها) ومعه هالةٌ من ذهب المشهد: زينةٌ تقول «هنا شيءٌ جديد» ولا تقول جملةً من الخمس. */
-.lb-prog{margin:0 0 12px;padding:10px 12px;border-radius:12px;background:var(--fill-soft);border:1px solid var(--line)}
+/* 🆕 b249 · وصار بطاقةً في طرف الشريط لا لوحاً بعرض الشاشة: يُدفع إلى الطرف (`margin-inline-start:auto`)، وعرضُه
+   على قدر سطرَيه — فإن ضاق السطرُ نزل تحت البطاقات بعرضه كلِّه. وأرضُه زجاجُ الشريط نفسُه لا `--fill-soft`: هذا
+   كان سطحاً داخل لوحٍ، وهو الآن على الحديقة مباشرة. */
+.lb-prog{margin:0;margin-inline-start:auto;flex:0 1 380px;min-width:240px;padding:8px 14px;border-radius:14px;
+  background:var(--lb-glass);border:1px solid var(--lb-glass-line);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 4px 16px rgba(40,25,8,.12)}
 .lb-prog[hidden]{display:none}
 .lb-prog-in{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px 14px}
 .lb-prog-t{font-family:'Almarai';font-weight:800;font-size:var(--fs-ui)}
+/* اسمُ المستوى لا ينكسر: «R2 ·» آخرَ سطرٍ و«Pre-A1» أوّلَ الذي يليه يُقرآن اسمين (قِيس على ‎820px · b249) */
+.lb-prog-t bdi{white-space:nowrap}
 .lb-prog-m{font-size:var(--fs-meta);color:var(--text-muted)}
 .lb-prog-in .pbar{grid-column:1 / -1;height:7px;margin:0}
 .lb-prog-mins{grid-column:1 / -1;display:flex;flex-wrap:wrap;gap:6px}
@@ -295,26 +327,34 @@
   .lb-card-k,.lb-card-t,.lb-card-sum{text-align:center}
 }
 
-/* ── عرضٌ متوسّط: الخلفيّان يُطويان — طرفٌ يُرى بلا مكانٍ له يزاحم الكتب ── */
+/* ── عرضٌ متوسّط: الخلفيّان لا يُرَيان — طرفٌ يُرى بلا مكانٍ له يزاحم الكتب ──
+   🆕 b249 · **وينزلقان ولا يُطويان** (`display:none` كان يجعل التبديلَ قفزة): الراحلُ يخرج إلى جهته ويخفت، والقادمُ
+      يدخل من جهته — والمسرحُ يقصّ ما خرج منه (`overflow:hidden`). */
 @media (max-width: 900px){
-  .lb-case:not([data-pos="front"]){display:none}
+  .lb-case[data-pos="prev"]{opacity:0;visibility:hidden;transform:translate3d(60%,0,-120px) scale(.9)}
+  .lb-case[data-pos="next"]{opacity:0;visibility:hidden;transform:translate3d(-60%,0,-120px) scale(.9)}
   .lb-stage{padding-inline:58px}
 }
 
-/* ── الهاتف: عمودان بلا منظورٍ ولا سهمين — الألسنةُ تبدّل الرفّ، والتمريرُ يكشف الكتب ──
+/* ── الهاتف: عمودان، والتمريرُ يكشف الكتب ──
+   🆕 b249 · **والسهمان باقيان** — كانت الألسنةُ تبدّل الرفّ هنا، وقد سقطت. فهما صغيران عند تاج الخزانة لا في وسطها:
+      الرفُّ على الهاتف طويل، ووسطُه قد يقع تحت الشاشة. والسحبُ باللمس معهما (library.js).
    ⚠️ الحدُّ حدُّ `PHONE` في library.js. */
 @media (max-width: 640px){
   .lb-stage{padding:14px 10px 18px;border-radius:14px}
-  .lb-scene{perspective:none}
-  .lb-arrow{display:none}
+  .lb-arrow{top:21px;width:34px;height:34px;transform:none}  /* وسطُ التاج: ‎14 حشو + 3 إطار + 21 نصفُه − 17 */
+  .lb-arrow .ic{width:16px;height:16px}
+  .lb-prev{inset-inline-start:16px}
+  .lb-next{inset-inline-end:16px}
   .lb-body{padding:2px 10px 0}
-  .lb-row{grid-template-columns:repeat(2,1fr);gap:12px;padding:12px 4px 24px}
+  .lb-row{grid-template-columns:repeat(2,1fr);gap:12px;padding-inline:4px}
   .lb-book{width:min(80%,140px)}
-  .lb-plate{padding:5px 18px}
+  .lb-plate{max-width:62%;padding:5px 14px}
+  .lb-prog{flex-basis:100%;margin-inline-start:0}
 }
 
 /* ── من طلب تقليل الحركة: تبديلٌ بلا انتقالٍ ولا نهوض ── */
 @media (prefers-reduced-motion: reduce){
-  .lb-case,.lb-jacket{transition:none}
+  .lb-case,.lb-case[data-pos="front"],.lb-case::after,.lb-jacket{transition:none}
   .lb-case[data-pos="front"] .lb-book:not(.is-locked):is(:hover,:focus-visible) .lb-jacket{transform:none}
 }

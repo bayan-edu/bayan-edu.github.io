@@ -24,9 +24,12 @@
    📐 **ثمانيةُ كتبٍ سعةُ الصفحة** (رفّان في أربع خانات · ق٣) لا قاعدةُ المحتوى: ما زاد يُقلَّب
       صفحات. **والهاتفُ عمودان بلا صفحاتٍ ولا منظور:** التمريرُ هناك طبيعيّ، والمنظورُ على
       عرضٍ ضيّقٍ يأكل الكتب.
-   ♿ الرفُّ لسانٌ (`tab`) والكتابُ زرٌّ حقيقيّ: Tab بين الكتب، وEnter يفتح، **والسهمان يبدّلان
-      الرفّ** — الأيمنُ للسابق والأيسرُ للتالي، فالصفحةُ عربيّة. **والرفوفُ الخلفيّة لا تُبلَغ
-      بـTab:** تُرى ولا تُقرأ (`aria-hidden` · `tabindex=-1`)، ونقرُها يُحضرها إلى الصدارة.
+   ♿ الرفُّ منطقةٌ مسمّاةٌ بلافتته (`region` · `aria-labelledby`) والكتابُ زرٌّ حقيقيّ: Tab بين الكتب، وEnter يفتح،
+      **وأسهمُ لوحة المفاتيح تبدّل الرفّ** — الأيمنُ للسابق والأيسرُ للتالي، فالصفحةُ عربيّة. **والرفوفُ الخلفيّة لا
+      تُبلَغ بـTab:** تُرى ولا تُقرأ (`aria-hidden` · `tabindex=-1`)، ونقرُها يُحضرها إلى الصدارة.
+   🆕 b249 · **وسقطت ألسنةُ الرفوف** (قرارُ المالك على لقطة الرفوف · ١٨ نوفمبر): اسمُ الرفّ مكتوبٌ على لافتته،
+      فلسانٌ يكرّره فوقه نسخةٌ ثانيةٌ تزاحم الكتب على أوّل الشاشة. ⇒ **السهمان على كلّ عرضٍ** (والهاتفُ كان يبدّل
+      بالألسنة وحدها)، **والسحبُ باللمس** على الهاتف واللوح، والتركيزُ بعد التبديل بلوحة المفاتيح إلى الرفّ نفسِه.
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
 import { app, head, nav, toast, esc, escA, AR, N, icon, skeleton, errBox,
@@ -144,8 +147,8 @@ function bodyHtml(sh, page, live){
 }
 
 function caseHtml(sh, i, page){
-  return `<section class="lb-case" id="lb-c-${i}" role="tabpanel" aria-labelledby="lb-t-${i}" data-i="${i}">
-    <header class="lb-crown"><span class="lb-plate" dir="auto">${esc(sh.name)}</span></header>
+  return `<section class="lb-case" id="lb-c-${i}" role="region" aria-labelledby="lb-p-${i}" tabindex="-1" data-i="${i}">
+    <header class="lb-crown"><span class="lb-plate" id="lb-p-${i}" dir="auto">${esc(sh.name)}</span></header>
     <div class="lb-body">${bodyHtml(sh, page, false)}</div>
     <div class="lb-plinth"></div>
   </section>`;
@@ -186,10 +189,11 @@ export async function paintLibrary(subj, lessons, strands, hooks = {}){
   const pageOf = i => Math.min(pages.get(shelves[i].key) || 0,
                                Math.max(0, Math.ceil(shelves[i].books.length / PER_PAGE) - 1));
 
-  /* 📌 والرأسُ والألسنةُ في لوحٍ واحد (`.lb-top`): الحديقةُ خلفيّةُ الصفحة كلِّها، والنصُّ لا يُكتب على صورة (library.css) */
+  /* 📌 والشريطُ (`.lb-top`): بطاقاتٌ صغيرةٌ كلٌّ على لوحه الزجاجيّ — الحديقةُ خلفيّةُ الصفحة كلِّها، والنصُّ لا يُكتب
+        على صورة (library.css). 🆕 b249 · ولا لوحَ كبيرَ يجمعها: سقط العنوانُ والألسنة، فلم يبقَ ما يستحقّ لوحاً. */
   if(!shelves.length){
-    app.innerHTML = `<div class="lb" id="lb"><div class="lb-top">${top}
-      <div class="status">لا كتب في مستواك بعد</div></div></div>`;
+    app.innerHTML = `<div class="lb" id="lb"><div class="lb-top">${top}</div>
+      <div class="lb-none status">لا كتب في مستواك بعد</div></div>`;
     bindTop?.();
     return;
   }
@@ -200,10 +204,6 @@ export async function paintLibrary(subj, lessons, strands, hooks = {}){
       <div class="lb-top">
         ${top}
         <div class="lb-prog" id="lbProg" hidden></div>
-        <div class="tabs lb-tabs" role="tablist" aria-label="الأرفف">
-          ${shelves.map((s, i) => `<button type="button" class="tab lb-tab" role="tab" id="lb-t-${i}"
-              aria-controls="lb-c-${i}"><bdi>${esc(s.name)}</bdi><span class="lb-n">${AR(s.books.length)}</span></button>`).join('')}
-        </div>
       </div>
       <div class="lb-stage">
         ${many ? `<button type="button" class="lb-arrow lb-prev" aria-label="الرف السابق">${icon('back')}</button>` : ''}
@@ -216,7 +216,6 @@ export async function paintLibrary(subj, lessons, strands, hooks = {}){
 
   const root  = document.getElementById('lb');
   const cases = [...root.querySelectorAll('.lb-case')];
-  const tabs  = [...root.querySelectorAll('.lb-tab')];
   const pager = root.querySelector('.lb-pager');
 
   const save = () => {
@@ -238,21 +237,17 @@ export async function paintLibrary(subj, lessons, strands, hooks = {}){
       c.setAttribute('aria-hidden', live ? 'false' : 'true');
       c.querySelectorAll('button.lb-book').forEach(b => { b.tabIndex = live ? 0 : -1; });
     });
-    tabs.forEach((t, i) => {
-      const on = i === at;
-      t.classList.toggle('on', on);
-      t.setAttribute('aria-selected', on ? 'true' : 'false');
-      t.tabIndex = on ? 0 : -1;
-    });
     paintPager();
     save();
   }
 
+  /* 📌 والتركيزُ إلى الرفّ نفسِه لا إلى كتابه الأوّل: الرفُّ منطقةٌ مسمّاة، فيُعلَن اسمُه — وكتابٌ يُركَّز يُعلن عنوانَه
+        وحده فلا يُعرف أيُّ رفٍّ هذا. و`preventScroll`: الرفُّ في الصدارة أصلاً، وقفزةُ التمرير تقطع الحركة. */
   function go(i, focus){
     const n = shelves.length;
     at = ((i % n) + n) % n;
     place();
-    if(focus) tabs[at].focus();
+    if(focus) cases[at].focus({ preventScroll: true });
   }
 
   function paintPager(){
@@ -272,9 +267,6 @@ export async function paintLibrary(subj, lessons, strands, hooks = {}){
 
   /* ── الأفعال: نقرٌ واحدٌ مفوَّض على الجذر ── */
   root.addEventListener('click', e => {
-    const tab = e.target.closest('.lb-tab');
-    if(tab) return go(tabs.indexOf(tab));
-
     if(e.target.closest('.lb-prev')) return go(at - 1);
     if(e.target.closest('.lb-next')) return go(at + 1);
 
@@ -297,7 +289,7 @@ export async function paintLibrary(subj, lessons, strands, hooks = {}){
     open(l);
   });
 
-  /* السهمان يبدّلان الرفّ من أيّ موضعٍ في المكتبة إلا حقلاً يُكتب فيه — والتركيزُ إلى لسان الرفّ
+  /* السهمان يبدّلان الرفّ من أيّ موضعٍ في المكتبة إلا حقلاً يُكتب فيه — والتركيزُ إلى الرفّ
      الجديد: كتابُ الرفّ الراحل خرج من Tab، فتركيزٌ يبقى عليه يتيه. */
   root.addEventListener('keydown', e => {
     if(!many || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
@@ -305,6 +297,31 @@ export async function paintLibrary(subj, lessons, strands, hooks = {}){
     e.preventDefault();
     go(at + (e.key === 'ArrowLeft' ? 1 : -1), true);
   });
+
+  /* 🆕 b249 · السحبُ باللمس يبدّل الرفّ — بديلُ الألسنة على الهاتف. والاتّجاهُ اتّجاهُ المشهد: التالي عن اليسار،
+     فسحبُه إلى اليمين يُحضره (كمن يجرّ الرفَّ نحوه).
+     🔑 **والأفقيُّ الصريحُ وحده:** إزاحةٌ ≥ ٥٠px وأكبرُ من ضعف الرأسيّة — فتمريرُ الصفحة على الهاتف (رفٌّ طويلٌ
+        بعمودين) لا يبدّل رفّاً بانحرافٍ يسير. والمستمعان سلبيّان (`passive`): لا يمنعان التمرير ولا يؤخّرانه.
+     ⚠️ ونقرةٌ بعد سحبٍ ناجحٍ لا تفتح كتاباً: الإصبعُ رُفع فوق غلافٍ لم يُقصد. */
+  if(many){
+    const stage = root.querySelector('.lb-stage');
+    let x0 = null, y0 = 0, swiped = false;
+    stage.addEventListener('touchstart', e => {
+      if(e.touches.length !== 1){ x0 = null; return; }
+      x0 = e.touches[0].clientX; y0 = e.touches[0].clientY;
+    }, { passive: true });
+    stage.addEventListener('touchend', e => {
+      if(x0 == null) return;
+      const t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0;
+      x0 = null;
+      if(Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 2) return;
+      swiped = true; setTimeout(() => { swiped = false; }, 400);
+      go(at + (dx > 0 ? 1 : -1));
+    }, { passive: true });
+    stage.addEventListener('click', e => {
+      if(swiped){ e.stopPropagation(); e.preventDefault(); }
+    }, true);
+  }
 
   /* صورةُ غلافٍ لم تصل ⇒ تُزال فيظهر المولَّدُ تحتها (`bookHtml`). و`error` لا يصعد — فالالتقاط */
   root.addEventListener('error', e => {
