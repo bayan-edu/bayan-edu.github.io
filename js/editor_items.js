@@ -727,7 +727,9 @@ export async function previewText({ course, lesson, title, subtitle = '', body, 
     ctl = await createBook(box.querySelector(".bkpv-book"), {
       ...bookLook({ cards: cardsRes.data, g: null, subject: tags[0], lesson, title, quranRefs, voices, preview: true }),
       title, subtitle, body, lang,
-      endHtml: () => bookEnd(null, quiz),
+      /* 🆕 b250 · والمعاينةُ تُري زرَّ المكتبة كما يراه الطالب — والجنسُ من `author_tree` (218) */
+      endHtml: () => bookEnd(null, quiz, (S.tree?.subjects || [])
+        .find(s => String(s.id) === String(course?.subject_id))?.family === 'reading'),
       onAction: (act, book) => {
         if(act === 'again') return book.restart();
         if(act === 'back') return close();

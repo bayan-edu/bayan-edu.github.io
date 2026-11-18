@@ -501,7 +501,14 @@ export async function openBook(subj, l, hooks){
   if(main && quiz && main[0] !== 'quiz' && (read || l.done || l.best != null))
     more.push(['quiz', l.done ? 'إعادة الاختبار' : 'أسئلة الفهم']);
 
-  const kicker = [l.strand?.name, l.level && levelText(l.level)].filter(Boolean).map(x => `<bdi>${esc(x)}</bdi>`).join('، ');
+  /* 🆕 b250 · **لا سطرَ فوق العنوان ولا ملخّصَ تحته — بل كلماتُ الكتاب** (قرارُ المالك على لقطة البطاقة · ١٨ نوفمبر):
+       ① الفرعُ والمستوى («قصص ومغامرات، R1 (Pre-A1)») سقطا: الطالبُ جاء من رفّه ويعرف مستواه من الشريط، فالسطرُ يكرّر.
+       ② **والملخّصُ سقط لأنّه أصعبُ من الكتاب نفسِه في المستويات الأولى** — يكتبه المؤلّفُ بلغته لا بلغة R1، فكان أوّلُ ما
+          يقرؤه الطالبُ عن الكتاب أعسرَ ما فيه. ويبقى للمؤلّف في المحرّر (`lessons.summary`) كما بقي ملخّصُ قائمة الدروس (b139).
+       ③ **ومكانَه الكلماتُ القبليّة** (`lesson_cards`): الكلمةُ ومعناها رقاقاتٍ تُقرأ في نظرة — تمهيدٌ على قدر الطالب لا وصفٌ فوقه.
+          وتُجلب بعد الرسم فلا تؤخّر البطاقة، وفشلُها يُبقي موضعَها فارغاً. **ولا تُضمّ إلى «تذكّرها» هنا:** الضمُّ حكمُ فتحِ
+          قائمتها (`openWords`) — والنظرُ إلى البطاقة ليس أخذاً. */
+  const WORDS_MAX = 10;
 
   app.innerHTML = `
     <div class="lb lb-view" id="lb">
@@ -510,9 +517,8 @@ export async function openBook(subj, l, hooks){
         <div class="lb-card-in">
           <div class="lb-card-cover">${jacket(l, st, say)}</div>
           <div class="lb-card-body">
-            ${kicker ? `<div class="lb-card-k">${kicker}</div>` : ''}
             <h2 class="lb-card-t" dir="auto">${esc(l.title)}</h2>
-            ${l.summary ? `<p class="lb-card-sum" dir="auto">${esc(l.summary)}</p>` : ''}
+            ${words ? '<ul class="lb-cw" id="lbcw" aria-label="كلمات قبل القراءة" hidden></ul>' : ''}
             ${steps.length ? `<ol class="lb-steps">${steps.map(s => `
               <li class="lb-step${s.done ? ' is-done' : ''}"><b>${s.name}</b>${s.meta ? `<span>${esc(s.meta)}</span>` : ''}</li>`).join('')}
             </ol>` : ''}
@@ -537,6 +543,21 @@ export async function openBook(subj, l, hooks){
   /* الزرُّ الأوّل يُركَّز: لوحةُ المفاتيح تصل البطاقةَ من رفٍّ بـEnter، فتجد خطوتَها التالية تحت Enter ثانيةً */
   root.querySelector('.btn.primary')?.focus({ preventScroll: true });
   window.scrollTo(0, 0);
+
+  /* الكلماتُ بعد الرسم (③ أعلاه). والمعنى سطرُه الأوّل وحده (`backText` قد يحمل سطرين بلسانين) — والكاملُ في قائمتها.
+     ⚠️ `.then(نجاح، فشل)` لا `.catch` — حجّةُ `openWords` بعينها. */
+  if(!words) return;
+  const { data: cards } = await api.lessonCards(l.id).then(r => r, () => ({}));
+  const cw = document.getElementById('lbcw');
+  if(!cw || !cards?.length) return;                    // غادر قبل الوصول، أو لا كلمات
+  const firstLine = s => String(s || '').split('\n').map(x => x.trim()).find(Boolean) || '';
+  const shown = cards.slice(0, WORDS_MAX), rest = cards.length - shown.length;
+  cw.innerHTML = shown.map(c => `<li class="lb-cw-i"><b dir="${dirOf(c.front)}">${esc(c.front)}</b>${
+      firstLine(backText(c.back)) ? `<span dir="auto">${esc(firstLine(backText(c.back)))}</span>` : ''}</li>`).join('')
+    /* ما زاد على عشرٍ بابٌ إلى قائمتها لا عددٌ يُحصى: «الكلمات كلها» اسمٌ لا يحتاج معدوداً يُعرَب */
+    + (rest > 0 ? `<li class="lb-cw-more"><button type="button" class="lb-cw-all">الكلمات كلها</button></li>` : '');
+  cw.hidden = false;
+  cw.querySelector('.lb-cw-all')?.addEventListener('click', () => openWords(subj, l, hooks));
 }
 
 /* ── كلماتٌ قبل القراءة — بطاقاتُ الدرس قائمةً تُقرأ وتُسمع، لا جلسةَ تقليب ──

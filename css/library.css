@@ -300,7 +300,19 @@
   backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 10px 30px rgba(40,25,8,.16)}
 .lb-card-in{display:grid;grid-template-columns:200px minmax(0,1fr);gap:26px;align-items:start;margin-top:10px}
 .lb-card-cover .lb-jacket{width:200px;box-shadow:-6px 12px 26px rgba(60,35,10,.4), -1px 2px 4px rgba(60,35,10,.22)}
-.lb-card-k{font-size:var(--fs-meta);color:var(--text-muted)}
+/* 🆕 b250 · وسقط `.lb-card-k` (سطرُ الفرع والمستوى فوق العنوان) مع سطره في `openBook`. */
+/* 🆕 b250 · الكلماتُ القبليّة مكانَ الملخّص (`openBook`): رقاقاتٌ محايدة — الكلمةُ ثمّ معناها خافتاً. سطوحُ المنصّة (`--surface` · `--line`)
+   كخطوات البطاقة تحتها، فلا لونَ جديد: الكلمةُ لا تقول جملةً من الخمس. */
+.lb-cw{list-style:none;display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 14px;padding:0}
+.lb-cw[hidden]{display:none}
+.lb-cw-i{display:inline-flex;align-items:baseline;gap:7px;padding:4px 11px;border-radius:10px;
+  background:var(--surface);border:1px solid var(--line);font-size:var(--fs-ui);line-height:1.5}
+.lb-cw-i b{font-weight:700}
+.lb-cw-i span{font-size:var(--fs-meta);color:var(--text-muted)}
+.lb-cw-all{font:inherit;font-family:'Almarai';font-weight:700;font-size:var(--fs-meta);cursor:pointer;
+  padding:5px 11px;border-radius:10px;background:none;border:1px dashed var(--line-strong);color:var(--text-muted)}
+.lb-cw-all:hover{border-color:var(--accent);color:var(--accent)}
+.lb-cw-all:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .lb-card-t{font-family:'Almarai';font-weight:800;font-size:1.45rem;line-height:1.35;margin:2px 0 6px}
 .lb-card-sum{font-size:var(--fs-ui);color:var(--text-muted);margin:0 0 12px}
 
@@ -337,7 +349,8 @@
   .lb-card-in{grid-template-columns:1fr;justify-items:center;gap:14px}
   .lb-card-cover .lb-jacket{width:150px}
   .lb-card-body{width:100%}
-  .lb-card-k,.lb-card-t,.lb-card-sum{text-align:center}
+  .lb-card-t,.lb-card-sum{text-align:center}
+  .lb-cw{justify-content:center}
 }
 
 /* ── عرضٌ متوسّط: الخلفيّان لا يُرَيان — طرفٌ يُرى بلا مكانٍ له يزاحم الكتب ──

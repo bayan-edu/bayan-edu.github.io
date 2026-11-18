@@ -1520,7 +1520,7 @@ async function textBook(i, l, back){
     slot: raOn,
     title, subtitle: data.description, body: data.body, lang: data.lang || i.lang,
     storeKey: 'bayan.book.' + i.id,
-    endHtml: () => bookEnd(g, !!quiz),
+    endHtml: () => bookEnd(g, !!quiz, isLibrary(S.subj)),
     onAction: (act, book) => {
       if(act === 'quiz' && quiz) return openItem(quiz);
       if(act === 'again') return book.restart();
@@ -1598,8 +1598,11 @@ export function bookLook({ cards, g, subject, lesson: l, title, quranRefs = null
   };
 }
 
-/* وصفحةُ الختام — مشتركةٌ كذلك، والأفعالُ ([data-act]) يُجيبها صاحبُ الشاشة. */
-export const bookEnd = (g, quiz) => `
+/* وصفحةُ الختام — مشتركةٌ كذلك، والأفعالُ ([data-act]) يُجيبها صاحبُ الشاشة.
+   🆕 b250 · **وفي المكتبة زرُّها «اختبر فهمك» لا «الاختبار»** (قرارُ المالك · ١٨ نوفمبر): اختبارُ الكتاب أسئلةُ فهمٍ لنصّه وحده،
+      و«الاختبار» في درسٍ عاديّ يقيس الدرسَ كلَّه — فبقي له. ⚠️ والعبارةُ أمرٌ مخاطَب فتمرّ بـ`G()` بثلاث صيغ (الهويّةُ اللغويّة §٤):
+      المذكّرُ والمؤنّث كما أرادها المالك، والمحايدةُ «اختبار الفهم» لمن لم يُسأل عن صيغته ولمعاينة المحرّر (`g = null`). */
+export const bookEnd = (g, quiz, lib = false) => `
       <div class="bk-end-orn" aria-hidden="true"><i></i><i></i><i></i></div>
       <div class="bk-end-t">نهاية النص</div>
       <div class="bk-ask"><b>${quiz ? 'قبل الاختبار' : 'استرجاع'}</b><span>${G(g,
@@ -1607,7 +1610,8 @@ export const bookEnd = (g, quiz) => `
         'أغلقي الكتاب، وقولي فكرة النص في جملة واحدة، ثم افتحيه وقارني.',
         'تُقال فكرة النص في جملة واحدة والكتاب مغلق، ثم يُفتح للمقارنة.')}</span></div>
       <div class="bk-end-btns">
-        ${quiz ? `<button type="button" class="btn primary" data-act="quiz">الاختبار</button>` : ''}
+        ${quiz ? `<button type="button" class="btn primary" data-act="quiz">${
+          lib ? G(g, 'اختبر فهمك', 'اختبري فهمك', 'اختبار الفهم') : 'الاختبار'}</button>` : ''}
         <button type="button" class="btn ghost" data-act="again">قراءة من البداية</button>
         ${quiz ? '' : `<button type="button" class="btn ghost" data-act="back">العودة إلى الدرس</button>`}
       </div>`;
