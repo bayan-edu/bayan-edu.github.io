@@ -3939,15 +3939,20 @@ function toolbar(){
       يُنسب إلى البوّابة عددٌ لم تقله. */
 function kindChips(){
   const r = Z.readiness || {};
+  /* 🆕 b248 · الحدُّ من البوّابة نفسِها (`min` · 216): خمسةٌ لاختبار الكتاب في المكتبة، وستّةٌ لغيره.
+     وتعدّه كما تعدّه: الأسئلةُ الموضوعيّةُ كلُّها لا الاختيارُ من متعدّد وحده — فكانت «٦ مطلوبة» تظهر
+     على اختبارٍ مكتملٍ أنماطُه غيرُ الاختيار. */
+  const min = r.min || 6;
+  const obj = ['mcq', 'msq', 'gap', 'match', 'cloze', 'sentence', 'judge', 'ordering'].reduce((t, k) => t + (r[k] || 0), 0);
   const chip = (k, label, n, always) => {
     if(!n && !always) return '';
     const s = kindStat(k);
-    const lack = k === 'mcq' && n < 6;
+    const lack = k === 'mcq' && obj < min;
     return `<button class="eq-kb ${LS.f===k?'on':''} ${lack?'lack':''}" data-f="${k}"
         aria-pressed="${LS.f===k}"
         title="${esc(label)} — عرضه وحده في شريط الأسئلة">
         <i>${kIcon(k)}</i><b>${AR(n)}</b><span>${esc(label)}</span>
-        ${lack ? '<em>٦ مطلوبة</em>' : ''}
+        ${lack ? `<em>${AR(min)} مطلوبة</em>` : ''}
         ${s.slots !== s.n ? `<em>${N(s.slots,'خانة','خانتان','خانات','خانة')}</em>` : ''}
       </button>`;
   };
