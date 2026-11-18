@@ -10,7 +10,7 @@ import { S } from './state.js';
 import { app, head, toast, esc, escA, AR, ICONS, KINDS, bubble, errBox, nav,
          refreshCounts, scrollTop, scrollBottom, shape, icon,
          skeleton, waiting, G, N, NW, fmt,
-         sayable, sayGroup, bindSay, backMeta, backText, dirOf, srcOf, videoOf, siteUrl, goRoute } from './ui.js';
+         sayable, sayGroup, bindSay, backMeta, backText, dirOf, srcOf, videoOf, siteUrl, goRoute, levelText } from './ui.js';
 import { startQuiz } from './quiz.js';
 import { mediaUrl, isManaged, accents, speak, playAudio, bookVoice } from './media.js';
 import { isSim, openSim } from './simulations.js';
@@ -1027,13 +1027,15 @@ const mentorText = subj => subj.mentor_name
    🔑 **بطاقاتٌ صغيرةٌ في سطرٍ واحد لا لوحٌ يحملها:** المادّةُ والمستوى (بروازا الرأس نفسُهما) ثمّ المعلّمُ بجوار
       المستوى — والرفوفُ تبدأ تحتها بلا عنوانٍ يكرّر ما تقوله لافتاتُها. والمعرّفاتُ (`bk` · `mnt` · `strm`) معرّفاتُ
       `subjTop` بعينها، فيربطها `bindSubjTop` نفسُه.
-   📌 والمادّةُ والمستوى نصٌّ لا زرّ: يقولان «أين أنت» ولا يفعلان شيئاً — فلا يلبسان هيئةَ ما يُنقر. */
+   📌 والمادّةُ والمستوى نصٌّ لا زرّ: يقولان «أين أنت» ولا يفعلان شيئاً — فلا يلبسان هيئةَ ما يُنقر.
+   🆕 b250 · **و«رجوع للمواد» أصغرُ ومن خشب المشهد لا من عاجه** (قرارُ المالك على اللقطة الثانية): كان بطاقةً كأخواته، فقُرئ
+      رابعاً بينها وهو ليس منها — هو مخرجُ الشاشة لا خبرٌ عنها. والمستوى بقوسين (`levelText` · ui.js). */
 function libTop(subj){
   const strm = streamOf(subj);
   return `<div class="lb-bar">
-      <button type="button" class="lb-pill lb-act lb-back" id="bk">→ رجوع للمواد</button>
+      <button type="button" class="lb-back" id="bk">→ رجوع للمواد</button>
       <span class="lb-pill" dir="auto">${esc(subj.name)}</span>
-      ${subj.my_level ? `<span class="lb-pill" dir="auto">${esc(subj.my_level)}</span>` : ''}
+      ${subj.my_level ? `<span class="lb-pill" dir="auto">${esc(levelText(subj.my_level))}</span>` : ''}
       <button type="button" class="lb-pill lb-act" id="mnt">${mentorText(subj)}</button>
       ${strm ? `<button type="button" class="lb-pill lb-act" id="strm">${
         esc(subj.stream_label)}: <bdi>${esc(strm.name)}</bdi>، تغيير</button>` : ''}

@@ -758,6 +758,10 @@ export const saveStrand = o => db.rpc('save_strand', {
   p_code:    o.code,
   p_name:    o.name,
   p_sort:    o.sort ?? 0 });
+/* 🆕 b250 · عنوانُ الرفّ في المكتبة (218) — بابٌ مستقلٌّ لا وسيطٌ في `save_strand` (التعليلُ في رأس الملفّ ③).
+   والفارغُ يمسحه: «لا لافتة». ⇒ {ok, id, shelf_title} أو {ok:false, error} */
+export const setStrandShelfTitle = (id, title) =>
+  db.rpc('set_strand_shelf_title', { p_id: id, p_title: title ?? '' });
 
 /* ═══════════ ⑫ أهداف المادة ═══════════ */
 // شجرةُ الفهرس بأعدادها في نداءٍ واحد — وبها تُفحص الأهداف لا بأسمائها (143)

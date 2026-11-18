@@ -100,7 +100,18 @@
   border-color:color-mix(in srgb, var(--lb-gold) 55%, transparent);transition:border-color .2s, color .2s}
 .lb-act:hover{border-color:var(--accent);color:var(--accent)}
 .lb-act:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.lb-back{color:var(--text-muted);font-size:var(--fs-meta)}
+/* 🆕 b250 · «رجوع للمواد» — أصغرُ ومن خشب المشهد لا من عاجه (قرارُ المالك على اللقطة الثانية · ١٨ نوفمبر).
+   كان بطاقةً عاجيّةً كأخواته فقُرئ خبراً رابعاً عن الشاشة، وهو مخرجُها. ⇒ حافّةُ الرفّ نفسُها (`--lb-rail` · خشبٌ داكن بخيط ذهب)
+   وحبرُها عاجُ اللافتات (‎#FFF5DE)، وحجمُ الوسم (`--fs-tag`). وهذا زينةُ المشهد لا عائلةُ معنى: التحويمُ وحده يقول `accent`.
+   📐 قِيس (WCAG): ‎#FFF5DE على `--lb-rail` الفاتحة من أفتح طرفيها ‎#A87332 ⇐ ٣٫٧٥ — دون ٤٫٥ ⇒ التدرّجُ هنا يبدأ من وسطها
+      ‎#7D4C18 (٦٫٦٤) إلى ‎#56300A (١٠٫٦٢). وفي الداكنة `--lb-rail` نفسُها: ‎#573111 (١٠٫٤٥) إلى ‎#341B07 (١٤٫٨٣). */
+.lb-back{display:inline-flex;align-items:center;margin:0;padding:3px 11px;border-radius:999px;cursor:pointer;
+  font-family:'Almarai';font-weight:700;font-size:var(--fs-tag);line-height:1.6;white-space:nowrap;
+  color:#FFF5DE;background:linear-gradient(180deg, #7D4C18, #56300A);border:1px solid var(--lb-rail-edge);
+  box-shadow:0 2px 8px rgba(40,20,4,.3);transition:border-color .2s, box-shadow .2s}
+.lb-back:hover{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent), 0 2px 8px rgba(40,20,4,.3)}
+.lb-back:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+:root[data-theme="dark"] .lb-back{background:var(--lb-rail)}
 .lb-none{margin:10px 0;padding:14px;border-radius:14px;background:var(--lb-glass);border:1px solid var(--lb-glass-line)}
 
 /* ── المسرح: الرفوفُ في منظورٍ قائمةً على الحديقة نفسِها — لا إطارَ له ولا خلفيّة (الحديقةُ للصفحة كلِّها أعلاه) ──
@@ -136,6 +147,8 @@
 .lb-case[data-pos="next"]{z-index:20;transform:translate3d(-15%,-10px,-180px) scale(.86) rotateY(5deg)}
 .lb-case[data-pos="back"]{z-index:10;opacity:0;visibility:hidden;transform:translate3d(0,-14px,-320px) scale(.78)}
 
+/* 🆕 b250 · `.bare` — تاجٌ بلا لافتة (`caseHtml`): أقصرُ، فالرفُّ الأوّل أقربُ والخشبُ لا يُرى إطاراً فارغاً */
+.lb-crown.bare{height:24px}
 .lb-crown{height:42px;display:flex;align-items:center;justify-content:center;background:var(--lb-crown);
   border-bottom:2px solid var(--lb-crown-edge);border-radius:11px 11px 0 0;
   box-shadow:inset 0 2px 2px rgba(255,255,255,.5)}
@@ -343,6 +356,7 @@
 @media (max-width: 640px){
   .lb-stage{padding:14px 10px 18px;border-radius:14px}
   .lb-arrow{top:21px;width:34px;height:34px;transform:none}  /* وسطُ التاج: ‎14 حشو + 3 إطار + 21 نصفُه − 17 */
+  .lb-stage:has(.lb-crown.bare) .lb-arrow{top:12px}          /* 🆕 b250 · والتاجُ بلا لافتة ‎24px: ‎14 + 3 + 12 − 17 */
   .lb-arrow .ic{width:16px;height:16px}
   .lb-prev{inset-inline-start:16px}
   .lb-next{inset-inline-end:16px}

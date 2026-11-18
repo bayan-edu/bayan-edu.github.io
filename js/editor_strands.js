@@ -69,6 +69,9 @@ export function strandSelect(list, current, id = 'st'){
 
 let ctx = null;         // { course, subject }
 let editing = null;     // الفرع المحرَّر — null: جديد
+/* 🆕 b250 · أمادّةُ رفوف؟ — المكتبةُ تُعرف بجنسها (`family = 'reading'` · حكمُ 216) لا برقمها، فمكتبةٌ ثانيةٌ تأخذ الخانة بلا تعديل.
+   ⚠️ و`family` تصل من `author_tree` منذ 218 — وقبله غائبةٌ فلا خانة: نقصٌ يُرى ولا يكتب شيئاً. */
+const shelves = () => ctx?.subject?.family === 'reading';
 
 export async function openStrands(course, subject){
   ctx = { course, subject };
@@ -94,6 +97,7 @@ function render(list){
         }${esc(x.name)}</div>
         <div class="ed-m">
           <span class="chip">${esc(x.code)}</span>
+          ${shelves() && x.shelf_title ? `<span class="chip">الرف: <bdi>${esc(x.shelf_title)}</bdi></span>` : ''}
           ${x.selectable
             ? `<span class="chip${(x.lessons + x.items) ? ' g' : ''}">${
                  N(x.lessons,'درس','درسان','دروس','درساً')} · ${
@@ -160,6 +164,16 @@ function render(list){
       <p class="small">الشجرة طبقتان: فرع وفرعُه. و«بحتة» حاوية لا تُوسَم —
         يُوسَم ورقُها («جبر»).</p>
 
+      ${/* 🆕 b250 · عنوانُ الرفّ — في المكتبة وحدها (`family = 'reading'` · `author_tree` منذ 218)، وللورقة لا للحاوية:
+            الحاويةُ لا كتبَ عليها فلا رفَّ لها. والفارغُ «لا لافتة» (قرارُ المالك: عناوينُ الأرفف لا تظهر إلا إذا حُدّدت هنا).
+         📌 ومنفصلٌ عن «الاسم» عمداً: الاسمُ تصنيفٌ يقرؤه التقريرُ («أين يسكن الضعف»)، والعنوانُ كلامٌ للطالب على رفّه. */''}
+      ${shelves() && !(editing && !editing.selectable) ? `
+      <label class="fl" style="margin-top:14px" for="sh">عنوان الرف</label>
+      <input type="text" id="sh" maxlength="40" dir="auto" value="${esc(editing?.shelf_title || '')}"
+             placeholder="فارغ: بلا عنوان على الرف">
+      <p class="small">يظهر للطالب على لافتة الرف في المكتبة. وإن تُرك فارغاً ظهر الرف بلا عنوان،
+        والاسم أعلاه يبقى للمحرر والتقارير.</p>` : ''}
+
       <div class="nav" style="margin-top:14px">
         <button class="btn primary" id="sv">${editing ? 'حفظ' : '＋ إضافة الفرع'}</button>
         ${editing ? '<button class="btn ghost" id="ca">إلغاء</button>' : ''}
@@ -198,6 +212,18 @@ async function save(){
   });
   if(error){ toast(error.message); return; }
   if(!data.ok){ toast(data.error); return; }
+
+  /* 🆕 b250 · عنوانُ الرفّ بعد الفرع لا معه — بابُه مستقلّ (218 ③)، ويحتاج معرّفَ الفرع الجديد.
+     ويُرسل حين تغيّر وحده: فرعٌ حُفظ اسمُه لا يُعاد كتابةُ عنوانه. ⚠️ والفشلُ يقول إنّ الفرع حُفظ والعنوانَ لا —
+     فلا يُقرأ «لم يُحفظ شيء» فيُعاد الفرعُ فيُردّ «يوجد فرعٌ بهذا الاسم». */
+  const sh = document.getElementById("sh");
+  if(sh && sh.value.trim() !== (editing?.shelf_title || '')){
+    const r = await api.setStrandShelfTitle(data.id, sh.value.trim()).then(x => x, e => ({ error: e }));
+    if(r.error || !r.data?.ok){
+      toast('حُفظ الفرع، ولم يُحفظ عنوان الرف: ' + (r.error?.message || r.data?.error || ''));
+      editing = null; reload(); return;
+    }
+  }
 
   toast(editing ? "حُفظ الفرع" : "أُضيف الفرع");
   editing = null;

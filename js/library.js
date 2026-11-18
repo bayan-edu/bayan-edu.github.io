@@ -24,7 +24,7 @@
    📐 **ثمانيةُ كتبٍ سعةُ الصفحة** (رفّان في أربع خانات · ق٣) لا قاعدةُ المحتوى: ما زاد يُقلَّب
       صفحات. **والهاتفُ عمودان بلا صفحاتٍ ولا منظور:** التمريرُ هناك طبيعيّ، والمنظورُ على
       عرضٍ ضيّقٍ يأكل الكتب.
-   ♿ الرفُّ منطقةٌ مسمّاةٌ بلافتته (`region` · `aria-labelledby`) والكتابُ زرٌّ حقيقيّ: Tab بين الكتب، وEnter يفتح،
+   ♿ الرفُّ منطقةٌ مسمّاةٌ باسم فرعه (`region` · `aria-label` — واللافتةُ لا تُرى إلا بعنوانٍ من المحرّر · b250) والكتابُ زرٌّ حقيقيّ: Tab بين الكتب، وEnter يفتح،
       **وأسهمُ لوحة المفاتيح تبدّل الرفّ** — الأيمنُ للسابق والأيسرُ للتالي، فالصفحةُ عربيّة. **والرفوفُ الخلفيّة لا
       تُبلَغ بـTab:** تُرى ولا تُقرأ (`aria-hidden` · `tabindex=-1`)، ونقرُها يُحضرها إلى الصدارة.
    🆕 b249 · **وسقطت ألسنةُ الرفوف** (قرارُ المالك على لقطة الرفوف · ١٨ نوفمبر): اسمُ الرفّ مكتوبٌ على لافتته،
@@ -33,7 +33,7 @@
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
 import { app, head, nav, toast, esc, escA, AR, N, icon, skeleton, errBox,
-         sayable, sayGroup, bindSay, backText, dirOf, todayIso, yearsText, birthProblem } from './ui.js';
+         sayable, sayGroup, bindSay, backText, dirOf, todayIso, yearsText, birthProblem, levelText } from './ui.js';
 import { mediaUrl } from './media.js';
 
 /* ── النمطُ يُحمَّل مع الشاشة لا مع المنصّة — حجّةُ `book.css` بعينها (book.js) ── */
@@ -81,10 +81,15 @@ const BADGE = { done: 'ok', reading: 'lb-rd', locked: 'lock' };
 /* ── الرفوف: الفروعُ النهائيّة بترتيبها، والكتبُ عليها بترتيب المنهج (`list_lessons`) ──
    📌 وترتيبُ الرفوف بـ`sort_order` الفرع نفسِه لا بأصله: «قصص · علوم · سِيَر» (203 ⑤) —
       فالأصلُ (سرديّ · معلوماتيّ) جنسُ النصّ لا ترتيبُ المشهد. */
+/* 🆕 b250 · **ولافتةُ الرفّ لا تُكتب إلا بعنوانٍ حدّده المؤلّف** (قرارُ المالك على اللقطة الثانية · ١٨ نوفمبر): اسمُ الفرع
+      («قصص ومغامرات») اسمُ تصنيفٍ يقرؤه المحرّرُ والتحليلات، لا عنوانٌ كُتب للطالب — فلم يعد يُكتب على الرفّ تلقائيّاً.
+   ✅ **والعنوانُ `strands.shelf_title`** (218 · خانةُ «عنوان الرف» في شاشة فروع المادّة · `editor_strands.js`) — وفارغُه
+      «لا لافتة». وقبل 218 لا يصل الحقلُ أصلاً، فالرفوفُ بلا لافتاتٍ كما أراد المالك: الغيابُ هنا لا يُخطئ.
+   📌 والاسمُ لا يسقط من الشاشة كلِّها: الرفُّ منطقةٌ مسمّاةٌ به لقارئ الشاشة (`aria-label` · `caseHtml`). */
 function shelvesOf(strands, lessons){
   const leaves = (strands || []).filter(s => s.selectable)
     .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || String(a.name).localeCompare(String(b.name), 'ar'));
-  const by = new Map(leaves.map(s => [String(s.id), { key: String(s.id), name: s.name, books: [] }]));
+  const by = new Map(leaves.map(s => [String(s.id), { key: String(s.id), name: s.name, title: (s.shelf_title || '').trim() || null, books: [] }]));
   const loose = [];
   for(const l of lessons){
     const k = l.strand ? String(l.strand.id) : null;
@@ -147,8 +152,9 @@ function bodyHtml(sh, page, live){
 }
 
 function caseHtml(sh, i, page){
-  return `<section class="lb-case" id="lb-c-${i}" role="region" aria-labelledby="lb-p-${i}" tabindex="-1" data-i="${i}">
-    <header class="lb-crown"><span class="lb-plate" id="lb-p-${i}" dir="auto">${esc(sh.name)}</span></header>
+  /* التاجُ يبقى بلا لافتة — خشبُ الخزانة لا يُقصّ — وأقصرُ (`.lb-crown.bare`) فلا يُرى فراغاً ينتظر اسماً */
+  return `<section class="lb-case" id="lb-c-${i}" role="region" aria-label="${escA(sh.title || sh.name)}" tabindex="-1" data-i="${i}">
+    <header class="lb-crown${sh.title ? '' : ' bare'}">${sh.title ? `<span class="lb-plate" dir="auto">${esc(sh.title)}</span>` : ''}</header>
     <div class="lb-body">${bodyHtml(sh, page, false)}</div>
     <div class="lb-plinth"></div>
   </section>`;
@@ -354,7 +360,9 @@ async function paintProgress(subj, host, hooks){
   const { data: d } = await api.levelProgress(subj.id).then(r => r, e => ({ error: e }));
   if(!host.isConnected || !d?.ok || !d.applicable || !d.course_id) return;
 
-  const done = Number(d.done || 0), rule = d.rule, next = d.next;
+  const done = Number(d.done || 0), rule = d.rule;
+  /* 🆕 b250 · اسمُ المستوى التالي بقوسين (`levelText`) — في السطور الأربعة والزرّ معاً، فلا يُكتب بصيغتين في بطاقةٍ واحدة */
+  const next = d.next && { ...d.next, name: levelText(d.next.name) };
   const cap = (a, b) => Math.min(Number(a) || 0, Number(b) || 0);
   /* 🆕 b240 · الانتظار (207 · ق١٥ ②): أتمّ الشرطَ والمستوى التالي فوق ما يُبلَغ في عمره الآن ⇒ يُقال متى يُفتح،
      ولا منارة. **ولا وسمَ للطالب** («موهوب» · «قدرات خاصّة»): الخبرُ عن الكتب والعمر لا عنه. */
@@ -396,7 +404,7 @@ async function paintProgress(subj, host, hooks){
     go.disabled = true;
     const { data: r, error } = await api.promoteLevel(subj.id).then(x => x, e => ({ error: e }));
     if(error || !r?.ok){ go.disabled = false; toast(error?.message || r?.error || 'تعذر الانتقال'); return; }
-    toast('انتقلت إلى ' + (r.level || ''));
+    toast('انتقلت إلى ' + levelText(r.level || ''));
     /* المستوى تغيّر ⇒ المادّةُ تُقرأ من جديد (`list_subjects`) ثمّ رفوفُ المستوى الجديد — هذا في student.js */
     hooks.relevel?.();
   };
@@ -493,7 +501,7 @@ export async function openBook(subj, l, hooks){
   if(main && quiz && main[0] !== 'quiz' && (read || l.done || l.best != null))
     more.push(['quiz', l.done ? 'إعادة الاختبار' : 'أسئلة الفهم']);
 
-  const kicker = [l.strand?.name, l.level].filter(Boolean).map(x => `<bdi>${esc(x)}</bdi>`).join('، ');
+  const kicker = [l.strand?.name, l.level && levelText(l.level)].filter(Boolean).map(x => `<bdi>${esc(x)}</bdi>`).join('، ');
 
   app.innerHTML = `
     <div class="lb lb-view" id="lb">
