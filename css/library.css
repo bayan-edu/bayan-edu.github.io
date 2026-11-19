@@ -122,8 +122,14 @@
 
 /* ── المسرح: الرفوفُ في منظورٍ قائمةً على الحديقة نفسِها — لا إطارَ له ولا خلفيّة (الحديقةُ للصفحة كلِّها أعلاه) ──
    ⚠️ و`overflow:hidden` باقٍ: الرفّان الخلفيّان يتجاوزان الخزانة جانباً، وبلا قصٍّ يولد تمريرٌ أفقيٌّ في عرضٍ ضيّق. */
-.lb-stage{position:relative;overflow:hidden;padding:6px 64px 22px;margin-bottom:12px}
-.lb-scene{position:relative;max-width:760px;margin:0 auto;perspective:1600px}
+.lb-stage{position:relative;overflow:hidden;margin-bottom:12px}
+/* 🆕 b254 · `.lb-reel` — نافذةُ الصفّ (library.js · `place`) بعرض المسرح كلِّه، والسهمان فوقها: الجارُ يُرى طرفُه في الفسحة بجانب
+   الصدارة تحت السهم، كما كان يُرى في b249. و`overflow-x:clip` لا `hidden`: هذه تقصّ الرأسيَّ معها فيُقطع ظلُّ الخزانة، وتلك لا.
+   والحشوُ الرأسيُّ الذي كان للمسرح انتقل إليها: هو مدى الظلّ تحت القاعدة.
+   📐 **والصدارةُ تبعد عن الحدّ بمكان السهم** (`--lb-side`): كان حشوَ المسرح الأفقيّ، وصار حدّاً على عرض الخزانة — فالحشوُ كان
+      يقصّ الجارَ قبل أن يُرى. ⇒ ‎min(760px, 100% − 2 × side). */
+.lb-reel{--lb-side:64px;padding:6px 0 22px;overflow-x:clip}
+.lb-scene{position:relative;width:min(760px, 100% - 2 * var(--lb-side));margin:0 auto}
 
 /* ── الخزانة ──
    🆕 b249 · **والحركةُ أنعم** (طلبُ المالك · ١٨ نوفمبر). وكان فيها ثلاثُ علل، وعلاجُ كلٍّ في موضعه:
@@ -134,24 +140,43 @@
      ③ **على العرض المتوسّط والهاتف لا حركةَ أصلاً** — الخلفيّان كانا `display:none` فالتبديلُ قفزة. ⇒ ينزلقان خارج
         المسرح ويخفتان (أدناه)، و`visibility` تتأخّر بمدّة الانزلاق فلا يختفي الراحلُ قبل أن يرحل.
    والمنحنى أبطأُ ختاماً (‎.22,.8,.24,1 · ‎.7s): الرفُّ يستقرّ ولا يرتطم. */
-.lb-case{--lb-move:.7s cubic-bezier(.22,.8,.24,1);
-  position:relative;z-index:30;border:3px solid var(--lb-frame);border-radius:14px;
-  background:var(--lb-back);box-shadow:var(--lb-shadow);transform-origin:50% 60%;will-change:transform;
-  transition:transform var(--lb-move), opacity .5s ease, z-index .7s linear, visibility 0s linear .7s}
-.lb-case[data-pos="front"]{transition:transform var(--lb-move), opacity .5s ease, z-index .7s linear, visibility 0s}
+/* 🆕 b254 · **والحركةُ انزلاقٌ في صفّ** (طلبُ المالك · ١٩ نوفمبر — التعليلُ عند `place` في library.js). وسقط المنظورُ (`rotateY` ·
+   `translateZ` · `perspective`) والتراجعُ خلف الصدارة: الخزانةُ تُزاح بعرضها كاملاً وفجوةٍ (`--lb-gap`) لكلّ خطوة، والجارُ أصغرُ
+   قليلاً (‎.92) ومعتمٌ كما كان. ⇒ الراحلُ والقادمُ يتحرّكان معاً بالسرعة نفسِها ولا يتقاطعان — كيدٍ تدفع الصفَّ كلَّه.
+   والمنحنى صار «ابدأ برفقٍ واستقرّ برفق» (‎.45,.05,.2,1 · ‎.6s): الدفعُ يتسارع من سكون، والسابقُ (‎.22,.8…) كان يقفز من أوّله
+   — يصلح لما يقترب نحوك لا لما يُزاح جانباً.
+   📌 وسقط تدرّجُ `z-index` (٣٠ · ٢٠ · ١٠ في b249): كان لتبادل الصدارة في منتصف الطريق، والخزانتان اليوم لا تتراكبان. */
+.lb-case{--lb-move:.6s cubic-bezier(.45,.05,.2,1);--lb-gap:20px;--s:0;--k:1;
+  position:relative;border:3px solid var(--lb-frame);border-radius:14px;
+  background:var(--lb-back);box-shadow:var(--lb-shadow);will-change:transform;
+  transform:translate3d(calc(var(--s) * (-100% - var(--lb-gap))),0,0) scale(var(--k));
+  transition:transform var(--lb-move), opacity .45s ease, visibility 0s}
+/* ⚠️ التأخيرُ للمختفي وحده: يبقى مرئيّاً حتى يتمّ انزلاقُه وخفوتُه. ولو كان على الجميع (كما في b249) لبقي القادمُ من الخلف
+   مخفيّاً طوالَ دخوله ثمّ ظهر دفعةً في آخره (قِيس بإطارات المختبر: ‏`opacity` ‎.٧٣ و`visibility:hidden`). */
+.lb-case[data-pos="back"]{transition:transform var(--lb-move), opacity .45s ease, visibility 0s linear .6s}
+.lb-scene.lb-still .lb-case{transition:none}
 .lb-case:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
 .lb-case::after{content:'';position:absolute;inset:-3px;z-index:8;border-radius:14px;pointer-events:none;
   background:rgba(40,22,6,.22);opacity:0;transition:opacity .6s ease}
 :root[data-theme="dark"] .lb-case::after{background:rgba(0,0,0,.38)}
 
 /* المواضعُ من `place()` في library.js. والسابقُ يميناً لأنّ الصفحةَ عربيّة: ما قبلُ عن اليمين.
-   📌 والخلفيّان بمقاس الصدارة نفسِه ووراءها، فلا يُرى منهما إلا طرفٌ — والصدارةُ معتمةٌ تحجب الباقي. */
-.lb-case:not([data-pos="front"]){position:absolute;inset:0;cursor:pointer}
+   📌 والجارُ بمقاس الصدارة ومن أعلاها (`inset-block-start:0` لا `inset:0`): على الهاتف تختلف الخزائنُ طولاً بعدد كتبها،
+      وخزانةٌ مشدودةٌ إلى طول غيرها تفيض كتبُها من تحت خشبها وهي تنزلق. */
+.lb-case:not([data-pos="front"]){position:absolute;top:0;inset-inline:0;cursor:pointer}
+.lb-case:is([data-pos="prev"],[data-pos="next"]){--k:.92}
 .lb-case:is([data-pos="prev"],[data-pos="next"])::after{opacity:1}
 .lb-case:is([data-pos="prev"],[data-pos="next"]):hover::after{opacity:.35}
-.lb-case[data-pos="prev"]{z-index:20;transform:translate3d(15%,-10px,-180px) scale(.86) rotateY(-5deg)}
-.lb-case[data-pos="next"]{z-index:20;transform:translate3d(-15%,-10px,-180px) scale(.86) rotateY(5deg)}
-.lb-case[data-pos="back"]{z-index:10;opacity:0;visibility:hidden;transform:translate3d(0,-14px,-320px) scale(.78)}
+.lb-case[data-pos="back"]{--k:.92;opacity:0;visibility:hidden}
+
+/* 🆕 b254 · وسامُ الرقم في طرفَي التاج (`caseHtml`) — نحاسُ اللافتة نفسُه (`--lb-plate` · `--lb-gold` · `--lb-ink`): زينةُ المشهد لا
+   عائلةُ معنى. ‎22px تتّسع في التاج الأقصر (‎24px · `.bare`)، وفي وسطه رأسيّاً على الطولين. */
+.lb-crown{position:relative}
+.lb-num{position:absolute;top:50%;transform:translateY(-50%);width:22px;height:22px;border-radius:50%;
+  display:grid;place-items:center;background:var(--lb-plate);border:1.5px solid var(--lb-gold);color:var(--lb-ink);
+  font-family:'Almarai';font-weight:800;font-size:var(--fs-meta);line-height:1;box-shadow:0 1px 4px rgba(70,40,10,.3)}
+.lb-num-s{inset-inline-start:12px}
+.lb-num-e{inset-inline-end:12px}
 
 /* 🆕 b250 · `.bare` — تاجٌ بلا لافتة (`caseHtml`): أقصرُ، فالرفُّ الأوّل أقربُ والخشبُ لا يُرى إطاراً فارغاً */
 .lb-crown.bare{height:24px}
@@ -259,7 +284,9 @@
 .lb-prev{inset-inline-start:12px}
 .lb-next{inset-inline-end:12px}
 .lb-next .ic,.lb-flip .ic{transform:scaleX(-1)}
-.lb-arrow:hover{border-color:var(--accent);color:var(--accent)}
+.lb-arrow:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+/* 🆕 b254 · وعند طرف الصفّ معطَّل (`place` · library.js) — باهتٌ في مكانه لا مخفيّ: اختفاؤه يُزيح العينَ عن السهم الآخر */
+.lb-arrow:disabled{opacity:.4;cursor:default;box-shadow:none}
 .lb-arrow:focus-visible,.lb-pg:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
 /* ── الصفحات — حين يزيد الرفُّ على ثمانية ── */
@@ -365,9 +392,18 @@
    🆕 b249 · **وينزلقان ولا يُطويان** (`display:none` كان يجعل التبديلَ قفزة): الراحلُ يخرج إلى جهته ويخفت، والقادمُ
       يدخل من جهته — والمسرحُ يقصّ ما خرج منه (`overflow:hidden`). */
 @media (max-width: 900px){
-  .lb-case[data-pos="prev"]{opacity:0;visibility:hidden;transform:translate3d(60%,0,-120px) scale(.9)}
-  .lb-case[data-pos="next"]{opacity:0;visibility:hidden;transform:translate3d(-60%,0,-120px) scale(.9)}
-  .lb-stage{padding-inline:58px}
+  .lb-reel{--lb-side:58px}
+}
+/* 🆕 b254 · ولم يعد للعرض المتوسّط حكمٌ في الخزائن: الجارُ على خطوةٍ كاملة، فإن ضاقت النافذةُ عنه وقع خارجها وقصّته
+   (`.lb-reel`) — والانزلاقُ هو هو على كلّ عرض.
+   📐 **وفوق الهاتف يخفت الجاران نحو الحدّ** بدل قطعٍ حادٍّ عند حافّة المسرح: قناعٌ مداه ‎40px، أو ٨٠٪ من الفسحة بجانب الصدارة
+      إن ضاقت (نصفُ ‎100% − عرضِ الصدارة) — فلا يمسّ الصدارةَ أبداً. وكان ٨٠٪ وحدها فخفت الجارُ كلُّه ورقمُه معه (لقطةُ ‎1412) —
+      والجارُ يُرى ليُقرأ رقمُه. ولا يُضرب على الهاتف: القناعُ يقصّ الرأسيَّ أيضاً، والخزائنُ هناك
+      تختلف طولاً، ولا جارَ يُرى أصلاً. */
+@media (min-width: 641px){
+  .lb-reel{--lb-fade:min(40px, (100% - min(760px, 100% - 2 * var(--lb-side))) * .4);
+    -webkit-mask-image:linear-gradient(90deg, transparent, #000 var(--lb-fade), #000 calc(100% - var(--lb-fade)), transparent);
+            mask-image:linear-gradient(90deg, transparent, #000 var(--lb-fade), #000 calc(100% - var(--lb-fade)), transparent)}
 }
 
 /* ── الهاتف: عمودان، والتمريرُ يكشف الكتب ──
@@ -375,8 +411,13 @@
       الرفُّ على الهاتف طويل، ووسطُه قد يقع تحت الشاشة. والسحبُ باللمس معهما (library.js).
    ⚠️ الحدُّ حدُّ `PHONE` في library.js. */
 @media (max-width: 640px){
-  .lb-stage{padding:14px 10px 18px;border-radius:14px}
+  .lb-stage{border-radius:14px}
+  .lb-reel{--lb-side:10px;padding:14px 0 18px}              /* 🆕 b254 · حشوُ المسرح هنا الآن — والحسابُ تحته كما كان */
   .lb-arrow{top:21px;width:34px;height:34px;transform:none}  /* وسطُ التاج: ‎14 حشو + 3 إطار + 21 نصفُه − 17 */
+  /* 🆕 b254 · وسامٌ واحدٌ بجوار سهم «السابق» (‎16 + 34 = 50 من حدّ المسرح ⇐ ‎37 من حدّ الخزانة): السهمان فوق طرفَي التاج هنا،
+     ولا جارَ يُرى فيحتاج الطرفَ الآخر */
+  .lb-num-s{inset-inline-start:42px}
+  .lb-num-e{display:none}
   .lb-stage:has(.lb-crown.bare) .lb-arrow{top:12px}          /* 🆕 b250 · والتاجُ بلا لافتة ‎24px: ‎14 + 3 + 12 − 17 */
   .lb-arrow .ic{width:16px;height:16px}
   .lb-prev{inset-inline-start:16px}
@@ -384,7 +425,7 @@
   .lb-body{padding:2px 10px 0}
   .lb-row{grid-template-columns:repeat(2,1fr);gap:12px;padding-inline:4px}
   .lb-book{width:min(80%,140px)}
-  .lb-plate{max-width:62%;padding:5px 14px}
+  .lb-plate{max-width:56%;padding:5px 14px}               /* 🆕 b254 · من ٦٢٪: الوسامُ بجوار السهم يحتاج فسحتَه */
   .lb-prog{flex-basis:100%;margin-inline-start:0}
 }
 

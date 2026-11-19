@@ -183,10 +183,18 @@ function bodyHtml(sh, page, live){
   return html;
 }
 
-function caseHtml(sh, i, page){
+/* 🆕 b254 · **رقمُ الخزانة على تاجها** (طلبُ المالك على لقطة المعاينة · ١٩ نوفمبر): «ليكون تغيّرُ الرفّ واضحاً عند التمرير».
+   الخزائنُ متشابهةٌ خشباً وذهباً، والكتبُ وحدها تفرّقها — فمن مرّر لم يعرف أتبدّل الرفُّ أم أُعيد رسمُه.
+   ⇒ وسامٌ نحاسيٌّ صغيرٌ بالرقم في **طرفَي التاج كليهما**: الجارُ يُرى منه طرفُه القريبُ من الصدارة وحده (`.lb-reel` · library.css)،
+      وأيُّ طرفٍ هو يتبع جهتَه — فالوسامان يضمنان أن يُقرأ رقمُه أيّاً كانت. والهاتفُ يُبقي واحداً بجوار السهم (لا جيرانَ تُرى هناك).
+   📌 والرقمُ لقارئ الشاشة في اسم المنطقة («…، الرف ٢ من ٥»)، والوسامُ نفسُه `aria-hidden` فلا يُقرأ مرّتين. */
+function caseHtml(sh, i, page, n){
+  const num = AR(i + 1);
+  const medal = side => `<span class="lb-num lb-num-${side}" aria-hidden="true">${num}</span>`;
+  const label = (sh.title || sh.name) + (n > 1 ? `، الرف ${num} من ${AR(n)}` : '');
   /* التاجُ يبقى بلا لافتة — خشبُ الخزانة لا يُقصّ — وأقصرُ (`.lb-crown.bare`) فلا يُرى فراغاً ينتظر اسماً */
-  return `<section class="lb-case" id="lb-c-${i}" role="region" aria-label="${escA(sh.title || sh.name)}" tabindex="-1" data-i="${i}">
-    <header class="lb-crown${sh.title ? '' : ' bare'}">${sh.title ? `<span class="lb-plate" dir="auto">${esc(sh.title)}</span>` : ''}</header>
+  return `<section class="lb-case" id="lb-c-${i}" role="region" aria-label="${escA(label)}" tabindex="-1" data-i="${i}">
+    <header class="lb-crown${sh.title ? '' : ' bare'}">${n > 1 ? medal('s') : ''}${sh.title ? `<span class="lb-plate" dir="auto">${esc(sh.title)}</span>` : ''}${n > 1 ? medal('e') : ''}</header>
     <div class="lb-body">${bodyHtml(sh, page, false)}</div>
     <div class="lb-plinth"></div>
   </section>`;
@@ -246,7 +254,7 @@ export async function paintLibrary(subj, lessons, strands, hooks = {}){
       </div>
       <div class="lb-stage">
         ${many ? `<button type="button" class="lb-arrow lb-prev" aria-label="الرف السابق">${icon('back')}</button>` : ''}
-        <div class="lb-scene">${shelves.map((s, i) => caseHtml(s, i, pageOf(i))).join('')}</div>
+        <div class="lb-reel"><div class="lb-scene lb-still">${shelves.map((s, i) => caseHtml(s, i, pageOf(i), shelves.length)).join('')}</div></div>
         ${many ? `<button type="button" class="lb-arrow lb-next" aria-label="الرف التالي">${icon('back')}</button>` : ''}
       </div>
       <div class="lb-pager" hidden></div>
@@ -264,29 +272,40 @@ export async function paintLibrary(subj, lessons, strands, hooks = {}){
     }catch(e){}
   };
 
-  /* المواضعُ أربعة: الصدارة · السابقُ يميناً · التالي يساراً · وما خلفهما مخفيّ. والدورانُ حلقة:
-     ثلاثةُ أرففٍ تُرى كلُّها دائماً، والأوّلُ سابقُه الأخير. */
+  /* 🆕 b254 · **الخزائنُ صفٌّ واحدٌ ينزلق لا حلقةٌ تدور** (طلبُ المالك · ١٩ نوفمبر: «كأنّ الرفّ يُمرَّر للجهة ويحلّ محلَّه
+        الرفُّ الجديد»). كان الراحلُ يتراجع خلف الصدارة ويصغر والقادمُ يتقدّم من خلفه، فيتقاطعان في مكانٍ واحد — حركةُ
+        بطاقاتٍ تُخلط لا رفٍّ يُزاح. ⇒ لكلّ خزانةٍ موضعٌ في الصفّ (`--s` = بُعدُها عن الصدارة: السابقُ يميناً سالباً، والتالي
+        يساراً موجباً)، والتحويلُ في library.css يُزيحها بعرضها كاملاً لكلّ خطوة — فالراحلُ يخرج إلى جهته كلَّه والقادمُ
+        يدخل من الأخرى، ولا يلتقيان.
+     🔑 **ولا دوران:** في صفٍّ حقيقيٍّ لا يجاور الأخيرُ الأوّل، والرقمُ على التاج (`caseHtml`) يقول «هذا الخامس» — فرفُّ «١»
+        يدخل من يسار «٥» يكذّبه. ⇒ السهمُ عند طرف الصفّ معطَّل، والسحبُ ولوحةُ المفاتيح لا يتجاوزانه.
+     📌 وما بعد الجارين (‎|s| ≥ ٢) يقف عند الخطوة الثانية مخفيّاً — فلا يعبر المسرحَ كلَّه حين يقترب. */
+  const prevBtn = root.querySelector('.lb-prev'), nextBtn = root.querySelector('.lb-next');
   function place(){
-    const n = shelves.length;
     cases.forEach((c, i) => {
-      const d = ((i - at) % n + n) % n;
-      const pos = d === 0 ? 'front' : d === 1 ? 'next' : d === n - 1 ? 'prev' : 'back';
+      const s = Math.max(-2, Math.min(2, i - at));
+      const pos = s === 0 ? 'front' : s === -1 ? 'prev' : s === 1 ? 'next' : 'back';
       c.dataset.pos = pos;
+      c.style.setProperty('--s', s);
       const live = pos === 'front';
       c.setAttribute('aria-hidden', live ? 'false' : 'true');
       c.querySelectorAll('button.lb-book').forEach(b => { b.tabIndex = live ? 0 : -1; });
     });
+    if(prevBtn) prevBtn.disabled = at === 0;
+    if(nextBtn) nextBtn.disabled = at === shelves.length - 1;
     paintPager();
     save();
   }
 
   /* 📌 والتركيزُ إلى الرفّ نفسِه لا إلى كتابه الأوّل: الرفُّ منطقةٌ مسمّاة، فيُعلَن اسمُه — وكتابٌ يُركَّز يُعلن عنوانَه
-        وحده فلا يُعرف أيُّ رفٍّ هذا. و`preventScroll`: الرفُّ في الصدارة أصلاً، وقفزةُ التمرير تقطع الحركة. */
+        وحده فلا يُعرف أيُّ رفٍّ هذا. و`preventScroll`: الرفُّ في الصدارة أصلاً، وقفزةُ التمرير تقطع الحركة.
+     ⚠️ والسهمُ الذي عُطِّل للتوّ يفقد التركيز في صمت (يذهب إلى `body`) ⇒ يُنقل إلى الرفّ نفسِه. */
   function go(i, focus){
-    const n = shelves.length;
-    at = ((i % n) + n) % n;
+    if(i < 0 || i > shelves.length - 1 || i === at) return;
+    at = i;
+    const lost = document.activeElement;
     place();
-    if(focus) cases[at].focus({ preventScroll: true });
+    if(focus || (lost && lost.disabled)) cases[at].focus({ preventScroll: true });
   }
 
   function paintPager(){
@@ -377,7 +396,11 @@ export async function paintLibrary(subj, lessons, strands, hooks = {}){
   };
   PHONE.addEventListener('change', onMedia);
 
+  /* 🆕 b254 · الرسمُ الأوّلُ بلا انتقال (`.lb-still`): الخزائنُ تولد في الصدارة كلُّها (‎--s غائبة = ٠) ثمّ تأخذ مواضعها —
+     ولولا هذا لانزلقت إليها أمام العين عند كلّ فتحٍ للمكتبة. ويُرفع بعد إطارين: الأوّلُ يرسم المواضع، والثاني بعده. */
   place();
+  const scene = root.querySelector('.lb-scene');
+  requestAnimationFrame(() => requestAnimationFrame(() => scene.classList.remove('lb-still')));
   /* 🆕 b238 · وتاجُ المكتبة يلحق بالرفوف ولا يؤخّرها — نداءٌ بعد الرسم، وفشلُه يُبقيه مطويّاً
      🆕 b252 · ولا تاجَ في المعاينة (`hooks.preview`): شرطُ الانتقال حالُ طالبٍ في مستواه، والناظرُ ليس فيه */
   if(!hooks.preview) paintProgress(subj, root.querySelector('#lbProg'), hooks);
