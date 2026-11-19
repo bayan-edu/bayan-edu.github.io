@@ -215,13 +215,15 @@
    🔑 وتعبئتُها طبقةٌ فوق `--surface` لا وحدها: تعبئاتُ الداكنة شفّافة (‎rgba)، فوحدَها يُرى عبرها الغلافُ لا السطح — حجّةُ
       `.lsn.next` في screens.css بعينها. وحلقةٌ بيضاءُ خفيفةٌ حولها تفصلها عن غلافٍ مصوَّرٍ أيّاً كان لونُه.
    📐 الألوانُ عائلاتٌ لا جديد: ✔ بـ`--ok` على `--ok-fill` (أُنجز · حكمُ اختبار) · والعلامةُ والقفلُ محايدان (`--text` · `--text-muted`). */
-.lb-dot{position:absolute;top:6px;right:6px;z-index:5;width:22px;height:22px;border-radius:50%;
+/* 🆕 b250 · **في الزاوية السفلى لا العليا** (المالك على لقطةٍ بأغلفةٍ حقيقيّة · ١٩ نوفمبر): العليا غطّت العنوانَ نفسَه («THE FA…» ·
+   «COP DO…») — والأغلفةُ تكتب العنوانَ في ثلثها الأعلى عادةً، وأسفلُها اسمُ المؤلّف أو فراغ. */
+.lb-dot{position:absolute;bottom:6px;right:6px;z-index:5;width:22px;height:22px;border-radius:50%;
   display:grid;place-items:center;background:var(--surface);color:var(--text);
   box-shadow:0 0 0 1.5px rgba(255,255,255,.75), 0 1px 4px rgba(0,0,0,.35)}
 .lb-dot svg{width:13px;height:13px}
 .lb-dot.is-done{background:linear-gradient(var(--ok-fill),var(--ok-fill)) var(--surface);color:var(--ok)}
 .lb-dot.is-locked{background:linear-gradient(var(--fill-strong),var(--fill-strong)) var(--surface);color:var(--text-muted)}
-.lb-card-cover .lb-dot{top:9px;right:9px;width:30px;height:30px}
+.lb-card-cover .lb-dot{bottom:9px;right:9px;width:30px;height:30px}
 .lb-card-cover .lb-dot svg{width:17px;height:17px}
 
 /* لافتةُ العنوان تحت كلّ كتاب — دائمة: العنوانُ يُقرأ بلا تحويم، واللمسُ لا يحوم.
