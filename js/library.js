@@ -14,9 +14,10 @@
         أُنجز        ⇐ `done` — الاختبارُ بلغ `pass_mark` — ومعه أفضلُ نتيجته `best`
         قيد القراءة ⇐ بدأه ولم ينجزه: محاولةٌ لها نتيجة أو مصدرٌ له حال
         متاح        ⇐ ما سوى ذلك، بلا وسم
-      **والوسومُ بعائلات المنصّة نفسِها** (`badge ok` · `badge lock` · ومحايدٌ لـ«قيد القراءة»)
+      **والوسومُ بعائلات المنصّة نفسِها** (`ok` لما أُنجز · ومحايدٌ لـ«مقفل» و«قيد القراءة»)
       لا بألوان المشهد (ق٩): الخشبُ والذهبُ والعاج زينةُ هذه الشاشة، والمعنى للعائلات.
       و«أُنجز» اسمُها في قائمة الدروس (`lcard`) — فلا اسمَ ثانٍ للحال نفسِها.
+      🆕 b250 · والوسمُ نقطةٌ بأيقونةٍ في زاوية الغلاف لا نصّ (`DOT`) — والاسمُ للقارئ الشاشيّ وتلميحِ الفأر.
    🔑 **والرفُّ يُرسم ولو خلا:** الرفوفُ من `list_strands` لا ممّا ظهر في الدروس — فرفٌّ بلا
       كتبٍ يقول ذلك بنصّه ولا يختفي. وهو خلافُ شريط الفروع في قائمة الدروس عن قصد: الشريطُ
       مصفاةٌ فخيارٌ يُفضي إلى فراغٍ عطل، والرفُّ مكانٌ فغيابُه يُقرأ ضياعاً.
@@ -58,10 +59,7 @@ const COLS = { wide: 4, phone: 2 };
    بعددها، والشبكةُ تُرسم هناك بعددها. فإن تغيّر أحدُهما تغيّرا معاً. */
 const PHONE = matchMedia('(max-width: 640px)');
 
-/* قفلٌ متّجهٌ لا إيموجي (هويّةُ اللغة §١١) — بنمط `svg()` في ui.js، وليس في معجمها قفل */
-const LOCK = `<svg class="lb-lk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10.5" width="14"
-  height="9.5" rx="2"/><path d="M8.5 10.5V7.8a3.5 3.5 0 017 0v2.7"/></svg>`;
+/* 🆕 b250 · وسقط `LOCK` (قفلُ الوسم النصّيّ) — القفلُ اليوم أيقونةُ النقطة في `DOT` أدناه. والأيقوناتُ متّجهةٌ لا إيموجي (هويّةُ اللغة §١١). */
 
 /* ── حالُ الكتاب ونصُّه ── */
 function stateOf(l){
@@ -76,7 +74,15 @@ const SAY = {
   locked:  () => 'مقفل',
   open:    () => '',
 };
-const BADGE = { done: 'ok', reading: 'lb-rd', locked: 'lock' };
+/* 🆕 b250 · **والحالُ نقطةٌ بأيقونة لا وسمٌ بنصّ** (قرارُ المالك على لقطة الرفّ · ١٩ نوفمبر): «قيد القراءة» كان يغطّي
+   اسمَ الكتاب على غلافه الحقيقيّ. ⇒ دائرةٌ صغيرةٌ في الزاوية اليمنى: ✔ خضراء لما أُنجز (عائلةُ `ok` — نجح اختبارُه، وهو حكمٌ
+   على إجابات) · علامةُ كتابٍ محايدةٌ لما بدأه · وقفلٌ محايدٌ لما أُغلق. **والنصُّ لا يسقط:** هو اسمُ الزرّ لقارئ الشاشة
+   (`aria-label`) وتلميحُه للفأر — والنسبةُ («أُنجز ٩٠٪») هناك وفي البطاقة. */
+const DOT = {
+  done:    '<path d="M5.5 12.5l4 4L18.5 7.5"/>',
+  reading: '<path d="M7 4.5h10v15l-5-3.6-5 3.6z"/>',
+  locked:  '<rect x="5.5" y="11" width="13" height="9" rx="2"/><path d="M8.5 11V8a3.5 3.5 0 017 0v3"/>',
+};
 
 /* ── الرفوف: الفروعُ النهائيّة بترتيبها، والكتبُ عليها بترتيب المنهج (`list_lessons`) ──
    📌 وترتيبُ الرفوف بـ`sort_order` الفرع نفسِه لا بأصله: «قصص · علوم · سِيَر» (203 ⑤) —
@@ -115,7 +121,8 @@ function jacket(l, st, say){
       <span class="lb-gen" data-t="${Math.abs(Number(l.id) || 0) % 4}" aria-hidden="true"><span
         class="lb-gen-t" dir="auto">${esc(l.title)}</span></span>
       ${src ? `<img class="lb-img" src="${escA(src)}" alt="" loading="lazy" decoding="async">` : ''}
-      ${say ? `<span class="badge lb-badge ${BADGE[st]}" aria-hidden="true">${st === 'locked' ? LOCK : ''}${esc(say)}</span>` : ''}
+      ${DOT[st] ? `<span class="lb-dot is-${st}" aria-hidden="true" title="${escA(say)}"><svg viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="${st === 'done' ? 3 : 2.2}" stroke-linecap="round" stroke-linejoin="round">${DOT[st]}</svg></span>` : ''}
     </span>`;
 }
 
@@ -123,7 +130,7 @@ function bookHtml(l, live){
   const st = stateOf(l), say = SAY[st](l);
   /* 📌 و`title` للفأر: لافتةُ العنوان سطرٌ واحدٌ يُقصّ في غلافٍ بعرض ٩٦px، والعنوانُ كاملاً في التلميح */
   return `<button type="button" class="lb-book is-${st}" data-l="${l.id}" ${live ? '' : 'tabindex="-1"'}
-      title="${escA(l.title)}" aria-label="${escA(l.title + (say ? '، ' + say : ''))}">
+      title="${escA(l.title + (say ? '، ' + say : ''))}" aria-label="${escA(l.title + (say ? '، ' + say : ''))}">
     ${jacket(l, st, say)}
     <span class="lb-title" dir="auto" aria-hidden="true">${esc(l.title)}</span>
   </button>`;

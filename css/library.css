@@ -210,15 +210,19 @@
   font-size:.72rem;font-size:12cqi;overflow:hidden;overflow-wrap:anywhere;
   display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical}
 
-/* الوسمُ فوق الغلاف — وتعبئتُه طبقةٌ فوق `--surface` لا وحدها: تعبئاتُ الداكنة شفّافة (‎rgba)،
-   فوحدَها يُرى عبرها الغلافُ لا السطح — حجّةُ `.lsn.next` في screens.css بعينها. */
-.lb-badge{position:absolute;top:6px;right:6px;z-index:5;margin:0;padding:2px 7px;
-  box-shadow:0 1px 4px rgba(0,0,0,.28)}
-.lb-badge.ok{background:linear-gradient(var(--ok-fill),var(--ok-fill)) var(--surface)}
-.lb-badge.lock{background:linear-gradient(var(--fill-strong),var(--fill-strong)) var(--surface)}
-.lb-badge.lb-rd{background:var(--surface);color:var(--text);
-  box-shadow:inset 0 0 0 1px var(--line-strong), 0 1px 4px rgba(0,0,0,.28)}
-.lb-lk{width:11px;height:11px;vertical-align:-1px;margin-inline-end:3px}
+/* 🆕 b250 · الحالُ نقطةٌ صغيرةٌ في زاوية الغلاف اليمنى (`DOT` · library.js) — بدلُ وسمٍ نصّيّ كان يغطّي اسمَ الكتاب على
+   غلافه (قرارُ المالك · ١٩ نوفمبر). ‎22px على الرفّ، وأكبرُ قليلاً على البطاقة (`.lb-card-cover`).
+   🔑 وتعبئتُها طبقةٌ فوق `--surface` لا وحدها: تعبئاتُ الداكنة شفّافة (‎rgba)، فوحدَها يُرى عبرها الغلافُ لا السطح — حجّةُ
+      `.lsn.next` في screens.css بعينها. وحلقةٌ بيضاءُ خفيفةٌ حولها تفصلها عن غلافٍ مصوَّرٍ أيّاً كان لونُه.
+   📐 الألوانُ عائلاتٌ لا جديد: ✔ بـ`--ok` على `--ok-fill` (أُنجز · حكمُ اختبار) · والعلامةُ والقفلُ محايدان (`--text` · `--text-muted`). */
+.lb-dot{position:absolute;top:6px;right:6px;z-index:5;width:22px;height:22px;border-radius:50%;
+  display:grid;place-items:center;background:var(--surface);color:var(--text);
+  box-shadow:0 0 0 1.5px rgba(255,255,255,.75), 0 1px 4px rgba(0,0,0,.35)}
+.lb-dot svg{width:13px;height:13px}
+.lb-dot.is-done{background:linear-gradient(var(--ok-fill),var(--ok-fill)) var(--surface);color:var(--ok)}
+.lb-dot.is-locked{background:linear-gradient(var(--fill-strong),var(--fill-strong)) var(--surface);color:var(--text-muted)}
+.lb-card-cover .lb-dot{top:9px;right:9px;width:30px;height:30px}
+.lb-card-cover .lb-dot svg{width:17px;height:17px}
 
 /* لافتةُ العنوان تحت كلّ كتاب — دائمة: العنوانُ يُقرأ بلا تحويم، واللمسُ لا يحوم.
    🆕 b249 · **على حافّة اللوح لا في جسم الكتاب** (التعليلُ عند `.lb-row`): خارجُ التدفّق، تبدأ تحت قاعدة الغلاف بنصف
