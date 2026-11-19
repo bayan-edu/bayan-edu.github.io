@@ -159,15 +159,37 @@ export function isLibrary(x){ return LIBRARIES.has(x?.code); }
 /* 🆕 b252 · **معاينةُ المكتبة للمعلّم والمؤلّف** (`220` · بلاغُ المالك ١٩ نوفمبر: «لا تظهر للمعلم أو المصمم كما تظهر للطالب»).
    🔑 كانت الرفوفُ ترسم لهما ما ترسمه للطالب **بقاعدة الطالب** فتخطئ ثلاثاً: بوّاباتُ الطالب أوّلاً (تحديدُ المستوى ثمّ
       اختيارُ المعلّم — ولا صفَّ للمعلّم ولا معلّمَ له) · ثمّ المكتبةُ كلُّها على رفوفٍ واحدة (`courses_of` تجعل كلَّ مقرَّرٍ
-      حاضراً لهما: أربعةٌ وعشرون مستوًى × أربع طبقات) · ولا مسودّةَ على رفّ. ⇒ **لهما بابٌ واحد بلا بوّابات** (`enterSubject`)،
-      ورفوفُ مستوًى وطبقةٍ يختارانهما من `library_preview` (`paintPreview`) — والرسمُ `paintLibrary` نفسُها بلا تغيير.
+      حاضراً لهما: أربعةٌ وعشرون مستوًى × أربع طبقات) · ولا مسودّةَ على رفّ. ⇒ رفوفُ مستوًى وطبقةٍ يختارانهما من
+      `library_preview` (`paintPreview`) — والرسمُ `paintLibrary` نفسُها بلا تغيير.
+   🔑 **والبابُ في شاشة التأليف لا في بطاقة المادّة** (قرارُ المالك · ١٩ نوفمبر): «احذف ما وضعته في بطاقة المواد، وضع باب المعاينة
+      في شاشة التأليف». كان في `b252` الأوّل على بطاقة «المواد» — **ودرجُ المعلّم والمدير لا يحمل «المواد» أصلاً** (`DEST` · ui.js)،
+      فبابٌ في شاشةٍ لا يبلغانها. ⇒ `previewLibrary` يناديها زرُّ «معاينة الرفوف» في شريط التأليف (editor.js)، والرجوعُ إليه.
    📌 والمعلّمُ يرى المنشورَ وحده، ومن يؤلّف المادّة يرى معه المسودّات — حكمُ القاعدة (`can_author`) لا حكمُ المتصفّح.
    ⚠️ و`function` لا `const`: رأسُ الملفّ (الاستيرادُ الدائريّ). */
 function isStaff(){ return ['teacher', 'admin'].includes(S.roleInfo?.role || S.prof?.role); }
-function previews(x){ return isLibrary(x) && isStaff(); }
 /* اختيارُ الناظر لكلّ مكتبة — يبقى في الجلسة حتى يعود من كتابٍ أو اختبار إلى رفوف المستوى نفسِه.
-   📌 في الذاكرة لا في `sessionStorage`: تحديثُ الصفحة يفتح أوّلَ مستوًى فيه كتب، وهذا خطأٌ لا يكلّف شيئاً. */
-const PICK = new Map();                    // ‹معرّف المادّة› ⇐ { level, tier, focus }
+   📌 في الذاكرة لا في `sessionStorage`: تحديثُ الصفحة يفتح أوّلَ مستوًى فيه كتب، وهذا خطأٌ لا يكلّف شيئاً.
+   و`back` ما يفتحه «رجوع»: شاشةُ التأليف بمنهجها ومستواها كما تُركت (`previewLibrary`). */
+const PICK = new Map();                    // ‹معرّف المادّة› ⇐ { level, tier, focus, back }
+
+/**
+ * 🆕 b252 · بابُ المعاينة من شاشة التأليف (editor.js · زرُّ «معاينة الرفوف»).
+ * @param subjectId المادّة (`sk_read` · `sk_read_ar`)
+ * @param level     المستوى المختار في شريط التأليف — أو فارغٌ فتختار القاعدةُ أوّلَ مستوًى فيه كتب
+ * @param tier      الطبقة — أو فارغةٌ مع فراغ المستوى (القاعدةُ لا تختار الطبقةَ وحدها: مستوًى بلا طبقةٍ ⇐ أوّلُ طبقة)
+ * @param back      ما يفتحه «رجوع إلى التأليف»
+ * ⚠️ والمادّةُ من `list_subjects` لا من شجرة التأليف: `loadLessons` تقرأ حقولها (الاسم · الرمز)، وشجرةُ التأليف لا تحمل الرمز.
+ */
+export async function previewLibrary(subjectId, level, tier, back){
+  if(!(S.subjects || []).some(v => String(v.id) === String(subjectId))){
+    const { data } = await api.listSubjects();
+    S.subjects = data || [];
+  }
+  const subj = (S.subjects || []).find(v => String(v.id) === String(subjectId));
+  if(!subj){ toast('تعذّر فتح المعاينة'); return; }
+  PICK.set(String(subj.id), { level: level ?? null, tier: tier ?? null, back });
+  return loadLessons(subj);
+}
 
 /* 🆕 b237 · الجسرُ إلى library.js — ما تفتحه رفوفُ المكتبة وبطاقةُ الكتاب ممّا يسكن هنا: رأسُ المادّة، والعودةُ إلى
    الرفوف، **والقراءةُ والأسئلة** (المحرّكان هنا). و`S.lesson` تُضبط قبلهما: الكتابُ يقرأ منها كلماتِه واختبارَه، والنتيجةُ
@@ -228,7 +250,6 @@ const SUBJ_IMG_CODE = { sk_read_ar: 'reading' };
    الشبكة تُقرأ بلمحة. والصفُّ السابق لا تقدُّمَ فيه يُقاس: مادّتُه
    مراجعةٌ لا مسار، فحالتُه «فيها ما يُراجَع» أو «لا». */
 function subjectState(x, isPast){
-  if(previews(x))                         return 'st-new';   // 🆕 b252 · بابُ المعاينة — والتعليلُ عند `previews`
   if(x.needs_stream)                      return 'st-new';   // 🆕 b194 · كتحديد المستوى — والتعليلُ عند askStream
   if(notReady(x))                         return 'st-empty';   // 🆕 b251 · ومادّةُ التسكين بلا أداة معها
   if(x.needs_placement)                   return 'st-new';
@@ -507,9 +528,7 @@ export async function loadList(){
   const card = x => {
     const isPast = !!x.past;
     /* 🆕 b194 · والمادّةُ قبل شُعبتها ليست فارغة: مقرَّراتُها محجوبةٌ حتى يختار (183) */
-    /* 🆕 b252 · ومكتبةُ المعاينة ليست «قيد الإعداد» للمعلّم: المسودّاتُ نفسُها ما يأتي ليراه (`previews`) */
-    const pv    = previews(x);
-    const empty = !pv && notReady(x);   // 🆕 b251 · ومادّةُ التسكين بلا أداة «قيد الإعداد» (`notReady`)
+    const empty = notReady(x);   // 🆕 b251 · ومادّةُ التسكين بلا أداة «قيد الإعداد» (`notReady`)
     /* 🆕 b197 · والفارغةُ ذاتُ الشُّعب بابٌ إلى شاشة الاختيار (حدُّ `183` ① — والتعليلُ عند `enterSubject`):
        تبقى «قيد الإعداد» برماديّها، وتُعلَن زرّاً وتنهض كسائر الأبواب. ⇒ `soon` للمغلقة وحدها:
        `.subj.soon` في screens.css هي «ليست زرّاً» بحرفها (`cursor:default` ولا نهوض)، فلا يلبسها باب. */
@@ -519,8 +538,7 @@ export async function loadList(){
        ارتفاعاتُ الشبكة. والجملةُ الطويلة باقيةٌ حيث يقع الفعل —
        في toast عند النقر، وفي شاشة المادة. */
     const meta  =
-        pv                ? 'معاينة'
-      : empty             ? 'قيد الإعداد'
+        empty             ? 'قيد الإعداد'
       : x.needs_stream    ? streamAct(x)
       : x.needs_placement ? 'تحديد المستوى'
       : isPast            ? `${AR(x.lessons_review)} للمراجعة`
@@ -565,8 +583,7 @@ export async function loadList(){
     const openable = !isPast && !empty;
     const go   = t => `<div class="subj-act-pill">${t}<span class="subj-arrow" aria-hidden="true">←</span></div>`;
     const foot =
-        openable && pv                       ? go('معاينة')     // 🆕 b252 · لا تحديدَ مستوى للمعلّم — بابُه المعاينة
-      : openable && x.needs_stream           ? go(streamAct(x))
+        openable && x.needs_stream           ? go(streamAct(x))
       : openable && x.needs_placement        ? go('تحديد المستوى')
       : openable && x.lessons_total && !x.lessons_done
             ? go(`${N(x.lessons_total,'درس واحد','درسان','دروس','درساً')}، ${here ? 'متابعة' : 'البدء'}`)
@@ -768,8 +785,6 @@ function streamAct(x){ return x.stream_label ? 'اختيار ' + x.stream_label 
       📌 والإشعارُ باقٍ قبلها: هو ما كانت النقرةُ تقوله، والشاشةُ لا تقول لماذا لم تُفتح الدروس.
       ⚠️ و`fromAsk` أوّلاً: الآتي من الشاشة نفسِها لا يُردّ إليها — وإلّا دار بينهما. */
 function enterSubject(x, fromAsk){
-  /* 🆕 b252 · والمعلّمُ والمؤلّفُ في المكتبة بلا بوّابات: لا مستوى يُقاس لهما ولا معلّمَ يُختار (`previews`) */
-  if(previews(x))    return loadLessons(x);
   if(x.needs_stream) return askStream(x);
   /* 🆕 b251 · ومادّةُ التسكين بلا أداة هنا أيضاً (`notReady`) — بطاقتُها لا تُنقر، والرابطُ المحفوظ يبلغ هذه البوّابة */
   if(notReady(x)){
@@ -1097,7 +1112,7 @@ async function paintPreview(subj){
   if(pr.error || !d?.ok){ app.innerHTML = errBox(pr.error || d?.error || 'تعذّر التحميل', 'معاينة المكتبة'); return; }
 
   /* ما اختارته القاعدة يُحفظ — فالعودةُ من كتابٍ تبلغ المستوى نفسَه ولو لم يختر الناظرُ شيئاً */
-  PICK.set(key, { level: d.level?.id ?? null, tier: d.tier?.code ?? null, focus: pick.focus });
+  PICK.set(key, { level: d.level?.id ?? null, tier: d.tier?.code ?? null, focus: pick.focus, back: pick.back });
   S.lessons = d.lessons || [];
   return paintLibrary(subj, S.lessons, st?.error ? [] : (st?.data || []), {
     ...libHooks(subj),
@@ -1120,7 +1135,7 @@ function previewTop(subj, d){
   const opt = (v, txt, on) => `<option value="${escA(String(v))}"${on ? ' selected' : ''}>${esc(txt)}</option>`;
   const tiers = d.tiers || [];
   return `<div class="lb-bar">
-      <button type="button" class="lb-back" id="bk">→ رجوع للمواد</button>
+      <button type="button" class="lb-back" id="bk">→ رجوع إلى التأليف</button>
       <span class="lb-pill" dir="auto">${esc(subj.name)}</span>
       <select class="lb-pill lb-act lb-pick" id="pvLevel" aria-label="المستوى">${(d.levels || []).map(x =>
         opt(x.id, levelText(x.name) + books(cnt(x.id, tier)), String(x.id) === String(lvl))).join('')}</select>
@@ -1132,10 +1147,11 @@ function previewTop(subj, d){
 
 function bindPreviewTop(subj){
   const key = String(subj.id);
-  document.getElementById('bk').onclick = loadList;
+  /* «رجوع إلى التأليف» — إلى المنهج والمستوى اللذين فُتحت منهما (`back`)، وإلّا التأليفُ من أوّله (رابطٌ مباشر · تحديثُ الصفحة) */
+  document.getElementById('bk').onclick = () => { const b = PICK.get(key)?.back; return b ? b() : goRoute('editor'); };
   const lv = document.getElementById('pvLevel'), tr = document.getElementById('pvTier');
   const change = focus => () => {
-    PICK.set(key, { level: lv ? Number(lv.value) : null, tier: tr ? tr.value : null, focus });
+    PICK.set(key, { level: lv ? Number(lv.value) : null, tier: tr ? tr.value : null, focus, back: PICK.get(key)?.back });
     loadLessons(subj);
   };
   if(lv) lv.onchange = change('pvLevel');
@@ -1160,7 +1176,8 @@ export async function loadLessons(subj){
   /* 🆕 b167 · عنوانُ المادّة — ui.js · PATHS
      🆕 b173 · وللوجه السابق عنوانُه: من حدّث الصفحةَ على مراجعة الأوّل
         لا يُعاد إلى وجه صفّه — وهو «قيد الإعداد» فيبدو أنّ الدروس ضاعت. */
-  nav('subjects', `/subjects/${subj.id}${subj.past ? '/past' : ''}`);
+  /* 🆕 b252 · ومعاينةُ المكتبة للمعلّم والمؤلّف من قسم التأليف: منه بابُها، و«المواد» ليست في درجهما (`previewLibrary`) */
+  nav(isLibrary(subj) && isStaff() ? 'editor' : 'subjects', `/subjects/${subj.id}${subj.past ? '/past' : ''}`);
   /* 🆕 b139 · برواز السياق هنا كما في شاشة البطاقات — طلبُ صاحب المنصّة.
      كانت: «العلوم المتكاملة» عنواناً · «مستواك: الصف الأول الثانوي» وصفاً ·
      ثمّ الفتات — ثلاثةُ أسطر. ⇒ **المادةُ إلى البرواز، والمستوى يرتفع

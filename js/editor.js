@@ -122,6 +122,14 @@ export async function openEditor(scaleId, levelId){
      🔑 **والسقفُ يُرى على البطاقة** (ق١٤ · ق١٥): مقرَّرُ السقف يحمل «سقف الطبقة» — منه يعبر الطالبُ إلى الطبقة التي فوقها —
         وما فوقه **يُعتَّم ولا يُغلق** («فوق سقف الطبقة»): لا يصل إليه طالب، والمصمّمُ قد يبني فيه. */
   const tierOf = c => c.tier && (t.tiers || []).find(x => String(x.scale_id) === String(sc.id) && x.code === c.tier);
+
+  /* 🆕 b252 · **بابُ معاينة المكتبة** (220 · قرارُ المالك ١٩ نوفمبر: «ضع باب المعاينة في شاشة التأليف»): رفوفُ هذا المستوى كما يراها
+     طالبُه — بأغلفتها وترتيبها، والمسودّاتُ بقلمٍ لمن يؤلّف (`previewLibrary` · student.js). والمكتبةُ تُعرف بجنسها (`family = 'reading'`)
+     كما تعرفها خانةُ «عنوان الرف» (218). وبلا مستوى (المشترك) لا باب: رفوفُ المكتبة لمستوًى بعينه.
+     📌 والطبقةُ أوّلُ طبقةٍ في المستوى فيها كتب (ترتيبُ رموزها `M1`…`M4` ترتيبُ أعمارها)، وإلّا أوّلُها — ومن الرفوف يُبدَّلان معاً. */
+  const libSubj = lv && courses.map(c => subj(c.subject_id)).find(s => s.family === 'reading');
+  const pvTier  = libSubj && ([...courses].filter(c => c.lessons > 0)
+                    .sort((a, b) => String(a.tier).localeCompare(String(b.tier)))[0] || courses[0])?.tier || null;
   const ages   = x => `${AR(x.age_from)}–${yearsText(x.age_to ?? x.age_from)}`;
 
   const card = c => {
@@ -169,8 +177,9 @@ export async function openEditor(scaleId, levelId){
           ${levels.map(x => `<option value="${x.id}"
             ${lv && x.id===lv.id?'selected':''}>${esc(x.name)}</option>`).join("")}
         </select>` : ''}
+      ${libSubj ? `<button class="btn ghost" id="pvLib" style="margin-inline-start:auto">معاينة الرفوف</button>` : ''}
       ${S.roleInfo?.role === 'admin' ? `<button class="btn ghost" id="tools"
-         style="margin-inline-start:auto">🎯 أدوات القياس</button>` : ''}
+         ${libSubj ? '' : 'style="margin-inline-start:auto"'}>🎯 أدوات القياس</button>` : ''}
     </div>
     ${/* 🆕 b210 · الفهرسُ يُرفض لمادّةٍ بلا منهج («لا يُكتب هدفٌ بلا سلّم») — فيُقال قبل أن يُطلب */''}
     ${sc.id === 'free' ? '<div class="line">لا يُكتب فهرسُ أهدافٍ لمادّةٍ بلا منهج</div>' : ''}
@@ -182,6 +191,12 @@ export async function openEditor(scaleId, levelId){
   if(lvEl) lvEl.onchange = e => openEditor(sc.id, e.target.value);
    const tb = document.getElementById("tools");
   if(tb) tb.onclick = () => openTools();
+  /* 🆕 b252 · والرجوعُ إلى المنهج والمستوى نفسَيهما — و`import()` لا استيرادٌ ثابت: student.js وحدةُ الطالب، ولا تُحمَّل للمؤلّف إلا هنا */
+  const pvb = document.getElementById("pvLib");
+  if(pvb) pvb.onclick = async () => {
+    const { previewLibrary } = await import('./student.js');
+    previewLibrary(libSubj.id, lv.id, pvTier, () => openEditor(sc.id, lv.id));
+  };
   app.querySelectorAll(".ed-card").forEach(el =>
     el.onclick = () => openCourse(byId(t.courses, el.dataset.c)));
   scrollTop();

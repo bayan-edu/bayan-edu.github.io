@@ -672,7 +672,7 @@ begin
     'ok', true, 'id', v_qid, 'kind', p_kind, 'gaps', v_gaps, 'pairs', v_pairs,
     'correct_n', coalesce(array_length(v_ids, 1), case when v_correct is null then 0 else 1 end),
     'dx_count', (select count(*) from jsonb_object_keys(v_dx)));
-end $;
+end $function$;
 
 
 insert into public.sql_log (n, title, applied_at)
