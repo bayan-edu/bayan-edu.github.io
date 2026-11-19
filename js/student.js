@@ -61,6 +61,17 @@ function bulk(x){
   return (x.lessons_total || 0) + (x.lessons_review || 0);
 }
 
+/* 🆕 b251 · «قيد الإعداد» — مادّةٌ لم تجهز بعدُ للطالب: بلا دروسٍ في وجهه، **أو مادّةُ تسكينٍ بلا أداة**.
+   كانت الثانيةُ تُكتب «تحديد المستوى» على بطاقتها زرّاً، ثمّ تردّ النقرةَ بتنبيه «اختبار تحديد المستوى قيد الإعداد»
+   (`startPlacement`) — دعوةٌ يتبعها رفض. ⇒ وحكمُ المالك (١٩ نوفمبر · مكتبةُ بيان العربيّة): «نطبّق المبدأ نفسَه الذي
+   اتّبعناه مع الموادّ السابقة: قيد الإعداد حتى تجهز». فالبطاقةُ والحالُ والبوّابةُ تقرأ هذه وحدها (`card` · `subjectState`
+   · `enterSubject`) — ثلاثةُ مواضع كانت تكرّر الشرطَ نصّاً، فتفترق لو عُدّل في أحدها.
+   📌 والشُّعبةُ قبلها: مادّةٌ تنتظر الاختيار ليست «قيد الإعداد» (b194). */
+function notReady(x){
+  if(x.needs_stream) return false;
+  return x.needs_placement ? !x.tool : bulk(x) === 0;
+}
+
 /* ⚠️ lessons_total > 0 شرط لازم: بدونه تُطوى المواد الفارغة
    بوسم «أتممتها» — إذ 0 === 0 صحيح.
    📌 والوجهُ السابقُ لا يُتَمّ: مراجعةٌ لا مسار (b173). */
@@ -138,9 +149,12 @@ function lastNext(){
 /* 🆕 b236 · مكتبةُ بيان — المادّةُ التي تُفتح دروسُها رفوفاً لا قائمة (`library.js` · spec-reading-library.md ق٧).
    🔑 بالرمز لا بالاسم ولا بالمعرّف: الاسمُ تغيّر في `203` نفسِه («Reading Comprehension» ⇐ «مكتبة بيان»)،
       والرمزُ ثابتٌ بقرار المالك (ق١) — وهو ما تُرسله `list_subjects` في كلّ مادّة. */
-const LIBRARY = 'sk_read';
+/* 🆕 b251 · ومكتبتان: «Bayan Library» و«مكتبة بيان» العربيّة (`219` · spec-arabic-library.md). **والرمزُ لا النوع** —
+      `editor_strands.js` يعرف المكتبةَ بنوعها (`family = 'reading'` من `author_tree`)، و`list_subjects` لا ترسل النوع؛
+      فمفتاحٌ يُضاف إليها رقعةُ دالّةٍ طويلةٍ لسطرٍ يحمله الرمز. ⚠️ فمكتبةٌ ثالثةٌ تُضاف هنا بسطر. */
+const LIBRARIES = new Set(['sk_read', 'sk_read_ar']);
 /* 🆕 b237 · مصدَّرةٌ لـquiz.js (نصُّ «العودة» وسطرُ الإتمام) — و`function` لا `const`: رأسُ الملفّ (الاستيرادُ الدائريّ) */
-export function isLibrary(x){ return x?.code === LIBRARY; }
+export function isLibrary(x){ return LIBRARIES.has(x?.code); }
 
 /* 🆕 b237 · الجسرُ إلى library.js — ما تفتحه رفوفُ المكتبة وبطاقةُ الكتاب ممّا يسكن هنا: رأسُ المادّة، والعودةُ إلى
    الرفوف، **والقراءةُ والأسئلة** (المحرّكان هنا). و`S.lesson` تُضبط قبلهما: الكتابُ يقرأ منها كلماتِه واختبارَه، والنتيجةُ
@@ -192,6 +206,9 @@ const SUBJ_IMG = {
   41: 'statistics',  // الإحصاء              — b160 · Canva
   42: 'geography',   // الجغرافيا            — b160 · Canva
 };
+/* 🆕 b251 · وبالرمز لما لا يُعرف معرّفُه قبل أن يُطبَّق ملفُّه: «مكتبة بيان» العربيّة (`219`) — معرّفُها من التسلسل يومئذٍ،
+   والجافّةُ نفسُها تستهلك أرقاماً منه. وصورتُها صورةُ المكتبة الإنجليزيّة حتى تُرسم لها صورة. */
+const SUBJ_IMG_CODE = { sk_read_ar: 'reading' };
 
 /* ── حالةُ المادة صنفاً · والألوان في screens.css عند .st-* ──
    ستٌّ لا اثنتان: «بدأتُ» ليست «أوشكتُ»، والفرقُ بينهما هو ما يجعل
@@ -199,7 +216,7 @@ const SUBJ_IMG = {
    مراجعةٌ لا مسار، فحالتُه «فيها ما يُراجَع» أو «لا». */
 function subjectState(x, isPast){
   if(x.needs_stream)                      return 'st-new';   // 🆕 b194 · كتحديد المستوى — والتعليلُ عند askStream
-  if(!x.needs_placement && bulk(x) === 0) return 'st-empty';
+  if(notReady(x))                         return 'st-empty';   // 🆕 b251 · ومادّةُ التسكين بلا أداة معها
   if(x.needs_placement)                   return 'st-new';
   if(isPast) return (x.lessons_review || 0) > 0 ? 'st-new' : 'st-empty';
   const t = x.lessons_total || 0;
@@ -458,7 +475,7 @@ export async function loadList(){
         الاسمَ لقرأه قارئُ الشاشة مرّتين. والمقاسُ في الوسم نفسِه فلا
         تقفز البطاقةُ حين تصل الصورة. */
   const face = x => {
-    const img = SUBJ_IMG[x.id];
+    const img = SUBJ_IMG[x.id] || SUBJ_IMG_CODE[x.code];
     return img
       ? `<div class="sh-wrap is-3d"><img class="sh-img-3d" src="/img/subj_${img}.webp"
            alt="" width="58" height="58" decoding="async"></div>`
@@ -476,7 +493,7 @@ export async function loadList(){
   const card = x => {
     const isPast = !!x.past;
     /* 🆕 b194 · والمادّةُ قبل شُعبتها ليست فارغة: مقرَّراتُها محجوبةٌ حتى يختار (183) */
-    const empty = !x.needs_placement && !x.needs_stream && bulk(x) === 0;
+    const empty = notReady(x);   // 🆕 b251 · ومادّةُ التسكين بلا أداة «قيد الإعداد» (`notReady`)
     /* 🆕 b197 · والفارغةُ ذاتُ الشُّعب بابٌ إلى شاشة الاختيار (حدُّ `183` ① — والتعليلُ عند `enterSubject`):
        تبقى «قيد الإعداد» برماديّها، وتُعلَن زرّاً وتنهض كسائر الأبواب. ⇒ `soon` للمغلقة وحدها:
        `.subj.soon` في screens.css هي «ليست زرّاً» بحرفها (`cursor:default` ولا نهوض)، فلا يلبسها باب. */
@@ -734,8 +751,10 @@ function streamAct(x){ return x.stream_label ? 'اختيار ' + x.stream_label 
       ⚠️ و`fromAsk` أوّلاً: الآتي من الشاشة نفسِها لا يُردّ إليها — وإلّا دار بينهما. */
 function enterSubject(x, fromAsk){
   if(x.needs_stream) return askStream(x);
-  if(!x.needs_placement && bulk(x) === 0){
-    toast("دروس هذه المادة قيد الإعداد — ستصلك عند جهوزها");
+  /* 🆕 b251 · ومادّةُ التسكين بلا أداة هنا أيضاً (`notReady`) — بطاقتُها لا تُنقر، والرابطُ المحفوظ يبلغ هذه البوّابة */
+  if(notReady(x)){
+    toast(x.needs_placement ? "هذه المادة قيد الإعداد — ستُفتح لك عند جهوزها"
+                            : "دروس هذه المادة قيد الإعداد — ستصلك عند جهوزها");
     return fromAsk                  ? loadList()
          : (x.streams || []).length ? askStream(x, true)
          : undefined;

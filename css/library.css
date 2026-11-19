@@ -243,11 +243,7 @@
 .lb-book.is-locked :is(.lb-img,.lb-gen){filter:grayscale(.8) brightness(.78)}
 .lb-book.is-locked .lb-title{opacity:.75}
 
-/* الرفُّ الخالي يقول ذلك على لافتةٍ في رفّه الأوّل فوق لوحه (حشوُ الرفّ لِلّوح · `.lb-row`) — والألواحُ باقيةٌ
-   بخاناتٍ لا تُرى، فالخزانةُ بمقاسها */
-.lb-empty{position:absolute;inset:0 0 calc(var(--rail) + var(--deck) / 2);z-index:2;display:grid;place-items:center;margin:0;pointer-events:none}
-.lb-empty span{background:var(--lb-tag);color:var(--lb-ink);border:1px solid var(--lb-gold);border-radius:10px;
-  padding:8px 18px;font-family:'Almarai';font-weight:700;font-size:var(--fs-ui);box-shadow:0 3px 10px rgba(60,35,10,.18)}
+/* 🆕 b251 · وسقطت `.lb-empty` (لافتةُ الرفّ الخالي): لا خزانةَ بلا كتب — عددُ الرفوف بعدد الكتب (library.js · `shelvesOf`) */
 
 /* ── السهمان — زرّان على طرفي المسرح، وأيقونةُ «رجوع» نفسُها (‎→) معكوسةً للتالي ── */
 .lb-arrow{position:absolute;top:50%;z-index:6;transform:translateY(-50%);width:42px;height:42px;padding:0;
