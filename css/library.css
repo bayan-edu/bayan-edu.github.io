@@ -100,6 +100,12 @@
   border-color:color-mix(in srgb, var(--lb-gold) 55%, transparent);transition:border-color .2s, color .2s}
 .lb-act:hover{border-color:var(--accent);color:var(--accent)}
 .lb-act:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* 🆕 b252 · محدِّدا المعاينة (المستوى · الطبقة · student.js `previewTop`) — بطاقةٌ ممّا يُنقر كأخواتها، وسهمُ النظام يبقى:
+   هو ما يقول «قائمةٌ تُفتح». والخيارُ يُرسم على سطح المنصّة بحبرها: اللوحُ الزجاجيّ لا يصل إلى قائمة النظام المفتوحة. */
+/* ⚠️ `width:auto` صريحاً: نمطُ الحقول العامّ يمدّ كلَّ `select` على عرض سطره (`.eq-bk-h select` نظيرُه) — فقام كلُّ محدِّدٍ
+   سطراً وحده ونزلت الرفوفُ نحو ١٣٠px في نافذة المالك (‎٥٧٤px · قِيس على لقطة b252). */
+.lb-pick{width:auto;flex:0 1 auto;min-width:0;max-width:100%;margin:0;padding-block:5px;text-overflow:ellipsis}
+.lb-pick option{color:var(--text);background:var(--surface)}
 /* 🆕 b250 · «رجوع للمواد» — أصغرُ ومن خشب المشهد لا من عاجه (قرارُ المالك على اللقطة الثانية · ١٨ نوفمبر).
    كان بطاقةً عاجيّةً كأخواته فقُرئ خبراً رابعاً عن الشاشة، وهو مخرجُها. ⇒ حافّةُ الرفّ نفسُها (`--lb-rail` · خشبٌ داكن بخيط ذهب)
    وحبرُها عاجُ اللافتات (‎#FFF5DE)، وحجمُ الوسم (`--fs-tag`). وهذا زينةُ المشهد لا عائلةُ معنى: التحويمُ وحده يقول `accent`.

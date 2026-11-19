@@ -66,6 +66,7 @@ const PHONE = matchMedia('(max-width: 640px)');
 
 /* ── حالُ الكتاب ونصُّه ── */
 function stateOf(l){
+  if(l.draft)  return 'draft';                        // 🆕 b252 · في المعاينة وحدها (`library_preview` · 220)
   if(l.locked) return 'locked';
   if(l.done)   return 'done';
   if(l.best != null || (l.items || []).some(i => i.status)) return 'reading';
@@ -75,6 +76,7 @@ const SAY = {
   done:    l => 'أُنجز' + (l.best != null ? ' ' + AR(Math.round(l.best)) + '٪' : ''),
   reading: () => 'قيد القراءة',
   locked:  () => 'مقفل',
+  draft:   () => 'مسودة',
   open:    () => '',
 };
 /* 🆕 b250 · **والحالُ نقطةٌ بأيقونة لا وسمٌ بنصّ** (قرارُ المالك على لقطة الرفّ · ١٩ نوفمبر): «قيد القراءة» كان يغطّي
@@ -85,6 +87,9 @@ const DOT = {
   done:    '<path d="M5.5 12.5l4 4L18.5 7.5"/>',
   reading: '<path d="M7 4.5h10v15l-5-3.6-5 3.6z"/>',
   locked:  '<rect x="5.5" y="11" width="13" height="9" rx="2"/><path d="M8.5 11V8a3.5 3.5 0 017 0v3"/>',
+  /* 🆕 b252 · قلمٌ محايد للمسودّة في المعاينة — نقطةُ «قيد القراءة» نفسُها لوناً (`.lb-dot` بلا صنف حال · library.css):
+     المسودّةُ حالُ كتابٍ لا حكمٌ على إجابة، فلا عائلةَ معنًى لها. ولا تجتمع مع حال الطالب: المعاينةُ تُرسلها فارغة. */
+  draft:   '<path d="M4.5 19.5h4l10-10-4-4-10 10z"/><path d="M13 7l4 4"/>',
 };
 
 /* ── الرفوف: الفروعُ النهائيّة بترتيبها، والكتبُ عليها بترتيب المنهج (`list_lessons`) ──
@@ -224,9 +229,10 @@ export async function paintLibrary(subj, lessons, strands, hooks = {}){
 
   /* 📌 والشريطُ (`.lb-top`): بطاقاتٌ صغيرةٌ كلٌّ على لوحه الزجاجيّ — الحديقةُ خلفيّةُ الصفحة كلِّها، والنصُّ لا يُكتب
         على صورة (library.css). 🆕 b249 · ولا لوحَ كبيرَ يجمعها: سقط العنوانُ والألسنة، فلم يبقَ ما يستحقّ لوحاً. */
+  /* 🆕 b252 · ونصُّ الفراغ من المستدعي إن قاله (`hooks.none`): المعاينةُ تختار مستوًى لا تسكنه — «مستواك» لا تصدق فيها */
   if(!shelves.length){
     app.innerHTML = `<div class="lb" id="lb"><div class="lb-top">${top}</div>
-      <div class="lb-none status">لا كتب في مستواك بعد</div></div>`;
+      <div class="lb-none status">${esc(hooks.none || 'لا كتب في مستواك بعد')}</div></div>`;
     bindTop?.();
     return;
   }
@@ -372,8 +378,9 @@ export async function paintLibrary(subj, lessons, strands, hooks = {}){
   PHONE.addEventListener('change', onMedia);
 
   place();
-  /* 🆕 b238 · وتاجُ المكتبة يلحق بالرفوف ولا يؤخّرها — نداءٌ بعد الرسم، وفشلُه يُبقيه مطويّاً */
-  paintProgress(subj, root.querySelector('#lbProg'), hooks);
+  /* 🆕 b238 · وتاجُ المكتبة يلحق بالرفوف ولا يؤخّرها — نداءٌ بعد الرسم، وفشلُه يُبقيه مطويّاً
+     🆕 b252 · ولا تاجَ في المعاينة (`hooks.preview`): شرطُ الانتقال حالُ طالبٍ في مستواه، والناظرُ ليس فيه */
+  if(!hooks.preview) paintProgress(subj, root.querySelector('#lbProg'), hooks);
 }
 
 /* ═══════════ تاجُ المكتبة: ما أنجزتَ من شرط مستواك، والمنارة (b238 · المرحلة ٥ · sql/205) ═══════════

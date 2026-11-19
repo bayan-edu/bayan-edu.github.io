@@ -227,6 +227,10 @@ export const verifyEmailOtp = (email, token) =>
 
 export const listSubjects = ()  => db.rpc('list_subjects');
 export const listLessons  = sid => db.rpc('list_lessons', { p_subject: sid });
+/* 🆕 b252 · معاينةُ المكتبة للمعلّم والمؤلّف (220): رفوفُ مستوًى وطبقةٍ كما يراها طالبُها، ومعها المسودّاتُ لمن يؤلّف.
+   والفارغان (`null`) ⇐ أوّلُ مستوًى وطبقةٍ فيهما كتب — والقاعدةُ تختار، والردُّ يقول ما اختارت (`level` · `tier`). */
+export const libraryPreview = (sid, level = null, tier = null) =>
+  db.rpc('library_preview', { p_subject: sid, p_level: level, p_tier: tier });
 
 /* 🆕 b194 · شُعبةُ الطالب في مادّة (183) — دالّةٌ لا `update` كالصفّ: تتحقّق أنّ الشُّعبةَ
    من المادّة، وتكتب أو تُبدّل سطراً واحداً، وتُعيد {ok, name} أو {ok:false, error}. */
