@@ -22,7 +22,7 @@ import * as api from './api.js';
 import { app, bar, head, toast, esc, fmt, AR, media, pgMedia, srcOf,
          scrollTop, backText, N, joinList, dirOf } from './ui.js';
 import { questionText, questionBody, KIND_LABEL,
-         sentenceText, sentencesOf, judgments, orderingUnit } from './render_q.js';   // 🆕 b245 · أنماطُ ق١٦ (211)
+         sentenceText, sentencesOf, sentencePart, judgments, orderingUnit } from './render_q.js';   // 🆕 b245 · أنماطُ ق١٦ (211) · b255 sentencePart
 import { wireMatching } from './match_dnd.js';
 
 /* حالةُ الجلسة — تعيش هنا لا في S: زائرٌ بلا حساب لا حالةَ تطبيقٍ له،
@@ -131,9 +131,10 @@ function quizHtml(q){
   const pg = P.passages.find(p => String(p.id) === String(q.passage_id));
   const qAudio = srcOf(q.audio);
   const snt = tapsText(q) && pg?.body ? sentenceText(pg.body, sentencesOf(q), P.a.o) : null;
+  const part = !!snt && sentencePart(pg.body, q);   // 🆕 b255 · نطاقُ السؤال جزءٌ من النصّ ⇒ يُظلَّل (ق٢٠ · كالامتحان)
   return `
     ${pg ? (snt ? `<div class="card">${pg.title ? `<div class="psg-t" dir="auto">${esc(pg.title)}</div>` : ''}
-              <div class="psg snt-on" dir="auto">${snt}</div>${pgMedia(pg)}</div>`
+              <div class="psg snt-on${part ? ' snt-part' : ''}" dir="auto">${snt}</div>${pgMedia(pg)}</div>`
          : `<div class="card"><div class="line" style="color:var(--text)"
               dir="auto">${pg.title ? `<b>${esc(pg.title)}</b><br>` : ''}${fmt(pg.body||'')}</div>
             ${pgMedia(pg)}</div>`) : ''}
@@ -145,7 +146,7 @@ function quizHtml(q){
                    style="width:100%;margin-bottom:12px"></audio>` : ''}
       ${questionText(q, q.kind === 'cloze' ? P.a.pairs : P.a.txt)}
       ${questionBody(q, { picked: o => false, values: P.a.txt, pairs: P.a.pairs, seq: P.a.seq,
-                          list: tapsText(q) && !snt })}
+                          list: tapsText(q) && !snt, part })}
     </div>
     <div id="fb"></div>
     <div class="nav" style="margin-top:16px">

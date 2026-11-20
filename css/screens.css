@@ -789,6 +789,14 @@ fieldset.gate-lk:disabled *{cursor:not-allowed}
 .psg.snt-on .snt:hover{background:var(--accent-soft)}
 .psg.snt-on .snt:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .psg.snt-on .snt.sel{background:var(--accent-fill);text-decoration:underline solid var(--accent);text-decoration-thickness:2px}
+/* 🆕 b255 · نطاقُ السؤال جزءٌ من النصّ (ق٢٠ · المكتبة): **جملُه وحدها ملفوفة، فتُظلَّل وحدها** — والنصُّ حولها مقروءٌ لا يُنقر.
+   🔑 **بعائلة `accent`** لأنّ الظلّ يقول «اضغط هنا» — جملةُ هذه العائلة بعينها. ودرجاتُه درجاتُ الخيار القائمة لا لونٌ جديد:
+      الساكنُ `accent-soft` (كان للمرور) · المرورُ `accent-fill` · والمختارةُ `accent-fill` **وخطُّها المصمت** — فالمختارةُ تُعرف بالخطّ لا بالأرضيّة.
+   📐 والظلُّ على الجمل لا على صندوقٍ حولها: النطاقُ قد يعبر فقرتين (فقرةٌ قصيرةٌ تُضمّ إليها جارتُها)، وصندوقٌ عبر حدّ الفقرة يقطع النصّ.
+      وحشوةُ الجملة الأفقيّة تصل الجملَ المتجاورة فيُقرأ الظلُّ قطعةً واحدة. */
+.psg.snt-on.snt-part .snt{background:var(--accent-soft);padding:2px 3px}
+.psg.snt-on.snt-part .snt:hover{background:var(--accent-fill)}
+.psg.snt-on.snt-part .snt.sel{background:var(--accent-fill)}
 /* البطاقةُ تقول المختارة — محايدةً قبل الاختيار، وبحدّ الاختيار بعده */
 .snt-pick{padding:11px 14px;border-radius:11px;border:1px dashed var(--line-strong);background:var(--fill-soft);
   color:var(--text-muted);font-size:var(--fs-read);line-height:1.8}

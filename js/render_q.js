@@ -59,8 +59,10 @@ const T_AR = {
   gapSR:  n => `الفراغ ${AR(n)}`,
   essay:  'السلسلة السببية كاملة…',
   snt:    'تُختار الجملة بالضغط عليها في النص',
+  sntPart:'تُختار الجملة بالضغط عليها في الجزء المظلّل',               // 🆕 b255 · نطاقُ السؤال جزءٌ من النصّ (ق٢٠)
   sntNone:'لا جملة مختارة بعد',
   jdB:    'والدليل: الجملة التي تدلّ على الحكم، بالضغط عليها في النص',
+  jdBPart:'والدليل: الجملة التي تدلّ على الحكم، بالضغط عليها في الجزء المظلّل',
   ord:    'يُضغط كل بند في دوره، من الأول إلى الأخير. والضغط على بند مرتّب يعيده',
   ordBack:'إعادته إلى القائمة',
   ordLive:(n, t) => `رُتّب ${AR(n)} من ${AR(t)}`,
@@ -77,8 +79,10 @@ const T_EN = {
   gapSR:  n => `Gap ${n}`,
   essay:  'Write your answer in full…',
   snt:    'Tap the sentence in the passage',
+  sntPart:'Tap the sentence in the shaded part of the passage',
   sntNone:'No sentence chosen yet',
   jdB:    'Then tap the sentence in the passage that shows it',
+  jdBPart:'Then tap the sentence in the shaded part that shows it',
   ord:    'Tap each item in turn, from first to last. Tap a placed item to take it back',
   ordBack:'take it back',
   ordLive:(n, t) => `${n} of ${t} placed`,
@@ -184,6 +188,16 @@ export const judgments   = q => (q?.options || []).filter(o => /^J/.test(o.k || 
 export const sentencesOf = q => q?.kind === 'judge'
   ? (q.options || []).filter(o => /^S/.test(o.k || '')) : (q?.options || []);
 
+/* 🆕 b255 · نطاقُ السؤال (ق٢٠): في المكتبة تُنقر الجملةُ في فقرة الجواب — سبعُ جملٍ منها حدّاً — لا في النصّ كلّه.
+   والنطاقُ هو جملُ السؤال نفسُها (خياراته)، فلا حقلَ له: **نطاقٌ أقصرُ من النصّ ⇒ جزءٌ يُظلَّل ويُقال «في الجزء المظلّل»**،
+   ونطاقٌ هو النصُّ كلُّه (سائرُ الموادّ · والنصُّ القائم قبل التحويل) يُعرض كما كان حرفاً.
+   والمقارنةُ بلا مسافات — كحارس 208: التقسيمُ لا يغيّر حرفاً، والمسافاتُ بين الجمل لا تُحفظ في الخيارات. */
+const bare = s => String(s || '').replace(/\s+/g, '');
+export const sentencePart = (body, q) => {
+  const n = bare(sentencesOf(q).map(o => o.body).join('')).length;
+  return n > 0 && n < bare(body).length;
+};
+
 export function sentenceText(body, options, chosen = null, ro = false){
   const src = String(body || '');
   let at = 0, out = '';
@@ -256,7 +270,7 @@ export function questionBody(q, opts = {}){
           <span class="key">${esc(optLabel(o, j))}</span>
           <span style="flex:1">${fmt(o.body)}</span>
         </button>`).join("")}</div>
-      <div class="q-hint" style="margin-top:12px">${esc(T.jdB)}</div>
+      <div class="q-hint" style="margin-top:12px">${esc(opts.part ? T.jdBPart : T.jdB)}</div>
       <div class="snt-pick${cur ? ' on' : ''}" dir="${dirOf(cur?.body || '')}">${
         cur ? fmt(cur.body) : esc(T.sntNone)}</div>
       <div class="opts snt-list"${opts.list ? '' : ' hidden'}>${ss.map((o, j) => `
@@ -271,7 +285,7 @@ export function questionBody(q, opts = {}){
 
   if(q.kind === 'sentence'){
     const cur = (q.options || []).find(o => picked(o));
-    return `<div class="q-hint">${esc(T.snt)}</div>
+    return `<div class="q-hint">${esc(opts.part ? T.sntPart : T.snt)}</div>
       <div class="snt-pick${cur ? ' on' : ''}" dir="${dirOf(cur?.body || '')}">${
         cur ? fmt(cur.body) : esc(T.sntNone)}</div>
       <div class="opts snt-list"${opts.list ? '' : ' hidden'}>${(q.options||[]).map((o, j) => `

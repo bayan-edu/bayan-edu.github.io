@@ -60,7 +60,7 @@ import { loadList, loadLessons, isLibrary } from './student.js';
 /* `kindLabel` لا `KIND_LABEL`: اسمُ النمط صار يتبع لسانَ الورقة
    (render_q.js · b142)، والخريطةُ الخام لم يبقَ لها قارئٌ هنا. */
 import { questionText, questionBody, kindLabel, paperIsEnglish, gapCount,
-         bodyRead, sentenceText, sentencesOf, judgments, orderingUnit } from './render_q.js';
+         bodyRead, sentenceText, sentencesOf, sentencePart, judgments, orderingUnit } from './render_q.js';   // 🆕 b255 · sentencePart
 import { wireMatching } from './match_dnd.js';
 
 /* مشتقّاتُ عرضٍ لا حالةَ محاولة — تُبنى كلُّها من S.quiz و S.ans عند
@@ -619,16 +619,23 @@ function renderPage(){
   /* 🆕 b242 · و«حكمٌ ودليلُه» (209) يشارك اختيارَ الجملة نقرَه: دليلُه جملةٌ في النصّ نفسِه — وجملُه `S…` من خياراته (`sentencesOf`) */
   const sq = qs.filter(q => q.kind === 'sentence' || q.kind === 'judge');
   if(!sq.some(q => q.id === S.arm)) S.arm = sq[0]?.id ?? null;
-  const sntHtml = sq.length && pg?.body
-    ? sentenceText(pg.body, sentencesOf(sq[0]), A.get(S.arm)?.o ?? null) : null;
-  const sntMap = sntHtml ? sentencesOf(sq[0]) : null;   // نصُّ الجملة بموضعها — للمطابقة مع السؤال المسلَّح
+  /* 🆕 b255 · **يُلفّ نطاقُ السؤال المسلَّح وحده** (ق٢٠): كان يُلفّ نطاقُ السؤال الأوّل (`sq[0]`) ويُطابَق غيرُه بنصّ الجملة —
+     وذاك صحيحٌ ما دام النطاقُ النصَّ كلَّه في كلّ سؤال. وفي المكتبة لكلّ سؤالٍ فقرتُه، فجملُ الثاني لا تكون ملفوفةً أصلاً.
+     ⇒ يُعاد لفُّ النصّ حين يُسلَّح سؤالٌ آخر (`rewrap`)، والجملةُ الملفوفة تحمل معرّفَ خيارها (`data-o`) فلا مطابقةَ بالنصّ.
+     ⚠️ ولفٌّ تعذّر يخصّ سؤالَه: قائمتُه الاحتياطيّة تظهر وحدها، والنصُّ يُعرض كما هو حين يُسلَّح. */
+  const armQ   = () => sq.find(q => q.id === S.arm) || null;
+  const wrapOf = q => q && pg?.body ? sentenceText(pg.body, sentencesOf(q), A.get(q.id)?.o ?? null) : null;
+  const partOf = q => !!(q && pg?.body && sentencePart(pg.body, q));
+  const wrapOk = new Map(sq.map(q => [q.id, !!wrapOf(q)]));
+  const sntHtml = sq.length ? wrapOf(armQ()) : null;
+  const psgCls  = sntHtml ? ` snt-on${partOf(armQ()) ? ' snt-part' : ''}` : '';
 
   const pgHtml = !pg ? '' : `
     ${isAudio ? `<div class="psg-audio">${pgMedia(pg)}</div>` : ''}
     <div class="card" style="padding:16px">
       ${pg.title?`<div class="psg-t" dir="auto">${esc(pg.title)}</div>`:''}
       ${isAudio ? '' : pgMedia(pg)}
-      ${pg.body?`<div class="psg${sntHtml ? ' snt-on' : ''}" dir="auto">${sntHtml ?? fmt(pg.body)}</div>`:''}
+      ${pg.body?`<div class="psg${psgCls}" dir="auto">${sntHtml ?? fmt(pg.body)}</div>`:''}
     </div>`;
 
   let seen = null;                       // آخرُ عنوان قسمٍ كُتب في هذه الصفحة
@@ -638,7 +645,8 @@ function renderPage(){
     const picked = o => multi ? a.os.includes(o.id) : a.o === o.id;
 
        const body = questionBody(q, { picked, essay:a.essay, values:a.txt, seq:a.seq,
-                                      pairs:a.pairs, en:EN, pickedJ: o => a.j === o.id });
+                                      pairs:a.pairs, en:EN, pickedJ: o => a.j === o.id,
+                                      part: sq.includes(q) && partOf(q) });   // 🆕 b255 · «في الجزء المظلّل»
 
     const sec = (q.section && q.section !== seen)
       ? `<div class="q-sec" dir="auto">${esc(q.section)}</div>` : '';
@@ -694,29 +702,49 @@ function renderPage(){
 
   if(splitable) wireSplit();
 
-  /* 🆕 b241 · لفٌّ تعذّر ⇒ القائمةُ الاحتياطيّة في بطاقات الجمل (رأسُ `sentenceText`) */
-  if(sq.length && !sntHtml) app.querySelectorAll('.snt-list').forEach(l => { l.hidden = false; });
+  /* 🆕 b241 · لفٌّ تعذّر ⇒ القائمةُ الاحتياطيّة في بطاقات الجمل (رأسُ `sentenceText`) —
+     🆕 b255 · لكلّ سؤالٍ بلفّه هو: سؤالٌ تعذّر لفُّه تظهر قائمتُه وحدها، وأخوه الملفوفُ يُنقر في النصّ */
+  sq.forEach(q => { if(!wrapOk.get(q.id))
+    app.querySelector(`.qcard[data-q="${q.id}"] .snt-list`)?.removeAttribute('hidden'); });
 
   /* ── 🆕 b241 · نقرُ الجملة في النصّ — يُسنَد إلى السؤال المسلَّح ──
-     🔑 **والمطابقةُ بنصّ الجملة لا بموضعها:** الجملُ الملفوفةُ جملُ السؤال الأوّل، وسؤالٌ ثانٍ على النصّ نفسِه
-        يُطابَق بها نصّاً — فلا يلزم تقسيمٌ واحد. وجملةٌ لا مقابلَ لها فيه لا تُسنَد (لا يُخمَّن له جواب).
+     🆕 b255 · **والملفوفُ جملُ المسلَّح نفسُه** (`rewrap`)، فالجملةُ تُعرف بمعرّف خيارها (`data-o`) — وجملةٌ ليست من خياراته
+        لا تُسنَد (لا يُخمَّن له جواب).
      ♿ والجملةُ زرٌّ بدوره وتبويبه: Enter والمسافة تختارانها كالنقر. */
-  const sntOf = (q, i) => {
-    const t = String(sntMap?.[i]?.body || '').trim();
-    return sentencesOf(q).find(o => String(o.body || '').trim() === t) || null;
-  };
+  const sntOf = (q, span) => sentencesOf(q).find(o => o.id === +span.dataset.o) || null;
   const paintSnt = () => {
-    const q = sq.find(z => z.id === S.arm), a = A.get(S.arm);
-    app.querySelectorAll('.psg .snt').forEach(s => {
-      const o = sntOf(q, +s.dataset.s);
-      s.classList.toggle('sel', !!o && !!a && a.o === o.id);
-    });
+    const a = A.get(S.arm);
+    app.querySelectorAll('.psg .snt').forEach(s =>
+      s.classList.toggle('sel', !!a && a.o === +s.dataset.o));
     app.querySelectorAll('.qcard').forEach(c =>
       c.classList.toggle('armed', sq.length > 1 && +c.dataset.q === S.arm));
   };
+  /* 🆕 b255 · والنطاقُ يُرى: يُمرَّر إليه **داخل وعائه وحده** — الجَنبةُ في القسمة، والنصُّ نفسُه في العمود الواحد (سقفُه ٤٤vh) —
+     ولا تتحرّك الصفحة: الطالبُ نقر بطاقةَ سؤاله، وصفحةٌ تقفز عنها تُضيّعه. ونطاقٌ ظاهرٌ كلُّه لا يُحرَّك. */
+  const showRange = () => {
+    const box = app.querySelector('.psg.snt-part'); if(!box) return;
+    const spans = box.querySelectorAll('.snt'); if(!spans.length) return;
+    const pane = [box, box.closest('.split-a')].find(el => el && el.scrollHeight > el.clientHeight + 1
+                   && getComputedStyle(el).overflowY !== 'visible');
+    if(!pane) return;
+    const r = pane.getBoundingClientRect(), f = spans[0].getBoundingClientRect(),
+          l = spans[spans.length - 1].getBoundingClientRect();
+    if(f.top >= r.top && l.bottom <= r.bottom) return;
+    pane.scrollTop += f.top - r.top - 12;
+  };
+  const rewrap = () => {
+    const box = app.querySelector('.psg'); if(!box || !pg?.body || !sq.length) return;
+    const q = armQ(), html = wrapOf(q);
+    box.innerHTML = html ?? fmt(pg.body);
+    box.classList.toggle('snt-on', !!html);
+    box.classList.toggle('snt-part', !!html && partOf(q));
+    paintSnt();
+    showRange();
+  };
+  showRange();
   const pickSnt = span => {
     const q = sq.find(z => z.id === S.arm), a = A.get(S.arm);
-    const o = sntOf(q, +span.dataset.s);
+    const o = sntOf(q, span);
     if(!q || !a || !o) return;
     credit(q.id);
     if(a.o !== null && a.o !== o.id) a.chg++;
@@ -728,8 +756,9 @@ function renderPage(){
     paintSnt();
     syncWarn();
   };
-  /* ⚠️ على النصّ نفسِه لا على `#app`: `#app` باقٍ بين الصفحات، ومستمعٌ يُضاف إليه في كلّ رسمٍ يتكاثر */
-  app.querySelector('.psg.snt-on')?.addEventListener('keydown', e => {
+  /* ⚠️ على النصّ نفسِه لا على `#app`: `#app` باقٍ بين الصفحات، ومستمعٌ يُضاف إليه في كلّ رسمٍ يتكاثر.
+     🆕 b255 · وعلى `.psg` لا `.psg.snt-on`: المسلَّحُ أوّلاً قد يتعذّر لفُّه، ويُلفّ أخوه حين يُسلَّح (`rewrap`) */
+  if(sq.length) app.querySelector('.psg')?.addEventListener('keydown', e => {
     const s = e.target.closest?.('.snt');
     if(!s || (e.key !== 'Enter' && e.key !== ' ')) return;
     e.preventDefault(); pickSnt(s);
@@ -771,7 +800,7 @@ function renderPage(){
     if(s){ pickSnt(s); return; }
     const arm = e.target.closest('.qcard');
     if(arm && +arm.dataset.q !== S.arm && sq.some(z => z.id === +arm.dataset.q)){
-      S.arm = +arm.dataset.q; paintSnt();
+      S.arm = +arm.dataset.q; rewrap();   // 🆕 b255 · لكلّ سؤالٍ نطاقُه — يُلفّ من جديد لا يُلوَّن وحده
     }
 
     /* 🆕 b243 · الترتيب (210): بندٌ في القائمة ⇒ إلى الخانة التالية · وبندٌ مرتّب ⇒ يعود، وما بعده يتقدّم.
