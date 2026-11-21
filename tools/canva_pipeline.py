@@ -95,7 +95,7 @@ def create_and_produce_cover(lesson_id, brief, user_intent=None):
         user_intent = f"Generate book cover for lesson {lesson_id}"
         
     create_res = None
-    for attempt in range(6):
+    for attempt in range(12):
         print(f"[{time.strftime('%H:%M:%S')}] Requesting Canva design for Book {lesson_id} (attempt {attempt+1})...")
         create_res = call_mcp('create-design', {
             'brief': brief,
@@ -107,7 +107,7 @@ def create_and_produce_cover(lesson_id, brief, user_intent=None):
         if create_res.get('status') == 'failed':
             fail = create_res.get('failure', {})
             code = fail.get('code')
-            if code == 'quota_cooldown' and attempt < 5:
+            if code == 'quota_cooldown' and attempt < 11:
                 print(f"[{time.strftime('%H:%M:%S')}] Canva cooldown active. Sleeping 25s before retry...")
                 time.sleep(25)
                 continue

@@ -1,0 +1,1238 @@
+﻿question_id,quiz_id,book_code,book_title,kind,sentences,answer_span,reason
+13665,667,LX-R02-N-M4-002,"The Sun",judge,9,9,spread
+13690,672,LX-R02-N-M4-007,"His Hand",judge,11,9,spread
+13700,674,LX-R03-I-M4-003,"The Red Fire Bell",judge,14,10,spread
+13703,675,LX-R03-I-M4-005,"At the Shop Desk",sentence,13,9,spread
+13705,675,LX-R03-I-M4-005,"At the Shop Desk",judge,13,11,spread
+13710,676,LX-R03-I-M4-008,"A Call to 911",judge,13,12,spread
+13715,677,LX-R03-N-M4-001,"The Full Bus",judge,13,12,spread
+13720,678,LX-R03-N-M4-002,"The Bag at the Desk",judge,15,10,spread
+13723,679,LX-R03-N-M4-004,"The Math Test",sentence,14,11,spread
+13730,680,LX-R03-N-M4-006,"Bags of Sand",judge,12,11,spread
+13740,682,LX-R04-I-M4-002,"Hot Drink, Cold Glass",judge,20,14,spread
+13745,683,LX-R04-I-M4-003,"The Tall Grass",judge,17,17,spread
+13750,684,LX-R04-I-M4-008,"The Duck and the Cat",judge,15,10,spread
+13755,685,LX-R04-N-M4-001,"The Big Truck",judge,19,14,spread
+13765,687,LX-R04-N-M4-005,"The Old Clock",judge,16,15,spread
+13770,688,LX-R04-N-M4-006,"The Long Trip",judge,18,13,spread
+13775,689,LX-R04-N-M4-007,"The Red Flag",judge,15,11,spread
+13780,690,LX-R05-I-M4-002,"Soap and Water",judge,20,19,spread
+13785,691,LX-R05-I-M4-004,"The Cold Bag",judge,24,19,spread
+13790,692,LX-R05-I-M4-005,"Two Times a Day",judge,20,20,spread
+13794,693,LX-R05-I-M4-008,"One Hour a Day",sentence,22,11,spread
+13795,693,LX-R05-I-M4-008,"One Hour a Day",judge,22,20,spread
+13798,694,LX-R05-N-M4-001,"Cold Water, Not Ice",sentence,22,14,spread
+13799,694,LX-R05-N-M4-001,"Cold Water, Not Ice",judge,22,19,spread
+13800,694,LX-R05-N-M4-001,"Cold Water, Not Ice",judge,22,12,spread
+13808,696,LX-R05-N-M4-006,"Nine Hours of Sleep",sentence,20,10,spread
+13810,696,LX-R05-N-M4-006,"Nine Hours of Sleep",judge,20,18,spread
+13813,697,LX-R05-N-M4-007,"A Date for the Box",sentence,20,10,spread
+13814,697,LX-R05-N-M4-007,"A Date for the Box",sentence,20,16,spread
+13815,697,LX-R05-N-M4-007,"A Date for the Box",judge,20,8,spread
+13820,698,LX-R06-I-M4-002,"Black Lines on the Sand",judge,20,13,spread
+13835,701,LX-R06-I-M4-008,"The Hard Hat",judge,20,18,spread
+13840,702,LX-R06-N-M4-001,"The Test Pen",judge,23,10,spread
+13850,704,LX-R06-N-M4-006,"Wet Cloths on the Floor",judge,21,14,spread
+13853,705,LX-R06-N-M4-007,"The Smoke Box",sentence,20,16,spread
+13860,706,LX-R07-I-M4-002,"The Camel's Hump",judge,21,13,spread
+13865,707,LX-R07-I-M4-004,"The Bee's Line",judge,23,15,spread
+13880,710,LX-R07-N-M4-001,"Seeds in the Sand",judge,28,25,spread
+13885,711,LX-R07-N-M4-003,"White Flowers for the Date Trees",judge,26,9,spread
+13890,712,LX-R07-N-M4-006,"The Dry River",judge,27,18,spread
+13894,713,LX-R07-N-M4-007,"No Lights on the Beach",sentence,25,17,spread
+13895,713,LX-R07-N-M4-007,"No Lights on the Beach",judge,25,17,spread
+13899,714,LX-R08-I-M4-002,"The Wind Tower",sentence,22,7,all-answers
+13900,714,LX-R08-I-M4-002,"The Wind Tower",judge,22,22,spread
+13903,715,LX-R08-I-M4-004,"How We See",sentence,28,9,spread
+13904,715,LX-R08-I-M4-004,"How We See",judge,28,14,spread
+13905,715,LX-R08-I-M4-004,"How We See",judge,28,20,spread
+13910,716,LX-R08-I-M4-005,"The Train in the Desert",judge,23,16,spread
+13917,718,LX-R08-N-M4-001,"The Light on Black Rock",sentence,30,9,spread
+13918,718,LX-R08-N-M4-001,"The Light on Black Rock",sentence,30,8,spread
+13920,718,LX-R08-N-M4-001,"The Light on Black Rock",judge,30,21,spread
+13924,719,LX-R08-N-M4-003,"Never Too Late to Read",sentence,32,8,spread
+13925,719,LX-R08-N-M4-003,"Never Too Late to Read",judge,32,13,spread
+13928,720,LX-R08-N-M4-006,"The Mosque Yard",sentence,25,9,spread
+13930,720,LX-R08-N-M4-006,"The Mosque Yard",judge,25,11,spread
+13931,721,LX-R08-N-M4-007,"The Stone in the Glass Box",sentence,33,10,spread
+13932,721,LX-R08-N-M4-007,"The Stone in the Glass Box",sentence,33,9,spread
+13933,721,LX-R08-N-M4-007,"The Stone in the Glass Box",sentence,33,33,spread
+13934,721,LX-R08-N-M4-007,"The Stone in the Glass Box",judge,33,33,spread
+13935,721,LX-R08-N-M4-007,"The Stone in the Glass Box",judge,33,10,spread
+13940,722,LX-R09-I-M4-002,"The Camp Fire",judge,36,21,spread
+13942,723,LX-R09-I-M4-004,"Clean River Water",sentence,36,7,all-answers
+13945,723,LX-R09-I-M4-004,"Clean River Water",judge,36,25,spread
+13950,724,LX-R09-I-M4-005,"Sand Animals",judge,32,32,spread
+13955,725,LX-R09-I-M4-008,"Making Dishes",judge,36,18,spread
+13960,726,LX-R09-N-M4-001,"The Stone Wall",judge,40,36,spread
+13965,727,LX-R09-N-M4-003,"The Night Flight",judge,38,21,spread
+13970,728,LX-R09-N-M4-006,"The Cloth Shop",judge,34,34,spread
+13972,729,LX-R09-N-M4-007,"The Long Bike Ride",sentence,38,7,all-answers
+13975,729,LX-R09-N-M4-007,"The Long Bike Ride",judge,38,26,spread
+15173,845,LX-R21-I-M4-001,"The Price of a Bag of Rice",judge,96,42,spread
+15175,845,LX-R21-I-M4-001,"The Price of a Bag of Rice",sentence,96,7,all-answers
+15177,845,LX-R21-I-M4-001,"The Price of a Bag of Rice",judge,96,88,spread
+15178,845,LX-R21-I-M4-001,"The Price of a Bag of Rice",judge,96,23,spread
+15180,846,LX-R22-I-M4-001,"What We Keep",judge,94,60,spread
+15181,846,LX-R22-I-M4-001,"What We Keep",judge,94,21,spread
+15182,846,LX-R22-I-M4-001,"What We Keep",judge,94,94,spread
+15183,846,LX-R22-I-M4-001,"What We Keep",judge,94,50,spread
+15184,846,LX-R22-I-M4-001,"What We Keep",judge,94,94,spread
+15185,846,LX-R22-I-M4-001,"What We Keep",judge,94,44,spread
+15186,846,LX-R22-I-M4-001,"What We Keep",judge,94,10,spread
+15187,847,LX-R22-I-M4-002,"Seven Hundred and Fifty Resident",sentence,111,14,spread
+15188,847,LX-R22-I-M4-002,"Seven Hundred and Fifty Resident",judge,111,35,spread
+15189,847,LX-R22-I-M4-002,"Seven Hundred and Fifty Resident",judge,111,13,spread
+15190,847,LX-R22-I-M4-002,"Seven Hundred and Fifty Resident",judge,111,98,spread
+15191,847,LX-R22-I-M4-002,"Seven Hundred and Fifty Resident",judge,111,38,spread
+15192,847,LX-R22-I-M4-002,"Seven Hundred and Fifty Resident",judge,111,40,spread
+15193,847,LX-R22-I-M4-002,"Seven Hundred and Fifty Resident",judge,111,58,spread
+15194,847,LX-R22-I-M4-002,"Seven Hundred and Fifty Resident",judge,111,35,spread
+15195,847,LX-R22-I-M4-002,"Seven Hundred and Fifty Resident",judge,111,75,spread
+15197,848,LX-R22-N-M4-001,"The Date Harvest",judge,98,67,spread
+15198,848,LX-R22-N-M4-001,"The Date Harvest",judge,98,55,spread
+15199,848,LX-R22-N-M4-001,"The Date Harvest",judge,98,79,spread
+15200,848,LX-R22-N-M4-001,"The Date Harvest",judge,98,68,spread
+15201,848,LX-R22-N-M4-001,"The Date Harvest",judge,98,67,spread
+15202,848,LX-R22-N-M4-001,"The Date Harvest",judge,98,55,spread
+15203,848,LX-R22-N-M4-001,"The Date Harvest",judge,98,91,spread
+15205,849,LX-R23-I-M4-001,"Water Under the Sand",judge,87,61,spread
+15206,849,LX-R23-I-M4-001,"Water Under the Sand",judge,87,32,spread
+15207,849,LX-R23-I-M4-001,"Water Under the Sand",judge,87,71,spread
+15208,849,LX-R23-I-M4-001,"Water Under the Sand",judge,87,87,spread
+15209,849,LX-R23-I-M4-001,"Water Under the Sand",judge,87,15,spread
+15210,849,LX-R23-I-M4-001,"Water Under the Sand",judge,87,61,spread
+15211,849,LX-R23-I-M4-001,"Water Under the Sand",judge,87,75,spread
+15212,849,LX-R23-I-M4-001,"Water Under the Sand",judge,87,15,spread
+15213,850,LX-R23-I-M4-002,"One Hour a Night",sentence,106,9,spread
+15214,850,LX-R23-I-M4-002,"One Hour a Night",judge,106,77,spread
+15215,850,LX-R23-I-M4-002,"One Hour a Night",judge,106,17,spread
+15216,850,LX-R23-I-M4-002,"One Hour a Night",judge,106,83,spread
+15217,850,LX-R23-I-M4-002,"One Hour a Night",judge,106,10,spread
+15218,850,LX-R23-I-M4-002,"One Hour a Night",judge,106,49,spread
+15219,850,LX-R23-I-M4-002,"One Hour a Night",judge,106,70,spread
+15220,850,LX-R23-I-M4-002,"One Hour a Night",judge,106,36,spread
+15221,850,LX-R23-I-M4-002,"One Hour a Night",judge,106,32,spread
+15222,850,LX-R23-I-M4-002,"One Hour a Night",judge,106,17,spread
+15224,851,LX-R23-N-M4-001,"Good Neighbors",judge,94,40,spread
+15225,851,LX-R23-N-M4-001,"Good Neighbors",judge,94,88,spread
+15226,851,LX-R23-N-M4-001,"Good Neighbors",judge,94,34,spread
+15227,851,LX-R23-N-M4-001,"Good Neighbors",judge,94,66,spread
+15228,851,LX-R23-N-M4-001,"Good Neighbors",judge,94,40,spread
+15229,851,LX-R23-N-M4-001,"Good Neighbors",judge,94,88,spread
+15230,851,LX-R23-N-M4-001,"Good Neighbors",judge,94,63,spread
+15232,852,LX-R24-I-M4-001,"Checking the Checkers",judge,114,45,spread
+15234,852,LX-R24-I-M4-001,"Checking the Checkers",judge,114,58,spread
+15235,852,LX-R24-I-M4-001,"Checking the Checkers",judge,114,11,spread
+15236,852,LX-R24-I-M4-001,"Checking the Checkers",judge,114,58,spread
+15237,852,LX-R24-I-M4-001,"Checking the Checkers",judge,114,33,spread
+15238,852,LX-R24-I-M4-001,"Checking the Checkers",judge,114,30,spread
+15239,853,LX-R24-I-M4-002,"The Empty Market",sentence,136,93,spread
+15240,853,LX-R24-I-M4-002,"The Empty Market",judge,136,44,spread
+15241,853,LX-R24-I-M4-002,"The Empty Market",judge,136,66,spread
+15242,853,LX-R24-I-M4-002,"The Empty Market",judge,136,83,spread
+15243,853,LX-R24-I-M4-002,"The Empty Market",judge,136,24,spread
+15244,853,LX-R24-I-M4-002,"The Empty Market",judge,136,75,spread
+15245,853,LX-R24-I-M4-002,"The Empty Market",judge,136,66,spread
+15246,853,LX-R24-I-M4-002,"The Empty Market",judge,136,10,spread
+15247,854,LX-R24-N-M4-001,"The Road Up",sentence,110,64,spread
+15248,854,LX-R24-N-M4-001,"The Road Up",judge,110,23,spread
+15249,854,LX-R24-N-M4-001,"The Road Up",judge,110,13,spread
+15250,854,LX-R24-N-M4-001,"The Road Up",judge,110,64,spread
+15251,854,LX-R24-N-M4-001,"The Road Up",judge,110,23,spread
+15252,854,LX-R24-N-M4-001,"The Road Up",judge,110,64,spread
+15253,854,LX-R24-N-M4-001,"The Road Up",judge,110,11,spread
+15254,854,LX-R24-N-M4-001,"The Road Up",judge,110,94,spread
+20252,1690,M3-R10-2101,"The Capture of Kepler",judge,33,10,spread
+20264,1692,M3-R10-3222,"Asteroid Attack!",judge,34,19,spread
+20270,1693,M3-R10-3244,"A Plant Puzzle",judge,27,21,spread
+20300,1698,M3-R10-3463,"Helping Mussels Means Cleaner Wa",judge,39,29,spread
+20312,1700,M3-R10-3513,"In Pictures: Journey to the Star",judge,45,26,spread
+20318,1701,M3-R10-3523,"Jumping the Tallest Cliff in the",judge,45,8,spread
+20324,1702,M3-R10-3540,"Lights Out!",judge,38,23,spread
+20330,1703,M3-R10-3621,"One Way to Find a Planet",judge,42,33,spread
+20336,1704,M3-R10-3691,"Removing Dams to Help Fish and P",judge,43,29,spread
+20354,1707,M3-R10-3979,"What's It Like in Space?",judge,37,16,spread
+20390,1713,M3-R10-4153,"Cracking Up",judge,27,14,spread
+20408,1716,M3-R10-4301,"Pollinators",judge,28,26,spread
+20438,1721,M3-R10-4406,"The Nutritious Num Num",judge,29,14,spread
+20450,1723,M3-R10-4455,"Wayfinding: Finding Land",judge,22,8,spread
+20456,1724,M3-R10-4475,"What Is a Helicopter?",judge,44,13,spread
+20480,1728,M3-R10-542,"When I Grow Up",judge,54,42,spread
+20492,1730,M3-R10-933,"Three Kids and a Rocket",judge,53,9,spread
+20494,1731,M3-R11-1062,"Pollution in the Sea",sentence,45,14,spread
+20498,1731,M3-R11-1062,"Pollution in the Sea",judge,45,26,spread
+20504,1732,M3-R11-1302,"BE READY FOR THE CHANGE",judge,44,22,spread
+20510,1733,M3-R11-1335,"Future Goggles",judge,48,44,spread
+20516,1734,M3-R11-1353,"Where are the Hilsas?",judge,35,14,spread
+20524,1736,M3-R11-1529,"Where Did The Sun Go?",sentence,69,48,spread
+20528,1736,M3-R11-1529,"Where Did The Sun Go?",judge,69,30,spread
+20536,1738,M3-R11-1659,"Diya's Bedtime Wonders - Underst",sentence,61,10,spread
+20546,1739,M3-R11-1729,"Lights in the Water",judge,89,12,spread
+20552,1740,M3-R11-1858,"How Bittu Bottu Got Better",judge,82,28,spread
+20555,1741,M3-R11-1888,"Neha, Mia and Martians in Jars",sentence,52,8,spread
+20556,1741,M3-R11-1888,"Neha, Mia and Martians in Jars",sentence,52,42,spread
+20558,1741,M3-R11-1888,"Neha, Mia and Martians in Jars",judge,52,35,spread
+20564,1742,M3-R11-2041,"SpaceBound",judge,50,23,spread
+20567,1743,M3-R11-2108,"Munnu And The Baby Alien",sentence,74,15,spread
+20568,1743,M3-R11-2108,"Munnu And The Baby Alien",sentence,74,19,spread
+20570,1743,M3-R11-2108,"Munnu And The Baby Alien",judge,74,19,spread
+20576,1744,M3-R11-2125,"The Story of a Space Nerd",judge,31,15,spread
+20580,1745,M3-R11-2196,"Three days of science!",sentence,34,22,spread
+20581,1745,M3-R11-2196,"Three days of science!",sentence,34,11,spread
+20582,1745,M3-R11-2196,"Three days of science!",judge,34,9,spread
+20585,1746,M3-R11-2221,"The balance of nature",sentence,33,12,spread
+20588,1746,M3-R11-2221,"The balance of nature",judge,33,9,spread
+20591,1747,M3-R11-2305,"The Infinith",sentence,35,10,spread
+20592,1747,M3-R11-2305,"The Infinith",sentence,35,13,spread
+20594,1747,M3-R11-2305,"The Infinith",judge,35,8,spread
+20600,1748,M3-R11-3254,"Bad (Space) Weather Cancels Pige",judge,26,19,spread
+20603,1749,M3-R11-3272,"Black Hole Rescue",sentence,34,25,spread
+20609,1750,M3-R11-3310,"Cleaning Up Ocean Pollution: Col",sentence,33,10,spread
+20611,1750,M3-R11-3310,"Cleaning Up Ocean Pollution: Col",sentence,33,12,spread
+20612,1750,M3-R11-3310,"Cleaning Up Ocean Pollution: Col",judge,33,15,spread
+20618,1751,M3-R11-3331,"Cosmic Car Crash!",judge,37,18,spread
+20624,1752,M3-R11-3461,"Helping a Patient Hunter, the Ca",judge,28,12,spread
+20627,1753,M3-R11-3484,"How Mountains Form",sentence,36,17,spread
+20633,1754,M3-R11-3553,"Lunar Eclipses and Solar Eclipse",sentence,31,16,spread
+20642,1755,M3-R11-3579,"Meteor Shower!",judge,27,9,spread
+20645,1756,M3-R11-3607,"Natural Changes to the Environme",sentence,54,19,spread
+20648,1756,M3-R11-3607,"Natural Changes to the Environme",judge,54,11,spread
+20654,1757,M3-R11-3608,"Nature Is Our Super Shield!",judge,31,18,spread
+20660,1758,M3-R11-3609,"Navigation in the Age of Explora",judge,46,13,spread
+20672,1760,M3-R11-3635,"Piecing Together the Story of Di",judge,42,12,spread
+20675,1761,M3-R11-3638,"Planting Grasses to Clean a Rive",sentence,30,12,spread
+20684,1762,M3-R11-3661,"Printing Homes for Birds",judge,31,13,spread
+20699,1765,M3-R11-3772,"Studying Coral Reefs Helps the L",sentence,48,10,spread
+20705,1766,M3-R11-3878,"The Nervous System",sentence,54,8,spread
+20708,1766,M3-R11-3878,"The Nervous System",judge,54,27,spread
+20720,1768,M3-R11-3946,"Turtles Love the Beach, Too",judge,35,11,spread
+20732,1770,M3-R11-4026,"What a Dump!",judge,48,13,spread
+20744,1772,M3-R11-4119,"Benjamin Franklin and Electricit",judge,33,12,spread
+20750,1773,M3-R11-4138,"California Condors Achieve a Hap",judge,26,20,spread
+20762,1775,M3-R11-4201,"Group Behavior",judge,44,27,spread
+20768,1776,M3-R11-4218,"How Are Rainbows Formed?",judge,34,32,spread
+20777,1778,M3-R11-4281,"News Debate: Virtual Ed",sentence,35,17,spread
+20780,1778,M3-R11-4281,"News Debate: Virtual Ed",judge,35,18,spread
+20801,1782,M3-R11-4438,"Tiger Watch",sentence,50,9,spread
+20804,1782,M3-R11-4438,"Tiger Watch",judge,50,15,spread
+20816,1784,M3-R11-4473,"What Is Aerodynamics?",judge,55,54,spread
+20819,1785,M3-R11-4474,"What Is Antarctica?",sentence,46,30,spread
+20825,1786,M3-R11-4494,"Who Was Neil Armstrong?",sentence,58,14,spread
+20836,1788,M3-R11-625,"Keya's Day at the Beach",sentence,67,40,spread
+20842,1789,M3-R11-911,"Ira's Monsoon Feast",sentence,50,36,spread
+20854,1791,M3-R11-993,"Magnificent",sentence,67,31,spread
+20858,1791,M3-R11-993,"Magnificent",judge,67,24,spread
+20864,1792,M3-R12-1002,"Crocodile Tears",judge,57,33,spread
+20870,1793,M3-R12-1009,"New Glasses!",judge,76,20,spread
+20876,1794,M3-R12-1037,"Good fairy",judge,74,15,spread
+20882,1795,M3-R12-1119,"Deborah Goat Builds A Shelter",judge,52,13,spread
+20888,1796,M3-R12-1182,"The Blue Beautiful Butterfly",judge,56,22,spread
+20894,1797,M3-R12-1338,"The Day the Tap Ran Dry",judge,73,12,spread
+20912,1800,M3-R12-1597,"Pupun and Friends: The solar ecl",judge,55,20,spread
+20918,1801,M3-R12-2006,"AN ALIEN SHIP LANDS IN SCHOOL DU",judge,33,8,spread
+20924,1802,M3-R12-2402,"Whoopee... Hyperloop!",judge,72,18,spread
+20954,1807,M3-R12-4222,"How Do Our Brains Retain and Rem",judge,38,14,spread
+20960,1808,M3-R12-4284,"Nine Views on Thomas Alva Edison",judge,63,18,spread
+20966,1809,M3-R12-4398,"The Latest Buzz",judge,46,14,spread
+20972,1810,M3-R12-5489,"Reading: The Mummy Returns",judge,61,15,spread
+20975,1811,M3-R12-5490,"Reading: Robin Hood",sentence,1025,38,spread
+20978,1811,M3-R12-5490,"Reading: Robin Hood",judge,1025,667,spread
+20984,1812,M3-R12-5491,"Literature: The Story of the Tre",judge,883,232,spread
+20986,1813,M3-R12-5492,"Literature: Treasure Island",sentence,826,17,spread
+20990,1813,M3-R12-5492,"Literature: Treasure Island",judge,826,10,spread
+20996,1814,M3-R12-5494,"Literature: The Lady in the Lake",judge,1007,132,spread
+20998,1815,M3-R12-5495,"Literature: Moby Dick (Summary &",sentence,140,14,spread
+21002,1815,M3-R12-5495,"Literature: Moby Dick (Summary &",judge,140,10,spread
+21004,1816,M3-R12-5498,"Literature: Anne of Green Gables",sentence,1180,10,spread
+21008,1816,M3-R12-5498,"Literature: Anne of Green Gables",judge,1180,41,spread
+21010,1817,M3-R12-5499,"Literature: Simply Suspense",sentence,816,117,spread
+21014,1817,M3-R12-5499,"Literature: Simply Suspense",judge,816,433,spread
+21022,1819,M3-R12-5504,"Literature: Mr. Bean in Town",sentence,552,8,spread
+21026,1819,M3-R12-5504,"Literature: Mr. Bean in Town",judge,552,129,spread
+21040,1822,M3-R12-5507,"Literature: The Ghosts of Izieu",sentence,34,25,spread
+21044,1822,M3-R12-5507,"Literature: The Ghosts of Izieu",judge,34,32,spread
+21062,1825,M3-R12-5512,"Literature: Hamlet",judge,86,32,spread
+21073,1827,M3-R12-5517,"Reading: British Life",sentence,35,13,spread
+21074,1827,M3-R12-5517,"Reading: British Life",judge,35,26,spread
+21084,1829,M3-R12-5522,"Literature: The No.1 Ladies' Det",sentence,874,23,spread
+21086,1829,M3-R12-5522,"Literature: The No.1 Ladies' Det",judge,874,437,spread
+21112,1834,M3-R12-5532,"Literature: The Locked Room",sentence,11,9,spread
+21116,1834,M3-R12-5532,"Literature: The Locked Room",judge,11,8,spread
+21176,1844,M3-R12-5551,"Literature: The War of the World",judge,1916,20,spread
+21224,1852,M3-R12-5561,"Literature: Misery",judge,29,14,spread
+21248,1856,M3-R12-5565,"Literature: 20,000 Leagues Under",judge,695,161,spread
+21254,1857,M3-R12-5566,"Literature: A Christmas Carol",judge,612,17,spread
+21260,1858,M3-R12-5567,"Literature: Alice's Adventures i",judge,520,408,spread
+21266,1859,M3-R12-5568,"Literature: Dracula",judge,622,11,spread
+21278,1861,M3-R12-5571,"Literature: Moby Dick (Retold by",judge,656,140,spread
+21284,1862,M3-R12-5572,"Literature: Peter Pan",judge,736,426,spread
+21290,1863,M3-R12-5573,"Literature: Pollyanna",judge,723,688,spread
+21296,1864,M3-R12-5574,"Literature: Robinson Crusoe",judge,462,424,spread
+21308,1866,M3-R12-5579,"Literature: The Secret Garden (R",judge,775,579,spread
+21320,1868,M3-R12-5583,"Literature: White Fang",judge,669,13,spread
+21332,1870,M3-R12-5585,"Literature: Just Good Friends",judge,1455,21,spread
+21338,1871,M3-R12-5587,"Literature: How I Met Myself",judge,1329,1228,spread
+21344,1872,M3-R12-5589,"Literature: A Song for Ben",judge,238,34,spread
+21346,1873,M3-R12-5590,"Literature: The Watchers",sentence,370,9,spread
+21350,1873,M3-R12-5590,"Literature: The Watchers",judge,370,100,spread
+21362,1875,M3-R12-5593,"Reading: The Death of Karen Silk",judge,17,11,spread
+21364,1876,M3-R12-5595,"Literature: New Yorkers: Short S",sentence,637,13,spread
+21368,1876,M3-R12-5595,"Literature: New Yorkers: Short S",judge,637,44,spread
+21386,1879,M3-R12-5601,"Reading: London",judge,222,8,spread
+21392,1880,M3-R12-5602,"Literature: The Secret Garden (S",judge,1201,553,spread
+21416,1884,M3-R12-5608,"Literature: Little Women",judge,1332,617,spread
+21428,1886,M3-R12-5611,"Literature: The Picture of Doria",judge,1121,514,spread
+21434,1887,M3-R12-5612,"Literature: The Hitch-hiker",judge,761,719,spread
+21446,1889,M3-R12-5614,"Literature: The Call of the Wild",judge,849,630,spread
+21464,1892,M3-R12-5617,"Fairy Tales: Andersen's Fairy Ta",judge,286,113,spread
+21470,1893,M3-R12-5618,"Fairy Tales: Beauty and the Beas",judge,390,99,spread
+21476,1894,M3-R12-5619,"Fairy Tales: Cinderella & Sleepi",judge,259,28,spread
+21482,1895,M3-R12-5620,"Classic Literature: Heidi",judge,187,39,spread
+21488,1896,M3-R12-5621,"Myths & Legends: The Arabian Nig",judge,454,194,spread
+21494,1897,M3-R12-5622,"Seasonal Classics: The Christmas",judge,515,9,spread
+21500,1898,M3-R12-5623,"Classic Literature: The Jungle B",judge,127,25,spread
+21506,1899,M3-R12-5624,"Fairy Tales: The Little Mermaid",judge,229,42,spread
+21512,1900,M3-R12-5625,"Historical Fiction: Uncle Tom's ",judge,365,30,spread
+21518,1901,M3-R12-5626,"Reading: A Dog of Flanders",judge,385,68,spread
+21530,1903,M3-R12-5628,"Reading: Anne of Green Gables",judge,519,47,spread
+21536,1904,M3-R12-5629,"Reading: Daddy-Long-Legs",judge,394,305,spread
+21542,1905,M3-R12-5630,"Reading: Peter Pan (Edition 1)",judge,540,292,spread
+21554,1907,M3-R12-5632,"Reading: The Great Stone Face",judge,432,31,spread
+21562,1909,M3-R12-5634,"Reading: The Stars (The Last Les",sentence,440,8,spread
+21566,1909,M3-R12-5634,"Reading: The Stars (The Last Les",judge,440,218,spread
+21572,1910,M3-R12-5635,"Reading: Alice's Adventures in W",judge,554,28,spread
+21584,1912,M3-R12-5637,"Reading: Little Women",judge,435,41,spread
+21586,1913,M3-R12-5639,"Reading: The Christmas Carol",sentence,696,119,spread
+21592,1914,M3-R12-5641,"Reading: The Secret Garden",sentence,509,234,spread
+21598,1915,M3-R12-5642,"Reading: The Wizard of Oz (Class",sentence,580,552,spread
+21602,1915,M3-R12-5642,"Reading: The Wizard of Oz (Class",judge,580,215,spread
+21614,1917,M3-R12-5644,"Reading: Les Misérables",judge,597,8,spread
+21620,1918,M3-R12-5646,"Reading: The Age of Fables",judge,632,8,spread
+21622,1919,M3-R12-5647,"Reading: The Invisible Man",sentence,611,20,spread
+21628,1920,M3-R12-5648,"Reading: The Little Prince",sentence,490,13,spread
+21632,1920,M3-R12-5648,"Reading: The Little Prince",judge,490,302,spread
+21638,1921,M3-R12-5649,"Reading: The Opera Stories",judge,730,344,spread
+21644,1922,M3-R12-5650,"Reading: The Phantom of the Oper",judge,490,12,spread
+21646,1923,M3-R12-5651,"Anna Karenina",sentence,1036,10,spread
+21650,1923,M3-R12-5651,"Anna Karenina",judge,1036,506,spread
+21656,1924,M3-R12-5652,"Dracula",judge,855,185,spread
+21668,1926,M3-R12-5655,"Poe's Short Stories",judge,666,15,spread
+21674,1927,M3-R12-5656,"Romeo and Juliet",judge,1488,735,spread
+21680,1928,M3-R12-5657,"Sense and Sensibility",judge,1002,221,spread
+21686,1929,M3-R12-5660,"The Scarlet Letter",judge,848,829,spread
+21692,1930,M3-R12-5662,"Bristol Murder",judge,1470,749,spread
+21694,1931,M3-R12-5667,"Room 13 and Other Ghost Stories",sentence,1405,8,spread
+21700,1932,M3-R12-5668,"Stories by O. Henry",sentence,1976,23,spread
+21704,1932,M3-R12-5668,"Stories by O. Henry",judge,1976,1382,spread
+21716,1934,M3-R12-5670,"Reading: Peter Pan (Edition 2)",judge,460,441,spread
+21722,1935,M3-R12-5671,"Reading: American Folk Tales",judge,468,305,spread
+21724,1936,M3-R12-5672,"Reading: Davy Crockett",sentence,361,8,spread
+21728,1936,M3-R12-5672,"Reading: Davy Crockett",judge,361,9,spread
+21734,1937,M3-R12-5673,"Reading: The True Story of Pocah",judge,340,315,spread
+21736,1938,M3-R12-5674,"Reading: Great Expectations",sentence,2373,9,spread
+21740,1938,M3-R12-5674,"Reading: Great Expectations",judge,2373,1285,spread
+21746,1939,M3-R12-5675,"Reading: Rip Van Winkle and The ",judge,1338,434,spread
+21748,1940,M3-R12-5676,"Reading: The Happy Prince and Th",sentence,226,27,spread
+21752,1940,M3-R12-5676,"Reading: The Happy Prince and Th",judge,226,55,spread
+21758,1941,M3-R12-5677,"Reading: Halloween Horror",judge,627,211,spread
+21764,1942,M3-R12-5680,"Reading: The Wonderful Wizard of",judge,566,564,spread
+21770,1943,M3-R12-5681,"Reading: The Secret of the Stone",judge,901,774,spread
+21776,1944,M3-R12-5682,"Reading: The Wind in the Willows",judge,691,107,spread
+21782,1945,M3-R12-5683,"Reading: The Black Arrow",judge,66,29,spread
+21784,1946,M3-R12-5684,"Reading: Around the World in Eig",sentence,1028,24,spread
+21788,1946,M3-R12-5684,"Reading: Around the World in Eig",judge,1028,829,spread
+21794,1947,M3-R12-5686,"Reading: Beauty and the Beast",judge,889,8,spread
+21808,1950,M3-R12-5690,"Reading: The Call of the Wild",sentence,849,15,spread
+21824,1952,M3-R12-5692,"Reading: David Copperfield",judge,687,352,spread
+21830,1953,M3-R12-5694,"Reading: Ghastly Ghosts!",judge,549,218,spread
+21832,1954,M3-R12-5695,"History & Biography: Great Engli",sentence,850,281,spread
+21842,1955,M3-R12-5696,"Reading: Alice's Adventures in W",judge,520,193,spread
+21844,1956,M3-R12-5697,"Classic Literature: Oscar Wilde'",sentence,818,160,spread
+21854,1957,M3-R12-5698,"Reading: Hamlet",judge,86,34,spread
+21860,1958,M3-R12-5699,"Reading: The £1,000,000 Bank Not",judge,72,57,spread
+21866,1959,M3-R12-5700,"Reading: Jane Eyre (Illustrated ",judge,1312,872,spread
+21872,1960,M3-R12-5702,"Reading: Gulliver's Travel",judge,403,18,spread
+21890,1963,M3-R12-5706,"Reading: Alien at School",judge,71,14,spread
+21896,1964,M3-R12-5707,"Reading: Romeo and Juliet",judge,61,11,spread
+21898,1965,M3-R12-5709,"Reading: A Christmas Carol",sentence,612,13,spread
+21914,1967,M3-R12-5712,"Reading: A Midsummer Night's Dre",judge,43,14,spread
+21920,1968,M3-R12-5714,"Reading: Much Ado About Nothing",judge,44,14,spread
+21932,1970,M3-R12-5717,"Reading: The Last of the Mohican",judge,758,9,spread
+21958,1975,M3-R12-5728,"Reading: A Trip to the Safari Pa",sentence,52,31,spread
+21964,1976,M3-R12-5729,"Reading: Dorothy",sentence,51,27,spread
+21968,1976,M3-R12-5729,"Reading: Dorothy",judge,51,26,spread
+21970,1977,M3-R12-5730,"Reading: The Enormous Turnip",sentence,60,9,spread
+21974,1977,M3-R12-5730,"Reading: The Enormous Turnip",judge,60,8,spread
+21986,1979,M3-R12-5732,"Reading: Little Red Riding Hood",judge,58,19,spread
+21992,1980,M3-R12-5733,"Reading: Mowgli Learns To Swim",judge,70,13,spread
+21998,1981,M3-R12-5734,"Reading: The Mad Teacher",judge,130,89,spread
+22004,1982,M3-R12-5735,"Reading: Bugaboo the Wicked Witc",judge,53,24,spread
+22006,1983,M3-R12-5736,"Reading: Cinderella",sentence,57,10,spread
+22010,1983,M3-R12-5736,"Reading: Cinderella",judge,57,51,spread
+22012,1984,M3-R12-5737,"Reading: Monster in the Box",sentence,64,8,spread
+22016,1984,M3-R12-5737,"Reading: Monster in the Box",judge,64,41,spread
+22022,1985,M3-R12-5739,"Reading: The Little Mermaid",judge,57,11,spread
+22028,1986,M3-R12-5741,"Reading: Christmas Fun",judge,43,8,spread
+22034,1987,M3-R12-5742,"Reading: Dracula and His Family",judge,43,14,spread
+22036,1988,M3-R12-5743,"Reading: Festivals!",sentence,25,16,spread
+22046,1989,M3-R12-5744,"Reading: Frankenstein at School",judge,53,24,spread
+22052,1990,M3-R12-5745,"Reading: Freddy Finds the Thief",judge,49,19,spread
+22058,1991,M3-R12-5746,"Reading: Puss in Boots",judge,52,21,spread
+22064,1992,M3-R12-5747,"Reading: Sleeping Beauty",judge,52,20,spread
+22072,1994,M3-R12-5749,"Reading: The Magic Computer Mous",sentence,143,88,spread
+22076,1994,M3-R12-5749,"Reading: The Magic Computer Mous",judge,143,67,spread
+22082,1995,M3-R12-5750,"Reading: Aladdin",judge,164,26,spread
+22112,2000,M3-R12-5757,"Adventure: Blue Fins",judge,130,61,spread
+22118,2001,M3-R12-5758,"Reading: Used in Evidence and Ot",judge,1143,10,spread
+22124,2002,M3-R12-5759,"Mystery & Detective: L.A. Detect",judge,144,32,spread
+22130,2003,M3-R12-5761,"Reading: The Diamond Hunters",judge,1539,1480,spread
+22136,2004,M3-R12-5762,"Adventure: The Well",judge,156,120,spread
+22142,2005,M3-R12-5763,"Reading: The Tenant of Wildfell ",judge,2450,10,spread
+22154,2007,M3-R12-5767,"Reading: Emma",judge,2887,9,spread
+22166,2009,M3-R12-5770,"Reading: The Great Gatsby",judge,1459,927,spread
+22172,2010,M3-R12-5775,"MacMillan Intermediate: Bristol ",judge,1799,10,spread
+22178,2011,M3-R12-5776,"Reading: Bristol Murder",judge,1799,13,spread
+22182,2012,M3-R12-5778,"MacMillan Pre-intermediate: The ",sentence,1569,10,spread
+22184,2012,M3-R12-5778,"MacMillan Pre-intermediate: The ",judge,1569,16,spread
+22196,2014,M3-R12-5784,"Reading: The Queen of Death",judge,1300,527,spread
+22198,2015,M3-R12-5785,"Reading: Sense and Sensibility",sentence,2678,8,spread
+22208,2016,M3-R12-5787,"MacMillan Elementary: King Arthu",judge,1750,22,spread
+22214,2017,M3-R12-5788,"Reading: King Arthur and the Kni",judge,1761,16,spread
+22226,2019,M3-R12-5791,"Reading: The Princess Diaries",judge,1628,22,spread
+22228,2020,M3-R12-5792,"Reading: The Princess Diaries 2",sentence,1727,1683,spread
+22232,2020,M3-R12-5792,"Reading: The Princess Diaries 2",judge,1727,11,spread
+22250,2023,M3-R12-5796,"MacMillan Beginner: Jane Eyre",judge,1376,137,spread
+22256,2024,M3-R12-5797,"Reading: Jane Eyre (Illustrated ",judge,1298,337,spread
+22262,2025,M3-R12-5799,"Reading: The Legends of Sleepy H",judge,1336,259,spread
+22268,2026,M3-R12-5800,"Reading: Dawson's Creek: The Beg",judge,1406,612,spread
+22298,2031,M3-R12-5805,"Reading: Spider-Man 3",judge,1210,781,spread
+22304,2032,M3-R12-5806,"Reading: Buffy the Vampire Slaye",judge,802,577,spread
+22310,2033,M3-R12-5807,"Reading: Buffy the Vampire Slaye",judge,1124,139,spread
+22316,2034,M3-R12-5811,"Classic Readers: Journey to the ",judge,627,307,spread
+22318,2035,M3-R12-5812,"Reading: Journey to the Centre o",sentence,611,284,spread
+22322,2035,M3-R12-5812,"Reading: Journey to the Centre o",judge,611,305,spread
+22324,2036,M3-R12-5813,"Classic Readers: Count Vlad",sentence,1284,1260,spread
+22328,2036,M3-R12-5813,"Classic Readers: Count Vlad",judge,1284,622,spread
+22330,2037,M3-R12-5814,"Reading: Count Vlad",sentence,1519,726,spread
+22336,2038,M3-R12-5815,"Reading: Jane Eyre (Illustrated ",sentence,1297,145,spread
+22340,2038,M3-R12-5815,"Reading: Jane Eyre (Illustrated ",judge,1297,98,spread
+22342,2039,M3-R12-5817,"Reading: The Canterville Ghost",sentence,624,313,spread
+22346,2039,M3-R12-5817,"Reading: The Canterville Ghost",judge,624,321,spread
+22348,2040,M3-R12-5818,"Reading: Sherlock Holmes Investi",sentence,768,92,spread
+22352,2040,M3-R12-5818,"Reading: Sherlock Holmes Investi",judge,768,390,spread
+22354,2041,M3-R12-5819,"Reading: Jack the Ripper",sentence,547,47,spread
+22360,2042,M3-R12-5822,"Story Teller 1: Part 1",sentence,118,95,spread
+22364,2042,M3-R12-5822,"Story Teller 1: Part 1",judge,118,90,spread
+22366,2043,M3-R12-5823,"Story Teller 1: Part 2",sentence,100,32,spread
+22378,2045,M3-R12-5825,"Story Teller 1: Part 4",sentence,107,50,spread
+22382,2045,M3-R12-5825,"Story Teller 1: Part 4",judge,107,10,spread
+22384,2046,M3-R12-5826,"Story Teller 1: Part 5",sentence,117,51,spread
+22388,2046,M3-R12-5826,"Story Teller 1: Part 5",judge,117,54,spread
+22390,2047,M3-R12-5827,"Story Teller 1: Part 6",sentence,130,8,spread
+22396,2048,M3-R12-5828,"Story Teller 1: Part 7",sentence,119,17,spread
+22402,2049,M3-R12-5829,"Story Teller 1: Part 8",sentence,138,18,spread
+22406,2049,M3-R12-5829,"Story Teller 1: Part 8",judge,138,43,spread
+22412,2050,M3-R12-583,"Kaakaasaurus",judge,75,48,spread
+22418,2051,M3-R12-5831,"Story Teller 1: Part 10",judge,107,16,spread
+22430,2053,M3-R12-5833,"Story Teller 1: Part 12",judge,90,18,spread
+22432,2054,M3-R12-5834,"Story Teller 1: Part 13",sentence,88,13,spread
+22436,2054,M3-R12-5834,"Story Teller 1: Part 13",judge,88,8,spread
+22438,2055,M3-R12-5835,"Story Teller 1: Part 14",sentence,98,10,spread
+22448,2056,M3-R12-5836,"Story Teller 1: Part 15",judge,85,13,spread
+22454,2057,M3-R12-5837,"Story Teller 1: Part 16",judge,62,16,spread
+22456,2058,M3-R12-5838,"Story Teller 1: Part 17",sentence,78,12,spread
+22462,2059,M3-R12-5839,"Story Teller 1: Part 18",sentence,96,12,spread
+22468,2060,M3-R12-5840,"Story Teller 1: Part 19",sentence,117,15,spread
+22472,2060,M3-R12-5840,"Story Teller 1: Part 19",judge,117,11,spread
+22474,2061,M3-R12-5841,"Story Teller 1: Part 20",sentence,89,8,spread
+22478,2061,M3-R12-5841,"Story Teller 1: Part 20",judge,89,17,spread
+22484,2062,M3-R12-5842,"Story Teller 1: Part 21",judge,79,34,spread
+22486,2063,M3-R12-5843,"Story Teller 1: Part 22",sentence,80,15,spread
+22492,2064,M3-R12-5844,"Story Teller 1: Part 23",sentence,79,14,spread
+22504,2066,M3-R12-5846,"Story Teller 1: Part 25",sentence,262,15,spread
+22508,2066,M3-R12-5846,"Story Teller 1: Part 25",judge,262,15,spread
+22510,2067,M3-R12-5847,"Story Teller 1: Part 26",sentence,100,10,spread
+22522,2069,M3-R12-5849,"Story Teller 2: Part 2",sentence,121,8,spread
+22532,2070,M3-R12-5850,"Story Teller 2: Part 3",judge,114,36,spread
+22550,2073,M3-R12-5853,"Story Teller 2: Part 6",judge,68,9,spread
+22568,2076,M3-R12-5856,"Story Teller 2: Part 9",judge,50,10,spread
+22574,2077,M3-R12-5857,"Story Teller 2: Part 10",judge,91,10,spread
+22576,2078,M3-R12-5860,"Story Teller 2: Part 13",sentence,69,8,spread
+18836,1453,M3-R3-3084,"Things to See at a Museum",judge,9,9,spread
+18938,1470,M3-R4-4223,"How Do You Measure a Horse's Hei",judge,9,9,spread
+18986,1479,M3-R4-763,"The Power of Ten",judge,21,20,spread
+19046,1489,M3-R5-3120,"What Do Plants Need?",judge,16,10,spread
+19142,1505,M3-R6-1613,"Aru and Her Magic Space Car",judge,34,21,spread
+19148,1506,M3-R6-1980,"The Space Supply Mission",judge,14,9,spread
+19160,1508,M3-R6-2619,"Arthropods: Animals with Lots of",judge,27,12,spread
+19166,1509,M3-R6-2665,"A Super Fish",judge,21,20,spread
+19172,1510,M3-R6-2762,"Fish: Animals That Live Underwat",judge,23,18,spread
+19184,1512,M3-R6-2961,"Rock, Rumble. . .Roar!",judge,18,11,spread
+19190,1513,M3-R6-2980,"Secrets of the Rain Forest",judge,16,9,spread
+19196,1514,M3-R6-3061,"The Moons in Our Solar System",judge,20,17,spread
+19202,1515,M3-R6-3135,"What Is Mars Like?",judge,24,11,spread
+19208,1516,M3-R6-3311,"Clean Energy",judge,28,9,spread
+19280,1528,M3-R7-1046,"Earth",judge,18,17,spread
+19286,1529,M3-R7-1081,"What if trees could talk...",judge,34,14,spread
+19298,1531,M3-R7-1148,"What is Nature?",judge,31,28,spread
+19319,1535,M3-R7-1492,"The Intelligent Alien",sentence,23,8,spread
+19322,1535,M3-R7-1492,"The Intelligent Alien",judge,23,12,spread
+19328,1536,M3-R7-1564,"A Trip To The Solar System",judge,33,18,spread
+19334,1537,M3-R7-1587,"Coral Reefs in the Sea",judge,25,20,spread
+19340,1538,M3-R7-1788,"A Girl In Space",judge,38,8,spread
+19346,1539,M3-R7-2067,"Hawksbill turtles: they need you",judge,21,8,spread
+19364,1542,M3-R7-2246,"Aayush Learns About Extinct Anim",judge,31,13,spread
+19370,1543,M3-R7-2744,"Earth Helpers",judge,25,15,spread
+19376,1544,M3-R7-3024,"Take Care of Our Planet",judge,22,11,spread
+19382,1545,M3-R7-3078,"The Volcano That Keeps Erupting",judge,21,9,spread
+19388,1546,M3-R7-3126,"What Is a Comet?",judge,19,13,spread
+19390,1547,M3-R7-3151,"Where Will I Live?",sentence,27,9,spread
+19394,1547,M3-R7-3151,"Where Will I Live?",judge,27,24,spread
+19406,1549,M3-R7-3195,"All About Uranus",judge,20,18,spread
+19412,1550,M3-R7-3321,"Compact Fluorescent Lights",judge,16,8,spread
+19424,1552,M3-R7-3427,"Fossils and Dinosaurs: The Age o",judge,22,20,spread
+19432,1554,M3-R7-3563,"Mammoth Fossil Found",sentence,19,8,spread
+19442,1555,M3-R7-3580,"Mexico's Natural Wonder: Paricut",judge,19,10,spread
+19448,1556,M3-R7-3588,"Monster Meals!",judge,24,19,spread
+19501,1565,M3-R7-4024,"What Are Electric and Magnetic F",sentence,15,11,spread
+19502,1565,M3-R7-4024,"What Are Electric and Magnetic F",judge,15,11,spread
+19507,1566,M3-R7-4066,"Why Does Saturn Have Rings?",sentence,18,14,spread
+19514,1567,M3-R7-4123,"""Billy"" Bitzer Films Stealing a ",judge,16,11,spread
+19531,1570,M3-R7-4234,"Ig Nobel Winners",sentence,16,15,spread
+19538,1571,M3-R7-4395,"The Invention of the Toothbrush",judge,21,13,spread
+19544,1572,M3-R7-4499,"Why Do Pigeons Bob Their Heads W",judge,17,8,spread
+19550,1573,M3-R7-817,"I Love My Planet",judge,21,19,spread
+19562,1575,M3-R8-1441,"Beautiful Flowers",judge,30,27,spread
+19628,1586,M3-R8-2970,"Saving Killer Whales",judge,31,23,spread
+19652,1590,M3-R8-3294,"Caretaking Our World's Water",judge,18,9,spread
+19676,1594,M3-R8-3384,"Eruption!",judge,23,9,spread
+19682,1595,M3-R8-3425,"Fossils and Dinosaurs - Fossils",judge,22,11,spread
+19712,1600,M3-R8-3514,"In the Center of a Group of Plan",judge,28,10,spread
+19718,1601,M3-R8-3556,"Magnetism",judge,19,10,spread
+19748,1606,M3-R8-3749,"Small Wonder",judge,31,19,spread
+19754,1607,M3-R8-3764,"Spreading His Wings",judge,33,14,spread
+19820,1618,M3-R8-4053,"Where Does Interstellar Space Be",judge,22,9,spread
+19850,1623,M3-R8-4227,"How Plates Affect Our Planet: Vo",judge,18,13,spread
+19856,1624,M3-R8-4247,"J. Stuart Blackton: Father of Am",judge,16,16,spread
+19862,1625,M3-R8-4278,"NASA's Stardust Review",judge,20,9,spread
+19868,1626,M3-R8-4282,"News Shorts: Tomb Raiders",judge,15,9,spread
+19880,1628,M3-R8-4296,"Parasites: Kings of the World",judge,31,15,spread
+19886,1629,M3-R8-4312,"Quake in Indonesia",judge,19,11,spread
+19898,1631,M3-R8-4442,"Types of Obscuration",judge,17,14,spread
+19934,1637,M3-R9-1047,"Anu and Manu",judge,57,15,spread
+19940,1638,M3-R9-1054,"Little Hands Make A Big Differen",judge,40,13,spread
+19952,1640,M3-R9-1215,"Green Is Calling",judge,41,22,spread
+19958,1641,M3-R9-1328,"A New Find",judge,40,14,spread
+19964,1642,M3-R9-1385,"Mother Earth",judge,37,18,spread
+19970,1643,M3-R9-1486,"The Brave Penguin Blink and the ",judge,34,13,spread
+20000,1648,M3-R9-3324,"Continents That Drift",judge,27,15,spread
+20030,1653,M3-R9-3455,"Hard Minerals",judge,30,13,spread
+20036,1654,M3-R9-3466,"Help Eliminate Waste",judge,17,9,spread
+20042,1655,M3-R9-3496,"Hunters and Trappers",judge,28,13,spread
+20048,1656,M3-R9-3527,"Kalpana Chawla",judge,25,17,spread
+20054,1657,M3-R9-3537,"Learning from Dinosaur Fossils",judge,26,13,spread
+20060,1658,M3-R9-3555,"Magnetic Fields and the Magnetic",judge,29,28,spread
+20066,1659,M3-R9-3614,"Now Hear This!",judge,29,23,spread
+20072,1660,M3-R9-3617,"Oh No! Volcano",judge,37,16,spread
+20078,1661,M3-R9-3656,"Preparing for Volcanoes",judge,25,21,spread
+20096,1664,M3-R9-3712,"Save the World",judge,40,22,spread
+20114,1667,M3-R9-3867,"The Megalodon: King of the Ocean",judge,35,17,spread
+20126,1669,M3-R9-3935,"Tiger Tale",judge,37,25,spread
+20138,1671,M3-R9-4086,"African Wormwood: A Traditional ",judge,27,8,spread
+20144,1672,M3-R9-4144,"Chasing Dreams on Cloud Nine",judge,23,8,spread
+20150,1673,M3-R9-4173,"Edison Invents Motion Pictures",judge,28,10,spread
+20174,1677,M3-R9-4358,"Teff, the Ancient Grain of Ethio",judge,29,11,spread
+20186,1679,M3-R9-4496,"Why Do Bats Live in Caves?",judge,36,11,spread
+20204,1682,M3-R9-656,"Why Do Sunflowers Love the Sun?",judge,39,17,spread
+20216,1684,M3-R9-724,"Discovering Dinosaurs",judge,35,14,spread
+20222,1685,M3-R9-756,"Rathna and the Ring of Fire",judge,33,16,spread
+16041,987,M4-R10-3432,"Free Transfer",judge,37,11,spread
+16071,992,M4-R10-4070,"Why Is the Moon So Scarred with ",judge,30,12,spread
+16123,1001,M4-R11-3238,"A Hidden Figure of the Space Rac",sentence,44,23,spread
+16125,1001,M4-R11-3238,"A Hidden Figure of the Space Rac",judge,44,22,spread
+16182,1011,M4-R11-4036,"What Is a Planet?",sentence,40,31,spread
+16233,1019,M4-R11-4151,"Copper, a Helpful Natural Resour",judge,46,11,spread
+16239,1020,M4-R11-4175,"Energy Control",judge,31,9,spread
+16251,1022,M4-R11-4316,"Remya Cleans Up",judge,29,17,spread
+16263,1024,M4-R11-4349,"Space Junk",judge,24,19,spread
+16278,1027,M4-R11-4380,"The Endangered Bamboo-Eaters of ",sentence,35,8,spread
+16281,1027,M4-R11-4380,"The Endangered Bamboo-Eaters of ",judge,35,8,spread
+16284,1028,M4-R11-4411,"The Parts of the Brain",sentence,34,20,spread
+16287,1028,M4-R11-4411,"The Parts of the Brain",judge,34,19,spread
+16311,1032,M4-R11-4483,"What Is the Fermi Gamma-ray Spac",judge,51,9,spread
+16323,1034,M4-R11-4495,"Why Don't People on the Other Si",judge,27,19,spread
+16401,1047,M4-R12-1071,"The Mango Tree",judge,44,15,spread
+16407,1048,M4-R12-1131,"ROCKET LIFTING",judge,52,16,spread
+16431,1052,M4-R12-1556,"Diving",judge,50,12,spread
+16449,1055,M4-R12-1627,"The Dream Journey",judge,60,20,spread
+16467,1058,M4-R12-1847,"Why are Bubbles Round?",judge,72,8,spread
+16485,1061,M4-R12-2161,"Journey To A New Planet!",judge,62,20,spread
+16491,1062,M4-R12-2231,"The River of Time",judge,103,27,spread
+16497,1063,M4-R12-2279,"My City Rocks!",judge,58,8,spread
+16503,1064,M4-R12-2314,"A World Without ELECTRICITY !!",judge,51,10,spread
+16509,1065,M4-R12-2354,"A Day In Space",judge,56,22,spread
+16539,1070,M4-R12-3290,"Calling All Spiders!",judge,58,27,spread
+16542,1071,M4-R12-3326,"Cool Prize",sentence,56,15,spread
+16545,1071,M4-R12-3326,"Cool Prize",judge,56,52,spread
+16551,1072,M4-R12-3341,"Digging Deeper",judge,29,11,spread
+16557,1073,M4-R12-3347,"Discoveries in the Deep: The Tit",judge,53,8,spread
+16575,1076,M4-R12-3407,"Farmers Care for the Land",judge,52,23,spread
+16587,1078,M4-R12-3489,"How to Band Birds",judge,45,14,spread
+16593,1079,M4-R12-3501,"If Rocks Could Talk! Deformed Co",judge,65,11,spread
+16611,1082,M4-R12-3584,"Mission: Pluto",judge,43,26,spread
+16641,1087,M4-R12-3715,"Saving Frogs Using DNA",judge,36,19,spread
+16644,1088,M4-R12-3755,"Space Centers Across the U.S.A.",sentence,49,20,spread
+16647,1088,M4-R12-3755,"Space Centers Across the U.S.A.",judge,49,37,spread
+16662,1091,M4-R12-3845,"The Heat Is On",sentence,42,11,spread
+16665,1091,M4-R12-3845,"The Heat Is On",judge,42,18,spread
+16671,1092,M4-R12-3936,"Tiny Terror",judge,56,19,spread
+16677,1093,M4-R12-3970,"Water, Water, Everywhere!",judge,34,27,spread
+16689,1095,M4-R12-4093,"An Unwelcome Newcomer",judge,41,19,spread
+16695,1096,M4-R12-4113,"A Trip Upstream: River Herring M",judge,36,34,spread
+16701,1097,M4-R12-4121,"Ben Carson: American Neurosurgeo",judge,51,20,spread
+16725,1101,M4-R12-4137,"California",judge,32,18,spread
+16731,1102,M4-R12-4140,"Can Imitating Be Life-Saving?",judge,43,23,spread
+16740,1104,M4-R12-4180,"Fake It ‘til You Make It!",sentence,35,12,spread
+16743,1104,M4-R12-4180,"Fake It ‘til You Make It!",judge,35,28,spread
+16761,1107,M4-R12-4192,"Genetic Basis of Butterflies",judge,30,21,spread
+16767,1108,M4-R12-4196,"Global Circulations",judge,35,10,spread
+16785,1111,M4-R12-4221,"How Do Our Brains Process Pain?",judge,47,10,spread
+16793,1113,M4-R12-4248,"Keeping the Lions Away",sentence,37,11,spread
+16815,1116,M4-R12-4254,"LEGO Man!",judge,33,12,spread
+16827,1118,M4-R12-4262,"Lost and Found",judge,34,20,spread
+16833,1119,M4-R12-4264,"Machines Get Smarter",judge,32,11,spread
+16851,1122,M4-R12-4314,"Rachel Carson: Writing About the",judge,39,24,spread
+16863,1124,M4-R12-4331,"Secrets of Survival: The Ancient",judge,38,8,spread
+16875,1126,M4-R12-4341,"She Goes to Extremes",judge,30,20,spread
+16899,1130,M4-R12-4403,"The Monkey Orange: Much More tha",judge,39,9,spread
+16911,1132,M4-R12-4426,"The Tallest Skyscraper in Taiwan",judge,42,8,spread
+16917,1133,M4-R12-4427,"The Transfer of Heat Energy",judge,37,20,spread
+16923,1134,M4-R12-4428,"The Venus Flytrap",judge,26,8,spread
+16941,1137,M4-R12-4444,"Understanding Analog and Digital",judge,39,14,spread
+16947,1138,M4-R12-4447,"Valley Nuts",judge,32,9,spread
+16953,1139,M4-R12-4459,"Weirdness Under the Sea",judge,34,11,spread
+16956,1140,M4-R12-4460,"Welcome to Tomorrow!",sentence,33,8,spread
+16959,1140,M4-R12-4460,"Welcome to Tomorrow!",judge,33,26,spread
+16965,1141,M4-R12-4484,"What Is the International Space ",judge,54,38,spread
+17026,1152,M4-R12-5503,"Literature: Round the World in E",sentence,1028,173,spread
+17030,1152,M4-R12-5503,"Literature: Round the World in E",judge,1028,21,spread
+17044,1155,M4-R12-5515,"Reading: A History of Britain",sentence,68,18,spread
+17048,1155,M4-R12-5515,"Reading: A History of Britain",judge,68,14,spread
+17104,1165,M4-R12-5538,"Literature: The House of Stairs",sentence,1453,8,spread
+17108,1165,M4-R12-5538,"Literature: The House of Stairs",judge,1453,19,spread
+17112,1166,M4-R12-5539,"Literature: The Dream and Other ",sentence,147,104,spread
+17114,1166,M4-R12-5539,"Literature: The Dream and Other ",judge,147,24,spread
+17168,1175,M4-R12-5576,"Literature: The Adventures of Sh",judge,531,9,spread
+17200,1181,M4-R12-5596,"Literature: Sherlock Holmes Shor",sentence,711,82,spread
+17204,1181,M4-R12-5596,"Literature: Sherlock Holmes Shor",judge,711,512,spread
+17212,1183,M4-R12-5598,"Literature: The Eyes of Montezum",sentence,380,8,spread
+17216,1183,M4-R12-5598,"Literature: The Eyes of Montezum",judge,380,16,spread
+17242,1188,M4-R12-5640,"Reading: The Merchant of Venice",sentence,560,8,spread
+17246,1188,M4-R12-5640,"Reading: The Merchant of Venice",judge,560,15,spread
+17248,1189,M4-R12-5645,"Reading: O. Henry's Short Storie",sentence,376,27,spread
+17252,1189,M4-R12-5645,"Reading: O. Henry's Short Storie",judge,376,15,spread
+17264,1191,M4-R12-5658,"The Adventures of Sherlock Holme",judge,994,979,spread
+17276,1193,M4-R12-5661,"The Space Invaders",judge,1260,600,spread
+17282,1194,M4-R12-5663,"The Sign of Four",judge,1284,994,spread
+17288,1195,M4-R12-5664,"The Black Cat",judge,934,240,spread
+17306,1198,M4-R12-5678,"Reading: The Adventures of Tom S",judge,778,748,spread
+17308,1199,M4-R12-5679,"Classic Literature: The Adventur",sentence,509,18,spread
+17312,1199,M4-R12-5679,"Classic Literature: The Adventur",judge,509,9,spread
+17314,1200,M4-R12-5685,"Reading: Little Women",sentence,1026,263,spread
+17414,1216,M4-R12-5738,"Reading: The Jungle Book",judge,33,17,spread
+17468,1225,M4-R12-5786,"Reading: The Speckled Band and O",judge,1409,1300,spread
+17474,1226,M4-R12-5790,"Reading: The Last of the Mohican",judge,1021,14,spread
+17486,1228,M4-R12-5798,"Reading: The Mill on the Floss",judge,1051,207,spread
+17492,1229,M4-R12-5808,"Reading: 20,000 Leagues under th",judge,650,85,spread
+17572,1243,M4-R12-718,"What Happens When You Flush?",sentence,94,10,spread
+17576,1243,M4-R12-718,"What Happens When You Flush?",judge,94,44,spread
+17582,1244,M4-R12-803,"Earth Calling Aru",judge,76,29,spread
+17588,1245,M4-R12-814,"Rajmohana Keloth: The Bug Finder",judge,36,12,spread
+17600,1247,M4-R12-821,"Ajay of Agumbe and the Signal Sn",judge,53,10,spread
+17602,1248,M4-R12-881,"Space Rules",sentence,52,27,spread
+17606,1248,M4-R12-881,"Space Rules",judge,52,13,spread
+17648,1255,M4-R13-3472,"Houston Affects the Earth",judge,61,49,spread
+17678,1260,M4-R13-4149,"Coast Beast",judge,56,16,spread
+17684,1261,M4-R13-4162,"Different Forms of Water",judge,38,15,spread
+17702,1264,M4-R13-4170,"Driven to Distraction",judge,55,21,spread
+17720,1267,M4-R13-4187,"Flamingo Fun",judge,60,32,spread
+17732,1269,M4-R13-4233,"Ice Picks",judge,60,24,spread
+17738,1270,M4-R13-4235,"Ingredients for a Thunderstorm",judge,43,40,spread
+17750,1272,M4-R13-4276,"Mountain Lions: Purr-fect Predat",judge,40,33,spread
+17756,1273,M4-R13-4292,"Our Changing Solar System",judge,28,14,spread
+17762,1274,M4-R13-4297,"Perfect Fit",judge,54,13,spread
+17780,1277,M4-R13-4322,"Roseate Spoonbills: Migrating th",judge,42,28,spread
+17792,1279,M4-R13-4326,"Satellites and Gravity",judge,37,26,spread
+17798,1280,M4-R13-4329,"Sea Monsters",judge,56,18,spread
+17822,1284,M4-R13-4347,"Song and Dance",judge,62,14,spread
+17846,1288,M4-R13-4377,"The Eastern Indigo Snake",judge,51,17,spread
+17870,1292,M4-R13-4383,"The Fight Against Polio",judge,50,26,spread
+17876,1293,M4-R13-4390,"The History of Planet Earth",judge,33,9,spread
+17924,1301,M4-R13-631,"The Time-Travelling River",judge,75,15,spread
+17948,1305,M4-R14-3208,"Animals of the Tropical Rainfore",judge,40,24,spread
+17954,1306,M4-R14-3327,"Copernicus: Forming a Radical Ne",judge,40,10,spread
+17963,1308,M4-R14-3748,"Slow and Steady",sentence,62,8,spread
+17984,1311,M4-R14-4094,"Apples: The Health Benefits",judge,81,39,spread
+18002,1314,M4-R14-4116,"Bear Care",judge,62,24,spread
+18014,1316,M4-R14-4139,"Canine Courage",judge,45,16,spread
+18020,1317,M4-R14-4155,"Crash Test",judge,62,23,spread
+18026,1318,M4-R14-4159,"Designing from Scratch",judge,44,13,spread
+18032,1319,M4-R14-4177,"Everyday Compound or Poison?",judge,43,14,spread
+18050,1322,M4-R14-4197,"Grace Hopper (1906–1992)",judge,40,14,spread
+18056,1323,M4-R14-4200,"Grizzly Bears",judge,45,28,spread
+18074,1326,M4-R14-4211,"High Jumpers",judge,58,20,spread
+18080,1327,M4-R14-4215,"Horseshoe Crabs Thrive in the De",judge,43,20,spread
+18092,1329,M4-R14-4255,"Let's Play Some Kickball!",judge,45,41,spread
+18104,1331,M4-R14-4257,"Life Story: Katherine Johnson",judge,79,25,spread
+18146,1338,M4-R14-4353,"Sun Burn?",judge,67,21,spread
+18152,1339,M4-R14-4364,"The Amazon Rainforest",judge,38,15,spread
+18164,1341,M4-R14-4393,"The Influence of the Arch",judge,44,20,spread
+18170,1342,M4-R14-4394,"The Inner Limits",judge,61,8,spread
+18176,1343,M4-R14-4404,"The Most Expensive House in the ",judge,35,23,spread
+18182,1344,M4-R14-4409,"The Origin of Species",judge,53,19,spread
+18200,1347,M4-R14-4424,"The Small but Mighty Oyster: A K",judge,51,20,spread
+18203,1348,M4-R14-4429,"The Vortex",sentence,67,10,spread
+18206,1348,M4-R14-4429,"The Vortex",judge,67,18,spread
+18254,1356,M4-R14-712,"Monumental Maths",judge,81,43,spread
+18260,1357,M4-R14-864,"Chasing the Rain",judge,66,18,spread
+18272,1359,M4-R15-3210,"Antibiotics: Too Much of a Good ",judge,85,14,spread
+18284,1361,M4-R15-3752,"Solar Absorbers and the Future o",judge,71,46,spread
+18290,1362,M4-R15-4088,"Alexander Graham Bell",judge,51,22,spread
+18302,1364,M4-R15-4129,"Braking Bad",judge,68,8,spread
+18308,1365,M4-R15-4243,"It Would Be Hard to Smile at a S",judge,43,20,spread
+18314,1366,M4-R15-4263,"Louis Braille",judge,53,31,spread
+18320,1367,M4-R15-4268,"Match Maker",judge,58,8,spread
+18326,1368,M4-R15-4315,"Reading Rock Strata",judge,52,28,spread
+18338,1370,M4-R15-4407,"The Orchid's Secret",judge,51,46,spread
+18350,1372,M4-R15-4437,"Tides",judge,42,15,spread
+18361,1374,M4-R15-4479,"What Is Heat?",sentence,74,10,spread
+18362,1374,M4-R15-4479,"What Is Heat?",judge,74,32,spread
+18374,1376,M4-R15-4516,"Zebra Mussels and the Hudson Riv",judge,55,16,spread
+18386,1378,M4-R16-4103,"A Day at the Zoo",judge,50,11,spread
+18392,1379,M4-R16-4125,"Biomimicry",judge,45,23,spread
+18398,1380,M4-R16-4154,"Crashing, Jumping, Falling",judge,52,9,spread
+18404,1381,M4-R16-4156,"Cutting Edge",judge,69,27,spread
+18410,1382,M4-R16-4157,"Dark Futures: The Power and Purp",judge,79,41,spread
+18428,1385,M4-R16-4285,"NJ Physics Professor Has the ""Ri",judge,63,44,spread
+18434,1386,M4-R16-4289,"Oh, My Aching Head!",judge,78,60,spread
+18446,1388,M4-R16-4337,"Sense and Sensibility",judge,79,36,spread
+18458,1390,M4-R16-4362,"The Allure of Gold",judge,76,52,spread
+18463,1391,M4-R16-4414,"The Power of the Wind",sentence,45,22,spread
+18464,1391,M4-R16-4414,"The Power of the Wind",judge,45,13,spread
+18475,1393,M4-R16-4462,"What's Bugging Everyone?",sentence,78,9,spread
+18476,1393,M4-R16-4462,"What's Bugging Everyone?",judge,78,12,spread
+18482,1394,M4-R16-4488,"When the Empire State Building W",judge,49,8,spread
+18486,1395,M4-R16-4511,"Wi-Fi: Connecting the World Thro",sentence,54,10,spread
+18494,1396,M4-R16-4649,"CKSci Unit 3: Weather, Climate, ",judge,1092,10,spread
+18500,1397,M4-R16-4650,"CKSci Unit 4: Plate Tectonics an",judge,517,11,spread
+18506,1398,M4-R16-4652,"CKSci Unit 6: Cells and Systems",judge,605,11,spread
+18530,1402,M4-R17-3418,"Focus: Understanding How the Bra",judge,109,53,spread
+18542,1404,M4-R17-4231,"How Water Loss Affects Biodivers",judge,58,17,spread
+18548,1405,M4-R17-4318,"Rhubarb Grows in the Dark",judge,90,33,spread
+18550,1406,M4-R17-4370,"The Cooling from the Warmth of N",sentence,55,8,spread
+18584,1411,M4-R17-4502,"Why Humans Can't Live Off Sunlig",judge,64,38,spread
+18590,1412,M4-R17-4653,"CKSci Unit 1: Chemical Reactions",judge,119,9,spread
+18596,1413,M4-R17-4654,"CKSci Unit 2: Chemical Reactions",judge,786,558,spread
+18601,1414,M4-R17-4656,"CKSci Unit 4: Matter Cycling and",sentence,713,15,spread
+18602,1414,M4-R17-4656,"CKSci Unit 4: Matter Cycling and",judge,713,46,spread
+18608,1415,M4-R17-4658,"CKSci Unit 6: Earth’s Resources ",judge,296,30,spread
+18614,1416,M4-R18-1287,"The Unknown Ghost",judge,109,36,spread
+18620,1417,M4-R18-1420,"Light Up The World!",judge,124,57,spread
+18626,1418,M4-R18-2083,"Look Back In Fury",judge,135,62,spread
+18632,1419,M4-R18-2120,"The space travelers",judge,78,20,spread
+18638,1420,M4-R18-2360,"BUILDING THE GOLDEN FUTURE OF MO",judge,102,86,spread
+18644,1421,M4-R18-2363,"An Astronaut with Alien",judge,21,19,spread
+18650,1422,M4-R18-2370,"If I Could",judge,106,18,spread
+18656,1423,M4-R18-2453,"H.I.V.E resist",judge,123,33,spread
+18662,1424,M4-R18-3907,"The Spider Chronicle",judge,117,47,spread
+18668,1425,M4-R18-4096,"Are the Everglades Forever?",judge,57,13,spread
+18674,1426,M4-R18-4105,"A Drop's Journey",judge,59,50,spread
+18686,1428,M4-R18-4160,"Designing the First Flying Machi",judge,59,9,spread
+18692,1429,M4-R18-4161,"Developing Possible Solutions",judge,73,24,spread
+18704,1431,M4-R18-4242,"Is the Earth Getting Warmer?",judge,87,61,spread
+18716,1433,M4-R18-4274,"Mix the Old with the New",judge,94,41,spread
+18728,1435,M4-R18-4357,"Tag! You're Hit!",judge,70,13,spread
+18734,1436,M4-R18-4436,"Thunderstorm Types",judge,72,17,spread
+18740,1437,M4-R18-4506,"Will Human Life on Earth Come to",judge,99,51,spread
+18752,1439,M4-R18-4660,"CKSci Unit 2: Sound Waves",judge,952,16,spread
+18758,1440,M4-R18-4663,"CKSci Unit 5: Genetics",judge,101,18,spread
+18764,1441,M4-R18-4664,"CKSci Unit 6: Natural Selection ",judge,763,60,spread
+18770,1442,M4-R18-4842,"Ian Fleming- GoldFinger (OCR)",judge,270,90,spread
+18776,1443,M4-R18-4915,"philipProwse_ads(4)",judge,71,12,spread
+18782,1444,M4-R18-4916,"pmovie1",judge,123,21,spread
+18788,1445,M4-R18-679,"Every Drop Counts",judge,151,43,spread
+16335,1036,M4-R24-1504,"Heidi",judge,193,27,spread
+16341,1037,M4-R24-1815,"The rebel for present and the fu",judge,336,50,spread
+16347,1038,M4-R24-1936,"Jackpot",judge,466,173,spread
+16353,1039,M4-R24-2502,"Be Wise with Money",judge,275,37,spread
+16359,1040,M4-R24-2504,"How Money Travels",judge,257,12,spread
+16371,1042,M4-R24-667,"Manu Mixes Clay and Sunshine",judge,266,12,spread
+16377,1043,M4-R24-690,"Grandfather Goes on Strike",judge,762,282,spread
+16383,1044,M4-R24-738,"The Adventures of Philautus Frog",judge,243,123,spread
+16389,1045,M4-R24-791,"The Guest",judge,332,239,spread
+16395,1046,M4-R24-818,"Sabzpari's Jaltarang",judge,607,314,spread
+15387,878,M4-R5-3488,"How They Cloned A Sheep",judge,12,8,spread
+15411,882,M4-R6-2917,"Objects in Space",judge,22,14,spread
+15471,892,M4-R7-1817,"THE EARTH",judge,13,9,spread
+15519,900,M4-R7-3458,"Head Count",judge,17,10,spread
+15551,906,M4-R7-4118,"Benjamin Banneker Historical Par",sentence,11,8,spread
+15555,906,M4-R7-4118,"Benjamin Banneker Historical Par",judge,11,11,spread
+15561,907,M4-R7-4134,"Butterfly Conservation",judge,16,13,spread
+15573,909,M4-R7-4198,"Great Lakes? Not for Long",judge,17,8,spread
+15584,911,M4-R7-4295,"Paleontology: The Big Dig",sentence,16,15,spread
+15765,941,M4-R8-4067,"Why Does the Sun Burn Us?",judge,30,20,spread
+15855,956,M4-R9-3245,"A Plant that Preys",judge,24,8,spread
+15873,959,M4-R9-3499,"Ice Ages",judge,28,8,spread
+15879,960,M4-R9-3568,"Mary Anning: The Fossil Hunter",judge,26,11,spread
+15885,961,M4-R9-3623,"Osamu Shimomura",judge,32,17,spread
+15891,962,M4-R9-3641,"Pluto: The Planet That Wasn't",judge,21,21,spread
+15939,970,M4-R9-4044,"What Is Ocean Acidification?",judge,27,9,spread
+15945,971,M4-R9-4054,"Where Does the Sun's Energy Come",judge,21,16,spread
+15969,975,M4-R9-4133,"Butterfly Behavior",judge,26,13,spread
+15975,976,M4-R9-4207,"Heavy Metal",judge,29,14,spread
+15987,978,M4-R9-4492,"Who Was Alan Shepard?",judge,38,20,spread
+15259,856,MG-R21-M4-5333,"The Last of the Mohicans",sentence,1021,23,spread
+15260,856,MG-R21-M4-5333,"The Last of the Mohicans",sentence,1021,18,spread
+15261,856,MG-R21-M4-5333,"The Last of the Mohicans",sentence,1021,22,spread
+15262,856,MG-R21-M4-5333,"The Last of the Mohicans",sentence,1021,1012,spread
+15263,856,MG-R21-M4-5333,"The Last of the Mohicans",judge,156,126,spread
+15264,856,MG-R21-M4-5333,"The Last of the Mohicans",judge,41,26,spread
+15265,856,MG-R21-M4-5333,"The Last of the Mohicans",sentence,1021,44,spread
+14164,750,q750,"بنك تحديد المستوى — الشباب (M4)",judge,15,8,spread
+14170,750,q750,"بنك تحديد المستوى — الشباب (M4)",judge,19,11,spread
+14179,750,q750,"بنك تحديد المستوى — الشباب (M4)",judge,19,10,spread
+14182,750,q750,"بنك تحديد المستوى — الشباب (M4)",judge,19,8,spread
+14188,750,q750,"بنك تحديد المستوى — الشباب (M4)",judge,20,13,spread
+14191,750,q750,"بنك تحديد المستوى — الشباب (M4)",judge,19,14,spread
+14194,750,q750,"بنك تحديد المستوى — الشباب (M4)",judge,28,12,spread
+14200,750,q750,"بنك تحديد المستوى — الشباب (M4)",judge,29,9,spread
+14350,750,q750,"بنك تحديد المستوى — الشباب (M4)",judge,23,10,spread
+14353,750,q750,"بنك تحديد المستوى — الشباب (M4)",judge,23,12,spread
+14365,750,q750,"بنك تحديد المستوى — الشباب (M4)",judge,19,15,spread
+14371,750,q750,"بنك تحديد المستوى — الشباب (M4)",judge,19,8,spread
+14374,750,q750,"بنك تحديد المستوى — الشباب (M4)",judge,19,11,spread
+14380,750,q750,"بنك تحديد المستوى — الشباب (M4)",judge,20,10,spread
+14383,750,q750,"بنك تحديد المستوى — الشباب (M4)",judge,18,8,spread
+14386,750,q750,"بنك تحديد المستوى — الشباب (M4)",judge,20,8,spread
+14401,750,q750,"بنك تحديد المستوى — الشباب (M4)",judge,19,11,spread
+14452,750,q750,"بنك تحديد المستوى — الشباب (M4)",judge,13,11,spread
+14473,750,q750,"بنك تحديد المستوى — الشباب (M4)",judge,12,10,spread
+13993,731,RW-R13-polynesian_voyaging_to_build_a_ca,"Polynesian Voyaging: To Build a ",sentence,43,7,all-answers
+13996,731,RW-R13-polynesian_voyaging_to_build_a_ca,"Polynesian Voyaging: To Build a ",sentence,43,9,spread
+13997,731,RW-R13-polynesian_voyaging_to_build_a_ca,"Polynesian Voyaging: To Build a ",judge,43,21,spread
+13998,731,RW-R13-polynesian_voyaging_to_build_a_ca,"Polynesian Voyaging: To Build a ",judge,43,10,spread
+14001,732,RW-R14-first_life,"First Life",sentence,51,9,spread
+14003,732,RW-R14-first_life,"First Life",sentence,51,7,all-answers
+14004,732,RW-R14-first_life,"First Life",judge,51,27,spread
+14005,732,RW-R14-first_life,"First Life",judge,51,23,spread
+14006,733,RW-R14-hiv_and_medical_research,"HIV and Medical Research",sentence,59,7,all-answers
+14008,733,RW-R14-hiv_and_medical_research,"HIV and Medical Research",sentence,59,12,spread
+14011,733,RW-R14-hiv_and_medical_research,"HIV and Medical Research",judge,59,20,spread
+14012,733,RW-R14-hiv_and_medical_research,"HIV and Medical Research",judge,59,13,spread
+14013,734,RW-R14-test_results,"Test Results",sentence,57,7,all-answers
+14015,734,RW-R14-test_results,"Test Results",sentence,57,7,all-answers
+14018,734,RW-R14-test_results,"Test Results",judge,57,11,spread
+14019,734,RW-R14-test_results,"Test Results",judge,57,17,spread
+14020,735,RW-R14-the_sounds_of_baseball,"The Sounds of Baseball",sentence,41,8,spread
+14022,735,RW-R14-the_sounds_of_baseball,"The Sounds of Baseball",sentence,41,10,spread
+14023,735,RW-R14-the_sounds_of_baseball,"The Sounds of Baseball",sentence,41,27,spread
+14024,735,RW-R14-the_sounds_of_baseball,"The Sounds of Baseball",judge,41,41,spread
+14025,735,RW-R14-the_sounds_of_baseball,"The Sounds of Baseball",judge,41,16,spread
+14028,736,RW-R14-wayfinding_holding_the_course,"Wayfinding: Holding the Course",sentence,39,13,spread
+14030,736,RW-R14-wayfinding_holding_the_course,"Wayfinding: Holding the Course",judge,39,13,spread
+14031,736,RW-R14-wayfinding_holding_the_course,"Wayfinding: Holding the Course",judge,39,9,spread
+14034,737,RW-R14-wayfinding_planning_the_route,"Wayfinding: Planning the Route",sentence,42,14,spread
+14035,737,RW-R14-wayfinding_planning_the_route,"Wayfinding: Planning the Route",sentence,42,8,spread
+14036,737,RW-R14-wayfinding_planning_the_route,"Wayfinding: Planning the Route",judge,42,15,spread
+14037,737,RW-R14-wayfinding_planning_the_route,"Wayfinding: Planning the Route",judge,42,26,spread
+14038,738,RW-R15-art_and_culture_the_apetahi_flowe,"Art and Culture: The Apetahi Flo",sentence,47,8,spread
+14041,738,RW-R15-art_and_culture_the_apetahi_flowe,"Art and Culture: The Apetahi Flo",sentence,47,15,spread
+14042,738,RW-R15-art_and_culture_the_apetahi_flowe,"Art and Culture: The Apetahi Flo",sentence,47,8,spread
+14043,738,RW-R15-art_and_culture_the_apetahi_flowe,"Art and Culture: The Apetahi Flo",sentence,47,47,spread
+14044,738,RW-R15-art_and_culture_the_apetahi_flowe,"Art and Culture: The Apetahi Flo",judge,47,15,spread
+14045,738,RW-R15-art_and_culture_the_apetahi_flowe,"Art and Culture: The Apetahi Flo",judge,47,27,spread
+14050,739,RW-R15-everyday_energy,"Everyday Energy",judge,36,11,spread
+14051,739,RW-R15-everyday_energy,"Everyday Energy",judge,36,19,spread
+14052,740,RW-R15-radiation_what_you_need_to_know,"Radiation: What You Need to Know",sentence,70,12,spread
+14054,740,RW-R15-radiation_what_you_need_to_know,"Radiation: What You Need to Know",sentence,70,12,spread
+14055,740,RW-R15-radiation_what_you_need_to_know,"Radiation: What You Need to Know",sentence,70,9,spread
+14056,740,RW-R15-radiation_what_you_need_to_know,"Radiation: What You Need to Know",sentence,70,10,spread
+14057,740,RW-R15-radiation_what_you_need_to_know,"Radiation: What You Need to Know",sentence,70,52,spread
+14058,740,RW-R15-radiation_what_you_need_to_know,"Radiation: What You Need to Know",judge,70,15,spread
+14059,740,RW-R15-radiation_what_you_need_to_know,"Radiation: What You Need to Know",judge,70,58,spread
+14060,741,RW-R15-recording_disaster_environmental,"Recording Disaster: Environmenta",sentence,43,9,spread
+14061,741,RW-R15-recording_disaster_environmental,"Recording Disaster: Environmenta",sentence,43,9,spread
+14062,741,RW-R15-recording_disaster_environmental,"Recording Disaster: Environmenta",sentence,43,10,spread
+14064,741,RW-R15-recording_disaster_environmental,"Recording Disaster: Environmenta",judge,43,13,spread
+14065,741,RW-R15-recording_disaster_environmental,"Recording Disaster: Environmenta",judge,43,13,spread
+14067,742,RW-R16-jake_and_alice,"Jake and Alice",sentence,53,14,spread
+14068,742,RW-R16-jake_and_alice,"Jake and Alice",sentence,53,9,spread
+14069,742,RW-R16-jake_and_alice,"Jake and Alice",sentence,53,14,spread
+14070,742,RW-R16-jake_and_alice,"Jake and Alice",sentence,53,9,spread
+14071,742,RW-R16-jake_and_alice,"Jake and Alice",sentence,53,18,spread
+14072,742,RW-R16-jake_and_alice,"Jake and Alice",judge,53,35,spread
+14073,742,RW-R16-jake_and_alice,"Jake and Alice",judge,53,10,spread
+14074,743,RW-R16-scientists_deploy_nanotags_to_stu,"Scientists Deploy 'Nanotags' to ",sentence,59,11,spread
+14075,743,RW-R16-scientists_deploy_nanotags_to_stu,"Scientists Deploy 'Nanotags' to ",sentence,59,13,spread
+14076,743,RW-R16-scientists_deploy_nanotags_to_stu,"Scientists Deploy 'Nanotags' to ",sentence,59,11,spread
+14077,743,RW-R16-scientists_deploy_nanotags_to_stu,"Scientists Deploy 'Nanotags' to ",sentence,59,33,spread
+14078,743,RW-R16-scientists_deploy_nanotags_to_stu,"Scientists Deploy 'Nanotags' to ",sentence,59,13,spread
+14079,743,RW-R16-scientists_deploy_nanotags_to_stu,"Scientists Deploy 'Nanotags' to ",sentence,59,59,spread
+14080,743,RW-R16-scientists_deploy_nanotags_to_stu,"Scientists Deploy 'Nanotags' to ",judge,59,59,spread
+14081,743,RW-R16-scientists_deploy_nanotags_to_stu,"Scientists Deploy 'Nanotags' to ",judge,59,24,spread
+14083,744,RW-R16-shedding_light_on_the_dinosaur_bi,"Shedding Light on the Dinosaur-B",sentence,57,7,all-answers
+14084,744,RW-R16-shedding_light_on_the_dinosaur_bi,"Shedding Light on the Dinosaur-B",sentence,57,10,spread
+14087,744,RW-R16-shedding_light_on_the_dinosaur_bi,"Shedding Light on the Dinosaur-B",judge,57,9,spread
+14088,744,RW-R16-shedding_light_on_the_dinosaur_bi,"Shedding Light on the Dinosaur-B",judge,57,53,spread
+14091,745,RW-R16-spit_for_silk,"Spit for Silk",sentence,48,11,spread
+14093,745,RW-R16-spit_for_silk,"Spit for Silk",judge,48,11,spread
+14094,745,RW-R16-spit_for_silk,"Spit for Silk",judge,48,8,spread
+14097,746,RW-R16-two_sets_to_build_difference,"Two Sets to Build Difference",sentence,52,10,spread
+14098,746,RW-R16-two_sets_to_build_difference,"Two Sets to Build Difference",sentence,52,9,spread
+14099,746,RW-R16-two_sets_to_build_difference,"Two Sets to Build Difference",sentence,52,10,spread
+14100,746,RW-R16-two_sets_to_build_difference,"Two Sets to Build Difference",judge,52,16,spread
+14101,746,RW-R16-two_sets_to_build_difference,"Two Sets to Build Difference",judge,52,37,spread
+14103,747,RW-R16-urban_damage_raises_questions_abo,"Urban Damage Raises Questions Ab",sentence,53,8,spread
+14104,747,RW-R16-urban_damage_raises_questions_abo,"Urban Damage Raises Questions Ab",sentence,53,27,spread
+14106,747,RW-R16-urban_damage_raises_questions_abo,"Urban Damage Raises Questions Ab",sentence,53,8,spread
+14107,747,RW-R16-urban_damage_raises_questions_abo,"Urban Damage Raises Questions Ab",judge,53,13,spread
+14108,747,RW-R16-urban_damage_raises_questions_abo,"Urban Damage Raises Questions Ab",judge,53,35,spread
+14109,748,RW-R16-variation_of_traits,"Variation of Traits",sentence,42,8,spread
+14110,748,RW-R16-variation_of_traits,"Variation of Traits",sentence,42,16,spread
+14111,748,RW-R16-variation_of_traits,"Variation of Traits",sentence,42,11,spread
+14112,748,RW-R16-variation_of_traits,"Variation of Traits",sentence,42,11,spread
+14113,748,RW-R16-variation_of_traits,"Variation of Traits",sentence,42,42,spread
+14114,748,RW-R16-variation_of_traits,"Variation of Traits",judge,42,16,spread
+14115,748,RW-R16-variation_of_traits,"Variation of Traits",judge,42,8,spread
+14575,763,RW-R17-digitized_signals_are_the_future,"Digitized Signals Are the Future",sentence,66,7,all-answers
+14576,763,RW-R17-digitized_signals_are_the_future,"Digitized Signals Are the Future",sentence,66,11,spread
+14577,763,RW-R17-digitized_signals_are_the_future,"Digitized Signals Are the Future",sentence,66,19,spread
+14579,763,RW-R17-digitized_signals_are_the_future,"Digitized Signals Are the Future",sentence,66,19,spread
+14580,763,RW-R17-digitized_signals_are_the_future,"Digitized Signals Are the Future",judge,66,13,spread
+14581,763,RW-R17-digitized_signals_are_the_future,"Digitized Signals Are the Future",judge,66,66,spread
+14582,764,RW-R17-fossil_indicators,"Fossil Indicators",sentence,55,9,spread
+14584,764,RW-R17-fossil_indicators,"Fossil Indicators",sentence,55,17,spread
+14585,764,RW-R17-fossil_indicators,"Fossil Indicators",sentence,55,13,spread
+14587,764,RW-R17-fossil_indicators,"Fossil Indicators",sentence,55,9,spread
+14588,764,RW-R17-fossil_indicators,"Fossil Indicators",judge,55,29,spread
+14589,764,RW-R17-fossil_indicators,"Fossil Indicators",judge,55,18,spread
+14590,765,RW-R17-from_fabrics_to_computers_a_histo,"From Fabrics to Computers: A His",sentence,53,11,spread
+14591,765,RW-R17-from_fabrics_to_computers_a_histo,"From Fabrics to Computers: A His",sentence,53,8,spread
+14592,765,RW-R17-from_fabrics_to_computers_a_histo,"From Fabrics to Computers: A His",sentence,53,15,spread
+14593,765,RW-R17-from_fabrics_to_computers_a_histo,"From Fabrics to Computers: A His",sentence,53,8,spread
+14594,765,RW-R17-from_fabrics_to_computers_a_histo,"From Fabrics to Computers: A His",sentence,53,11,spread
+14595,765,RW-R17-from_fabrics_to_computers_a_histo,"From Fabrics to Computers: A His",sentence,53,34,spread
+14596,765,RW-R17-from_fabrics_to_computers_a_histo,"From Fabrics to Computers: A His",judge,53,15,spread
+14597,765,RW-R17-from_fabrics_to_computers_a_histo,"From Fabrics to Computers: A His",judge,53,27,spread
+14599,766,RW-R17-human_microbiome_the_role_of_micr,"Human Microbiome: The Role of Mi",sentence,70,8,spread
+14600,766,RW-R17-human_microbiome_the_role_of_micr,"Human Microbiome: The Role of Mi",sentence,70,32,spread
+14601,766,RW-R17-human_microbiome_the_role_of_micr,"Human Microbiome: The Role of Mi",sentence,70,13,spread
+14602,766,RW-R17-human_microbiome_the_role_of_micr,"Human Microbiome: The Role of Mi",sentence,70,19,spread
+14603,766,RW-R17-human_microbiome_the_role_of_micr,"Human Microbiome: The Role of Mi",sentence,70,52,spread
+14604,766,RW-R17-human_microbiome_the_role_of_micr,"Human Microbiome: The Role of Mi",judge,70,52,spread
+14605,766,RW-R17-human_microbiome_the_role_of_micr,"Human Microbiome: The Role of Mi",judge,70,36,spread
+14607,767,RW-R17-longleaf_conservation_gets_high_t,"Longleaf Conservation Gets High-",sentence,45,7,all-answers
+14608,767,RW-R17-longleaf_conservation_gets_high_t,"Longleaf Conservation Gets High-",sentence,45,24,spread
+14609,767,RW-R17-longleaf_conservation_gets_high_t,"Longleaf Conservation Gets High-",sentence,45,11,spread
+14611,767,RW-R17-longleaf_conservation_gets_high_t,"Longleaf Conservation Gets High-",sentence,45,28,spread
+14612,767,RW-R17-longleaf_conservation_gets_high_t,"Longleaf Conservation Gets High-",judge,45,34,spread
+14613,767,RW-R17-longleaf_conservation_gets_high_t,"Longleaf Conservation Gets High-",judge,45,18,spread
+14616,768,RW-R17-solving_new_york_city_s_hurricane,"Solving New York City's Hurrican",sentence,26,11,spread
+14618,768,RW-R17-solving_new_york_city_s_hurricane,"Solving New York City's Hurrican",sentence,26,9,spread
+14619,768,RW-R17-solving_new_york_city_s_hurricane,"Solving New York City's Hurrican",judge,26,15,spread
+14620,768,RW-R17-solving_new_york_city_s_hurricane,"Solving New York City's Hurrican",judge,26,26,spread
+14624,769,RW-R17-the_fault_line_threatening_dams,"The Fault Line Threatening Dams",sentence,31,31,spread
+14626,769,RW-R17-the_fault_line_threatening_dams,"The Fault Line Threatening Dams",judge,31,10,spread
+14627,769,RW-R17-the_fault_line_threatening_dams,"The Fault Line Threatening Dams",judge,31,19,spread
+14629,770,RW-R17-using_cellphones_and_computers_to,"Using Cellphones and Computers t",sentence,33,22,spread
+14630,770,RW-R17-using_cellphones_and_computers_to,"Using Cellphones and Computers t",sentence,33,8,spread
+14631,770,RW-R17-using_cellphones_and_computers_to,"Using Cellphones and Computers t",sentence,33,11,spread
+14632,770,RW-R17-using_cellphones_and_computers_to,"Using Cellphones and Computers t",sentence,33,33,spread
+14633,770,RW-R17-using_cellphones_and_computers_to,"Using Cellphones and Computers t",judge,33,12,spread
+14634,770,RW-R17-using_cellphones_and_computers_to,"Using Cellphones and Computers t",judge,33,26,spread
+14640,771,RW-R18-in_our_galaxy_far_far_away,"In Our Galaxy, Far, Far Away",judge,23,21,spread
+14641,771,RW-R18-in_our_galaxy_far_far_away,"In Our Galaxy, Far, Far Away",judge,23,20,spread
+14644,772,RW-R18-india_and_china_race_to_space,"India and China Race to Space",sentence,39,12,spread
+14646,772,RW-R18-india_and_china_race_to_space,"India and China Race to Space",sentence,39,7,all-answers
+14647,772,RW-R18-india_and_china_race_to_space,"India and China Race to Space",sentence,39,39,spread
+14648,772,RW-R18-india_and_china_race_to_space,"India and China Race to Space",judge,39,27,spread
+14649,772,RW-R18-india_and_china_race_to_space,"India and China Race to Space",judge,39,25,spread
+14653,773,RW-R18-scales,"Scales",sentence,41,8,spread
+14654,773,RW-R18-scales,"Scales",judge,41,7,all-answers
+14655,773,RW-R18-scales,"Scales",judge,41,25,spread
+14657,774,RW-R18-why_the_emerald_swallowtail_butte,"Why the Emerald Swallowtail Butt",sentence,13,7,all-answers
+14660,774,RW-R18-why_the_emerald_swallowtail_butte,"Why the Emerald Swallowtail Butt",judge,13,7,all-answers
+14661,774,RW-R18-why_the_emerald_swallowtail_butte,"Why the Emerald Swallowtail Butt",judge,13,7,all-answers
+14662,775,RW-R19-alien_planets,"Alien Planets",sentence,39,10,spread
+14663,775,RW-R19-alien_planets,"Alien Planets",sentence,39,8,spread
+14664,775,RW-R19-alien_planets,"Alien Planets",sentence,39,8,spread
+14665,775,RW-R19-alien_planets,"Alien Planets",sentence,39,36,spread
+14667,775,RW-R19-alien_planets,"Alien Planets",sentence,39,30,spread
+14668,775,RW-R19-alien_planets,"Alien Planets",judge,39,30,spread
+14669,775,RW-R19-alien_planets,"Alien Planets",judge,39,15,spread
+14672,776,RW-R19-avian_influenza,"Avian Influenza",sentence,36,21,spread
+14675,776,RW-R19-avian_influenza,"Avian Influenza",sentence,36,16,spread
+14676,776,RW-R19-avian_influenza,"Avian Influenza",judge,36,16,spread
+14677,776,RW-R19-avian_influenza,"Avian Influenza",judge,36,20,spread
+14681,777,RW-R19-drones_become_mining_s_flight_to,"Drones Become Mining's Flight to",sentence,39,36,spread
+14683,777,RW-R19-drones_become_mining_s_flight_to,"Drones Become Mining's Flight to",sentence,39,21,spread
+14684,777,RW-R19-drones_become_mining_s_flight_to,"Drones Become Mining's Flight to",judge,39,12,spread
+14685,777,RW-R19-drones_become_mining_s_flight_to,"Drones Become Mining's Flight to",judge,39,19,spread
+14687,778,RW-R19-forecasting_severe_weather_to_com,"Forecasting Severe Weather to Co",sentence,25,17,spread
+14689,778,RW-R19-forecasting_severe_weather_to_com,"Forecasting Severe Weather to Co",sentence,25,19,spread
+14690,778,RW-R19-forecasting_severe_weather_to_com,"Forecasting Severe Weather to Co",judge,25,13,spread
+14691,778,RW-R19-forecasting_severe_weather_to_com,"Forecasting Severe Weather to Co",judge,25,10,spread
+14695,779,RW-R19-meet_the_ologist_rob_desalle,"Meet the Ologist: Rob DeSalle",sentence,50,15,spread
+14697,779,RW-R19-meet_the_ologist_rob_desalle,"Meet the Ologist: Rob DeSalle",sentence,50,9,spread
+14698,779,RW-R19-meet_the_ologist_rob_desalle,"Meet the Ologist: Rob DeSalle",judge,50,7,all-answers
+14699,779,RW-R19-meet_the_ologist_rob_desalle,"Meet the Ologist: Rob DeSalle",judge,50,37,spread
+14702,780,RW-R20-how_to_make_a_better_robot,"How to Make a Better Robot",sentence,77,8,spread
+14703,780,RW-R20-how_to_make_a_better_robot,"How to Make a Better Robot",sentence,77,18,spread
+14704,780,RW-R20-how_to_make_a_better_robot,"How to Make a Better Robot",sentence,77,7,all-answers
+14705,780,RW-R20-how_to_make_a_better_robot,"How to Make a Better Robot",judge,77,16,spread
+14706,780,RW-R20-how_to_make_a_better_robot,"How to Make a Better Robot",judge,77,56,spread
+14710,781,RW-R20-loch_ness_outdone,"Loch Ness Outdone",sentence,69,17,spread
+14712,781,RW-R20-loch_ness_outdone,"Loch Ness Outdone",judge,69,22,spread
+14713,781,RW-R20-loch_ness_outdone,"Loch Ness Outdone",judge,69,21,spread
+14714,782,RW-R20-surfer_s_up,"Surfer's Up",sentence,94,8,spread
+14715,782,RW-R20-surfer_s_up,"Surfer's Up",sentence,94,8,spread
+14716,782,RW-R20-surfer_s_up,"Surfer's Up",sentence,94,15,spread
+14719,782,RW-R20-surfer_s_up,"Surfer's Up",judge,94,55,spread
+14720,782,RW-R20-surfer_s_up,"Surfer's Up",judge,94,74,spread
+14721,783,RW-R20-the_rise_of_oxygen_in_the_earth_s,"The Rise of Oxygen in the Earth'",sentence,52,9,spread
+14723,783,RW-R20-the_rise_of_oxygen_in_the_earth_s,"The Rise of Oxygen in the Earth'",sentence,52,8,spread
+14724,783,RW-R20-the_rise_of_oxygen_in_the_earth_s,"The Rise of Oxygen in the Earth'",sentence,52,8,spread
+14725,783,RW-R20-the_rise_of_oxygen_in_the_earth_s,"The Rise of Oxygen in the Earth'",sentence,52,8,spread
+14726,783,RW-R20-the_rise_of_oxygen_in_the_earth_s,"The Rise of Oxygen in the Earth'",sentence,52,12,spread
+14727,783,RW-R20-the_rise_of_oxygen_in_the_earth_s,"The Rise of Oxygen in the Earth'",judge,52,28,spread
+14728,783,RW-R20-the_rise_of_oxygen_in_the_earth_s,"The Rise of Oxygen in the Earth'",judge,52,37,spread
+14731,784,RW-R20-why_do_cave_fish_lose_their_eyes,"Why Do Cave Fish Lose Their Eyes",sentence,71,7,all-answers
+14733,784,RW-R20-why_do_cave_fish_lose_their_eyes,"Why Do Cave Fish Lose Their Eyes",sentence,71,15,spread
+14734,784,RW-R20-why_do_cave_fish_lose_their_eyes,"Why Do Cave Fish Lose Their Eyes",judge,71,21,spread
+14735,784,RW-R20-why_do_cave_fish_lose_their_eyes,"Why Do Cave Fish Lose Their Eyes",judge,71,27,spread
+14736,785,RW-R21-american_indians_and_the_transcon,"American Indians and the Transco",sentence,60,7,all-answers
+14738,785,RW-R21-american_indians_and_the_transcon,"American Indians and the Transco",sentence,60,7,all-answers
+14739,785,RW-R21-american_indians_and_the_transcon,"American Indians and the Transco",sentence,60,7,all-answers
+14740,785,RW-R21-american_indians_and_the_transcon,"American Indians and the Transco",sentence,60,60,spread
+14741,785,RW-R21-american_indians_and_the_transcon,"American Indians and the Transco",judge,60,31,spread
+14742,785,RW-R21-american_indians_and_the_transcon,"American Indians and the Transco",judge,60,13,spread
+14743,785,RW-R21-american_indians_and_the_transcon,"American Indians and the Transco",sentence,60,7,all-answers
+14749,786,RW-R21-bans_over_plastic_bags_face_a_gro,"Bans Over Plastic Bags Face a Gr",judge,34,7,all-answers
+14750,786,RW-R21-bans_over_plastic_bags_face_a_gro,"Bans Over Plastic Bags Face a Gr",judge,34,7,all-answers
+14751,787,RW-R21-buzz_off,"Buzz Off",sentence,42,10,spread
+14752,787,RW-R21-buzz_off,"Buzz Off",sentence,42,8,spread
+14754,787,RW-R21-buzz_off,"Buzz Off",sentence,42,41,spread
+14758,787,RW-R21-buzz_off,"Buzz Off",judge,42,25,spread
+14763,788,RW-R21-cleaning_up_the_ocean,"Cleaning Up the Ocean",judge,15,10,spread
+14771,789,RW-R21-cloned_canine,"Cloned Canine",judge,24,15,spread
+14772,789,RW-R21-cloned_canine,"Cloned Canine",judge,24,11,spread
+14775,790,RW-R21-excuse_me_you_re_blocking_my_sun,"Excuse Me, You're Blocking My Su",sentence,33,29,spread
+14779,790,RW-R21-excuse_me_you_re_blocking_my_sun,"Excuse Me, You're Blocking My Su",sentence,33,33,spread
+14780,790,RW-R21-excuse_me_you_re_blocking_my_sun,"Excuse Me, You're Blocking My Su",judge,33,25,spread
+14781,790,RW-R21-excuse_me_you_re_blocking_my_sun,"Excuse Me, You're Blocking My Su",judge,33,29,spread
+14787,791,RW-R21-fighting_to_save_an_iconic_specie,"Fighting to Save an Iconic Speci",judge,13,11,spread
+14790,792,RW-R21-from_no_power_in_puerto_rico_to_l,"From No Power in Puerto Rico to ",sentence,60,7,all-answers
+14791,792,RW-R21-from_no_power_in_puerto_rico_to_l,"From No Power in Puerto Rico to ",sentence,60,12,spread
+14792,792,RW-R21-from_no_power_in_puerto_rico_to_l,"From No Power in Puerto Rico to ",sentence,60,13,spread
+14793,792,RW-R21-from_no_power_in_puerto_rico_to_l,"From No Power in Puerto Rico to ",sentence,60,28,spread
+14794,792,RW-R21-from_no_power_in_puerto_rico_to_l,"From No Power in Puerto Rico to ",sentence,60,44,spread
+14795,792,RW-R21-from_no_power_in_puerto_rico_to_l,"From No Power in Puerto Rico to ",sentence,60,44,spread
+14796,792,RW-R21-from_no_power_in_puerto_rico_to_l,"From No Power in Puerto Rico to ",judge,60,13,spread
+14797,792,RW-R21-from_no_power_in_puerto_rico_to_l,"From No Power in Puerto Rico to ",judge,60,57,spread
+14799,793,RW-R21-keeping_sea_turtles_in_the_dark,"Keeping Sea Turtles in the Dark",sentence,90,7,all-answers
+14800,793,RW-R21-keeping_sea_turtles_in_the_dark,"Keeping Sea Turtles in the Dark",sentence,90,7,all-answers
+14801,793,RW-R21-keeping_sea_turtles_in_the_dark,"Keeping Sea Turtles in the Dark",sentence,90,68,spread
+14803,793,RW-R21-keeping_sea_turtles_in_the_dark,"Keeping Sea Turtles in the Dark",judge,90,14,spread
+14804,793,RW-R21-keeping_sea_turtles_in_the_dark,"Keeping Sea Turtles in the Dark",judge,90,47,spread
+14806,794,RW-R21-killer_whale_research_and_conserv,"Killer Whale Research and Conser",sentence,28,8,spread
+14807,794,RW-R21-killer_whale_research_and_conserv,"Killer Whale Research and Conser",sentence,28,8,spread
+14810,794,RW-R21-killer_whale_research_and_conserv,"Killer Whale Research and Conser",sentence,28,28,spread
+14811,794,RW-R21-killer_whale_research_and_conserv,"Killer Whale Research and Conser",judge,28,28,spread
+14812,794,RW-R21-killer_whale_research_and_conserv,"Killer Whale Research and Conser",judge,28,20,spread
+14818,795,RW-R21-nasa_probe_to_explore_the_sun_s_a,"NASA Probe to Explore the Sun's ",judge,19,14,spread
+14819,795,RW-R21-nasa_probe_to_explore_the_sun_s_a,"NASA Probe to Explore the Sun's ",judge,19,14,spread
+14825,796,RW-R21-physicists_predict_a_nuclear_arms,"Physicists Predict a Nuclear Arm",sentence,61,33,spread
+14826,796,RW-R21-physicists_predict_a_nuclear_arms,"Physicists Predict a Nuclear Arm",judge,61,28,spread
+14827,796,RW-R21-physicists_predict_a_nuclear_arms,"Physicists Predict a Nuclear Arm",judge,61,35,spread
+14829,797,RW-R21-processes,"Processes",sentence,30,9,spread
+14831,797,RW-R21-processes,"Processes",sentence,30,9,spread
+14833,797,RW-R21-processes,"Processes",sentence,30,26,spread
+14834,797,RW-R21-processes,"Processes",judge,30,12,spread
+14835,797,RW-R21-processes,"Processes",judge,30,9,spread
+14841,798,RW-R21-real_world_is_finding_new_uses_fo,"Real World Is Finding New Uses f",judge,22,16,spread
+14842,798,RW-R21-real_world_is_finding_new_uses_fo,"Real World Is Finding New Uses f",judge,22,12,spread
+14843,799,RW-R21-self_help,"Self Help",sentence,35,8,spread
+14847,799,RW-R21-self_help,"Self Help",sentence,35,35,spread
+14848,799,RW-R21-self_help,"Self Help",judge,35,9,spread
+14849,799,RW-R21-self_help,"Self Help",judge,35,35,spread
+14856,800,RW-R21-tens_of_thousands_flee_california,"Tens of Thousands Flee Californi",judge,19,12,spread
+14857,801,RW-R21-the_beaver_nature_s_ecosystem_eng,"The Beaver: Nature's Ecosystem E",sentence,54,7,all-answers
+14858,801,RW-R21-the_beaver_nature_s_ecosystem_eng,"The Beaver: Nature's Ecosystem E",sentence,54,11,spread
+14859,801,RW-R21-the_beaver_nature_s_ecosystem_eng,"The Beaver: Nature's Ecosystem E",sentence,54,11,spread
+14861,801,RW-R21-the_beaver_nature_s_ecosystem_eng,"The Beaver: Nature's Ecosystem E",sentence,54,10,spread
+14863,801,RW-R21-the_beaver_nature_s_ecosystem_eng,"The Beaver: Nature's Ecosystem E",judge,54,9,spread
+14864,801,RW-R21-the_beaver_nature_s_ecosystem_eng,"The Beaver: Nature's Ecosystem E",judge,54,9,spread
+14866,802,RW-R21-the_fossil_finessers,"The Fossil Finessers",sentence,64,9,spread
+14869,802,RW-R21-the_fossil_finessers,"The Fossil Finessers",sentence,64,8,spread
+14870,802,RW-R21-the_fossil_finessers,"The Fossil Finessers",judge,64,41,spread
+14871,802,RW-R21-the_fossil_finessers,"The Fossil Finessers",judge,64,28,spread
+14875,803,RW-R21-transcontinental_railroads_compre,"Transcontinental Railroads: Comp",sentence,68,8,spread
+14878,803,RW-R21-transcontinental_railroads_compre,"Transcontinental Railroads: Comp",judge,68,11,spread
+14879,803,RW-R21-transcontinental_railroads_compre,"Transcontinental Railroads: Comp",judge,68,53,spread
+14885,804,RW-R21-trash_talk_price_of_recyclables_s,"Trash Talk: Price of Recyclables",judge,24,24,spread
+14892,805,RW-R21-water_on_the_earth,"Water on the Earth",judge,26,13,spread
+14893,805,RW-R21-water_on_the_earth,"Water on the Earth",judge,26,10,spread
+14897,806,RW-R21-what_s_the_big_idea_about_genetic,"What's the Big Idea about Geneti",sentence,23,10,spread
+14899,806,RW-R21-what_s_the_big_idea_about_genetic,"What's the Big Idea about Geneti",judge,23,18,spread
+14900,806,RW-R21-what_s_the_big_idea_about_genetic,"What's the Big Idea about Geneti",judge,23,14,spread
+14901,807,RW-R21-why_do_cave_fish_lose_their_eyes,"Why Do Cave Fish Lose Their Eyes",sentence,56,7,all-answers
+14906,807,RW-R21-why_do_cave_fish_lose_their_eyes,"Why Do Cave Fish Lose Their Eyes",sentence,56,52,spread
+14907,807,RW-R21-why_do_cave_fish_lose_their_eyes,"Why Do Cave Fish Lose Their Eyes",judge,56,33,spread
+14908,807,RW-R21-why_do_cave_fish_lose_their_eyes,"Why Do Cave Fish Lose Their Eyes",judge,56,39,spread
+14911,808,RW-R21-yellowstone_grizzlies_to_lose_pro,"Yellowstone Grizzlies to Lose Pr",sentence,23,7,all-answers
+14914,808,RW-R21-yellowstone_grizzlies_to_lose_pro,"Yellowstone Grizzlies to Lose Pr",judge,23,10,spread
+14916,809,RW-R22-a_room_sized_computer_in_your_dig,"A Room-Sized Computer in Your Di",sentence,60,9,spread
+14917,809,RW-R22-a_room_sized_computer_in_your_dig,"A Room-Sized Computer in Your Di",sentence,60,8,spread
+14918,809,RW-R22-a_room_sized_computer_in_your_dig,"A Room-Sized Computer in Your Di",sentence,60,23,spread
+14920,809,RW-R22-a_room_sized_computer_in_your_dig,"A Room-Sized Computer in Your Di",sentence,60,23,spread
+14921,809,RW-R22-a_room_sized_computer_in_your_dig,"A Room-Sized Computer in Your Di",judge,60,12,spread
+14922,809,RW-R22-a_room_sized_computer_in_your_dig,"A Room-Sized Computer in Your Di",judge,60,31,spread
+14927,810,RW-R22-ancient_infant_s_dna_provides_key,"Ancient Infant's DNA Provides Ke",judge,33,23,spread
+14928,810,RW-R22-ancient_infant_s_dna_provides_key,"Ancient Infant's DNA Provides Ke",judge,33,18,spread
+14929,810,RW-R22-ancient_infant_s_dna_provides_key,"Ancient Infant's DNA Provides Ke",judge,33,27,spread
+14930,811,RW-R22-beluga_whales_built_for_the_arcti,"Beluga Whales Built for the Arct",sentence,45,7,all-answers
+14931,811,RW-R22-beluga_whales_built_for_the_arcti,"Beluga Whales Built for the Arct",sentence,45,29,spread
+14932,811,RW-R22-beluga_whales_built_for_the_arcti,"Beluga Whales Built for the Arct",sentence,45,33,spread
+14933,811,RW-R22-beluga_whales_built_for_the_arcti,"Beluga Whales Built for the Arct",sentence,45,33,spread
+14934,811,RW-R22-beluga_whales_built_for_the_arcti,"Beluga Whales Built for the Arct",sentence,45,9,spread
+14935,811,RW-R22-beluga_whales_built_for_the_arcti,"Beluga Whales Built for the Arct",judge,45,33,spread
+14936,811,RW-R22-beluga_whales_built_for_the_arcti,"Beluga Whales Built for the Arct",judge,45,38,spread
+14961,815,RW-R22-could_your_spit_solve_a_crime,"Could Your Spit Solve a Crime?",sentence,25,9,spread
+14962,815,RW-R22-could_your_spit_solve_a_crime,"Could Your Spit Solve a Crime?",sentence,25,21,spread
+14965,815,RW-R22-could_your_spit_solve_a_crime,"Could Your Spit Solve a Crime?",judge,25,23,spread
+14966,815,RW-R22-could_your_spit_solve_a_crime,"Could Your Spit Solve a Crime?",judge,25,16,spread
+14967,816,RW-R22-count_on_it,"Count On It",sentence,38,8,spread
+14971,816,RW-R22-count_on_it,"Count On It",sentence,38,12,spread
+14973,816,RW-R22-count_on_it,"Count On It",judge,38,12,spread
+14974,816,RW-R22-count_on_it,"Count On It",judge,38,9,spread
+14978,817,RW-R22-for_spacex_third_launch_is_charm,"For SpaceX, Third Launch Is Char",sentence,15,13,spread
+14979,817,RW-R22-for_spacex_third_launch_is_charm,"For SpaceX, Third Launch Is Char",judge,15,10,spread
+14980,817,RW-R22-for_spacex_third_launch_is_charm,"For SpaceX, Third Launch Is Char",judge,15,15,spread
+14984,818,RW-R22-humanity_on_the_record,"Humanity on the Record",sentence,36,8,spread
+14985,818,RW-R22-humanity_on_the_record,"Humanity on the Record",sentence,36,16,spread
+14986,818,RW-R22-humanity_on_the_record,"Humanity on the Record",sentence,36,15,spread
+14988,818,RW-R22-humanity_on_the_record,"Humanity on the Record",judge,36,15,spread
+14993,819,RW-R22-iranians_turn_to_telegram_app_ami,"Iranians Turn to Telegram App Am",judge,21,16,spread
+14994,819,RW-R22-iranians_turn_to_telegram_app_ami,"Iranians Turn to Telegram App Am",judge,21,14,spread
+14995,819,RW-R22-iranians_turn_to_telegram_app_ami,"Iranians Turn to Telegram App Am",judge,21,14,spread
+14998,820,RW-R22-just_what_the_doctor_ordered,"Just What the Doctor Ordered",sentence,31,15,spread
+15000,820,RW-R22-just_what_the_doctor_ordered,"Just What the Doctor Ordered",sentence,31,11,spread
+15001,820,RW-R22-just_what_the_doctor_ordered,"Just What the Doctor Ordered",sentence,31,22,spread
+15002,820,RW-R22-just_what_the_doctor_ordered,"Just What the Doctor Ordered",judge,31,23,spread
+15003,820,RW-R22-just_what_the_doctor_ordered,"Just What the Doctor Ordered",judge,31,25,spread
+15005,821,RW-R22-living_shores_strong_coasts,"Living Shores, Strong Coasts",sentence,16,9,spread
+15007,821,RW-R22-living_shores_strong_coasts,"Living Shores, Strong Coasts",sentence,16,7,all-answers
+15008,821,RW-R22-living_shores_strong_coasts,"Living Shores, Strong Coasts",sentence,16,13,spread
+15009,821,RW-R22-living_shores_strong_coasts,"Living Shores, Strong Coasts",judge,16,12,spread
+15010,821,RW-R22-living_shores_strong_coasts,"Living Shores, Strong Coasts",judge,16,16,spread
+15012,822,RW-R22-meet_the_ologist_mark_norell,"Meet the Ologist: Mark Norell",sentence,70,11,spread
+15014,822,RW-R22-meet_the_ologist_mark_norell,"Meet the Ologist: Mark Norell",sentence,70,69,spread
+15015,822,RW-R22-meet_the_ologist_mark_norell,"Meet the Ologist: Mark Norell",sentence,70,19,spread
+15016,822,RW-R22-meet_the_ologist_mark_norell,"Meet the Ologist: Mark Norell",judge,70,16,spread
+15017,822,RW-R22-meet_the_ologist_mark_norell,"Meet the Ologist: Mark Norell",judge,70,50,spread
+15021,823,RW-R22-mudslides_in_california_kill_15_t,"Mudslides in California Kill 15;",sentence,16,14,spread
+15022,823,RW-R22-mudslides_in_california_kill_15_t,"Mudslides in California Kill 15;",sentence,16,7,all-answers
+15024,823,RW-R22-mudslides_in_california_kill_15_t,"Mudslides in California Kill 15;",judge,16,10,spread
+15029,824,RW-R22-nasa_s_latest_capsules_may_pose_g,"NASA's Latest Capsules May Pose ",judge,22,13,spread
+15030,824,RW-R22-nasa_s_latest_capsules_may_pose_g,"NASA's Latest Capsules May Pose ",judge,22,16,spread
+15031,824,RW-R22-nasa_s_latest_capsules_may_pose_g,"NASA's Latest Capsules May Pose ",judge,22,22,spread
+15034,825,RW-R22-naturally_selected_to_survive,"Naturally Selected to Survive",sentence,30,7,all-answers
+15037,825,RW-R22-naturally_selected_to_survive,"Naturally Selected to Survive",judge,30,18,spread
+15042,826,RW-R22-noisy_humans_drown_out_sounds_of,"Noisy Humans Drown Out Sounds of",sentence,28,10,spread
+15043,826,RW-R22-noisy_humans_drown_out_sounds_of,"Noisy Humans Drown Out Sounds of",sentence,28,8,spread
+15044,826,RW-R22-noisy_humans_drown_out_sounds_of,"Noisy Humans Drown Out Sounds of",sentence,28,28,spread
+15045,826,RW-R22-noisy_humans_drown_out_sounds_of,"Noisy Humans Drown Out Sounds of",judge,28,15,spread
+15048,827,RW-R22-oh_the_species_you_ll_find,"Oh, the Species You'll Find",sentence,46,12,spread
+15052,827,RW-R22-oh_the_species_you_ll_find,"Oh, the Species You'll Find",judge,46,22,spread
+15053,827,RW-R22-oh_the_species_you_ll_find,"Oh, the Species You'll Find",judge,46,13,spread
+15055,828,RW-R22-pitching_a_curveball,"Pitching a Curveball",sentence,24,7,all-answers
+15057,828,RW-R22-pitching_a_curveball,"Pitching a Curveball",sentence,24,7,all-answers
+15059,828,RW-R22-pitching_a_curveball,"Pitching a Curveball",sentence,24,7,all-answers
+15060,828,RW-R22-pitching_a_curveball,"Pitching a Curveball",judge,24,16,spread
+15061,828,RW-R22-pitching_a_curveball,"Pitching a Curveball",judge,24,20,spread
+15065,829,RW-R22-racing_to_protect_mule_deer_migra,"Racing to Protect Mule Deer Migr",sentence,16,13,spread
+15066,829,RW-R22-racing_to_protect_mule_deer_migra,"Racing to Protect Mule Deer Migr",sentence,16,10,spread
+15067,829,RW-R22-racing_to_protect_mule_deer_migra,"Racing to Protect Mule Deer Migr",judge,16,10,spread
+15068,829,RW-R22-racing_to_protect_mule_deer_migra,"Racing to Protect Mule Deer Migr",judge,16,10,spread
+15069,830,RW-R22-researchers_beginning_to_better_u,"Researchers Beginning to Better ",sentence,34,7,all-answers
+15071,830,RW-R22-researchers_beginning_to_better_u,"Researchers Beginning to Better ",sentence,34,7,all-answers
+15072,830,RW-R22-researchers_beginning_to_better_u,"Researchers Beginning to Better ",sentence,34,8,spread
+15073,830,RW-R22-researchers_beginning_to_better_u,"Researchers Beginning to Better ",judge,34,14,spread
+15074,830,RW-R22-researchers_beginning_to_better_u,"Researchers Beginning to Better ",judge,34,28,spread
+15078,831,RW-R22-short_circuits,"Short Circuits",sentence,45,7,all-answers
+15079,831,RW-R22-short_circuits,"Short Circuits",judge,45,14,spread
+15080,831,RW-R22-short_circuits,"Short Circuits",judge,45,30,spread
+15086,832,RW-R22-silicon_valley_now_wary_of_iphone,"Silicon Valley Now Wary of iPhon",sentence,25,14,spread
+15087,832,RW-R22-silicon_valley_now_wary_of_iphone,"Silicon Valley Now Wary of iPhon",judge,25,21,spread
+15088,832,RW-R22-silicon_valley_now_wary_of_iphone,"Silicon Valley Now Wary of iPhon",judge,25,14,spread
+15089,833,RW-R22-six_mass_extinctions_in_440_milli,"Six Mass Extinctions in 440 Mill",sentence,53,7,all-answers
+15090,833,RW-R22-six_mass_extinctions_in_440_milli,"Six Mass Extinctions in 440 Mill",sentence,53,7,all-answers
+15091,833,RW-R22-six_mass_extinctions_in_440_milli,"Six Mass Extinctions in 440 Mill",sentence,53,9,spread
+15092,833,RW-R22-six_mass_extinctions_in_440_milli,"Six Mass Extinctions in 440 Mill",sentence,53,18,spread
+15093,833,RW-R22-six_mass_extinctions_in_440_milli,"Six Mass Extinctions in 440 Mill",judge,53,44,spread
+15094,833,RW-R22-six_mass_extinctions_in_440_milli,"Six Mass Extinctions in 440 Mill",judge,53,35,spread
+15095,834,RW-R22-small_wonders,"Small Wonders",sentence,42,9,spread
+15096,834,RW-R22-small_wonders,"Small Wonders",sentence,42,9,spread
+15097,834,RW-R22-small_wonders,"Small Wonders",sentence,42,21,spread
+15098,834,RW-R22-small_wonders,"Small Wonders",sentence,42,8,spread
+15099,834,RW-R22-small_wonders,"Small Wonders",sentence,42,42,spread
+15100,834,RW-R22-small_wonders,"Small Wonders",judge,42,42,spread
+15101,834,RW-R22-small_wonders,"Small Wonders",judge,42,38,spread
+15105,835,RW-R22-stargazing_across_time,"Stargazing Across Time",sentence,52,44,spread
+15106,835,RW-R22-stargazing_across_time,"Stargazing Across Time",judge,52,48,spread
+15107,835,RW-R22-stargazing_across_time,"Stargazing Across Time",judge,52,44,spread
+15109,836,RW-R22-the_baseball_bat_s_sweet_spot,"The Baseball Bat's ""Sweet Spot""",sentence,19,13,spread
+15110,836,RW-R22-the_baseball_bat_s_sweet_spot,"The Baseball Bat's ""Sweet Spot""",sentence,19,15,spread
+15112,836,RW-R22-the_baseball_bat_s_sweet_spot,"The Baseball Bat's ""Sweet Spot""",sentence,19,13,spread
+15113,836,RW-R22-the_baseball_bat_s_sweet_spot,"The Baseball Bat's ""Sweet Spot""",judge,19,19,spread
+15114,836,RW-R22-the_baseball_bat_s_sweet_spot,"The Baseball Bat's ""Sweet Spot""",judge,19,13,spread
+15115,837,RW-R22-the_meteor,"The Meteor",sentence,28,7,all-answers
+15116,837,RW-R22-the_meteor,"The Meteor",sentence,28,7,all-answers
+15119,837,RW-R22-the_meteor,"The Meteor",sentence,28,9,spread
+15120,837,RW-R22-the_meteor,"The Meteor",judge,28,28,spread
+15121,837,RW-R22-the_meteor,"The Meteor",judge,28,28,spread
+15126,838,RW-R22-the_silent_player_in_baseball_wea,"The Silent Player in Baseball: W",judge,19,13,spread
+15127,838,RW-R22-the_silent_player_in_baseball_wea,"The Silent Player in Baseball: W",judge,19,19,spread
+15128,838,RW-R22-the_silent_player_in_baseball_wea,"The Silent Player in Baseball: W",judge,19,19,spread
+14937,812,RW-R22-the_tang_and_song_dynasties_in_ch,"The Tang and Song Dynasties in C",sentence,43,7,all-answers
+14938,812,RW-R22-the_tang_and_song_dynasties_in_ch,"The Tang and Song Dynasties in C",sentence,43,8,spread
+14939,812,RW-R22-the_tang_and_song_dynasties_in_ch,"The Tang and Song Dynasties in C",sentence,43,9,spread
+14941,812,RW-R22-the_tang_and_song_dynasties_in_ch,"The Tang and Song Dynasties in C",sentence,43,17,spread
+14942,812,RW-R22-the_tang_and_song_dynasties_in_ch,"The Tang and Song Dynasties in C",judge,43,31,spread
+14943,812,RW-R22-the_tang_and_song_dynasties_in_ch,"The Tang and Song Dynasties in C",judge,43,31,spread
+14949,813,RW-R22-tuning_cells,"Tuning Cells",sentence,15,8,spread
+14950,813,RW-R22-tuning_cells,"Tuning Cells",judge,15,8,spread
+14951,813,RW-R22-tuning_cells,"Tuning Cells",judge,15,12,spread
+14955,814,RW-R22-unearthing_pterosaurs,"Unearthing Pterosaurs",sentence,57,19,spread
+14956,814,RW-R22-unearthing_pterosaurs,"Unearthing Pterosaurs",sentence,57,17,spread
+14957,814,RW-R22-unearthing_pterosaurs,"Unearthing Pterosaurs",judge,57,12,spread
+14958,814,RW-R22-unearthing_pterosaurs,"Unearthing Pterosaurs",judge,57,31,spread
+15130,839,RW-R23-changes_in_biodiversity,"Changes in Biodiversity",sentence,33,7,all-answers
+15132,839,RW-R23-changes_in_biodiversity,"Changes in Biodiversity",judge,33,10,spread
+15133,839,RW-R23-changes_in_biodiversity,"Changes in Biodiversity",judge,33,16,spread
+15134,839,RW-R23-changes_in_biodiversity,"Changes in Biodiversity",sentence,33,7,all-answers
+15136,840,RW-R23-expedition_to_a_modern_pompeii,"Expedition to a Modern Pompeii",sentence,49,8,spread
+15138,840,RW-R23-expedition_to_a_modern_pompeii,"Expedition to a Modern Pompeii",sentence,49,8,spread
+15140,840,RW-R23-expedition_to_a_modern_pompeii,"Expedition to a Modern Pompeii",sentence,49,7,all-answers
+15141,840,RW-R23-expedition_to_a_modern_pompeii,"Expedition to a Modern Pompeii",judge,49,31,spread
+15142,840,RW-R23-expedition_to_a_modern_pompeii,"Expedition to a Modern Pompeii",judge,49,49,spread
+15146,841,RW-R23-meet_the_ologist_eleanor_sterling,"Meet the Ologist: Eleanor Sterli",sentence,129,48,spread
+15148,841,RW-R23-meet_the_ologist_eleanor_sterling,"Meet the Ologist: Eleanor Sterli",judge,129,11,spread
+15149,841,RW-R23-meet_the_ologist_eleanor_sterling,"Meet the Ologist: Eleanor Sterli",judge,129,56,spread
+15153,842,RW-R23-predicting_the_next_pandemic,"Predicting the Next Pandemic",judge,27,8,spread
+15154,842,RW-R23-predicting_the_next_pandemic,"Predicting the Next Pandemic",judge,27,12,spread
+15160,843,RW-R23-startup_s_rocket_reaches_space_bu,"Startup's Rocket Reaches Space, ",judge,23,12,spread
+15161,843,RW-R23-startup_s_rocket_reaches_space_bu,"Startup's Rocket Reaches Space, ",judge,23,20,spread
+15168,844,RW-R23-the_stuff_of_legend,"The Stuff of Legend",judge,26,9,spread
+15169,844,RW-R23-the_stuff_of_legend,"The Stuff of Legend",judge,26,24,spread
