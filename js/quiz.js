@@ -210,8 +210,39 @@ export async function startQuiz(meta){
     if(S.left<=0){ clearInterval(S.tick); toast("انتهى الوقت — تسليم تلقائي"); finish(true); }
   }, 1000);
 
+  starsBefore();   // 🆕 b257 · صورةُ النجوم قبل المحاولة — انظر paintStars
   pushView();      // 🆕 b168 · الرجوعُ من النتيجة يبلغ الدرس — التعليلُ عند pushView في ui.js
   renderPage();
+}
+
+/* ═══════════ نجومُ الكتاب (b257 · 224 · `spec-reading-motivation.md` §٧) ═══════════
+   🔑 **«الجديد» فرقُ صورتين لا عمودٌ يُضاف:** تُقرأ نجومُ الطالب حين يبدأ الاختبار، ثمّ بعد التسليم — والقاعدةُ تكتبها في
+      معاملة التسليم نفسِها (مُطلِقُ `attempts`). فما زاد بينهما يطير إلى خانته، وما كان قبلُ يُرسم ساكناً.
+   ⚠️ **وتعذُّرُ الصورة الأولى لا يكذب:** بلا «قبل» لا لحظة — الخاناتُ تُرسم بما هي عليه، لا تطير نجومٌ قديمة كأنّها جديدة.
+   وللطالب في المكتبة وحده: المعلّمُ يحلّ الاختبارَ مؤلّفاً، ولا نجومَ له (224 ⑧). */
+const starsHere = () => isLibrary(S.subj) && (S.roleInfo?.role || S.prof?.role) === 'student' && !!S.lesson?.id;
+
+function starsBefore(){
+  S.starsBefore = null;
+  if(!starsHere()) return;
+  const quiz = S.quiz.id;
+  api.myStars(S.subj.id).then(({ data }) => { if(data && S.quiz?.id === quiz) S.starsBefore = { quiz, data }; }, () => {});
+  import('./star_fx.js').then(m => { m.loadCss(); m.preloadStarSounds(); }, () => {});
+}
+
+/* 🆕 b258 · والكتلةُ نفسُها في star_fx.js (`bookStars`) — يرسمها ختامُ الكتاب أيضاً */
+async function paintStars(){
+  const host = document.getElementById('bkStars');
+  if(!host) return;
+  const fx = await import('./star_fx.js').catch(() => null);
+  const quiz = S.quiz.id, lid = S.lesson.id;
+  const before = S.starsBefore?.quiz === quiz ? S.starsBefore.data : null;
+  const { data: after } = await api.myStars(S.subj.id).then(x => x, () => ({}));
+  if(!host.isConnected || !fx || !after?.rule){ host.remove(); return; }
+  /* كتابٌ بلا بطاقات لا نجمةَ كلماتٍ له (224 ⑦) — فلا تُرسم خانةٌ لا تُملأ أبداً */
+  const groups = ['read', 'quiz', 'cards'].filter(k => k !== 'cards' || Number(S.lesson.cards || 0) > 0);
+  await fx.bookStars(host, { after, groups, k1: after.lessons?.[lid] || {},
+                             k0: before ? (before.lessons?.[lid] || {}) : null });
 }
 
 function paintClock(){
@@ -1255,6 +1286,7 @@ function renderResult(){
       <div class="score-num">${AR(r.score)} / ${AR(r.total)}</div>
       <div class="score-of">الأسئلة المصحَّحة آلياً، زمن الحل ${mmss(r.secs)}</div>
       <div class="verdict">${verdict(r.pct)}</div>
+      ${lib && starsHere() ? '<div class="nj-box" id="bkStars" hidden></div>' : ''}
       ${r.lesson_done?`<div class="unlocked">${lib ? 'أتممت هذا الكتاب' : 'أتممت هذا الدرس'}</div>`:''}
       ${(r.unlocked||[]).length?`<div class="unlocked">فُتح لك الآن: ${esc(r.unlocked.join('، '))}</div>`:''}
     </div>
@@ -1269,6 +1301,7 @@ function renderResult(){
   };
   scrollTop();
   listenText(r);
+  paintStars();    // 🆕 b257 · بعد الرسم: النجومُ تطير إلى خاناتٍ قائمة، والمراجعةُ التشخيصيّة تحتها كما هي
 }
 
 /* 🆕 b220 · نصُّ الاستماع بعد التسليم (200 ② · مختبر الصوتيّات ٣) — خيارُ المعلّم في إعدادات الاختبار، والافتراضُ «لا يُكشف»

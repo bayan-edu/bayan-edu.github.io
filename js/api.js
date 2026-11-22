@@ -677,6 +677,10 @@ export const subjectDecks = sid => db.rpc('subject_decks', { p_subject: sid });
    نداءُ `deck_cards` الثاني الذي كان يُكمّلهما. */
 export const lessonCards  = lid => db.rpc('lesson_cards',  { p_lesson: lid });
 
+/* 🆕 b257 · نجومُ المكتبة (224): المجموعُ والكتبُ والكلماتُ المقروءة ونجومُ كلّ كتاب `{ lessons: { id: { read, quiz, cards } } }`.
+   والقاعدةُ تكتبها لحظةَ الواقعة — فما يُقرأ بعد التسليم يحمل نجومَه. */
+export const myStars = subjectId => db.rpc('my_stars', { p_subject: subjectId });
+
 /* 🆕 b238 · شرطُ الترقية بالنصاب (205) — لكلّ مادّةٍ تدرّجُها بالمستوى (المكتبةُ وIELTS).
    للمصمّم: الشرطُ وكتبُ المقرَّر في رفوفها وتنبيهاتُ الحارس، وكتابتُه (`p_note` سببُ التعديل في السجلّ — به تُقارَن النتائج).
    وللطالب: ما أنجز وما بقي، والمنارة — والحكمُ في القاعدة (`promote_level` تعيد الحساب قبل أن تكتب). */

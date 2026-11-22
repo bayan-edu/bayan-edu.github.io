@@ -1,0 +1,71 @@
+/* ══════════════════════════════════════════════════════════
+   بيان — star_fx.css · لحظةُ النجوم وخاناتُها (b257 · `spec-reading-motivation.md` §٧)
+   يُحمَّل مع اللحظة لا مع المنصّة (`loadCss` في star_fx.js) — حجّةُ book.css بعينها.
+
+   🔑 **لا لونَ عائلةٍ هنا:** النجومُ «إنجاز» لا حكمٌ على إجابة، فإطارُها محايد (`--fill-soft` · `--line` · `--text`).
+      والذهبُ في جسم النجمة وحده — استثناءُ المالك (رأس star_fx.js) — مرسومٌ في الـSVG لا هنا.
+   ══════════════════════════════════════════════════════════ */
+
+/* ── المسرح: فوق كلّ شيء، لا يلتقط نقرة ── */
+.sfx-stage{position:fixed;inset:0;z-index:2000;pointer-events:none;overflow:hidden}
+/* تعتيمٌ خفيف (قرارُ المالك: «التعتيم بدرجة بسيطة لا مانع منه») — يفصل النجمة عن كتابة الصفحة ويزول عند الوصول */
+.sfx-veil{position:absolute;inset:0;background:rgba(12,10,8,.30);opacity:0;transition:opacity .28s ease}
+:root[data-theme="dark"] .sfx-veil{background:rgba(0,0,0,.42)}
+.sfx-stage.on .sfx-veil{opacity:1}
+.sfx-cv{position:absolute;inset:0;width:100%;height:100%}
+.sfx-fly{position:absolute;left:0;top:0;opacity:0;will-change:transform,opacity;
+  filter:drop-shadow(0 0 14px rgba(246,223,152,.55)) drop-shadow(0 3px 6px rgba(60,35,10,.35))}
+.sfx-fly .sfx-star{width:100%;height:100%;display:block}
+
+/* ── نجومُ الكتاب (`bookStars` · star_fx.js) ──
+   🔴 **البادئةُ `nj-` لا `bk-`:** `.bk-s` جملةُ الكتاب المقروءة في book.css (و`.bk-s.on` ظلُّها)، و`.bk-top` سطرُ الأجزاء في library.css —
+      والنمطُ هنا يبقى في الصفحة بعد أوّل لحظة، فقاعدةٌ بالاسم نفسِه كانت تجعل كلَّ جملةٍ في كلّ كتابٍ يُفتح بعدها مربّعاً بـ30px.
+      وُجد قبل الرفع (b258) بالبحث عن الأسماء. و`st-` أيضاً مأخوذة (حالاتُ بطاقة المادّة في screens.css). */
+.nj-box{margin:16px auto 0;max-width:420px;background:var(--fill-soft);border:1px solid var(--line);
+  border-radius:var(--r);padding:12px 14px 10px;color:var(--text)}
+.nj-top{display:flex;align-items:center;gap:8px;justify-content:space-between}
+.nj-tl{font-size:var(--fs-meta);color:var(--text-muted)}
+.nj-total{display:inline-flex;align-items:center;gap:6px;font-family:'Almarai';font-weight:800;font-size:1.15rem}
+.nj-total .sfx-star{width:22px;height:22px}
+.nj-total b{display:inline-block;min-width:1.4em;text-align:center;transition:transform .18s ease}
+.nj-total b.bump{transform:scale(1.35)}
+.nj-plus{font-size:var(--fs-meta);color:var(--text-muted);opacity:0;transition:opacity .3s ease}
+.nj-plus.on{opacity:1}
+.nj-mute{margin-inline-start:auto;width:32px;height:32px;display:grid;place-items:center;border-radius:10px;
+  background:none;border:1px solid transparent;color:var(--text-muted);cursor:pointer}
+.nj-mute:hover,.nj-mute:focus-visible{border-color:var(--line);color:var(--text)}
+.nj-mute svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+.nj-groups{display:flex;justify-content:center;gap:18px;flex-wrap:wrap;margin-top:10px}
+.nj-g{display:flex;flex-direction:column;align-items:center;gap:4px}
+.nj-row{display:flex;gap:4px}
+.nj-g span{font-size:var(--fs-tag);color:var(--text-muted)}
+.nj-s{width:30px;height:30px;display:block}
+.nj-s .sfx-star{width:100%;height:100%;display:block;transition:filter .3s ease,opacity .3s ease,transform .3s ease}
+/* الخانةُ الفارغة: النجمةُ نفسُها رماديّةً خافتة — شكلٌ يُنتظر لا لونٌ يُحكم به */
+.nj-s:not(.on) .sfx-star{filter:grayscale(1);opacity:.22}
+.nj-s.on .sfx-star{filter:none;opacity:1}
+.nj-s.pop .sfx-star{transform:scale(1.25)}
+.nj-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* سطرٌ واحد في صفحة ختام الكتاب (b258): خانةُ القراءة أوّلاً ثمّ المجموع — صفحةُ الكتاب قصيرةٌ في نافذةٍ ‎574px */
+/* 📐 قِيس: بسطرين (الكتمُ ملفوفٌ تحت المجموع) فاضت صفحةُ الختام في ‎574px — قُصّت نقاطُ الزينة أعلاها وزرُّ «قراءة من البداية» أسفلها.
+      ⇒ سطرٌ واحد: اسمُ «مجموع نجومك» يسقط من العين ويبقى للقارئ الآليّ (`aria-label` على الرقم) — النجمةُ بجوار الرقم تقوله. */
+.nj-box.sm{margin:0;width:100%;max-width:340px;padding:4px 10px;display:flex;align-items:center;gap:10px}
+.nj-box.sm .nj-top{flex:1;min-width:0;flex-wrap:nowrap;justify-content:flex-start}
+.nj-box.sm .nj-tl{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.nj-box.sm .nj-groups{margin:0;order:-1}
+.nj-box.sm .nj-g{flex-direction:row;gap:6px}
+.nj-box.sm .nj-s{width:26px;height:26px}
+.nj-box.sm .nj-mute{margin-inline-start:auto;width:28px;height:28px}
+/* 📐 وقِيس بعده: ‎414 من ‎407 — ما زال يفيض ٧px. ⇒ سطرُ النجوم يقوم مقامَ نقاط الزينة الثلاث فوق العنوان (book.css · `.bk-end-orn`)
+      حين يظهر: زينةٌ بزينة، ولا يصغر شيءٌ يقرؤه الطالب. */
+.bk-end-in:has(.nj-box.sm:not([hidden])) .bk-end-orn{display:none}
+
+@media (max-width:420px){
+  .nj-s{width:26px;height:26px}
+  .nj-groups{gap:12px}
+}
+@media (prefers-reduced-motion:reduce){
+  .nj-s .sfx-star,.nj-total b{transition:none}
+}

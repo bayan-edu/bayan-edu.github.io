@@ -1654,6 +1654,40 @@ async function textBook(i, l, back){
      زرٌّ يَعِد بما لا يكون (متصفّحٌ قديم أو صفحةٌ بلا HTTPS). */
   const raOn = !!raRes?.data?.enabled && canRecord();
 
+  /* 🆕 b258 · نجمةُ القراءة (224 · `spec-reading-motivation.md` §٧) — في ختام الكتاب كلِّه لا ختامِ جزءٍ قبله: القاعدةُ لا تمنحها
+     قبل أن تُتمّ الأجزاءُ كلُّها، وخانةٌ فارغةٌ في ختام كلّ جزءٍ تَعِد بما لم يأتِ أوانُه.
+     🔑 **الجديدُ فرقُ صورتين** كما في نتيجة الاختبار (`bookStars` · star_fx.js): صورةٌ عند الفتح، وأخرى بعد تسجيل الإتمام.
+     🔑 **وصفحةُ الختام تُبنى من جديد** مع كلّ تقليبٍ وتغييرِ حجم (`fill` في book.js) ⇒ الموضعُ يولد فارغاً كلَّ مرّة، ويُرسم ساكناً
+        بآخر حالٍ معروف (`starNow`) — ولا يطير إلا مرّةً لحظةَ الإتمام. */
+  const starsOn = lib && !!l && !next && (S.roleInfo?.role || S.prof?.role) === 'student';
+  const starsBefore = starsOn ? api.myStars(S.subj.id).then(r => r.data || null, () => null) : Promise.resolve(null);
+  let starNow = null, fx = null;
+  const starFx = async () => fx || (fx = await import('./star_fx.js').catch(() => null));
+  if(starsOn) starFx().then(m => m?.preloadStarSounds());     // الصوتُ جاهزٌ قبل الختام — كما يُحمَّل عند بدء الاختبار
+  const paintStill = async el => {
+    el.dataset.painted = '1';
+    const [m, now] = [await starFx(), starNow || await starsBefore];
+    /* ⚠️ واللحظةُ إن سبقته إلى الموضع نفسِه لا يمحوها: رسمٌ ساكنٌ فوقها يفصل خاناتِها عن نجومٍ في منتصف الطيران */
+    if(m && now && !el.dataset.live) m.bookStars(el, { after: now, k1: now.lessons?.[l.id] || {}, groups: ['read'], small: true });
+  };
+  if(starsOn) new MutationObserver(() => {
+    if(!host.isConnected) return;
+    host.querySelectorAll('[data-stars]:not([data-painted])').forEach(paintStill);
+  }).observe(host, { childList: true, subtree: true });
+  /* بعد الإتمام: صورةٌ ثانية، والقراءةُ إن صارت جديدةً تطير إلى خانتها في الختام الظاهر. يعود بعدد النجوم الجديدة */
+  const readStar = async () => {
+    if(!starsOn) return 0;
+    const [m, before, after] = [await starFx(), await starsBefore,
+                                await api.myStars(S.subj.id).then(r => r.data || null, () => null)];
+    if(!m || !after) return 0;
+    const k0 = before ? (before.lessons?.[l.id] || {}) : null;
+    starNow = after;
+    const el = host.querySelector('[data-stars]');
+    if(!el) return 0;
+    el.dataset.painted = el.dataset.live = '1';
+    return m.bookStars(el, { after, k0, k1: after.lessons?.[l.id] || {}, groups: ['read'], small: true });
+  };
+
   /* 🆕 b189 · المظهرُ والختامُ من `bookLook` و`bookEnd` أدناه — ومعاينةُ المحرّر تقرأ منهما،
      وما هنا سلوكُ الطالب وحده: الموضعُ والتسجيلُ والاختبارُ والإتمام. */
   const ctl = await createBook(host, {
@@ -1662,7 +1696,7 @@ async function textBook(i, l, back){
     slot: raOn,
     title, subtitle: data.description, body: data.body, lang: data.lang || i.lang,
     storeKey: 'bayan.book.' + i.id,
-    endHtml: () => bookEnd(g, !!quiz, lib, !!next),
+    endHtml: () => bookEnd(g, !!quiz, lib, !!next, starsOn),
     onAction: (act, book) => {
       if(act === 'next' && next) return openText(next);
       if(act === 'quiz' && quiz) return openItem(quiz);
@@ -1672,12 +1706,14 @@ async function textBook(i, l, back){
     onResume: () => toast("فُتح الكتاب على صفحتك الأخيرة"),
     /* 🆕 b237 · وزمنُ القراءة يُرسل مع الإتمام — **وفي كلّ ختامٍ لا في الأوّل وحده:** `track_item` تجمعه، ومن أعاد القراءةَ
        قرأ فعلاً (`onEnd` لا يُنادى لمسحٍ أسرعَ من القراءة · book.js). والإعادةُ صامتة: لا «سُجّلت» ثانيةً لما سُجّل. */
+    /* 🆕 b258 · وبعد التسجيل نجمةُ القراءة (`readStar` أعلاه) — **والإعادةُ أيضاً:** القاعدةُ تجمع زمنَ القراءات، فقد تبلغ النجمةُ
+       حدَّها في القراءة الثانية (224 ⑤). وإن طارت نجمةٌ سقط «سُجّلت قراءتك»: اللحظةُ تقوله. */
     onEnd: async ({ seconds } = {}) => {
-      if(i.status === 'completed'){ api.markItemCompleted(i.id, seconds).then(() => {}, () => {}); return; }
+      if(i.status === 'completed'){ api.markItemCompleted(i.id, seconds).then(() => readStar(), () => {}); return; }
       const { error: e } = await api.markItemCompleted(i.id, seconds);
       if(e){ toast("لم تُسجَّل قراءتك — ربما تكون المشكلة في الاتصال"); return; }
       i.status = 'completed';
-      toast("سُجّلت قراءتك ✔");
+      if(!(await readStar())) toast("سُجّلت قراءتك ✔");
     }
   });
 
@@ -1747,9 +1783,12 @@ export function bookLook({ cards, g, subject, lesson: l, title, quranRefs = null
       المذكّرُ والمؤنّث كما أرادها المالك، والمحايدةُ «اختبار الفهم» لمن لم يُسأل عن صيغته ولمعاينة المحرّر (`g = null`). */
 /* 🆕 b256 · **وختامُ جزءٍ ليس آخرَ كتابه** (`next` · المكتبة وحدها): زرُّه «الجزء التالي» لا الاختبار — أسئلةُ الفهم على
       الكتاب كلّه، ومن اختُبر بعد نصفه قيس على ما لم يقرأ. والاسترجاعُ باقٍ: «فكرة النص» تصدق على الجزء كما تصدق على الكتاب. */
-export const bookEnd = (g, quiz, lib = false, next = false) => `
+/* 🆕 b258 · **ونجمةُ القراءة في ختام الكتاب** (`stars` · المكتبة وللطالب وحده · `spec-reading-motivation.md` §٧): موضعٌ فارغٌ يرسمه
+      `textBook` — ساكناً بما هو عليه، وطائراً حين تكتب القاعدةُ نجمةً جديدة. ومعاينةُ المحرّر لا تمرّره: لا نجومَ للمؤلّف. */
+export const bookEnd = (g, quiz, lib = false, next = false, stars = false) => `
       <div class="bk-end-orn" aria-hidden="true"><i></i><i></i><i></i></div>
       <div class="bk-end-t">نهاية النص</div>
+      ${stars ? '<div class="nj-box sm" data-stars hidden></div>' : ''}
       <div class="bk-ask"><b>${quiz && !next ? 'قبل الاختبار' : 'استرجاع'}</b><span>${G(g,
         'أغلق الكتاب، وقل فكرة النص في جملة واحدة، ثم افتحه وقارن.',
         'أغلقي الكتاب، وقولي فكرة النص في جملة واحدة، ثم افتحيه وقارني.',

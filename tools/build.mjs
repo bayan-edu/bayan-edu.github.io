@@ -54,9 +54,13 @@ const PUBLISH = [
   'favicon.ico', 'favicon.svg', 'apple-touch-icon.png', 'icon-192.png',
   'js', 'css', 'img', 'sims', 'vendor',
   'brand/svg', 'brand/png',
+  'sfx',                               // 🆕 b257 · صوتا لحظة النجوم (star_fx.js)
 ];
 const SKIP_DIRS = new Set(['_raw']);   // img/kind/_raw: الأصلُ الذهبيّ للمولِّد لا للموقع
 const SKIP_EXTS = new Set(['.md']);    // vendor/README.md: وثيقةٌ لا مورد
+/* 🆕 b257 · وفي sfx/ يُنشر mp3 وحده: wav وogg أصولُ المالك (٦٦٠ ك.ب) لا يطلبها الموقع.
+   قِيس يومها: لا wav ولا ogg في غيره مما يُنشر — فالقاعدةُ هنا لا في SKIP_EXTS العامّة. */
+const SKIP_IN  = { sfx: new Set(['.wav', '.ogg']) };
 
 const rel = abs => relative(ROOT, abs).split(sep).join('/');
 
@@ -72,6 +76,7 @@ async function* walk(abs){
   for (const e of await readdir(abs, { withFileTypes: true })) {
     if (e.isDirectory() && SKIP_DIRS.has(e.name)) continue;
     if (e.isFile() && SKIP_EXTS.has(extname(e.name))) continue;
+    if (e.isFile() && SKIP_IN[rel(abs).split('/')[0]]?.has(extname(e.name))) continue;
     if (e.isDirectory() || e.isFile()) yield* walk(join(abs, e.name));
   }
 }
@@ -117,7 +122,7 @@ function refsOf(r, text){
     for (const m of text.matchAll(/(?:\bfrom|\bimport)\s*\(?\s*["'](\.{1,2}\/[^"']+)["']/g)) add(m[1], here);
     /* … والمسارُ النصّيّ (img/… · vendor/… · sims/…) من موضع الصفحة:
        يُكتب في src أو يُمرَّر إلى fetch، فيُحلّ على index.html لا على الوحدة. */
-    for (const m of text.matchAll(/["'`]((?:\.?\/)?(?:(?:img|vendor|sims|css|js|brand)\/[^"'`$\s?#]+|privacy\.html))["'`?#]/g))
+    for (const m of text.matchAll(/["'`]((?:\.?\/)?(?:(?:img|vendor|sims|css|js|brand|sfx)\/[^"'`$\s?#]+|privacy\.html))["'`?#]/g))
       if (ASSET.test(m[1])) add(m[1], '.', true);
   }
   return out;
