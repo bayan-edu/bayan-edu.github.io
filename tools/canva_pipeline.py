@@ -1,4 +1,5 @@
 import json, urllib.request, urllib.parse, time, sys, os, re
+sys.stdout.reconfigure(line_buffering=True)
 sys.path.append('tools')
 from process_and_upload import process_and_upload_cover
 from db_helper import query
@@ -34,16 +35,25 @@ def refresh_access_token():
         'Content-Type': 'application/x-www-form-urlencoded',
         'User-Agent': 'Mozilla/5.0'
     })
-    with urllib.request.urlopen(req, timeout=15) as resp:
-        new_toks = json.loads(resp.read().decode('utf-8'))
-        tokens.update(new_toks)
-        tokens['expires_at'] = int((time.time() + new_toks['expires_in']) * 1000)
-        with open(TOK_FILE, 'w') as f:
-            json.dump(tokens, f, indent=2)
-        print(f"[{time.strftime('%H:%M:%S')}] Proactively refreshed Canva OAuth token.")
+    for attempt in range(5):
+        try:
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                new_toks = json.loads(resp.read().decode('utf-8'))
+                tokens.update(new_toks)
+                tokens['expires_at'] = int((time.time() + new_toks['expires_in']) * 1000)
+                with open(TOK_FILE, 'w') as f:
+                    json.dump(tokens, f, indent=2)
+                print(f"[{time.strftime('%H:%M:%S')}] Proactively refreshed Canva OAuth token.")
+                return
+        except Exception as e:
+            if attempt < 4:
+                print(f"[{time.strftime('%H:%M:%S')}] Token refresh network error: {e}. Retrying in 5s...", file=sys.stderr)
+                time.sleep(5)
+            else:
+                raise
 
 def call_mcp(name, args):
-    for attempt in range(3):
+    for attempt in range(6):
         tok = get_token()
         payload = {
             'jsonrpc': '2.0',
@@ -77,14 +87,20 @@ def call_mcp(name, args):
                 return struct
         except urllib.error.HTTPError as e:
             if e.code == 401:
-                print(f"[{time.strftime('%H:%M:%S')}] Got 401, refreshing token...")
+                print(f"[{time.strftime('%H:%M:%S')}] Got 401, refreshing token...", flush=True)
                 refresh_access_token()
                 continue
-            if e.code in (502, 503, 504) and attempt < 2:
-                time.sleep(2)
+            if e.code in (502, 503, 504) and attempt < 5:
+                time.sleep(4)
                 continue
             err_body = e.read().decode('utf-8', errors='ignore')
             raise RuntimeError(f"HTTPError {e.code}: {err_body}")
+        except (urllib.error.URLError, TimeoutError, OSError) as e:
+            if attempt < 5:
+                print(f"[{time.strftime('%H:%M:%S')}] Network error ({e}). Retrying in 5s (attempt {attempt+1}/6)...", flush=True)
+                time.sleep(5)
+                continue
+            raise
 
 def slugify(title):
     s = re.sub(r'[^a-zA-Z0-9]+', '_', title.lower()).strip('_')
@@ -95,7 +111,7 @@ def create_and_produce_cover(lesson_id, brief, user_intent=None):
         user_intent = f"Generate book cover for lesson {lesson_id}"
         
     create_res = None
-    for attempt in range(12):
+    for attempt in range(20):
         print(f"[{time.strftime('%H:%M:%S')}] Requesting Canva design for Book {lesson_id} (attempt {attempt+1})...")
         create_res = call_mcp('create-design', {
             'brief': brief,
@@ -107,7 +123,7 @@ def create_and_produce_cover(lesson_id, brief, user_intent=None):
         if create_res.get('status') == 'failed':
             fail = create_res.get('failure', {})
             code = fail.get('code')
-            if code == 'quota_cooldown' and attempt < 11:
+            if code == 'quota_cooldown' and attempt < 19:
                 print(f"[{time.strftime('%H:%M:%S')}] Canva cooldown active. Sleeping 25s before retry...")
                 time.sleep(25)
                 continue

@@ -517,7 +517,13 @@ export async function paintBirthAsk(subj, hooks = {}){
    📌 والقراءةُ والأسئلةُ يفتحهما student.js (`hooks.read` · `hooks.quiz`): المحرّكان هناك، وهذه الشاشةُ لا
       تعرف إلا أنّ لهما باباً. والعودةُ من الكتاب إلى هذه البطاقة لا إلى صفحة الدرس (`openText` هناك). */
 
-const textOf = l => (l.items || []).find(i => i.kind === 'text');
+/* 🆕 b256 · **والكتابُ أجزاءٌ أحياناً** («… (Part 1/2)» · «(Part 2/2)»): نصٌّ طويلٌ يُقسَم مصادرَ نصٍّ في درسه، بترتيب
+      `position`. وكان `textOf` يأخذ أوّلَها وحده ⇒ **الجزءُ الثاني لا يُبلغ من المكتبة أصلاً** (٢٧ كتاباً في المادّة ٧ · ٢٢ نوفمبر).
+   ⇒ `textsOf` الأجزاءُ كلُّها، و`textOf` **الجزءُ الذي عليه الدور**: أوّلُ ما لم يُتمّ، فإن تمّت كلُّها فالأوّل (إعادة القراءة).
+      والقراءةُ «تمّت» بتمام الأجزاء كلّها، و«بدأتها» بحالٍ لأيّها. والجزءُ التالي يُفتح من ختام سابقه أيضاً (`textBook` · student.js). */
+export const textsOf = l => (l?.items || []).filter(i => i.kind === 'text')
+  .sort((a, b) => (a.position ?? 0) - (b.position ?? 0) || (Number(a.id) || 0) - (Number(b.id) || 0));
+const textOf = l => { const t = textsOf(l); return t.find(i => i.status !== 'completed') || t[0]; };
 const quizOf = l => (l.items || []).find(i => i.kind === 'quiz' && i.quiz_id);
 
 /**
@@ -532,8 +538,12 @@ export async function openBook(subj, l, hooks){
   head('', '');
 
   const st = stateOf(l), say = SAY[st](l);
-  const text = textOf(l), quiz = quizOf(l);
-  const read = text?.status === 'completed';
+  const parts = textsOf(l), quiz = quizOf(l);
+  const text = textOf(l), first = parts[0];
+  const read = parts.length > 0 && parts.every(i => i.status === 'completed');
+  const begun = parts.some(i => i.status);
+  /* موضعُ الطالب في كتابٍ أجزاء: «الجزء ٢ من ٣» — والكتابُ بجزءٍ واحدٍ كما كان */
+  const where = parts.length > 1 && begun && !read ? `الجزء ${AR(parts.indexOf(text) + 1)} من ${AR(parts.length)}` : '';
   const words = Number(l.cards || 0);
 
   /* الخطوات — ما ليس للكتاب لا يُعرض (كتابٌ بلا كلماتٍ يبدأ بالقراءة).
@@ -541,7 +551,7 @@ export async function openBook(subj, l, hooks){
         والحكمُ وسمُ «أُنجز» على الغلاف، بنتيجته. */
   const steps = [
     words ? { name: 'كلمات قبل القراءة', meta: N(words, 'كلمة', 'كلمتان', 'كلمات', 'كلمة') } : null,
-    text  ? { name: 'القراءة', meta: read ? 'تمّت' : text.status ? 'بدأتها' : '', done: read } : null,
+    text  ? { name: 'القراءة', meta: read ? 'تمّت' : where || (begun ? 'بدأتها' : ''), done: read } : null,
     quiz  ? { name: 'أسئلة الفهم', done: !!l.done,
               meta: l.best != null ? `أفضل نتيجة ${AR(Math.round(l.best))}٪` : `المطلوب ${AR(l.pass_mark ?? 80)}٪` } : null,
   ].filter(Boolean);
@@ -550,7 +560,7 @@ export async function openBook(subj, l, hooks){
   let main;
   if(l.done)              main = text ? ['read', 'إعادة القراءة'] : ['quiz', 'إعادة الاختبار'];
   else if(read && quiz)   main = ['quiz', 'أسئلة الفهم'];
-  else if(text?.status)   main = ['read', 'متابعة القراءة'];
+  else if(begun)          main = ['read', 'متابعة القراءة'];
   else if(text || quiz)   main = [words ? 'words' : text ? 'read' : 'quiz', 'البدء'];
   const more = [];
   if(main && words && main[0] !== 'words') more.push(['words', 'الكلمات']);
@@ -594,7 +604,8 @@ export async function openBook(subj, l, hooks){
   root.querySelectorAll('[data-act]').forEach(b => b.onclick = () => {
     const a = b.dataset.act;
     if(a === 'words') return openWords(subj, l, hooks);
-    if(a === 'read' && text) return hooks.read(l, text);
+    /* «إعادة القراءة» من أوّل الكتاب، وما سواها من الجزء الذي عليه الدور */
+    if(a === 'read' && text) return hooks.read(l, l.done || read ? first : text);
     if(a === 'quiz' && quiz) return hooks.quiz(l, quiz);
   });
   /* الزرُّ الأوّل يُركَّز: لوحةُ المفاتيح تصل البطاقةَ من رفٍّ بـEnter، فتجد خطوتَها التالية تحت Enter ثانيةً */

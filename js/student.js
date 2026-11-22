@@ -1632,6 +1632,12 @@ async function textBook(i, l, back){
   const title = data.title || i.title;
   const quiz  = (l?.items || []).find(x => x.kind === 'quiz' && x.quiz_id);
   const g     = S.prof?.gram_gender;
+  /* 🆕 b256 · كتابُ المكتبة أجزاءٌ أحياناً (`textsOf` · library.js) ⇒ ختامُ الجزء يفتح ما بعده. وفي الدرس العاديّ مصادرُ
+     النصّ مستقلّةٌ يختارها الطالبُ من صفحة الدرس، فلا «تالي» لها. */
+  const lib   = isLibrary(S.subj);
+  const parts = lib && l ? (await import('./library.js')).textsOf(l) : [];
+  const at    = parts.findIndex(x => String(x.id) === String(i.id));
+  const next  = at >= 0 ? parts[at + 1] || null : null;
   /* القراءةُ الجهريّة تظهر حيث تطلبها القاعدة **ويقدر عليها المتصفّح** — فلا
      زرٌّ يَعِد بما لا يكون (متصفّحٌ قديم أو صفحةٌ بلا HTTPS). */
   const raOn = !!raRes?.data?.enabled && canRecord();
@@ -1644,8 +1650,9 @@ async function textBook(i, l, back){
     slot: raOn,
     title, subtitle: data.description, body: data.body, lang: data.lang || i.lang,
     storeKey: 'bayan.book.' + i.id,
-    endHtml: () => bookEnd(g, !!quiz, isLibrary(S.subj)),
+    endHtml: () => bookEnd(g, !!quiz, lib, !!next),
     onAction: (act, book) => {
+      if(act === 'next' && next) return openText(next);
       if(act === 'quiz' && quiz) return openItem(quiz);
       if(act === 'again') return book.restart();
       if(act === 'back') return back();
@@ -1726,18 +1733,21 @@ export function bookLook({ cards, g, subject, lesson: l, title, quranRefs = null
    🆕 b250 · **وفي المكتبة زرُّها «اختبر فهمك» لا «الاختبار»** (قرارُ المالك · ١٨ نوفمبر): اختبارُ الكتاب أسئلةُ فهمٍ لنصّه وحده،
       و«الاختبار» في درسٍ عاديّ يقيس الدرسَ كلَّه — فبقي له. ⚠️ والعبارةُ أمرٌ مخاطَب فتمرّ بـ`G()` بثلاث صيغ (الهويّةُ اللغويّة §٤):
       المذكّرُ والمؤنّث كما أرادها المالك، والمحايدةُ «اختبار الفهم» لمن لم يُسأل عن صيغته ولمعاينة المحرّر (`g = null`). */
-export const bookEnd = (g, quiz, lib = false) => `
+/* 🆕 b256 · **وختامُ جزءٍ ليس آخرَ كتابه** (`next` · المكتبة وحدها): زرُّه «الجزء التالي» لا الاختبار — أسئلةُ الفهم على
+      الكتاب كلّه، ومن اختُبر بعد نصفه قيس على ما لم يقرأ. والاسترجاعُ باقٍ: «فكرة النص» تصدق على الجزء كما تصدق على الكتاب. */
+export const bookEnd = (g, quiz, lib = false, next = false) => `
       <div class="bk-end-orn" aria-hidden="true"><i></i><i></i><i></i></div>
       <div class="bk-end-t">نهاية النص</div>
-      <div class="bk-ask"><b>${quiz ? 'قبل الاختبار' : 'استرجاع'}</b><span>${G(g,
+      <div class="bk-ask"><b>${quiz && !next ? 'قبل الاختبار' : 'استرجاع'}</b><span>${G(g,
         'أغلق الكتاب، وقل فكرة النص في جملة واحدة، ثم افتحه وقارن.',
         'أغلقي الكتاب، وقولي فكرة النص في جملة واحدة، ثم افتحيه وقارني.',
         'تُقال فكرة النص في جملة واحدة والكتاب مغلق، ثم يُفتح للمقارنة.')}</span></div>
       <div class="bk-end-btns">
-        ${quiz ? `<button type="button" class="btn primary" data-act="quiz">${
+        ${next ? '<button type="button" class="btn primary" data-act="next">الجزء التالي</button>'
+          : quiz ? `<button type="button" class="btn primary" data-act="quiz">${
           lib ? G(g, 'اختبر فهمك', 'اختبري فهمك', 'اختبار الفهم') : 'الاختبار'}</button>` : ''}
         <button type="button" class="btn ghost" data-act="again">قراءة من البداية</button>
-        ${quiz ? '' : `<button type="button" class="btn ghost" data-act="back">العودة إلى الدرس</button>`}
+        ${quiz || next ? '' : `<button type="button" class="btn ghost" data-act="back">العودة إلى الدرس</button>`}
       </div>`;
 
 /* ── نصوصُ القراءة الجهريّة (b164) ──

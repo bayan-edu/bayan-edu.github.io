@@ -14,7 +14,9 @@ def get_token():
         raise RuntimeError("No token found")
     return tok
 
-def query(sql):
+import time
+
+def query(sql, retries=5):
     tok = get_token()
     url = "https://api.supabase.com/v1/projects/tjzrfevymfpktfuormhs/database/query"
     req = urllib.request.Request(
@@ -25,14 +27,21 @@ def query(sql):
             "Content-Type": "application/json"
         }
     )
-    try:
-        with urllib.request.urlopen(req) as resp:
-            body = resp.read().decode("utf-8")
-            return json.loads(body)
-    except urllib.error.HTTPError as e:
-        err = e.read().decode("utf-8")
-        print(f"HTTPError {e.code}: {err}", file=sys.stderr)
-        raise
+    for attempt in range(1, retries + 1):
+        try:
+            with urllib.request.urlopen(req) as resp:
+                body = resp.read().decode("utf-8")
+                return json.loads(body)
+        except urllib.error.HTTPError as e:
+            err = e.read().decode("utf-8")
+            print(f"HTTPError {e.code}: {err}", file=sys.stderr)
+            raise
+        except Exception as e:
+            if attempt < retries:
+                print(f"Database query network error: {e}. Retrying in 5s (attempt {attempt}/{retries})...", file=sys.stderr)
+                time.sleep(5)
+            else:
+                raise
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
