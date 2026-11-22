@@ -153,6 +153,12 @@ export function openSession(subject, opts = {}){
 
   let queue = [], seen = [], counts = { 1:0, 2:0, 3:0 }, firstTimers = 0, total = 0;
 
+  /* 🆕 b261 · نجمةُ الكلمات (224 ⑦ · `spec-reading-motivation.md` §٧): صورةُ النجوم عند فتح الجلسة، وأخرى في ختامها — وما زاد بينهما
+     يطير (`wordStars` · star_fx.js). ولا يُعرف من المادّة هنا أهي مكتبة (`due_counts` بلا رمز) ⇒ `my_stars` تقول: مادّةٌ بلا نجومٍ
+     ترجع بلا قاعدة (`rule`) فلا يُرسم شيء. وتعذُّرُ الصورة الأولى ⇒ لا لحظة (لا تطير نجومٌ قديمة كأنّها جديدة). */
+  const starsBefore = api.myStars(subject.id).then(r => r.data?.rule ? r.data : null, () => null);
+  starsBefore.then(b => b && import('./star_fx.js').then(m => { m.loadCss(); m.preloadStarSounds(); }, () => {}));
+
   /* إعدادُ النظام قيمةٌ ابتدائية، والاختيار اليدويّ يعلوها ويُحفظ.
      وlocalStorage يرمي في التصفّح الخاص — فلولا try لسقطت الجلسة
      كلُّها لأجل قراءةٍ فاشلة (الدرس نفسه من toggleTheme). */
@@ -443,12 +449,23 @@ export function openSession(subject, opts = {}){
             </div>
             <div class="ed-m" style="justify-content:center;margin:14px 0">راجعت ${
               N(reviewed,'بطاقة','بطاقتين','بطاقات','بطاقة')}</div>
+            <div class="nj-box" id="njWords" hidden style="margin:0 auto 14px"></div>
             <button class="btn primary" id="back" style="width:100%">عودة</button>
             ${playable.length >= 4 ? `
               <button class="btn" id="play" style="width:100%;margin-top:8px"
                 >كلمة × معنى، ${N(playable.length,'بطاقة','بطاقتان','بطاقات','بطاقة')}</button>` : ''}
           </div>
         </div>`;
+
+      /* 🆕 b261 · نجمةُ الكلمات — بعد الرسم، فالختامُ لا ينتظرها؛ وما لم يكتمل من كتبٍ اليوم لا يُرسم له شيء */
+      (async () => {
+        const before = await starsBefore;
+        if(!before) return;
+        const [{ data: after }, fx] = await Promise.all([
+          api.myStars(subject.id).then(r => r, () => ({})), import('./star_fx.js').catch(() => null)]);
+        const host = document.getElementById('njWords');
+        if(fx && host && after) fx.wordStars(host, { before, after });
+      })();
 
       const pb = document.getElementById('play');
       if(pb) pb.onclick = () => openMatchGame({

@@ -302,6 +302,32 @@ export async function bookStars(host, { after, k0 = null, k1 = {}, groups, small
   const gain = fresh.reduce((s, k) => s + (rule[k] || 0), 0);
   let total = Number(after.total || 0) - gain;
 
+  return paintBox(host, { small, num, en, total, gain,
+    rows: gs.map(k => ({ k, n: rule[k], on: !!was[k], name: (en ? GROUP_EN : GROUP_NAME)[k] })),
+    fresh: k => fresh.includes(k) });
+}
+
+/* 🆕 b261 · **نجمةُ الكلمات في ختام جلسة المراجعة** («تذكّرها» · flashcards.js) — آخرُ لحظات المرحلة ② (`spec-reading-motivation.md` §٧).
+   🔑 **والجلسةُ تمسّ كتباً عدّة:** بطاقاتُ «تذكّرها» من كتبٍ شتّى، فقد تكتمل نجمةُ كلماتِ كتابين في جلسةٍ واحدة ⇒ خانةٌ لكلّ كتابٍ اكتملت
+      كلماتُه الآن (الفرقُ بين صورتَي `my_stars` قبل الجلسة وبعدها) — لا خاناتُ كتابٍ بعينه.
+   📌 **وبالعربيّة دائماً:** «تذكّرها» قسمٌ في المنصّة لا في المكتبة، وإطارُ المنصّة عربيٌّ بقرار المالك — ولو كانت الكلماتُ إنجليزيّة.
+   تعود بعدد النجوم الجديدة (صفرٌ ⇒ لا شيءَ يُرسم). */
+export async function wordStars(host, { before, after } = {}){
+  const per = Number(after?.rule?.cards || 0);
+  if(!host || !before || !per) return 0;
+  const fresh = Object.entries(after.lessons || {}).filter(([id, k]) => k.cards && !before.lessons?.[id]?.cards);
+  if(!fresh.length) return 0;
+  await loadCss();
+  if(!host.isConnected) return 0;
+  const gain = fresh.length * per;
+  return paintBox(host, { num: AR, en: false, total: Number(after.total || 0) - gain, gain,
+    rows: [{ k: 'cards', n: gain, on: false,
+             name: GROUP_NAME.cards + (fresh.length > 1 ? ' · ' + N(fresh.length, 'كتاب', 'كتابان', 'كتب', 'كتاباً') : '') }],
+    fresh: () => true });
+}
+
+/* الكتلةُ نفسُها لموضعيها — المجموعُ والكتمُ وخاناتُ الصفوف، ثمّ اللحظةُ إلى الخانات الجديدة (`fresh(k)`) */
+async function paintBox(host, { small = false, num, en, total, gain, rows, fresh }){
   host.classList.add('nj-box'); host.classList.toggle('sm', small);
   host.innerHTML = `
     <div class="nj-top">
@@ -311,9 +337,9 @@ export async function bookStars(host, { after, k0 = null, k1 = {}, groups, small
         num(1) === '1' ? `<bdi class="nj-plus" dir="ltr">+${num(gain)}</bdi>` : `<span class="nj-plus">+${num(gain)}</span>`}
       <button class="nj-mute" type="button"></button>
     </div>
-    <div class="nj-groups">${gs.map(k => `
-      <div class="nj-g"><div class="nj-row">${Array.from({ length: rule[k] }, () =>
-        `<i class="nj-s${was[k] ? ' on' : ''}" data-k="${k}">${starSVG()}</i>`).join('')}</div><span>${(en ? GROUP_EN : GROUP_NAME)[k]}</span></div>`).join('')}
+    <div class="nj-groups">${rows.map(r => `
+      <div class="nj-g"><div class="nj-row">${Array.from({ length: r.n }, () =>
+        `<i class="nj-s${r.on ? ' on' : ''}" data-k="${r.k}">${starSVG()}</i>`).join('')}</div><span>${r.name}</span></div>`).join('')}
     </div>
     <span class="nj-sr" aria-live="polite"></span>`;
   host.hidden = false;
@@ -331,7 +357,7 @@ export async function bookStars(host, { after, k0 = null, k1 = {}, groups, small
 
   if(!gain) return 0;
   const tot = host.querySelector('.nj-total b');
-  const targets = [...host.querySelectorAll('.nj-s')].filter(s => fresh.includes(s.dataset.k));
+  const targets = [...host.querySelectorAll('.nj-s')].filter(s => !s.classList.contains('on') && fresh(s.dataset.k));
   await starMoment({ targets, onLand: i => {
     const s = targets[i];
     s.classList.add('on', 'pop'); setTimeout(() => s.classList.remove('pop'), 260);

@@ -1686,6 +1686,17 @@ async function textBook(i, l, back){
     if(!host.isConnected) return;
     host.querySelectorAll('[data-stars]:not([data-painted])').forEach(paintStill);
   }).observe(host, { childList: true, subtree: true });
+  /* 🆕 b261 · **كلماتُ الكتاب تُضمّ إلى «تذكّرها» حين تُتمّ قراءتُه** — قرارُ المالك (٢٢ نوفمبر): «نعم لضمّ كلمات الكتاب تلقائياً عند
+     إتمام قراءته». وكان الضمُّ بفتح قائمة الكلمات وحده (`openWords` · library.js) أو بإضافةٍ من نافذة الكلمة — **فمن تخطّى الكلمات وقرأ
+     لم تدخل كلماتُ كتابه المراجعةَ أبداً، ولم تُفتح له نجمةُ الكلمات** (224 ⑦ · `spec-reading-motivation.md`).
+     🔑 **والإتمامُ هو الأخذ هنا كما الفتحُ هناك:** لقي الطالبُ الكلماتِ ملوّنةً في النصّ وقرأها فيه. وفي **آخر جزءٍ** وحده (`!next`):
+        الكتابُ كلُّه قُرئ — حدُّ نجمة القراءة نفسُه. وللطالب في المكتبة وحدها (`starsOn`)؛ والدرسُ العاديّ كما كان.
+     📌 وما هو في «تذكّرها» لا يُرسل ثانيةً (`mine` · `lesson_cards`)، والفشلُ صامت — والقراءةُ التالية تُعيده (تُنادى في الإعادة أيضاً). */
+  const takeWords = () => {
+    if(!starsOn) return;
+    const fresh = (cardsRes?.data || []).filter(c => !c.mine).map(c => c.id);
+    if(fresh.length) api.subscribeCards(fresh).then(() => {}, () => {});
+  };
   /* بعد الإتمام: صورةٌ ثانية، والقراءةُ إن صارت جديدةً تطير إلى خانتها في الختام الظاهر. يعود بعدد النجوم الجديدة */
   const readStar = async () => {
     if(!starsOn) return 0;
@@ -1722,10 +1733,11 @@ async function textBook(i, l, back){
     /* 🆕 b258 · وبعد التسجيل نجمةُ القراءة (`readStar` أعلاه) — **والإعادةُ أيضاً:** القاعدةُ تجمع زمنَ القراءات، فقد تبلغ النجمةُ
        حدَّها في القراءة الثانية (224 ⑤). وإن طارت نجمةٌ سقط «سُجّلت قراءتك»: اللحظةُ تقوله. */
     onEnd: async ({ seconds } = {}) => {
-      if(i.status === 'completed'){ api.markItemCompleted(i.id, seconds).then(() => readStar(), () => {}); return; }
+      if(i.status === 'completed'){ takeWords(); api.markItemCompleted(i.id, seconds).then(() => readStar(), () => {}); return; }
       const { error: e } = await api.markItemCompleted(i.id, seconds);
       if(e){ toast(en ? 'Your reading was not saved — the connection may be the problem' : "لم تُسجَّل قراءتك — ربما تكون المشكلة في الاتصال"); return; }
       i.status = 'completed';
+      takeWords();
       if(!(await readStar())) toast(en ? 'Your reading is saved ✔' : "سُجّلت قراءتك ✔");
     }
   });
