@@ -51,7 +51,7 @@
 import * as api from './api.js';
 import { S } from './state.js';
 import { app, bar, head, toast, esc, fmt, AR, mmss, media, pgMedia, srcOf,
-        optLabel, dirOf, ICONS, nav, scrollTop, skeleton, waiting, G,
+        optLabel, dirOf, ICONS, nav, scrollTop, skeleton, waiting, G, contentDir,
         /* `N` محجوزةٌ هنا لخريطة أرقام الأسئلة (السطر ٦٦) — فتُستورد
            دالّةُ العدد والمعدود باسمٍ آخر، ولا يُعاد تسميةُ المحلّية:
            هي في أربعة عشر موضعاً وتلك في موضعٍ واحد. */
@@ -220,7 +220,8 @@ export async function startQuiz(meta){
       معاملة التسليم نفسِها (مُطلِقُ `attempts`). فما زاد بينهما يطير إلى خانته، وما كان قبلُ يُرسم ساكناً.
    ⚠️ **وتعذُّرُ الصورة الأولى لا يكذب:** بلا «قبل» لا لحظة — الخاناتُ تُرسم بما هي عليه، لا تطير نجومٌ قديمة كأنّها جديدة.
    وللطالب في المكتبة وحده: المعلّمُ يحلّ الاختبارَ مؤلّفاً، ولا نجومَ له (224 ⑧). */
-const starsHere = () => isLibrary(S.subj) && (S.roleInfo?.role || S.prof?.role) === 'student' && !!S.lesson?.id;
+const starsHere = () => isLibrary(S.subj) && (S.roleInfo?.role || S.prof?.role) === 'student' && !!S.lesson?.id
+  && quizInLesson();                               // 🆕 b260 · الحارسُ نفسُه — انظر `quizInLesson`
 
 function starsBefore(){
   S.starsBefore = null;
@@ -241,7 +242,8 @@ async function paintStars(){
   if(!host.isConnected || !fx || !after?.rule){ host.remove(); return; }
   /* كتابٌ بلا بطاقات لا نجمةَ كلماتٍ له (224 ⑦) — فلا تُرسم خانةٌ لا تُملأ أبداً */
   const groups = ['read', 'quiz', 'cards'].filter(k => k !== 'cards' || Number(S.lesson.cards || 0) > 0);
-  await fx.bookStars(host, { after, groups, k1: after.lessons?.[lid] || {},
+  const num = (await import('./library.js').catch(() => null))?.libNum(S.subj);    // 🆕 b259 · أرقامُ المكتبة الإنجليزيّة 0-9
+  await fx.bookStars(host, { after, groups, num, en: libEN(), k1: after.lessons?.[lid] || {},
                              k0: before ? (before.lessons?.[lid] || {}) : null });
 }
 
@@ -385,7 +387,16 @@ const PT_EN = {
 };
 
 /* `PL` غائبةٌ في الاختبار العاديّ ⇒ العربية دائماً، فلا يتبدّل فيه شيء. */
-const PT = () => PL?.en ? PT_EN : PT_AR;
+/* 🆕 b260 · **واختبارُ كتابٍ في المكتبة الإنجليزيّة بلسانها أيضاً** — قرارُ المالك (٢٢ نوفمبر): «استخدم اللغة الإنجليزية أيضاً داخل المكتبة
+   الإنجليزية · وحافظ على شريط المنصة والتشخيص عربي». ⇒ صفحاتُ الأسئلة وبطلُ النتيجة بالإنجليزيّة (`PT_EN` نفسُه — جُرّب في ورقة التسكين)،
+   **والمراجعةُ التشخيصيّة عربيّةٌ كما هي** (`renderResult`).
+   ⚠️ وهذا لا ينقض «🔒 والتسكينُ وحده» أعلاه بل يحدّه: حجّتُه أنّ «التشخيص يُقرأ ليُفهَم» فيبقى بلسان الطالب — وهو باقٍ.
+   🔑 **والاتجاهُ على المحتوى لا على `body`** (`contentDir` · ui.js): `paperDir` تقلب الشريطَ والدرج، والمالكُ أبقاهما عربيّين هنا. */
+/* ⚠️ **والاختبارُ من كتابٍ فُتح لا من مادّةٍ بقيت في الذاكرة:** `S.subj` تبقى على آخر مادّةٍ دُخلت، واختبارٌ يُفتح من البحث أو
+      «المتابعة» لا يمرّ بشاشة مادّته — فلولا هذا لخرج اختبارُ الرياضيّات بالإنجليزيّة وبنجوم المكتبة. ⇒ الاختبارُ في الكتاب المفتوح نفسِه. */
+const quizInLesson = () => !!S.quiz && (S.lesson?.items || []).some(i => String(i.quiz_id) === String(S.quiz.id));
+const libEN = () => !PL && S.subj?.code === 'sk_read' && quizInLesson();
+const PT = () => (PL?.en || libEN()) ? PT_EN : PT_AR;
 
 /* 🆕 b246 · و`stage` من الجلسة التكيّفيّة (213): «تمهيد» يكتب بطاقتَه فوق سؤاليه، ومحطّاتُ IELTS بلا مرحلة كما كانت */
 export function startPlacementQuiz(session, quiz, subject, resumed, stage){
@@ -586,9 +597,10 @@ function renderPage(){
      ليست آخرَ الجلسة — المحطّةُ التالية تُركَّب مكانها. فزرٌّ يقول
      «سلّم» يُفشي للطالب حدَّ المحطّة وأصلُه يقول «التالي»، ويُخبره
      أنّ ما مضى قُضي فيه — وهو ما يمنعه التسكين عمداً. */
-  const T = PT(), EN = !!PL?.en;
-  const LBL_NEXT  = last && !PL ? 'إنهاء وتسليم'   : T.next;
-  const LBL_BLANK = last && !PL ? 'تسليم دون إكمال' : T.blank;
+  const T = PT(), EN = !!PL?.en || libEN();
+  const LBL_NEXT  = last && !PL ? (EN ? 'Finish and submit' : 'إنهاء وتسليم')   : T.next;
+  const LBL_BLANK = last && !PL ? (EN ? 'Submit anyway'     : 'تسليم دون إكمال') : T.blank;
+  if(libEN()) contentDir(true, true);              // 🆕 b260 · الصفحةُ وشريطُ العدّاد يساراً — و`nav()` التالية تردّهما
 
   /* pgMedia تعرض الصوت في كل ما ليس صورةً ولا فيديو — فليكن
      التمييز هنا بالقاعدة نفسها، لا بقائمةٍ ثانية تتباعد عنها. */
@@ -638,7 +650,7 @@ function renderPage(){
     <span class="track"><span class="trackfill" id="tf"></span></span>
     <span class="qcount">${PL
       ? (many ? `<bdi>${from}–${to}</bdi>` : from)          /* بلا مقام في الجلسة */
-      : `${many?`<bdi>${from}–${to}</bdi>`:from} / ${AR(tot)}`}</span></div>`;
+      : `${many?`<bdi>${from}–${to}</bdi>`:from} / ${T.num(tot)}`}</span></div>`;
   paintClock();
 
   /* المقطع الصوتي يخرج من بطاقة النصّ إلى شريطٍ ملتصق: الصفحة صارت
@@ -1046,7 +1058,7 @@ async function finish(auto){
 
   const { data, error } = await api.submitAttempt(
     S.quiz.id, payload, Math.round((Date.now()-S.t0)/1000), auto);
-  if(error){ app.innerHTML = `<div class="err"><b>تعذّر التسليم</b>${esc(error.message)}</div>`; return; }
+  if(error){ app.innerHTML = `<div class="err"><b>${libEN() ? 'Could not submit' : 'تعذّر التسليم'}</b>${esc(error.message)}</div>`; return; }
 
   S.result = { ...data, auto, secs: Math.round((Date.now()-S.t0)/1000) };
   renderResult();
@@ -1054,7 +1066,14 @@ async function finish(auto){
 
 /* ═══════════ ⑥ النتيجة والتشخيص ═══════════ */
 
-function verdict(p){
+function verdict(p, en = false){
+  /* 🆕 b260 · وللمكتبة الإنجليزيّة بلسانها — «الكتاب» لا «الدرس»: الطالبُ لم يرَ في المكتبة درساً (حجّةُ b237) */
+  if(en){
+    if(p>=90) return "Excellent mastery — the next book is within reach";
+    if(p>=75) return "Very good — the review below completes your mastery";
+    if(p>=50) return "A focused review is needed — start with the red questions";
+    return "Read the book again, then try once more";
+  }
   if(p>=90) return "إتقان ممتاز — والدرس التالي في متناولك";
   if(p>=75) return "جيد جداً — ومراجعة الفخاخ أدناه تُتمّ الإتقان";
   if(p>=50) return "المطلوب مراجعة مركّزة — والبداية بالأسئلة الحمراء";
@@ -1064,7 +1083,7 @@ function verdict(p){
 function renderResult(){
   const r = S.result;
   nav('subjects');
-  head("نتيجتك", S.quiz.title);
+  head(libEN() ? "Your result" : "نتيجتك", S.quiz.title);     // 🆕 b260 · المكتبةُ الإنجليزيّة
 
   /* الحرف يُشتقّ هنا أيضاً — فما يقرؤه الطالب في المراجعة
      هو ما رآه في السؤال بالضبط */
@@ -1279,7 +1298,24 @@ function renderResult(){
   /* 🆕 b237 · وكتابُ المكتبة: «العودة» تقول وِجهتَها — الرفوف (`loadLessons` للمكتبة رفوف) لا عنوانَ الكتاب الذي تغادره،
      وسطرُ الإتمام «الكتاب» لا «الدرس»: الطالبُ لم يرَ في المكتبة درساً. */
   const lib = isLibrary(S.subj);
-  app.innerHTML = `
+  /* 🆕 b260 · **والمكتبةُ الإنجليزيّة: البطلُ بالإنجليزيّة يساراً، والمراجعةُ التشخيصيّة عربيّةٌ يميناً** (قرارُ المالك: «التشخيص عربي»).
+     فالحدُّ بين النصفين حدُّ اللسان: ما فوق «المراجعة التشخيصية» خبرٌ عن المحاولة، وما تحتها تشخيصٌ يُقرأ ليُفهَم. و`#app` يبقى
+     يميناً (`nav()` ردّته)، والبطلُ وحده في صندوقٍ إنجليزيّ. */
+  const en = libEN();
+  const top = en ? `
+    <div dir="ltr" lang="en">
+    <div class="crumb" id="back">← Back to shelves</div>
+    ${r.auto?'<div class="err"><b>Submitted automatically</b>Time ran out before you finished the quiz.</div>':''}
+    <div class="score-hero">
+      <div class="score-num">${r.score} / ${r.total}</div>
+      <div class="score-of">Auto-marked questions · time ${mmss(r.secs)}</div>
+      <div class="verdict">${verdict(r.pct, true)}</div>
+      ${starsHere() ? '<div class="nj-box" id="bkStars" hidden></div>' : ''}
+      ${r.lesson_done?'<div class="unlocked">You finished this book</div>':''}
+      ${(r.unlocked||[]).length?`<div class="unlocked">Now open: <bdi>${esc(r.unlocked.join(', '))}</bdi></div>`:''}
+    </div>
+    <div class="nav"><button class="btn primary" id="again">Retake the quiz</button></div>
+    </div>` : `
     <div class="crumb" id="back">→ ${lib ? 'رجوع للرفوف' : S.lesson ? esc(S.lesson.title) : 'قائمة المواد'}</div>
     ${r.auto?'<div class="err"><b>سُلّم تلقائياً</b>انتهى الوقت قبل إنهائك للاختبار.</div>':''}
     <div class="score-hero">
@@ -1290,7 +1326,8 @@ function renderResult(){
       ${r.lesson_done?`<div class="unlocked">${lib ? 'أتممت هذا الكتاب' : 'أتممت هذا الدرس'}</div>`:''}
       ${(r.unlocked||[]).length?`<div class="unlocked">فُتح لك الآن: ${esc(r.unlocked.join('، '))}</div>`:''}
     </div>
-    <div class="nav"><button class="btn primary" id="again">إعادة الاختبار</button></div>
+    <div class="nav"><button class="btn primary" id="again">إعادة الاختبار</button></div>`;
+  app.innerHTML = `${top}
     <h2 class="sec">المراجعة التشخيصية</h2>${objective}${recur}
     <div id="lsn"></div>
     <h2 class="sec">الأسئلة المقالية — بانتظار تصحيح معلمك</h2>${ess}`;

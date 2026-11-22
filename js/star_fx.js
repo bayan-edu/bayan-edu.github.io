@@ -283,12 +283,15 @@ export async function starMoment({ targets = [], onLand = () => {} } = {}){
    groups   — الأنواعُ المرسومة بترتيبها (['read','quiz','cards'] أو ['read']).
    تعود بعدد النجوم الجديدة (صفرٌ إن لم يكن جديد). */
 const GROUP_NAME = { read: 'القراءة', quiz: 'الفهم', cards: 'الكلمات' };
+/* 🆕 b260 · وبالإنجليزيّة في المكتبة الإنجليزيّة (`en` · رأسُ library.js) */
+const GROUP_EN = { read: 'Reading', quiz: 'Comprehension', cards: 'Words' };   // اسمُ الخطوة في بطاقة الكتاب نفسُه
 const ICO_SND = {
   on:  '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4.2 4.2 0 010 6M18 6.5a7.6 7.6 0 010 11"/></svg>',
   off: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/></svg>',
 };
 
-export async function bookStars(host, { after, k0 = null, k1 = {}, groups, small = false } = {}){
+/* 🆕 b259 · `num` — أرقامُ المكتبة: الإنجليزيّةُ 0-9 والعربيّةُ ٠-٩ (`libNum` · library.js · قرارُ المالك). */
+export async function bookStars(host, { after, k0 = null, k1 = {}, groups, small = false, num = AR, en = false } = {}){
   if(!host || !after?.rule) return 0;
   await loadCss();
   if(!host.isConnected) return 0;
@@ -302,14 +305,15 @@ export async function bookStars(host, { after, k0 = null, k1 = {}, groups, small
   host.classList.add('nj-box'); host.classList.toggle('sm', small);
   host.innerHTML = `
     <div class="nj-top">
-      <span class="nj-tl">مجموع نجومك</span>
-      <span class="nj-total">${starSVG()}<b>${AR(total)}</b></span>
-      <span class="nj-plus">+${AR(gain)}</span>
+      <span class="nj-tl">${en ? 'Your stars' : 'مجموع نجومك'}</span>
+      <span class="nj-total">${starSVG()}<b>${num(total)}</b></span>
+      ${/* «+3» بأرقامٍ إنجليزيّة يقلبها السطرُ العربيّ «3+» ⇒ تُعزل يساراً · و«+٣» بالهنديّة تُقرأ صحيحةً في مكانها (قِيس b257) */
+        num(1) === '1' ? `<bdi class="nj-plus" dir="ltr">+${num(gain)}</bdi>` : `<span class="nj-plus">+${num(gain)}</span>`}
       <button class="nj-mute" type="button"></button>
     </div>
     <div class="nj-groups">${gs.map(k => `
       <div class="nj-g"><div class="nj-row">${Array.from({ length: rule[k] }, () =>
-        `<i class="nj-s${was[k] ? ' on' : ''}" data-k="${k}">${starSVG()}</i>`).join('')}</div><span>${GROUP_NAME[k]}</span></div>`).join('')}
+        `<i class="nj-s${was[k] ? ' on' : ''}" data-k="${k}">${starSVG()}</i>`).join('')}</div><span>${(en ? GROUP_EN : GROUP_NAME)[k]}</span></div>`).join('')}
     </div>
     <span class="nj-sr" aria-live="polite"></span>`;
   host.hidden = false;
@@ -318,7 +322,8 @@ export async function bookStars(host, { after, k0 = null, k1 = {}, groups, small
   const paintMute = () => {
     const m = starsMuted();
     mute.innerHTML = m ? ICO_SND.off : ICO_SND.on;
-    mute.setAttribute('aria-label', m ? 'تشغيل صوت النجوم' : 'كتم صوت النجوم');
+    mute.setAttribute('aria-label', en ? (m ? 'Turn star sounds on' : 'Mute star sounds')
+                                       : (m ? 'تشغيل صوت النجوم' : 'كتم صوت النجوم'));
     mute.title = mute.getAttribute('aria-label');
   };
   paintMute();
@@ -330,12 +335,13 @@ export async function bookStars(host, { after, k0 = null, k1 = {}, groups, small
   await starMoment({ targets, onLand: i => {
     const s = targets[i];
     s.classList.add('on', 'pop'); setTimeout(() => s.classList.remove('pop'), 260);
-    tot.textContent = AR(++total);
+    tot.textContent = num(++total);
     tot.classList.add('bump'); setTimeout(() => tot.classList.remove('bump'), 180);
   }});
   if(host.isConnected){
     host.querySelector('.nj-plus').classList.add('on');
-    host.querySelector('.nj-sr').textContent = 'أضيفت إلى مجموعك ' + N(gain, 'نجمة', 'نجمتان', 'نجوم', 'نجمة');
+    host.querySelector('.nj-sr').textContent = en ? `${gain} new ${gain === 1 ? 'star' : 'stars'} added`
+                                                  : 'أضيفت إلى مجموعك ' + N(gain, 'نجمة', 'نجمتان', 'نجوم', 'نجمة');
   }
   return gain;
 }

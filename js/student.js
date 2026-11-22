@@ -10,7 +10,7 @@ import { S } from './state.js';
 import { app, head, toast, esc, escA, AR, ICONS, KINDS, bubble, errBox, nav,
          refreshCounts, scrollTop, scrollBottom, shape, icon,
          skeleton, waiting, G, N, NW, fmt,
-         sayable, sayGroup, bindSay, backMeta, backText, dirOf, srcOf, videoOf, siteUrl, goRoute, levelText } from './ui.js';
+         sayable, sayGroup, bindSay, backMeta, backText, dirOf, srcOf, videoOf, siteUrl, goRoute, levelText, contentDir } from './ui.js';
 import { startQuiz } from './quiz.js';
 import { mediaUrl, isManaged, accents, speak, playAudio, bookVoice } from './media.js';
 import { isSim, openSim } from './simulations.js';
@@ -1084,15 +1084,20 @@ const mentorText = subj => subj.mentor_name
    📌 والمادّةُ والمستوى نصٌّ لا زرّ: يقولان «أين أنت» ولا يفعلان شيئاً — فلا يلبسان هيئةَ ما يُنقر.
    🆕 b250 · **و«رجوع للمواد» أصغرُ ومن خشب المشهد لا من عاجه** (قرارُ المالك على اللقطة الثانية): كان بطاقةً كأخواته، فقُرئ
       رابعاً بينها وهو ليس منها — هو مخرجُ الشاشة لا خبرٌ عنها. والمستوى بقوسين (`levelText` · ui.js). */
+/* 🆕 b260 · **وفي المكتبة الإنجليزيّة بالإنجليزيّة** (رأسُ library.js · قرارُ المالك) — «Back to subjects» والمعلّمُ بلا جنس:
+      «Your teacher: …، Change» واحدةٌ للمعلّم والمعلّمة، فلا `G()`. والاسمُ معزولٌ (`bdi`): أكثرُ أسماء المعلّمين عربيّة. */
+const isEnLib = subj => subj?.code === 'sk_read';
 function libTop(subj){
-  const strm = streamOf(subj);
+  const strm = streamOf(subj), en = isEnLib(subj);
   return `<div class="lb-bar">
-      <button type="button" class="lb-back" id="bk">→ رجوع للمواد</button>
+      <button type="button" class="lb-back" id="bk">${en ? '← Back to subjects' : '→ رجوع للمواد'}</button>
       <span class="lb-pill" dir="auto">${esc(subj.name)}</span>
       ${subj.my_level ? `<span class="lb-pill" dir="auto">${esc(levelText(subj.my_level))}</span>` : ''}
-      <button type="button" class="lb-pill lb-act" id="mnt">${mentorText(subj)}</button>
+      <button type="button" class="lb-pill lb-act" id="mnt">${en
+        ? (subj.mentor_name ? `Your teacher: <bdi>${esc(subj.mentor_name)}</bdi> · Change` : 'Choose a teacher')
+        : mentorText(subj)}</button>
       ${strm ? `<button type="button" class="lb-pill lb-act" id="strm">${
-        esc(subj.stream_label)}: <bdi>${esc(strm.name)}</bdi>، تغيير</button>` : ''}
+        esc(subj.stream_label)}: <bdi>${esc(strm.name)}</bdi>${en ? ' · Change' : '، تغيير'}</button>` : ''}
     </div>`;
 }
 
@@ -1585,19 +1590,25 @@ async function openText(i){
   /* بلا عنوان: الغلافُ يحمله، واسمٌ يُكتب مرّتين في شاشةٍ واحدة يُقرأ
      سهواً (b139). */
   head('', '');
+  /* 🆕 b260 · **وكتابُ المكتبة الإنجليزيّة بالإنجليزيّة** — الشريطُ والعودةُ هنا، والقارئُ وختامُه في `textBook` (رأسُ library.js) */
+  const en = isEnLib(S.subj);
+  if(en) contentDir(true);
   /* 🆕 b256 · **وشريطُ الأجزاء فوق الكتاب** (المالك · ٢٢ نوفمبر: «لا يوجد داخلياً ما يمكّن من التنقّل»): كتابُ المكتبة ذو الأجزاء
      (`textsOf` · library.js) يُري أجزاءَه كلَّها أزراراً، والمفتوحُ منها `aria-current`. وكان الانتقالُ زرَّ «الجزء التالي» في
      الختام وحده — فمن أراد الجزءَ الثاني قلّب الأوّلَ إلى آخره، ومن أراد الرجوعَ إلى الأوّل لم يجد طريقاً إلا البطاقة. */
   const parts = isLibrary(S.subj) && l ? (await import('./library.js')).textsOf(l) : [];
-  const partsBar = parts.length > 1 ? `<nav class="bk-partbar" aria-label="أجزاء الكتاب">
-      <span class="bk-partbar-l" aria-hidden="true">الأجزاء</span>
+  const partName = k => en ? `Part ${k + 1}` : `الجزء ${AR(k + 1)}`;
+  const partsBar = parts.length > 1 ? `<nav class="bk-partbar" aria-label="${en ? 'Parts of the book' : 'أجزاء الكتاب'}">
+      <span class="bk-partbar-l" aria-hidden="true">${en ? 'Parts' : 'الأجزاء'}</span>
       ${parts.map((p, k) => `<button type="button" class="btn ${String(p.id) === String(i.id) ? 'primary' : 'ghost'}" data-part="${k}"${
-        String(p.id) === String(i.id) ? ' aria-current="true"' : ''} aria-label="الجزء ${AR(k + 1)} من ${AR(parts.length)}${
-        p.status === 'completed' ? '، تمّت قراءته' : ''}">الجزء ${AR(k + 1)}${p.status === 'completed' ? ' ✔' : ''}</button>`).join('')}
+        String(p.id) === String(i.id) ? ' aria-current="true"' : ''} aria-label="${en
+          ? `Part ${k + 1} of ${parts.length}${p.status === 'completed' ? ', read' : ''}`
+          : `الجزء ${AR(k + 1)} من ${AR(parts.length)}${p.status === 'completed' ? '، تمّت قراءته' : ''}`}">${partName(k)}${p.status === 'completed' ? ' ✔' : ''}</button>`).join('')}
     </nav>` : '';
+  const backCrumb = `<div class="crumb" id="bk">${en ? '← Back' : '→ عودة'}</div>`;
   /* 📐 والشريطُ في سطر «عودة» نفسِه لا تحته: نافذةُ المالك ‎574px ارتفاعاً، وسطرٌ زائدٌ فوق الكتاب يدفع أزرارَ التقليب إلى حافّتها */
   app.innerHTML = `
-    ${partsBar ? `<div class="bk-top"><div class="crumb" id="bk">→ عودة</div>${partsBar}</div>` : '<div class="crumb" id="bk">→ عودة</div>'}
+    ${partsBar ? `<div class="bk-top">${backCrumb}${partsBar}</div>` : backCrumb}
     <div id="book">${skeleton('rows', 3)}</div>
     <div id="ra" hidden></div>`;
   /* 🆕 b237 · وكتابُ المكتبة يعود إلى بطاقته لا إلى صفحة الدرس: الطالبُ جاءه من البطاقة، وصفحةُ الدرس لا تُرى في المكتبة */
@@ -1663,12 +1674,13 @@ async function textBook(i, l, back){
   const starsBefore = starsOn ? api.myStars(S.subj.id).then(r => r.data || null, () => null) : Promise.resolve(null);
   let starNow = null, fx = null;
   const starFx = async () => fx || (fx = await import('./star_fx.js').catch(() => null));
+  const num = lib ? (await import('./library.js')).libNum(S.subj) : undefined;   // 🆕 b259 · أرقامُ المكتبة الإنجليزيّة 0-9
   if(starsOn) starFx().then(m => m?.preloadStarSounds());     // الصوتُ جاهزٌ قبل الختام — كما يُحمَّل عند بدء الاختبار
   const paintStill = async el => {
     el.dataset.painted = '1';
     const [m, now] = [await starFx(), starNow || await starsBefore];
     /* ⚠️ واللحظةُ إن سبقته إلى الموضع نفسِه لا يمحوها: رسمٌ ساكنٌ فوقها يفصل خاناتِها عن نجومٍ في منتصف الطيران */
-    if(m && now && !el.dataset.live) m.bookStars(el, { after: now, k1: now.lessons?.[l.id] || {}, groups: ['read'], small: true });
+    if(m && now && !el.dataset.live) m.bookStars(el, { after: now, k1: now.lessons?.[l.id] || {}, groups: ['read'], small: true, num, en: isEnLib(S.subj) });
   };
   if(starsOn) new MutationObserver(() => {
     if(!host.isConnected) return;
@@ -1685,25 +1697,26 @@ async function textBook(i, l, back){
     const el = host.querySelector('[data-stars]');
     if(!el) return 0;
     el.dataset.painted = el.dataset.live = '1';
-    return m.bookStars(el, { after, k0, k1: after.lessons?.[l.id] || {}, groups: ['read'], small: true });
+    return m.bookStars(el, { after, k0, k1: after.lessons?.[l.id] || {}, groups: ['read'], small: true, num, en: isEnLib(S.subj) });
   };
 
   /* 🆕 b189 · المظهرُ والختامُ من `bookLook` و`bookEnd` أدناه — ومعاينةُ المحرّر تقرأ منهما،
      وما هنا سلوكُ الطالب وحده: الموضعُ والتسجيلُ والاختبارُ والإتمام. */
+  const en = isEnLib(S.subj);                         // 🆕 b260 · المكتبةُ الإنجليزيّة بالإنجليزيّة (رأسُ library.js)
   const ctl = await createBook(host, {
     ...bookLook({ cards: cardsRes?.data, g, subject: S.subj?.name, lesson: l, title, quranRefs: data.quran_refs,
-                  voices: voiceRes?.data || null }),
+                  voices: voiceRes?.data || null, en }),
     slot: raOn,
     title, subtitle: data.description, body: data.body, lang: data.lang || i.lang,
     storeKey: 'bayan.book.' + i.id,
-    endHtml: () => bookEnd(g, !!quiz, lib, !!next, starsOn),
+    endHtml: () => bookEnd(g, !!quiz, lib, !!next, starsOn, en),
     onAction: (act, book) => {
       if(act === 'next' && next) return openText(next);
       if(act === 'quiz' && quiz) return openItem(quiz);
       if(act === 'again') return book.restart();
       if(act === 'back') return back();
     },
-    onResume: () => toast("فُتح الكتاب على صفحتك الأخيرة"),
+    onResume: () => toast(en ? 'Opened at your last page' : "فُتح الكتاب على صفحتك الأخيرة"),
     /* 🆕 b237 · وزمنُ القراءة يُرسل مع الإتمام — **وفي كلّ ختامٍ لا في الأوّل وحده:** `track_item` تجمعه، ومن أعاد القراءةَ
        قرأ فعلاً (`onEnd` لا يُنادى لمسحٍ أسرعَ من القراءة · book.js). والإعادةُ صامتة: لا «سُجّلت» ثانيةً لما سُجّل. */
     /* 🆕 b258 · وبعد التسجيل نجمةُ القراءة (`readStar` أعلاه) — **والإعادةُ أيضاً:** القاعدةُ تجمع زمنَ القراءات، فقد تبلغ النجمةُ
@@ -1711,9 +1724,9 @@ async function textBook(i, l, back){
     onEnd: async ({ seconds } = {}) => {
       if(i.status === 'completed'){ api.markItemCompleted(i.id, seconds).then(() => readStar(), () => {}); return; }
       const { error: e } = await api.markItemCompleted(i.id, seconds);
-      if(e){ toast("لم تُسجَّل قراءتك — ربما تكون المشكلة في الاتصال"); return; }
+      if(e){ toast(en ? 'Your reading was not saved — the connection may be the problem' : "لم تُسجَّل قراءتك — ربما تكون المشكلة في الاتصال"); return; }
       i.status = 'completed';
-      if(!(await readStar())) toast("سُجّلت قراءتك ✔");
+      if(!(await readStar())) toast(en ? 'Your reading is saved ✔' : "سُجّلت قراءتك ✔");
     }
   });
 
@@ -1735,7 +1748,30 @@ async function textBook(i, l, back){
    المصدر (`editor_items.js`). ومعاينةٌ تبني مظهرَها بنفسها تفترق عن الحقيقة يوماً بصمت،
    فتُري المعلّمَ كتاباً غيرَ الذي يقرؤه طالبُه.
    `preview` ⇒ نافذةُ الكلمة بلا «إضافة إلى تذكّرها»: المعلّمُ يرى ولا يشترك. */
-export function bookLook({ cards, g, subject, lesson: l, title, quranRefs = null, voices = null, preview = false }){
+/* 🆕 b260 · وأدواتُ الكتاب بالإنجليزيّة في المكتبة الإنجليزيّة (`en` · رأسُ library.js): مفاتيحُ `SAY` في book.js بعينها — والعربيّةُ هناك. */
+const BOOK_SAY_EN = {
+  book:    t => `Book: ${t}`,
+  prev:    'Previous page',
+  next:    'Next page',
+  smaller: 'Smaller text',
+  larger:  'Larger text',
+  full:    'Full screen',
+  listen:  'Listen',
+  pause:   'Pause',
+  rate:    'Reading speed',
+  zoom:    'Enlarge the picture',
+  close:   'Close',
+  video:   'Video',
+  play:    c => c ? `Play the video: ${c}` : 'Play the video',
+  vidLocked: 'The video does not play while you record, so its sound stays out of your recording',
+  cover:   'Cover',
+  end:     'The end',
+  page:    (a, b, n) => b ? `Pages ${a} and ${b} of ${n}` : `Page ${a} of ${n}`,
+  count:   (a, b, n) => `${b ? a + '–' + b : a} / ${n}`,
+};
+const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+
+export function bookLook({ cards, g, subject, lesson: l, title, quranRefs = null, voices = null, preview = false, en = false }){
   /* عنوانُ الدرس يسقط من الغلاف إن احتوى عنوانَ النصّ («Reading: X» و«X»)
      وتحلّ الوحدةُ محلَّه — السياقُ نفسُه بلا تكرار. */
   const lessonLine = l?.title && !l.title.includes(title) ? l.title : (l?.unit || '');
@@ -1765,15 +1801,22 @@ export function bookLook({ cards, g, subject, lesson: l, title, quranRefs = null
        (`bookVoice`): منطقُ «أيّ صوتٍ يُسمع» واحدٌ هناك.
        🆕 b203 · **والنثرُ بصوته المعتمد** (`voices` · الخطوة ٦): الطالبُ والمعاينةُ كلاهما بالمعتمد وحده. */
     voice: bookVoice({ quranRefs, voices }),
-    onVoiceFail: () => toast("تعذّر النطق على هذا الجهاز"),
+    onVoiceFail: () => toast(en ? 'This device cannot read the text aloud' : "تعذّر النطق على هذا الجهاز"),
+    ...(en ? {
+      say: BOOK_SAY_EN, num: String, uiDir: 'ltr',
+      coverMeta: ({ paragraphs, words, minutes }) => [
+        paragraphs ? plural(paragraphs, 'paragraph', 'paragraphs') : '',
+        plural(words, 'word', 'words'), 'about ' + plural(minutes, 'minute', 'minutes')
+      ].filter(Boolean).join(', ')
+    } : {}),
     /* 🆕 b193 · كلٌّ باسمه: القصيدةُ «١٠ أبيات» لا «١٠ فقرات»، والآيتان «آيتان» — وما كان صفراً يغيب */
-    coverMeta: ({ paragraphs, verses = 0, ayat = 0, words, minutes }) => [
+    ...(en ? {} : { coverMeta: ({ paragraphs, verses = 0, ayat = 0, words, minutes }) => [
       paragraphs ? N(paragraphs, 'فقرة', 'فقرتان', 'فقرات', 'فقرة') : '',
       verses ? N(verses, 'بيت', 'بيتان', 'أبيات', 'بيتاً') : '',
       ayat ? N(ayat, 'آية', 'آيتان', 'آيات', 'آية') : '',
       N(words, 'كلمة', 'كلمتان', 'كلمات', 'كلمة'),
       'نحو ' + N(minutes, 'دقيقة', 'دقيقتين', 'دقائق', 'دقيقة')
-    ].filter(Boolean).join('، ')                   // 🆕 b179 · «،» — joinList في ui.js
+    ].filter(Boolean).join('، ') })                // 🆕 b179 · «،» — joinList في ui.js
   };
 }
 
@@ -1785,7 +1828,18 @@ export function bookLook({ cards, g, subject, lesson: l, title, quranRefs = null
       الكتاب كلّه، ومن اختُبر بعد نصفه قيس على ما لم يقرأ. والاسترجاعُ باقٍ: «فكرة النص» تصدق على الجزء كما تصدق على الكتاب. */
 /* 🆕 b258 · **ونجمةُ القراءة في ختام الكتاب** (`stars` · المكتبة وللطالب وحده · `spec-reading-motivation.md` §٧): موضعٌ فارغٌ يرسمه
       `textBook` — ساكناً بما هو عليه، وطائراً حين تكتب القاعدةُ نجمةً جديدة. ومعاينةُ المحرّر لا تمرّره: لا نجومَ للمؤلّف. */
-export const bookEnd = (g, quiz, lib = false, next = false, stars = false) => `
+/* 🆕 b260 · **وفي المكتبة الإنجليزيّة بالإنجليزيّة** (`en` · رأسُ library.js): الأمرُ بلا جنس، فلا `G()`. */
+export const bookEnd = (g, quiz, lib = false, next = false, stars = false, en = false) => en ? `
+      <div class="bk-end-orn" aria-hidden="true"><i></i><i></i><i></i></div>
+      <div class="bk-end-t">The end</div>
+      ${stars ? '<div class="nj-box sm" data-stars hidden></div>' : ''}
+      <div class="bk-ask"><b>${quiz && !next ? 'Before the quiz' : 'Recall'}</b><span>Close the book and say its main idea in one sentence. Then open it and compare.</span></div>
+      <div class="bk-end-btns">
+        ${next ? '<button type="button" class="btn primary" data-act="next">Next part</button>'
+          : quiz ? '<button type="button" class="btn primary" data-act="quiz">Check your understanding</button>' : ''}
+        <button type="button" class="btn ghost" data-act="again">Read from the start</button>
+        ${quiz || next ? '' : '<button type="button" class="btn ghost" data-act="back">Back</button>'}
+      </div>` : `
       <div class="bk-end-orn" aria-hidden="true"><i></i><i></i><i></i></div>
       <div class="bk-end-t">نهاية النص</div>
       ${stars ? '<div class="nj-box sm" data-stars hidden></div>' : ''}

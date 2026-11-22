@@ -154,6 +154,10 @@
 /* ⚠️ التأخيرُ للمختفي وحده: يبقى مرئيّاً حتى يتمّ انزلاقُه وخفوتُه. ولو كان على الجميع (كما في b249) لبقي القادمُ من الخلف
    مخفيّاً طوالَ دخوله ثمّ ظهر دفعةً في آخره (قِيس بإطارات المختبر: ‏`opacity` ‎.٧٣ و`visibility:hidden`). */
 .lb-case[data-pos="back"]{transition:transform var(--lb-move), opacity .45s ease, visibility 0s linear .6s}
+/* 🆕 b260 · **المكتبةُ الإنجليزيّة يساراً إلى يمين** (`contentDir` على `#app` · قرارُ المالك): التالي عن اليمين، فالإزاحةُ بعكس إشارتها —
+   والانزلاقُ هنا وحده فيزيائيّ (‎translate3d‎)، وما سواه منطقيٌّ (‎inset-inline‎) ينقلب وحده. والسهمان يقابلان جهتيهما:
+   أيقونةُ «رجوع» سهمٌ إلى اليمين (ui.js) ⇒ السابقُ يُعكس هنا لا التالي. ولوحةُ المفاتيح والسحبُ في library.js (`EN`). */
+[dir="ltr"] .lb-case{transform:translate3d(calc(var(--s) * (100% + var(--lb-gap))),0,0) scale(var(--k))}
 .lb-scene.lb-still .lb-case{transition:none}
 .lb-case:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
 .lb-case::after{content:'';position:absolute;inset:-3px;z-index:8;border-radius:14px;pointer-events:none;
@@ -299,6 +303,8 @@
 .lb-prev{inset-inline-start:12px}
 .lb-next{inset-inline-end:12px}
 .lb-next .ic,.lb-flip .ic{transform:scaleX(-1)}
+[dir="ltr"] .lb-prev .ic,[dir="ltr"] .lb-pg:not(.lb-flip) .ic{transform:scaleX(-1)}     /* 🆕 b260 — انظر `.lb-case` أعلاه */
+[dir="ltr"] .lb-next .ic,[dir="ltr"] .lb-flip .ic{transform:none}
 .lb-arrow:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
 /* 🆕 b254 · وعند طرف الصفّ معطَّل (`place` · library.js) — باهتٌ في مكانه لا مخفيّ: اختفاؤه يُزيح العينَ عن السهم الآخر */
 .lb-arrow:disabled{opacity:.4;cursor:default;box-shadow:none}
@@ -328,6 +334,11 @@
 /* اسمُ المستوى لا ينكسر: «R2 ·» آخرَ سطرٍ و«Pre-A1» أوّلَ الذي يليه يُقرآن اسمين (قِيس على ‎820px · b249) */
 .lb-prog-t bdi{white-space:nowrap}
 .lb-prog-m{font-size:var(--fs-meta);color:var(--text-muted)}
+/* 🆕 b259 · الكتبُ المنجزة ورصيدُ النجوم: أيقونةٌ ورقم بلا عنوان (قرارُ المالك) — محايدان، والذهبُ في جسم النجمة وحده */
+.lb-tally{display:flex;align-items:center;gap:16px;font-family:'Almarai';font-weight:800;font-size:var(--fs-ui);color:var(--text)}
+.lb-tl{display:inline-flex;align-items:center;gap:6px}
+.lb-ti{width:20px;height:20px;flex:none}
+svg.lb-ti:not(.sfx-star){fill:none;stroke:var(--text-muted);stroke-width:1.7;stroke-linejoin:round;stroke-linecap:round}
 .lb-prog-in .pbar{grid-column:1 / -1;height:7px;margin:0}
 .lb-prog-mins{grid-column:1 / -1;display:flex;flex-wrap:wrap;gap:6px}
 .lb-prog-mins .chip{margin:0}
@@ -376,6 +387,8 @@
   font-family:'Almarai';font-weight:800;font-size:var(--fs-tag);
   background:var(--fill);border:1.5px solid var(--lb-gold);color:var(--text)}
 .lb-step.is-done::before{content:'✔';color:var(--text-muted);border-color:var(--line-strong)}
+/* 🆕 b260 · وفي المكتبة الإنجليزيّة بأرقامها (قرارُ المالك: «كل أرقام المكتبة الإنجليزية») — قِيس: «١» كانت تُقرأ «I» في بطاقةٍ إنجليزيّة */
+[dir="ltr"] .lb-step:not(.is-done)::before{content:counter(lbst)}
 .lb-step b{font-family:'Almarai';font-weight:700;font-size:var(--fs-ui)}
 .lb-step span{margin-inline-start:auto;font-size:var(--fs-meta);color:var(--text-muted)}
 .lb-card-btns{margin:0;flex-wrap:wrap}

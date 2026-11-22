@@ -648,6 +648,9 @@ export async function createBook(host, opt = {}){
   const say    = { ...SAY, ...(opt.say || {}) };
   const fmt    = opt.format || plainFormat;
   const uiNum  = opt.num || (n => String(n));
+  /* 🆕 b260 · **لسانُ الأدوات غيرُ لسان النصّ:** العدّادُ والأدواتُ وسطرُ الغلاف وصفحةُ الختام عربيّةٌ أبداً (`dir="rtl"`) — إلا أن يقول
+     المستدعي غيرَ ذلك (`uiDir` · المكتبةُ الإنجليزيّة بقرار المالك). ونافذةُ الكلمة باقيةٌ يميناً: معناها عربيّ. */
+  const UI     = opt.uiDir === 'ltr' ? 'ltr' : 'rtl';
   const title  = String(opt.title || '').trim();
   const dir    = sniffDir(opt.body);
   const lang   = (opt.lang && RTL_LANGS.has(opt.lang) === (dir === 'rtl'))
@@ -702,9 +705,9 @@ export async function createBook(host, opt = {}){
       <button type="button" class="bk-btn" data-k="prev" aria-label="${esc(say.prev)}">${ICO.prev}</button>
       <div class="bk-mid">
         <div class="bk-track" aria-hidden="true"><i></i></div>
-        <span class="bk-count" dir="rtl"></span>
+        <span class="bk-count" dir="${UI}"></span>
       </div>
-      <div class="bk-tools" dir="rtl">
+      <div class="bk-tools" dir="${UI}">
         <button type="button" class="bk-btn sm" data-k="smaller" aria-label="${esc(say.smaller)}">${ICO.aMinus}</button>
         <button type="button" class="bk-btn sm" data-k="larger" aria-label="${esc(say.larger)}">${ICO.aPlus}</button>
         <button type="button" class="bk-btn sm" data-k="full" aria-label="${esc(say.full)}">${ICO.full}</button>
@@ -1084,7 +1087,7 @@ export async function createBook(host, opt = {}){
     } else if(pg.kind === 'cover'){
       el.innerHTML = coverHtml();
     } else if(pg.kind === 'end'){
-      el.innerHTML = `<div class="bk-end-in" dir="rtl">${opt.endHtml ? opt.endHtml() : ''}</div>`;
+      el.innerHTML = `<div class="bk-end-in" dir="${UI}">${opt.endHtml ? opt.endHtml() : ''}</div>`;
     }
     return el;
   }
@@ -1103,7 +1106,7 @@ export async function createBook(host, opt = {}){
         <h2 class="bk-cv-t" dir="auto">${esc(title)}</h2>
         ${opt.subtitle ? `<p class="bk-cv-s" dir="auto">${esc(opt.subtitle)}</p>` : ''}
       </div>
-      <div class="bk-cv-meta" dir="rtl">${esc(meta)}</div>
+      <div class="bk-cv-meta" dir="${UI}">${esc(meta)}</div>
     </div>`;
   }
 

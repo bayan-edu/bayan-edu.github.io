@@ -13,7 +13,7 @@ import { renderMark, whenReady as avatarReady } from './avatar.js';
    والدمجُ مرّ بلا تعارضٍ **لأنّ الجانبين كتبا السطرَ نفسَه حرفاً** — وهو
    أخبثُ ما في التصادم: لا يشتكي. ⇒ هذه ترفعه، **فالختمُ يجيب «أيُّ شيفرةٍ
    يشغّلها المتصفّح»، وجوابان لسؤالٍ واحدٍ لا جواب.** */
-export const BUILD = "b258";
+export const BUILD = "b260";
 
 /* ── مراسي الصفحة ── */
 export const app = document.getElementById("app");
@@ -1732,8 +1732,22 @@ function wire(root){
   });
 }
 
+/* 🆕 b260 · **اتجاهُ المحتوى ولسانُه** — للمكتبة الإنجليزيّة (قرارُ المالك · ٢٢ نوفمبر: «استخدم اللغة الإنجليزية أيضاً داخل المكتبة
+   الإنجليزية · وحافظ على شريط المنصة والتشخيص عربي»).
+   🔑 **على `#app` لا على `body`:** ورقةُ التسكين (`paperDir` · quiz.js) تقلب `body` فينقلب الشريطُ والدرجُ معها — والمالكُ أبقى
+      إطارَ المنصّة عربيّاً هنا. و`#bar` معه حين يحمل عدّادَ الاختبار وحده (`withBar`): ذاك شريطُ الورقة لا شريطُ المنصّة.
+   🔑 **والردُّ في `nav()` وحدها:** كلُّ شاشةٍ تبدأ بها، فالاتجاهُ لا يتسرّب من المكتبة إلى مادّةٍ بعدها — ولا يُعتمد على شاشةٍ
+      أن «تتذكّر» ردَّه. والشاشةُ الإنجليزيّة تضعه بعد `nav()`. */
+export function contentDir(en, withBar = false){
+  for(const el of withBar ? [app, bar] : [app]){
+    if(en){ el.dir = 'ltr'; el.lang = 'en'; }
+    else { el.removeAttribute('dir'); el.removeAttribute('lang'); }
+  }
+}
+
 // active = مفتاح الوجهة الحالية · النقر على النشط يُعيد التحميل
 export function nav(active, path){
+  contentDir(false, true);      // 🆕 b260 · الاتجاهُ يُردّ مع كلّ شاشة — التعليلُ عند `contentDir`
   writeAddress(active, path);   // 🆕 b166 · العنوانُ يتبع القسم · b167 · وعنوانَ الشاشة إن سمّته — التعليلُ عند PATHS
   setWide(false);
   bar.innerHTML =`<div class="topbar">

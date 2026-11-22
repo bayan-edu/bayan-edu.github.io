@@ -37,8 +37,22 @@
    ══════════════════════════════════════════════════════════ */
 import * as api from './api.js';
 import { app, head, nav, toast, esc, escA, AR, N, icon, skeleton, errBox,
-         sayable, sayGroup, bindSay, backText, dirOf, todayIso, yearsText, birthProblem, levelText } from './ui.js';
+         sayable, sayGroup, bindSay, backText, dirOf, todayIso, yearsText, birthProblem, levelText, contentDir } from './ui.js';
 import { mediaUrl } from './media.js';
+
+/* ═══════════ لسانُ المكتبة (b260) ═══════════
+   🔑 **المكتبةُ الإنجليزيّة بواجهةٍ إنجليزيّة وأرقامٍ إنجليزيّة** — نصُّ المالك (٢٢ نوفمبر): «كل أرقام المكتبة الإنجليزية. ولضبط الاتجاه
+      استخدم اللغة الإنجليزية أيضاً داخل المكتبة الإنجليزية»، ثمّ: «وحافظ على شريط المنصة والتشخيص عربي».
+      ⇒ الرفوفُ وبطاقةُ الكتاب والرأسُ والكلماتُ هنا، يساراً إلى يمين (`contentDir` · ui.js)، والمكتبةُ العربيّةُ كما كانت حرفاً.
+   🔑 **`L(عربيّ، إنجليزيّ)` في موضع النصّ نفسِه لا قاموسٌ بعيد:** النصّان يُقرآن معاً، فمن غيّر أحدَهما رأى أخاه — وقاموسٌ في ملفٍّ
+      آخر يفترق عن موضعه بصمت (الثابتُ ⑨). والإنجليزيّةُ بلا جنس: الأمرُ «You» واحد، فلا `G()` فيها.
+   ⚠️ **و`EN` حالُ الوحدة تُضبط عند كلّ مدخل** (`setLang`: الرفوف · البطاقة · الكلمات · الميلاد · الرأس) — المساعداتُ هنا لا تأخذ
+      المادّة، وشاشتا مكتبتين لا تُرسمان معاً. */
+export const libEn = subj => subj?.code === 'sk_read';
+let EN = false;
+const L = (ar, en) => EN ? en : ar;
+const NUM = n => EN ? String(n) : AR(n);
+function setLang(subj){ EN = libEn(subj); if(EN) contentDir(true); }
 
 /* ── النمطُ يُحمَّل مع الشاشة لا مع المنصّة — حجّةُ `book.css` بعينها (book.js) ── */
 const CSS_HREF = new URL('../css/library.css', import.meta.url).href;
@@ -73,10 +87,10 @@ function stateOf(l){
   return 'open';
 }
 const SAY = {
-  done:    l => 'أُنجز' + (l.best != null ? ' ' + AR(Math.round(l.best)) + '٪' : ''),
-  reading: () => 'قيد القراءة',
-  locked:  () => 'مقفل',
-  draft:   () => 'مسودة',
+  done:    l => L('أُنجز', 'Done') + (l.best != null ? ' ' + NUM(Math.round(l.best)) + L('٪', '%') : ''),
+  reading: () => L('قيد القراءة', 'Reading'),
+  locked:  () => L('مقفل', 'Locked'),
+  draft:   () => L('مسودة', 'Draft'),
   open:    () => '',
 };
 /* 🆕 b250 · **والحالُ نقطةٌ بأيقونة لا وسمٌ بنصّ** (قرارُ المالك على لقطة الرفّ · ١٩ نوفمبر): «قيد القراءة» كان يغطّي
@@ -120,14 +134,14 @@ function shelvesOf(strands, lessons){
   }
   const groups = [...by.values()].filter(g => g.books.length);
   loose.sort((a, b) => (Number(a.id) || 0) - (Number(b.id) || 0));
-  if(loose.length) groups.push({ key: '_', name: groups.length ? 'كتب أخرى' : 'الكتب', title: null, books: loose });
+  if(loose.length) groups.push({ key: '_', name: groups.length ? L('كتب أخرى', 'More books') : L('الكتب', 'Books'), title: null, books: loose });
 
   const out = [];
   for(const g of groups){
     const n = Math.ceil(g.books.length / PER_PAGE);
     for(let i = 0; i < n; i++) out.push({
       key: i ? `${g.key}:${i}` : g.key,
-      name: n > 1 ? `${g.name} ${AR(i + 1)}` : g.name,
+      name: n > 1 ? `${g.name} ${NUM(i + 1)}` : g.name,
       title: g.title,
       books: g.books.slice(i * PER_PAGE, (i + 1) * PER_PAGE),
     });
@@ -144,7 +158,7 @@ function shelvesOf(strands, lessons){
 /* 🆕 b256 · **وعددُ الأجزاء على الغلاف** (المالك على لقطة الرفّ · ٢٢ نوفمبر: «لا يوجد ما يشير إلى عدد أجزاء الكتاب»):
       وسامٌ صغيرٌ في الزاوية السفلى المقابلة لنقطة الحال («جزآن» · «٣ أجزاء») — والكتابُ بجزءٍ واحدٍ بلا وسام.
    📌 والعددُ لقارئ الشاشة في اسم الزرّ (`partsSay` · `bookHtml`)، والوسامُ نفسُه `aria-hidden` فلا يُقرأ مرّتين. */
-const partsSay = l => { const n = textsOf(l).length; return n > 1 ? N(n, 'جزء', 'جزآن', 'أجزاء', 'جزءاً') : ''; };
+const partsSay = l => { const n = textsOf(l).length; return n > 1 ? L(N(n, 'جزء', 'جزآن', 'أجزاء', 'جزءاً'), `${n} parts`) : ''; };
 function jacket(l, st, say){
   const src = l.cover ? mediaUrl(l.cover) : null;
   const parts = partsSay(l);
@@ -160,7 +174,7 @@ function jacket(l, st, say){
 
 function bookHtml(l, live){
   const st = stateOf(l), say = SAY[st](l);
-  const name = [l.title, partsSay(l), say].filter(Boolean).join('، ');
+  const name = [l.title, partsSay(l), say].filter(Boolean).join(L('، ', ', '));
   /* 📌 و`title` للفأر: لافتةُ العنوان سطرٌ واحدٌ يُقصّ في غلافٍ بعرض ٩٦px، والعنوانُ كاملاً في التلميح */
   return `<button type="button" class="lb-book is-${st}" data-l="${l.id}" ${live ? '' : 'tabindex="-1"'}
       title="${escA(name)}" aria-label="${escA(name)}">
@@ -196,9 +210,9 @@ function bodyHtml(sh, page, live){
       وأيُّ طرفٍ هو يتبع جهتَه — فالوسامان يضمنان أن يُقرأ رقمُه أيّاً كانت. والهاتفُ يُبقي واحداً بجوار السهم (لا جيرانَ تُرى هناك).
    📌 والرقمُ لقارئ الشاشة في اسم المنطقة («…، الرف ٢ من ٥»)، والوسامُ نفسُه `aria-hidden` فلا يُقرأ مرّتين. */
 function caseHtml(sh, i, page, n){
-  const num = AR(i + 1);
+  const num = NUM(i + 1);
   const medal = side => `<span class="lb-num lb-num-${side}" aria-hidden="true">${num}</span>`;
-  const label = (sh.title || sh.name) + (n > 1 ? `، الرف ${num} من ${AR(n)}` : '');
+  const label = (sh.title || sh.name) + (n > 1 ? L(`، الرف ${num} من ${AR(n)}`, `, shelf ${num} of ${n}`) : '');
   /* التاجُ يبقى بلا لافتة — خشبُ الخزانة لا يُقصّ — وأقصرُ (`.lb-crown.bare`) فلا يُرى فراغاً ينتظر اسماً */
   return `<section class="lb-case" id="lb-c-${i}" role="region" aria-label="${escA(label)}" tabindex="-1" data-i="${i}">
     <header class="lb-crown${sh.title ? '' : ' bare'}">${n > 1 ? medal('s') : ''}${sh.title ? `<span class="lb-plate" dir="auto">${esc(sh.title)}</span>` : ''}${n > 1 ? medal('e') : ''}</header>
@@ -225,6 +239,7 @@ function recall(subj){
 export async function paintLibrary(subj, lessons, strands, hooks = {}){
   const { top = '', bindTop, open } = hooks;
   await loadCss();
+  setLang(subj);                                       // 🆕 b260 · لسانُ المكتبة واتجاهُها — رأسُ الملفّ
 
   /* 🔑 **مستواك وحده على الرفوف** (`own_level` ⇐ `my_courses().is_current`): `courses_of` تفتح للطالب مقرّراتِ ما دون
         مستواه أيضاً (`can_view_level`)، فبلا هذا يجاور كتابُ R2 كتابَ R6 على رفٍّ واحد — والمكتبةُ «على قدر مستواك».
@@ -247,7 +262,7 @@ export async function paintLibrary(subj, lessons, strands, hooks = {}){
   /* 🆕 b252 · ونصُّ الفراغ من المستدعي إن قاله (`hooks.none`): المعاينةُ تختار مستوًى لا تسكنه — «مستواك» لا تصدق فيها */
   if(!shelves.length){
     app.innerHTML = `<div class="lb" id="lb"><div class="lb-top">${top}</div>
-      <div class="lb-none status">${esc(hooks.none || 'لا كتب في مستواك بعد')}</div></div>`;
+      <div class="lb-none status">${esc(hooks.none || L('لا كتب في مستواك بعد', 'No books at your level yet'))}</div></div>`;
     bindTop?.();
     return;
   }
@@ -260,9 +275,9 @@ export async function paintLibrary(subj, lessons, strands, hooks = {}){
         <div class="lb-prog" id="lbProg" hidden></div>
       </div>
       <div class="lb-stage">
-        ${many ? `<button type="button" class="lb-arrow lb-prev" aria-label="الرف السابق">${icon('back')}</button>` : ''}
+        ${many ? `<button type="button" class="lb-arrow lb-prev" aria-label="${L('الرف السابق', 'Previous shelf')}">${icon('back')}</button>` : ''}
         <div class="lb-reel"><div class="lb-scene lb-still">${shelves.map((s, i) => caseHtml(s, i, pageOf(i), shelves.length)).join('')}</div></div>
-        ${many ? `<button type="button" class="lb-arrow lb-next" aria-label="الرف التالي">${icon('back')}</button>` : ''}
+        ${many ? `<button type="button" class="lb-arrow lb-next" aria-label="${L('الرف التالي', 'Next shelf')}">${icon('back')}</button>` : ''}
       </div>
       <div class="lb-pager" hidden></div>
     </div>`;
@@ -321,9 +336,9 @@ export async function paintLibrary(subj, lessons, strands, hooks = {}){
     const p = pageOf(at);
     pager.hidden = false;
     pager.innerHTML = `
-      <button type="button" class="lb-pg" data-pg="-1" aria-label="الصفحة السابقة" ${p === 0 ? 'disabled' : ''}>${icon('back')}</button>
-      <span>الصفحة ${AR(p + 1)} من ${AR(total)}</span>
-      <button type="button" class="lb-pg lb-flip" data-pg="1" aria-label="الصفحة التالية" ${p >= total - 1 ? 'disabled' : ''}>${icon('back')}</button>`;
+      <button type="button" class="lb-pg" data-pg="-1" aria-label="${L('الصفحة السابقة', 'Previous page')}" ${p === 0 ? 'disabled' : ''}>${icon('back')}</button>
+      <span>${L(`الصفحة ${AR(p + 1)} من ${AR(total)}`, `Page ${p + 1} of ${total}`)}</span>
+      <button type="button" class="lb-pg lb-flip" data-pg="1" aria-label="${L('الصفحة التالية', 'Next page')}" ${p >= total - 1 ? 'disabled' : ''}>${icon('back')}</button>`;
   }
 
   function repaintBody(i){
@@ -350,7 +365,8 @@ export async function paintLibrary(subj, lessons, strands, hooks = {}){
     if(!b) return;
     const l = byId.get(b.dataset.l);
     if(!l) return;
-    if(l.locked){ toast(l.reason || 'هذا الكتاب غير متاح بعد'); return; }
+    /* 🆕 b260 · وسببُ القفل يكتبه الخادمُ بالعربيّة (`list_lessons` · `reason`) ⇒ في الإنجليزيّة جملةٌ عامّة لا عربيّةٌ وسطها */
+    if(l.locked){ toast(EN ? 'This book is not open yet' : (l.reason || 'هذا الكتاب غير متاح بعد')); return; }
     open(l);
   });
 
@@ -360,7 +376,8 @@ export async function paintLibrary(subj, lessons, strands, hooks = {}){
     if(!many || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
     if(e.target.closest('input, textarea, select, [contenteditable="true"]')) return;
     e.preventDefault();
-    go(at + (e.key === 'ArrowLeft' ? 1 : -1), true);
+    /* 🆕 b260 · والتالي جهةُ القراءة: يساراً في العربيّة، ويميناً في الإنجليزيّة (`.lb[dir="ltr"]` · library.css) */
+    go(at + (e.key === (EN ? 'ArrowRight' : 'ArrowLeft') ? 1 : -1), true);
   });
 
   /* 🆕 b249 · السحبُ باللمس يبدّل الرفّ — بديلُ الألسنة على الهاتف. والاتّجاهُ اتّجاهُ المشهد: التالي عن اليسار،
@@ -381,7 +398,7 @@ export async function paintLibrary(subj, lessons, strands, hooks = {}){
       x0 = null;
       if(Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 2) return;
       swiped = true; setTimeout(() => { swiped = false; }, 400);
-      go(at + (dx > 0 ? 1 : -1));
+      go(at + ((EN ? dx < 0 : dx > 0) ? 1 : -1));        // 🆕 b260 · التالي يُجرّ من جهته
     }, { passive: true });
     stage.addEventListener('click', e => {
       if(swiped){ e.stopPropagation(); e.preventDefault(); }
@@ -419,10 +436,42 @@ export async function paintLibrary(subj, lessons, strands, hooks = {}){
    🔑 **وأحوالُه أربع:** شرطٌ قائم (ما أنجزتَ من كم، وحدودُ الرفوف) · اكتمل (والمنارة) · مستوًى بلا شرطٍ (عددُ ما أنجزتَ
       وحده — لا وعدَ بلا شرط) · وأعلى مستوى.
    📐 والشريطُ `.pbar`/`.pfill` المنصّة بأحوال بطاقة المادّة نفسِها (`st-active` · `st-mid` · `st-done`) — لا لونٌ جديد. */
+/* 🆕 b259 · **أرقامُ المكتبة الإنجليزيّة إنجليزيّة (0-9)** — قرارُ المالك (٢٢ نوفمبر): «كل أرقام المكتبة الإنجليزية». والعربيّةُ وسائرُ
+   الموادّ بالهنديّة (`AR`) كما كانت. ⚠️ **والنقلُ جارٍ:** هنا في الرأس ونجومِ الكتاب أوّلاً، وما بقي من أرقامها (الرفوف · النتيجة)
+   مع واجهتها الإنجليزيّة — الخطوةُ التالية في `spec-reading-motivation.md`. */
+export const libNum = subj => libEn(subj) ? (n => String(n ?? '')) : AR;
+
+/* 🆕 b259 · **رصيدُ النجوم والكتبُ المنجزة في الرأس، أيقونةً ورقماً بلا عنوان** — قرارُ المالك (٢٢ نوفمبر): «اجعل رصيد النجوم في
+   الشريط العلوي مع الكتب المنجزة · لا داعي للعناوين»، واختار رأسَ صفحة المكتبة لا شريطَ المنصّة. والاسمان باقيان للقارئ الآليّ
+   (`aria-label`). والنجمةُ نجمةُ اللحظة نفسُها (`starSVG` · ذهبُها استثناءُ المالك — رأسُ star_fx.js). */
+const BOOK_ICO = '<svg class="lb-ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 5.5c2.7-1.1 5.5-1 8.5 1 3-2 5.8-2.1 8.5-1v13c-2.7-1.1-5.5-1-8.5 1-3-2-5.8-2.1-8.5-1z"/><path d="M12 6.5v13"/></svg>';
+function tally(subj, done, of, stars, svg){
+  const num = libNum(subj), en = libEn(subj);
+  /* «٣ من ٦» في العربيّة — و«3 / 6» بلا كلمةٍ في الإنجليزيّة، معزولةً يساراً لئلّا يقلبها سطرٌ عربيٌّ إن وقعت فيه */
+  const books = of == null ? num(done) : en ? `<bdi dir="ltr">${num(done)} / ${num(of)}</bdi>` : `${num(done)} من ${num(of)}`;
+  const booksSay = en ? `Books completed: ${done}${of == null ? '' : ' of ' + of}`
+                      : 'الكتب المنجزة ' + (of == null ? AR(done) : AR(done) + ' من ' + AR(of));
+  return `<span class="lb-tally">
+      <span class="lb-tl" aria-label="${escA(booksSay)}">${BOOK_ICO}<b aria-hidden="true">${books}</b></span>
+      ${stars == null ? '' : `<span class="lb-tl" aria-label="${escA(en ? `Your stars: ${stars}` : 'نجومك ' + AR(stars))}">${svg}<b aria-hidden="true">${num(stars)}</b></span>`}
+    </span>`;
+}
+
 async function paintProgress(subj, host, hooks){
   if(!host) return;
-  const { data: d } = await api.levelProgress(subj.id).then(r => r, e => ({ error: e }));
-  if(!host.isConnected || !d?.ok || !d.applicable || !d.course_id) return;
+  EN = libEn(subj);                                    // 🆕 b260 · يُنادى بعد الرفوف — والحالُ تُضبط هنا أيضاً فلا يُرسم الرأسُ بلسانِ غيره
+  const [{ data: d }, starsData, fx] = await Promise.all([
+    api.levelProgress(subj.id).then(r => r, e => ({ error: e })),
+    api.myStars(subj.id).then(r => r.data || null, () => null),
+    import('./star_fx.js').catch(() => null)]);
+  if(!host.isConnected) return;
+  const stars = starsData?.rule ? Number(starsData.total || 0) : null;
+  const svg = fx ? fx.starSVG('lb-ti') : '';
+  /* مكتبةٌ بلا شرط مستوى (أو مستوًى لم يُسكَّن بعد) ⇒ الرصيدُ وحده إن كان — لا لوحٌ فارغ */
+  if(!d?.ok || !d.applicable || !d.course_id){
+    if(stars != null){ host.innerHTML = tally(subj, Number(starsData.books || 0), null, stars, svg); host.hidden = false; }
+    return;
+  }
 
   const done = Number(d.done || 0), rule = d.rule;
   /* 🆕 b250 · اسمُ المستوى التالي بقوسين (`levelText`) — في السطور الأربعة والزرّ معاً، فلا يُكتب بصيغتين في بطاقةٍ واحدة */
@@ -434,30 +483,32 @@ async function paintProgress(subj, host, hooks){
   let html;
   if(waits){
     html = `<div class="lb-prog-in st-done">
-      <div class="lb-prog-t">أتممت شرط هذا المستوى</div>
-      <div class="lb-prog-m">والمستوى التالي <bdi>${esc(next.name)}</bdi> يُفتح حين تبلغ ${yearsText(Number(d.wait_age))}</div>
+      <div class="lb-prog-t">${L('أتممت شرط هذا المستوى', 'You have met the goal of this level')}</div>
+      <div class="lb-prog-m">${L(`والمستوى التالي <bdi>${esc(next.name)}</bdi> يُفتح حين تبلغ ${yearsText(Number(d.wait_age))}`,
+        `The next level, <bdi>${esc(next.name)}</bdi>, opens when you are ${Number(d.wait_age)}`)}</div>
     </div>`;
   } else if(d.met && d.hold === 'birth'){
     html = `<div class="lb-prog-in st-done">
-      <div class="lb-prog-t">أتممت شرط هذا المستوى</div>
-      <div class="lb-prog-m">ويلزم تاريخ ميلادك للانتقال — من ملفك الشخصي</div>
+      <div class="lb-prog-t">${L('أتممت شرط هذا المستوى', 'You have met the goal of this level')}</div>
+      <div class="lb-prog-m">${L('ويلزم تاريخ ميلادك للانتقال — من ملفك الشخصي', 'Moving up needs your date of birth — add it in your profile')}</div>
     </div>`;
   } else if(!next){
-    html = `<div class="lb-prog-t">هذا أعلى مستوى في المكتبة</div>
-      <div class="lb-prog-m">الكتب المنجزة: ${AR(done)}</div>`;
+    html = `<div class="lb-prog-t">${L('هذا أعلى مستوى في المكتبة', 'This is the top level of the library')}</div>
+      ${tally(subj, done, null, stars, svg)}`;
   } else if(!rule){
-    html = `<div class="lb-prog-m">الكتب المنجزة في هذا المستوى: ${AR(done)}</div>`;
+    html = tally(subj, done, null, stars, svg);
   } else {
     const pct = Math.min(100, Math.round(done / rule.total * 100));
     const st  = d.ready ? 'st-done' : pct >= 50 ? 'st-mid' : 'st-active';
     html = `<div class="lb-prog-in ${st}">
-      <div class="lb-prog-t">${d.ready ? 'اكتمل شرط الانتقال إلى' : 'الانتقال إلى'} <bdi>${esc(next.name)}</bdi></div>
-      <div class="lb-prog-m">الكتب المنجزة: ${AR(cap(done, rule.total))} من ${AR(rule.total)}</div>
-      <div class="pbar" role="progressbar" aria-label="الكتب المنجزة" aria-valuemin="0"
+      <div class="lb-prog-t">${d.ready ? L('اكتمل شرط الانتقال إلى', 'Ready to move up to') : L('الانتقال إلى', 'Next level:')} <bdi>${esc(next.name)}</bdi></div>
+      ${tally(subj, cap(done, rule.total), rule.total, stars, svg)}
+      <div class="pbar" role="progressbar" aria-label="${L('الكتب المنجزة', 'Books completed')}" aria-valuemin="0"
            aria-valuemax="${rule.total}" aria-valuenow="${cap(done, rule.total)}"><div class="pfill" style="width:${pct}%"></div></div>
       ${(rule.mins || []).length ? `<div class="lb-prog-mins">${rule.mins.map(m => `<span class="chip">${
-          m.done >= m.min ? '✔ ' : ''}<bdi>${esc(m.name)}</bdi>: ${AR(cap(m.done, m.min))} من ${AR(m.min)}</span>`).join('')}</div>` : ''}
-      ${d.ready ? `<button type="button" class="btn primary lb-beacon" id="lbGo">الانتقال إلى <bdi>${esc(next.name)}</bdi></button>` : ''}
+          m.done >= m.min ? '✔ ' : ''}<bdi>${esc(m.name)}</bdi>: ${L(`${AR(cap(m.done, m.min))} من ${AR(m.min)}`,
+          `<bdi dir="ltr">${cap(m.done, m.min)} / ${m.min}</bdi>`)}</span>`).join('')}</div>` : ''}
+      ${d.ready ? `<button type="button" class="btn primary lb-beacon" id="lbGo">${L('الانتقال إلى', 'Move up to')} <bdi>${esc(next.name)}</bdi></button>` : ''}
     </div>`;
   }
   host.innerHTML = html;
@@ -467,8 +518,8 @@ async function paintProgress(subj, host, hooks){
   if(go) go.onclick = async () => {
     go.disabled = true;
     const { data: r, error } = await api.promoteLevel(subj.id).then(x => x, e => ({ error: e }));
-    if(error || !r?.ok){ go.disabled = false; toast(error?.message || r?.error || 'تعذر الانتقال'); return; }
-    toast('انتقلت إلى ' + levelText(r.level || ''));
+    if(error || !r?.ok){ go.disabled = false; toast(EN ? 'Could not move up — please try again' : (error?.message || r?.error || 'تعذر الانتقال')); return; }
+    toast(L('انتقلت إلى ', 'You moved up to ') + levelText(r.level || ''));
     /* المستوى تغيّر ⇒ المادّةُ تُقرأ من جديد (`list_subjects`) ثمّ رفوفُ المستوى الجديد — هذا في student.js */
     hooks.relevel?.();
   };
@@ -484,16 +535,18 @@ async function paintProgress(subj, host, hooks){
 export async function paintBirthAsk(subj, hooks = {}){
   const { top = '', bindTop } = hooks;
   await loadCss();
+  setLang(subj);                                       // 🆕 b260
   app.innerHTML = `
     <div class="lb" id="lb">
       <div class="lb-top">${top}</div>
       <section class="card lb-ask" aria-labelledby="lbAskT">
-        <h2 class="lb-ask-t" id="lbAskT">تاريخ ميلادك</h2>
-        <p class="line">تُختار كتب المكتبة على قدر عمرك.</p>
-        <label class="fl" for="lbBirth">تاريخ الميلاد</label>
+        <h2 class="lb-ask-t" id="lbAskT">${L('تاريخ ميلادك', 'Your date of birth')}</h2>
+        <p class="line">${L('تُختار كتب المكتبة على قدر عمرك.', 'The library chooses books to suit your age.')}</p>
+        <label class="fl" for="lbBirth">${L('تاريخ الميلاد', 'Date of birth')}</label>
         <input type="date" id="lbBirth" min="1930-01-01" max="${todayIso()}">
-        <p class="small">يبقى لك وحدك ولا يراه معلمك، ويمكنك تعديله من ملفك الشخصي.</p>
-        <div class="nav"><button type="button" class="btn primary" id="lbBirthGo">حفظ</button></div>
+        <p class="small">${L('يبقى لك وحدك ولا يراه معلمك، ويمكنك تعديله من ملفك الشخصي.',
+          'Only you can see it — your teacher cannot. You can change it in your profile.')}</p>
+        <div class="nav"><button type="button" class="btn primary" id="lbBirthGo">${L('حفظ', 'Save')}</button></div>
       </section>
     </div>`;
   bindTop?.();
@@ -502,11 +555,12 @@ export async function paintBirthAsk(subj, hooks = {}){
   const btn = document.getElementById('lbBirthGo');
   btn.onclick = async () => {
     const bad = birthProblem(inp.value);
-    if(bad){ toast(bad); inp.focus(); return; }
+    /* رسالةُ الحارس عربيّةٌ مشتركة (`birthProblem` · ui.js) ⇒ في الإنجليزيّة جملةٌ واحدةٌ تقول ما يُصلَح */
+    if(bad){ toast(EN ? 'Please check the date of birth' : bad); inp.focus(); return; }
     btn.disabled = true;
     const { data: r, error } = await api.setMyBirthdate(inp.value).then(x => x, e => ({ error: e }));
-    if(error || !r?.ok){ btn.disabled = false; toast(error?.message || r?.error || 'تعذر الحفظ'); return; }
-    toast('حُفظ تاريخ ميلادك');
+    if(error || !r?.ok){ btn.disabled = false; toast(EN ? 'Could not save — please try again' : (error?.message || r?.error || 'تعذر الحفظ')); return; }
+    toast(L('حُفظ تاريخ ميلادك', 'Your date of birth is saved'));
     hooks.shelves?.();
   };
   inp.focus();
@@ -541,6 +595,7 @@ export async function openBook(subj, l, hooks){
   await loadCss();
   /* عنوانُ الدرس نفسُه (/subjects/7/lessons/42) — والتحديثُ يعود إلى هذه البطاقة (`openLessonAt`) */
   nav('subjects', `/subjects/${subj.id}/lessons/${l.id}`);
+  setLang(subj);                                       // 🆕 b260 · بعد `nav()` — هي التي تردّ الاتجاه
   /* بلا عنوان: الغلافُ والعنوانُ في البطاقة، واسمٌ يُكتب مرّتين في شاشةٍ واحدة يُقرأ سهواً — حجّةُ `openText` */
   head('', '');
 
@@ -550,30 +605,34 @@ export async function openBook(subj, l, hooks){
   const read = parts.length > 0 && parts.every(i => i.status === 'completed');
   const begun = parts.some(i => i.status);
   /* موضعُ الطالب في كتابٍ أجزاء: «الجزء ٢ من ٣» — والكتابُ بجزءٍ واحدٍ كما كان */
-  const where = parts.length > 1 && begun && !read ? `الجزء ${AR(parts.indexOf(text) + 1)} من ${AR(parts.length)}` : '';
+  const where = parts.length > 1 && begun && !read
+    ? L(`الجزء ${AR(parts.indexOf(text) + 1)} من ${AR(parts.length)}`, `Part ${parts.indexOf(text) + 1} of ${parts.length}`) : '';
   const words = Number(l.cards || 0);
 
   /* الخطوات — ما ليس للكتاب لا يُعرض (كتابٌ بلا كلماتٍ يبدأ بالقراءة).
      📌 وعلامةُ «تمّت» محايدة لا `ok`: إنجازُ خطوةٍ حالٌ لا حكمٌ على إجابة (الهويّةُ البصريّة ①) —
         والحكمُ وسمُ «أُنجز» على الغلاف، بنتيجته. */
   const steps = [
-    words ? { name: 'كلمات قبل القراءة', meta: N(words, 'كلمة', 'كلمتان', 'كلمات', 'كلمة') } : null,
-    text  ? { name: 'القراءة', meta: read ? 'تمّت' : where || (begun ? 'بدأتها' : partsSay(l)), done: read } : null,
-    quiz  ? { name: 'أسئلة الفهم', done: !!l.done,
-              meta: l.best != null ? `أفضل نتيجة ${AR(Math.round(l.best))}٪` : `المطلوب ${AR(l.pass_mark ?? 80)}٪` } : null,
+    words ? { name: L('كلمات قبل القراءة', 'Words before reading'), meta: L(N(words, 'كلمة', 'كلمتان', 'كلمات', 'كلمة'), words === 1 ? '1 word' : `${words} words`) } : null,
+    text  ? { name: L('القراءة', 'Reading'), meta: read ? L('تمّت', 'Done') : where || (begun ? L('بدأتها', 'Started') : partsSay(l)), done: read } : null,
+    quiz  ? { name: L('أسئلة الفهم', 'Comprehension questions'), done: !!l.done,
+              meta: l.best != null ? L(`أفضل نتيجة ${AR(Math.round(l.best))}٪`, `Best score ${Math.round(l.best)}%`)
+                                   : L(`المطلوب ${AR(l.pass_mark ?? 80)}٪`, `To pass: ${l.pass_mark ?? 80}%`) } : null,
   ].filter(Boolean);
 
-  /* الزرُّ الأوّل خطوتُك التالية، وما بعده أبوابُ الخطوات الأخرى — والأزرارُ مصادر (الهويّةُ اللغويّة §٦) */
+  /* الزرُّ الأوّل خطوتُك التالية، وما بعده أبوابُ الخطوات الأخرى — والأزرارُ مصادر (الهويّةُ اللغويّة §٦)
+     🆕 b260 · وفي الإنجليزيّة أفعالٌ قصيرة (Start · Continue reading) — عرفُ الأزرار هناك */
+  const START = L('البدء', 'Start');
   let main;
-  if(l.done)              main = text ? ['read', 'إعادة القراءة'] : ['quiz', 'إعادة الاختبار'];
-  else if(read && quiz)   main = ['quiz', 'أسئلة الفهم'];
-  else if(begun)          main = ['read', 'متابعة القراءة'];
-  else if(text || quiz)   main = [words ? 'words' : text ? 'read' : 'quiz', 'البدء'];
+  if(l.done)              main = text ? ['read', L('إعادة القراءة', 'Read again')] : ['quiz', L('إعادة الاختبار', 'Retake the quiz')];
+  else if(read && quiz)   main = ['quiz', L('أسئلة الفهم', 'Comprehension questions')];
+  else if(begun)          main = ['read', L('متابعة القراءة', 'Continue reading')];
+  else if(text || quiz)   main = [words ? 'words' : text ? 'read' : 'quiz', START];
   const more = [];
-  if(main && words && main[0] !== 'words') more.push(['words', 'الكلمات']);
-  if(main && text && main[0] !== 'read')   more.push(['read', main[1] === 'البدء' ? 'تخطّي الكلمات' : 'القراءة']);
+  if(main && words && main[0] !== 'words') more.push(['words', L('الكلمات', 'Words')]);
+  if(main && text && main[0] !== 'read')   more.push(['read', main[1] === START ? L('تخطّي الكلمات', 'Skip the words') : L('القراءة', 'Reading')]);
   if(main && quiz && main[0] !== 'quiz' && (read || l.done || l.best != null))
-    more.push(['quiz', l.done ? 'إعادة الاختبار' : 'أسئلة الفهم']);
+    more.push(['quiz', l.done ? L('إعادة الاختبار', 'Retake the quiz') : L('أسئلة الفهم', 'Comprehension questions')]);
 
   /* 🆕 b250 · **لا سطرَ فوق العنوان ولا ملخّصَ تحته — بل كلماتُ الكتاب** (قرارُ المالك على لقطة البطاقة · ١٨ نوفمبر):
        ① الفرعُ والمستوى («قصص ومغامرات، R1 (Pre-A1)») سقطا: الطالبُ جاء من رفّه ويعرف مستواه من الشريط، فالسطرُ يكرّر.
@@ -587,19 +646,19 @@ export async function openBook(subj, l, hooks){
   app.innerHTML = `
     <div class="lb lb-view" id="lb">
       <article class="lb-card">
-        <div class="crumb" id="lbk">→ رجوع للرفوف</div>
+        <div class="crumb" id="lbk">${L('→ رجوع للرفوف', '← Back to shelves')}</div>
         <div class="lb-card-in">
           <div class="lb-card-cover">${jacket(l, st, say)}</div>
           <div class="lb-card-body">
             <h2 class="lb-card-t" dir="auto">${esc(l.title)}</h2>
-            ${words ? '<ul class="lb-cw" id="lbcw" aria-label="كلمات قبل القراءة" hidden></ul>' : ''}
+            ${words ? `<ul class="lb-cw" id="lbcw" aria-label="${L('كلمات قبل القراءة', 'Words before reading')}" hidden></ul>` : ''}
             ${steps.length ? `<ol class="lb-steps">${steps.map(s => `
               <li class="lb-step${s.done ? ' is-done' : ''}"><b>${s.name}</b>${s.meta ? `<span>${esc(s.meta)}</span>` : ''}</li>`).join('')}
             </ol>` : ''}
             ${main ? `<div class="nav lb-card-btns">
               <button type="button" class="btn primary" data-act="${main[0]}">${main[1]}</button>
               ${more.map(([a, t]) => `<button type="button" class="btn ghost" data-act="${a}">${t}</button>`).join('')}
-            </div>` : '<div class="status">هذا الكتاب قيد الإعداد</div>'}
+            </div>` : `<div class="status">${L('هذا الكتاب قيد الإعداد', 'This book is being prepared')}</div>`}
           </div>
         </div>
       </article>
@@ -630,7 +689,7 @@ export async function openBook(subj, l, hooks){
   cw.innerHTML = shown.map(c => `<li class="lb-cw-i"><b dir="${dirOf(c.front)}">${esc(c.front)}</b>${
       firstLine(backText(c.back)) ? `<span dir="auto">${esc(firstLine(backText(c.back)))}</span>` : ''}</li>`).join('')
     /* ما زاد على عشرٍ بابٌ إلى قائمتها لا عددٌ يُحصى: «الكلمات كلها» اسمٌ لا يحتاج معدوداً يُعرَب */
-    + (rest > 0 ? `<li class="lb-cw-more"><button type="button" class="lb-cw-all">الكلمات كلها</button></li>` : '');
+    + (rest > 0 ? `<li class="lb-cw-more"><button type="button" class="lb-cw-all">${L('الكلمات كلها', 'All the words')}</button></li>` : '');
   cw.hidden = false;
   cw.querySelector('.lb-cw-all')?.addEventListener('click', () => openWords(subj, l, hooks));
 }
@@ -643,16 +702,18 @@ export async function openBook(subj, l, hooks){
    📌 والكلماتُ ملوّنةٌ في الكتاب نفسِه أيضاً (`bookLook` · الملحق) — فالسطرُ تحت العنوان يقول ذلك. */
 async function openWords(subj, l, hooks){
   nav('subjects', `/subjects/${subj.id}/lessons/${l.id}`);
+  setLang(subj);                                       // 🆕 b260
   head('', '');
   const text = textOf(l);
   app.innerHTML = `
     <div class="lb lb-view" id="lb">
       <article class="lb-card lb-words">
-        <div class="crumb" id="lbk">→ <bdi>${esc(l.title)}</bdi></div>
-        <h2 class="lb-card-t">كلمات قبل القراءة</h2>
-        <p class="lb-card-sum">تظهر هذه الكلمات ملوّنة في الكتاب، ومعناها بضغطة عليها.</p>
+        <div class="crumb" id="lbk">${L('→', '←')} <bdi>${esc(l.title)}</bdi></div>
+        <h2 class="lb-card-t">${L('كلمات قبل القراءة', 'Words before reading')}</h2>
+        <p class="lb-card-sum">${L('تظهر هذه الكلمات ملوّنة في الكتاب، ومعناها بضغطة عليها.',
+          'These words are coloured in the book — tap one to see its meaning.')}</p>
         <div id="lbw">${skeleton('rows', 3)}</div>
-        ${text ? '<div class="nav lb-card-btns"><button type="button" class="btn primary" id="lbgo">القراءة</button></div>' : ''}
+        ${text ? `<div class="nav lb-card-btns"><button type="button" class="btn primary" id="lbgo">${L('القراءة', 'Reading')}</button></div>` : ''}
       </article>
     </div>`;
   document.getElementById('lbk').onclick = () => openBook(subj, l, hooks);
@@ -663,9 +724,9 @@ async function openWords(subj, l, hooks){
   const { data, error } = await api.lessonCards(l.id).then(r => r, e => ({ error: e }));
   const host = document.getElementById('lbw');
   if(!host) return;                                   // غادر قبل الوصول
-  if(error){ host.innerHTML = errBox(error, 'كلمات الكتاب'); return; }
+  if(error){ host.innerHTML = errBox(error, 'كلمات الكتاب'); return; }     // صندوقُ الخطأ عربيٌّ مشترك — ومعه نسخةُ الواجهة لمن يُبلغ
   const cards = data || [];
-  if(!cards.length){ host.innerHTML = '<div class="status">لا كلمات لهذا الكتاب</div>'; return; }
+  if(!cards.length){ host.innerHTML = `<div class="status">${L('لا كلمات لهذا الكتاب', 'No words for this book')}</div>`; return; }
 
   const fresh = cards.filter(c => !c.mine).map(c => c.id);
   if(fresh.length) api.subscribeCards(fresh).then(() => {}, () => {});
