@@ -256,6 +256,21 @@
 .lb-dot.is-locked{background:linear-gradient(var(--fill-strong),var(--fill-strong)) var(--surface);color:var(--text-muted)}
 .lb-card-cover .lb-dot{bottom:9px;right:9px;width:30px;height:30px}
 .lb-card-cover .lb-dot svg{width:17px;height:17px}
+/* 🆕 b256 · عددُ الأجزاء (`partsSay` · library.js) — في الزاوية السفلى الأخرى، بزيّ النقطة نفسِه (سطحٌ وحلقة) ومحايد:
+   معلومةٌ عن الكتاب لا حالٌ ولا حكم، فلا عائلةَ معنًى له. */
+.lb-parts{position:absolute;bottom:6px;left:6px;z-index:5;height:22px;padding:0 8px;border-radius:11px;
+  display:inline-flex;align-items:center;background:var(--surface);color:var(--text);
+  font-size:.7rem;font-weight:700;line-height:1;white-space:nowrap;
+  box-shadow:0 0 0 1.5px rgba(255,255,255,.75), 0 1px 4px rgba(0,0,0,.35)}
+.lb-card-cover .lb-parts{bottom:9px;left:9px;height:30px;padding:0 11px;border-radius:15px;font-size:.82rem}
+/* وشريطُ الأجزاء فوق الكتاب المقلَّب (`partsBar` · student.js) — الجزءُ المفتوح بلون الصدارة، والباقي أزرارٌ هادئة */
+.bk-top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;margin-bottom:12px}
+.bk-top .crumb{margin:0}
+.bk-partbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.bk-partbar-l{font-size:.85rem;color:var(--text-muted);margin-inline-end:4px}
+/* ⚠️ `button.btn` في base.css `flex:1` — فبلا هذا يمتدّ الزرّان على عرض الصفحة كلِّه شريطين لا زرّين */
+.bk-partbar button.btn{flex:0 0 auto;min-height:36px;padding:6px 16px;font-size:.9rem}
+.bk-partbar .btn[aria-current="true"]{pointer-events:none}
 
 /* لافتةُ العنوان تحت كلّ كتاب — دائمة: العنوانُ يُقرأ بلا تحويم، واللمسُ لا يحوم.
    🆕 b249 · **على حافّة اللوح لا في جسم الكتاب** (التعليلُ عند `.lb-row`): خارجُ التدفّق، تبدأ تحت قاعدة الغلاف بنصف

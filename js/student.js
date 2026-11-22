@@ -1585,13 +1585,25 @@ async function openText(i){
   /* بلا عنوان: الغلافُ يحمله، واسمٌ يُكتب مرّتين في شاشةٍ واحدة يُقرأ
      سهواً (b139). */
   head('', '');
+  /* 🆕 b256 · **وشريطُ الأجزاء فوق الكتاب** (المالك · ٢٢ نوفمبر: «لا يوجد داخلياً ما يمكّن من التنقّل»): كتابُ المكتبة ذو الأجزاء
+     (`textsOf` · library.js) يُري أجزاءَه كلَّها أزراراً، والمفتوحُ منها `aria-current`. وكان الانتقالُ زرَّ «الجزء التالي» في
+     الختام وحده — فمن أراد الجزءَ الثاني قلّب الأوّلَ إلى آخره، ومن أراد الرجوعَ إلى الأوّل لم يجد طريقاً إلا البطاقة. */
+  const parts = isLibrary(S.subj) && l ? (await import('./library.js')).textsOf(l) : [];
+  const partsBar = parts.length > 1 ? `<nav class="bk-partbar" aria-label="أجزاء الكتاب">
+      <span class="bk-partbar-l" aria-hidden="true">الأجزاء</span>
+      ${parts.map((p, k) => `<button type="button" class="btn ${String(p.id) === String(i.id) ? 'primary' : 'ghost'}" data-part="${k}"${
+        String(p.id) === String(i.id) ? ' aria-current="true"' : ''} aria-label="الجزء ${AR(k + 1)} من ${AR(parts.length)}${
+        p.status === 'completed' ? '، تمّت قراءته' : ''}">الجزء ${AR(k + 1)}${p.status === 'completed' ? ' ✔' : ''}</button>`).join('')}
+    </nav>` : '';
+  /* 📐 والشريطُ في سطر «عودة» نفسِه لا تحته: نافذةُ المالك ‎574px ارتفاعاً، وسطرٌ زائدٌ فوق الكتاب يدفع أزرارَ التقليب إلى حافّتها */
   app.innerHTML = `
-    <div class="crumb" id="bk">→ عودة</div>
+    ${partsBar ? `<div class="bk-top"><div class="crumb" id="bk">→ عودة</div>${partsBar}</div>` : '<div class="crumb" id="bk">→ عودة</div>'}
     <div id="book">${skeleton('rows', 3)}</div>
     <div id="ra" hidden></div>`;
   /* 🆕 b237 · وكتابُ المكتبة يعود إلى بطاقته لا إلى صفحة الدرس: الطالبُ جاءه من البطاقة، وصفحةُ الدرس لا تُرى في المكتبة */
   const back = () => !l ? loadLessons(S.subj) : isLibrary(S.subj) ? openBookCard(l) : openLesson(l);
   document.getElementById("bk").onclick = back;
+  app.querySelectorAll('.bk-partbar [data-part]').forEach(b => b.onclick = () => openText(parts[Number(b.dataset.part)]));
 
   /* 🆕 b156 · **شبكةُ أمان:** أيُّ خطأٍ بعد الهيكل يُعرض رسالةً بنسخة
      الواجهة — لا هيكلاً رمادياً يدور إلى الأبد. وهو عَرَضُ b155 بعينه:

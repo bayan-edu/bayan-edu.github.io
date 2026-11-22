@@ -141,9 +141,15 @@ function shelvesOf(strands, lessons){
    🔑 الغلافُ المولَّد يُرسم دائماً تحت الصورة: فإن لم تصل الصورة (`error` في `paintLibrary` و`openBook`)
       أُزيلت فظهر ما تحتها — لا مستطيلٌ فارغ. وكتابٌ بلا غلافٍ اليوم هو الحالُ الغالب (عائقُ محتوى).
    📌 والنبرةُ من المعرّف لا عشوائيّة: الكتابُ يلبس اللونَ نفسَه في كلّ زيارة. */
+/* 🆕 b256 · **وعددُ الأجزاء على الغلاف** (المالك على لقطة الرفّ · ٢٢ نوفمبر: «لا يوجد ما يشير إلى عدد أجزاء الكتاب»):
+      وسامٌ صغيرٌ في الزاوية السفلى المقابلة لنقطة الحال («جزآن» · «٣ أجزاء») — والكتابُ بجزءٍ واحدٍ بلا وسام.
+   📌 والعددُ لقارئ الشاشة في اسم الزرّ (`partsSay` · `bookHtml`)، والوسامُ نفسُه `aria-hidden` فلا يُقرأ مرّتين. */
+const partsSay = l => { const n = textsOf(l).length; return n > 1 ? N(n, 'جزء', 'جزآن', 'أجزاء', 'جزءاً') : ''; };
 function jacket(l, st, say){
   const src = l.cover ? mediaUrl(l.cover) : null;
+  const parts = partsSay(l);
   return `<span class="lb-jacket">
+      ${parts ? `<span class="lb-parts" aria-hidden="true">${parts}</span>` : ''}
       <span class="lb-gen" data-t="${Math.abs(Number(l.id) || 0) % 4}" aria-hidden="true"><span
         class="lb-gen-t" dir="auto">${esc(l.title)}</span></span>
       ${src ? `<img class="lb-img" src="${escA(src)}" alt="" loading="lazy" decoding="async">` : ''}
@@ -154,9 +160,10 @@ function jacket(l, st, say){
 
 function bookHtml(l, live){
   const st = stateOf(l), say = SAY[st](l);
+  const name = [l.title, partsSay(l), say].filter(Boolean).join('، ');
   /* 📌 و`title` للفأر: لافتةُ العنوان سطرٌ واحدٌ يُقصّ في غلافٍ بعرض ٩٦px، والعنوانُ كاملاً في التلميح */
   return `<button type="button" class="lb-book is-${st}" data-l="${l.id}" ${live ? '' : 'tabindex="-1"'}
-      title="${escA(l.title + (say ? '، ' + say : ''))}" aria-label="${escA(l.title + (say ? '، ' + say : ''))}">
+      title="${escA(name)}" aria-label="${escA(name)}">
     ${jacket(l, st, say)}
     <span class="lb-title" dir="auto" aria-hidden="true">${esc(l.title)}</span>
   </button>`;
@@ -551,7 +558,7 @@ export async function openBook(subj, l, hooks){
         والحكمُ وسمُ «أُنجز» على الغلاف، بنتيجته. */
   const steps = [
     words ? { name: 'كلمات قبل القراءة', meta: N(words, 'كلمة', 'كلمتان', 'كلمات', 'كلمة') } : null,
-    text  ? { name: 'القراءة', meta: read ? 'تمّت' : where || (begun ? 'بدأتها' : ''), done: read } : null,
+    text  ? { name: 'القراءة', meta: read ? 'تمّت' : where || (begun ? 'بدأتها' : partsSay(l)), done: read } : null,
     quiz  ? { name: 'أسئلة الفهم', done: !!l.done,
               meta: l.best != null ? `أفضل نتيجة ${AR(Math.round(l.best))}٪` : `المطلوب ${AR(l.pass_mark ?? 80)}٪` } : null,
   ].filter(Boolean);
