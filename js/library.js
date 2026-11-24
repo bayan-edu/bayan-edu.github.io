@@ -243,13 +243,28 @@ export async function paintLibrary(subj, lessons, strands, hooks = {}){
 
   /* 🔑 **مستواك وحده على الرفوف** (`own_level` ⇐ `my_courses().is_current`): `courses_of` تفتح للطالب مقرّراتِ ما دون
         مستواه أيضاً (`can_view_level`)، فبلا هذا يجاور كتابُ R2 كتابَ R6 على رفٍّ واحد — والمكتبةُ «على قدر مستواك».
-     ⏳ وكتبُ ما دون مستواك (مراجعةُ ما أُنجز قبل الترقية) سؤالٌ مفتوحٌ للمرحلة ٥ — لا تضيع: البحثُ يبلغها.
-     ⚠️ و«ليس سابقاً» لا «حاضرٌ صراحةً» — حجّةُ `inView` في student.js: درسٌ بلا وسمٍ لا يختفي. */
-  lessons = (lessons || []).filter(l => l.own_level !== false);
+     ⚠️ و«ليس سابقاً» لا «حاضرٌ صراحةً» — حجّةُ `inView` في student.js: درسٌ بلا وسمٍ لا يختفي.
+     🆕 b263 · **ومستوًى سابقٌ يُختار من شريط الرفوف** (نقاشُ المالك · ٢٤ نوفمبر: «عنوان جانبي مع قائمة منسدلة»، وكان
+        هذا السطرُ يقول «سؤالٌ مفتوحٌ للمرحلة ٥»): بطاقةُ المستوى في الشريط تصير قائمةً بمستواك ثمّ ما دونه (`mountLevelPick`).
+        🔑 **والكتبُ واصلةٌ أصلاً:** `list_lessons` تُرجع كتبَ ما دون المستوى وكلٌّ بمستواه (`level_id` · `level_rank`)، ومن
+           طبقة الطالب وحدها (`courses_of` · `my_tier`) — فالاختيارُ تصفيةٌ هنا بلا نداءٍ جديد، لا كمعاينة المعلّم (`library_preview`).
+        🔑 **والمستوى السابقُ لا يُحسب في الانتقال** (`my_course_in` · 205: المقرَّرُ الحاضرُ وحده) ⇒ لا منارةَ فوق رفوفه،
+           وفي موضعها سطرٌ يقول ذلك وزرُّ العودة (`paintEarlier`). ⏳ ووزنُ نجومه سؤالٌ مفتوحٌ عند المالك — والكسبُ اليوم كاملٌ كما كان.
+        📌 والاختيارُ يُحفظ مع الرفّ والصفحة (`recall` · الجلسة): من فتح كتاباً من مستوًى سابقٍ ثمّ عاد وجد رفوفَه. */
+  const all = lessons || [];
+  const kept = recall(subj);
+  const lower = hooks.preview ? [] : lowerLevels(all);
+  const pick = lower.some(v => v.id === String(kept.level ?? '')) ? String(kept.level) : null;
+  lessons = pick ? all.filter(l => l.own_level === false && String(l.level_id) === pick)
+                 : all.filter(l => l.own_level !== false);
+  /* تغييرُ المستوى يرسم الرفوفَ من جديد بما وصل — والرفُّ والصفحةُ من أوّلهما: رفوفُ مستوًى آخر غيرُ هذه */
+  const repick = v => {
+    keep(subj, { level: v || null });
+    return paintLibrary(subj, all, strands, hooks).then(() => document.getElementById('lbLevel')?.focus({ preventScroll: true }));
+  };
 
   const shelves = shelvesOf(strands, lessons);
   const byId = new Map((lessons || []).map(l => [String(l.id), l]));
-  const kept = recall(subj);
   const pages = new Map(Object.entries(kept.pages || {}).map(([k, v]) => [k, Number(v) || 0]));
   /* الرفُّ المحفوظ، وإلّا **أوّلُ رفٍّ فيه كتب**: الصدارةُ لما يُقرأ، ورفٌّ خالٍ في أوّل زيارةٍ يُقرأ «لا كتب هنا» */
   let at = shelves.findIndex(s => s.key === kept.shelf);
@@ -264,6 +279,7 @@ export async function paintLibrary(subj, lessons, strands, hooks = {}){
     app.innerHTML = `<div class="lb" id="lb"><div class="lb-top">${top}</div>
       <div class="lb-none status">${esc(hooks.none || L('لا كتب في مستواك بعد', 'No books at your level yet'))}</div></div>`;
     bindTop?.();
+    mountLevelPick(subj, lower, pick, repick);      // 🆕 b263 · مستواك بلا كتبٍ بعد، وما دونه فيه كتب ⇒ البابُ إليها هنا أيضاً
     return;
   }
 
@@ -282,6 +298,7 @@ export async function paintLibrary(subj, lessons, strands, hooks = {}){
       <div class="lb-pager" hidden></div>
     </div>`;
   bindTop?.();
+  mountLevelPick(subj, lower, pick, repick);        // 🆕 b263
 
   const root  = document.getElementById('lb');
   const cases = [...root.querySelectorAll('.lb-case')];
@@ -290,7 +307,7 @@ export async function paintLibrary(subj, lessons, strands, hooks = {}){
   const save = () => {
     try{
       sessionStorage.setItem(keyOf(subj), JSON.stringify({
-        shelf: shelves[at].key, pages: Object.fromEntries(pages) }));
+        level: pick, shelf: shelves[at].key, pages: Object.fromEntries(pages) }));   // 🆕 b263 · والمستوى المختار معهما
     }catch(e){}
   };
 
@@ -427,7 +444,61 @@ export async function paintLibrary(subj, lessons, strands, hooks = {}){
   requestAnimationFrame(() => requestAnimationFrame(() => scene.classList.remove('lb-still')));
   /* 🆕 b238 · وتاجُ المكتبة يلحق بالرفوف ولا يؤخّرها — نداءٌ بعد الرسم، وفشلُه يُبقيه مطويّاً
      🆕 b252 · ولا تاجَ في المعاينة (`hooks.preview`): شرطُ الانتقال حالُ طالبٍ في مستواه، والناظرُ ليس فيه */
-  if(!hooks.preview) paintProgress(subj, root.querySelector('#lbProg'), hooks);
+  /* 🆕 b263 · ولا تاجَ فوق مستوًى سابق: شرطُ الانتقال شرطُ مستواك، فسطرُ «مستوى سابق» وزرُّ العودة في موضعه (`paintEarlier`) */
+  if(pick) paintEarlier(root.querySelector('#lbProg'), lower.find(v => v.id === pick), () => repick(null));
+  else if(!hooks.preview) paintProgress(subj, root.querySelector('#lbProg'), hooks);
+}
+
+/* ═══════════ المستويات السابقة (b263) — التعليلُ عند `paintLibrary` ═══════════ */
+
+/* ما دون مستواك ممّا فيه كتب: مستوًى لكلّ `level_id` في الكتب غير الحاضرة، وعددُ كتبه — من الأعلى إلى الأدنى،
+   فأقربُها إلى مستواك أوّلُها. 📌 و`courses_of` لا تُرسل ما فوق المستوى أصلاً (`can_view_level`)، فلا يُرشَّح هنا. */
+function lowerLevels(all){
+  const m = new Map();
+  for(const l of all){
+    if(l.own_level !== false || l.level_id == null) continue;
+    const k = String(l.level_id);
+    const v = m.get(k) || { id: k, name: l.level || '', rank: Number(l.level_rank) || 0, n: 0 };
+    v.n++; m.set(k, v);
+  }
+  return [...m.values()].sort((a, b) => b.rank - a.rank);
+}
+
+const keep = (subj, v) => { try{ sessionStorage.setItem(keyOf(subj), JSON.stringify(v)); }catch(e){} };
+
+/* بطاقةُ المستوى (`#lbLevel` · `libTop` في student.js) تصير قائمة — وبلا مستوًى سابقٍ تبقى نصّاً.
+   🔑 **قائمةُ النظام لا قائمةٌ مصنوعة:** على الهاتف يفتحها منتقي النظام، وهو يحمل ٢٣ خياراً بلا عناء، ولوحةُ المفاتيح وقارئُ
+      الشاشة يعرفانها بلا سطر. وهي هيئةُ محدِّد المعاينة نفسُها (`.lb-pick` · `previewTop`) — فالطالبُ والمعلّمُ يريان شيئاً واحداً.
+   📌 ومستواك أوّلُها باسمه و«مستواك»، والسابقةُ تحت عنوانها بعدد كتبها: العددُ يقول ما وراء الخيار قبل أن يُختار. */
+function mountLevelPick(subj, lower, pick, onPick){
+  const pill = document.getElementById('lbLevel');
+  if(!pill || !lower.length) return;
+  const books = n => EN ? ` · ${n} ${n === 1 ? 'book' : 'books'}` : ' · ' + N(n, 'كتاب', 'كتابان', 'كتب', 'كتاباً');
+  const opt = (v, txt, on) => `<option value="${escA(v)}"${on ? ' selected' : ''}>${esc(txt)}</option>`;
+  const sel = document.createElement('select');
+  sel.className = 'lb-pill lb-act lb-pick';
+  sel.id = 'lbLevel';
+  /* ⚠️ لا `dir="auto"` كبطاقة النصّ التي تحلّ محلّها: أوّلُ حرفٍ قويٍّ في الخيار «R» فيُقلب السطرُ يساراً في المكتبة العربيّة،
+     فيُقرأ العددُ قبل المستوى. والاتّجاهُ اتّجاهُ الشاشة — كمحدِّد المعاينة. */
+  sel.setAttribute('aria-label', L('المستوى', 'Level'));
+  sel.innerHTML = opt('', levelText(subj.my_level || '') + L(' · مستواك', ' · your level'), !pick)
+    + `<optgroup label="${escA(L('مستويات سابقة', 'Earlier levels'))}">`
+    + lower.map(v => opt(v.id, levelText(v.name) + books(v.n), v.id === pick)).join('') + '</optgroup>';
+  pill.replaceWith(sel);
+  sel.onchange = () => onPick(sel.value);
+}
+
+/* موضعُ التاج فوق مستوًى سابق: أيُّ مستوًى هذا، وأنّه لا يُحسب في الانتقال، وزرُّ العودة — فلا يقرأ الطالبُ كتبَ R10 وهو
+   يظنّها خطوةً نحو المستوى التالي. والزرُّ مصدرٌ لا أمر («العودة»)، وبهيئة ما يُنقر في الشريط (`lb-act`). */
+function paintEarlier(host, lv, back){
+  if(!host || !lv) return;
+  host.innerHTML = `<div class="lb-prog-in lb-earlier">
+      <div class="lb-prog-t">${L('مستوى سابق:', 'Earlier level:')} <bdi>${esc(levelText(lv.name))}</bdi></div>
+      <button type="button" class="lb-pill lb-act" id="lbOwn">${L('العودة إلى مستواك', 'Back to your level')}</button>
+      <div class="lb-prog-m">${L('لا تُحسب كتبه في الانتقال إلى المستوى التالي', 'Its books don’t count toward the next level')}</div>
+    </div>`;
+  host.hidden = false;
+  host.querySelector('#lbOwn').onclick = back;
 }
 
 /* ═══════════ تاجُ المكتبة: ما أنجزتَ من شرط مستواك، والمنارة (b238 · المرحلة ٥ · sql/205) ═══════════

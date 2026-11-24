@@ -1082,6 +1082,8 @@ const mentorText = subj => subj.mentor_name
       المستوى — والرفوفُ تبدأ تحتها بلا عنوانٍ يكرّر ما تقوله لافتاتُها. والمعرّفاتُ (`bk` · `mnt` · `strm`) معرّفاتُ
       `subjTop` بعينها، فيربطها `bindSubjTop` نفسُه.
    📌 والمادّةُ والمستوى نصٌّ لا زرّ: يقولان «أين أنت» ولا يفعلان شيئاً — فلا يلبسان هيئةَ ما يُنقر.
+      🆕 b263 · **إلا أن يكون للطالب مستوًى سابقٌ فيه كتب:** فالمستوى (`#lbLevel`) يصير قائمةً منسدلة يختار منها
+      (`mountLevelPick` · library.js) — ويلبس حينها هيئةَ ما يُنقر لأنّه يُنقر. وبلا مستوًى سابقٍ يبقى نصّاً كما كان.
    🆕 b250 · **و«رجوع للمواد» أصغرُ ومن خشب المشهد لا من عاجه** (قرارُ المالك على اللقطة الثانية): كان بطاقةً كأخواته، فقُرئ
       رابعاً بينها وهو ليس منها — هو مخرجُ الشاشة لا خبرٌ عنها. والمستوى بقوسين (`levelText` · ui.js). */
 /* 🆕 b260 · **وفي المكتبة الإنجليزيّة بالإنجليزيّة** (رأسُ library.js · قرارُ المالك) — «Back to subjects» والمعلّمُ بلا جنس:
@@ -1092,7 +1094,7 @@ function libTop(subj){
   return `<div class="lb-bar">
       <button type="button" class="lb-back" id="bk">${en ? '← Back to subjects' : '→ رجوع للمواد'}</button>
       <span class="lb-pill" dir="auto">${esc(subj.name)}</span>
-      ${subj.my_level ? `<span class="lb-pill" dir="auto">${esc(levelText(subj.my_level))}</span>` : ''}
+      ${subj.my_level ? `<span class="lb-pill" id="lbLevel" dir="auto">${esc(levelText(subj.my_level))}</span>` : ''}
       <button type="button" class="lb-pill lb-act" id="mnt">${en
         ? (subj.mentor_name ? `Your teacher: <bdi>${esc(subj.mentor_name)}</bdi> · Change` : 'Choose a teacher')
         : mentorText(subj)}</button>

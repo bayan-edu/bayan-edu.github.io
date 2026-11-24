@@ -334,6 +334,9 @@
 /* اسمُ المستوى لا ينكسر: «R2 ·» آخرَ سطرٍ و«Pre-A1» أوّلَ الذي يليه يُقرآن اسمين (قِيس على ‎820px · b249) */
 .lb-prog-t bdi{white-space:nowrap}
 .lb-prog-m{font-size:var(--fs-meta);color:var(--text-muted)}
+/* 🆕 b263 · فوق مستوًى سابق (`paintEarlier` · library.js): الاسمُ وزرُّ العودة في سطر، و«لا تُحسب…» تحتهما على العرض كلّه */
+.lb-earlier .lb-prog-m{grid-column:1 / -1}
+.lb-earlier .lb-act{justify-self:end}
 /* 🆕 b259 · الكتبُ المنجزة ورصيدُ النجوم: أيقونةٌ ورقم بلا عنوان (قرارُ المالك) — محايدان، والذهبُ في جسم النجمة وحده */
 .lb-tally{display:flex;align-items:center;gap:16px;font-family:'Almarai';font-weight:800;font-size:var(--fs-ui);color:var(--text)}
 .lb-tl{display:inline-flex;align-items:center;gap:6px}
