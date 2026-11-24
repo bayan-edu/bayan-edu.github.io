@@ -1,6 +1,6 @@
-import sys, json, os, urllib.request, random, string
+import sys, json, os, urllib.request, urllib.error, random, string, time
 sys.path.append('tools')
-from db_helper import get_token, query
+from db_helper import get_token, query, refresh_token_if_needed
 
 def get_books_needing_covers(limit=30):
     sql = f"""
@@ -16,9 +16,20 @@ def get_books_needing_covers(limit=30):
     return query(sql)
 
 def get_auth_token():
-    tok = get_token()
-    req = urllib.request.Request('https://api.supabase.com/v1/projects/tjzrfevymfpktfuormhs/api-keys', headers={'Authorization': f'Bearer {tok}'})
-    keys = json.loads(urllib.request.urlopen(req).read())
+    keys = None
+    for attempt in range(3):
+        try:
+            tok = get_token()
+            req = urllib.request.Request('https://api.supabase.com/v1/projects/tjzrfevymfpktfuormhs/api-keys', headers={'Authorization': f'Bearer {tok}'})
+            keys = json.loads(urllib.request.urlopen(req, timeout=15).read())
+            break
+        except urllib.error.HTTPError as e:
+            if e.code == 401 and attempt < 2:
+                print(f"[cover_pipeline] Token 401 encountered, refreshing Supabase token...", file=sys.stderr)
+                refresh_token_if_needed()
+                time.sleep(2)
+            else:
+                raise
     service_key = [x['api_key'] for x in keys if x['name'] == 'service_role'][0]
     anon_key = [x['api_key'] for x in keys if x['name'] == 'anon'][0]
 
